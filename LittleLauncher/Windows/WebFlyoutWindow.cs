@@ -562,7 +562,7 @@ public sealed partial class WebFlyoutWindow : Window
         // ── Status overlay (loading / error) ────────────────────────
         _statusRing = new ProgressRing
         {
-            IsActive = true,
+            IsActive = false,
             Width = 28,
             Height = 28,
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -1798,6 +1798,8 @@ public sealed partial class WebFlyoutWindow : Window
 
         _hasBeenShown = true;
 
+        UpdateLoadingAnimations();
+
         if (_isFullScreen) ConfigureFullscreenTitleBar();
 
         // PROTOTYPE: light up the launcher's pinned taskbar button while the flyout is on screen.
@@ -1909,6 +1911,7 @@ public sealed partial class WebFlyoutWindow : Window
     private void ParkOffScreen()
     {
         _isOpen = false;
+        UpdateLoadingAnimations();
         _fullscreenHeaderTimer?.Stop();
         if (_isFullScreen) _header.Visibility = Visibility.Collapsed;
         ClearFade();
@@ -3662,28 +3665,43 @@ public sealed partial class WebFlyoutWindow : Window
         SetStatus("Loading…", busy: true, showRetry: false);
     }
 
-    /// <summary>Shows or hides the hairline, stopping its animation when it is not being seen.</summary>
+    /// <summary>Shows or hides the hairline, animating only while the launcher is open.</summary>
     private void ShowLoadingBar(bool running)
     {
-        _loadingBar.IsIndeterminate = running;
         _loadingBar.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+        UpdateLoadingAnimations();
     }
 
+    /// <summary>Updates the loading overlay, leaving off-screen loading states static.</summary>
     private void SetStatus(string message, bool busy, bool showRetry)
     {
         _statusText.Text = message;
-        _statusRing.IsActive = busy;
         _statusRing.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         _statusAction.Visibility = showRetry ? Visibility.Visible : Visibility.Collapsed;
         _statusPanel.Visibility = Visibility.Visible;
+        UpdateLoadingAnimations();
     }
 
+    /// <summary>Hides both loading indicators and stops their animations.</summary>
     private void HideStatus()
     {
-        ShowLoadingBar(false);
-
-        _statusRing.IsActive = false;
         _statusPanel.Visibility = Visibility.Collapsed;
+        ShowLoadingBar(false);
+    }
+
+    /// <summary>
+    /// Animates loading indicators only in an open launcher. Their visibility retains the
+    /// loading state so reopening can resume it without leaving an animation running off screen.
+    /// </summary>
+    private void UpdateLoadingAnimations()
+    {
+        // Parked windows remain visible to WinUI. Dismissal, warm-up and asynchronous loading
+        // events must all use the launcher's open state rather than native window visibility.
+        _statusRing.IsActive = _isOpen
+            && _statusPanel.Visibility == Visibility.Visible
+            && _statusRing.Visibility == Visibility.Visible;
+        _loadingBar.IsIndeterminate = _isOpen
+            && _loadingBar.Visibility == Visibility.Visible;
     }
 
     // ── Window events ───────────────────────────────────────────────

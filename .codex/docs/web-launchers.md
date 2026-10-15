@@ -47,6 +47,12 @@ This is the whole point of the feature, so it is the thing not to regress.
 | Dismissed under `KeepRunning` | Collapsed only — **not** suspended, memory target left alone | Awake but not drawn — rendering stops, script, timers and sockets do not |
 | Dismissed past `WebIdleUnloadMinutes` (default policy) | Window only | Nothing |
 
+- **Loading indicators animate only while `_isOpen` is true.** Parked windows remain visible
+  to WinUI, so an active spinner or indeterminate progress bar can keep doing work off screen.
+  The spinner starts inactive; `UpdateLoadingAnimations` gates both indicators on the open state
+  and their XAML visibility. Showing and parking the window reapply that policy, as do status
+  changes from asynchronous navigation and browser unload. Loading state is retained so reopening
+  can animate an in-progress load, but warm-up and idle unload never start a hidden animation.
 - **Collapsing the control is load-bearing, not cosmetic.** WebView2 refuses to suspend a visible
   browser, and the WinUI `WebView2` control drives `CoreWebView2Controller.IsVisible` from its XAML
   `Visibility`. Collapsing is therefore both what stops the rendering and what makes
