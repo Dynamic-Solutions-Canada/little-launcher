@@ -66,5 +66,6 @@
             </NavigationView.FooterMenuItems>
             <Frame x:Name="ContentFrame" />
         </NavigationView>
+
     </Grid>
 </Window>

@@ -184,6 +184,19 @@ public sealed partial class WebFlyoutWindow
     {
         try
         {
+            // Native pins use their snapshot Start shortcut as the sole source of launch metadata.
+            // Remove any properties left on this long-lived window by a previous manual pin.
+            if (MainWindow.HasPinShortcutIdentity(_launcher))
+            {
+                string appliedShortcut = "shortcut:" + _launcher.PinAumid;
+                if (_appliedRelaunch != appliedShortcut)
+                {
+                    ClearWindowRelaunchProperties(_hwnd);
+                    _appliedRelaunch = appliedShortcut;
+                }
+                return;
+            }
+
             // Cheap values first, and the cache check before any of the disk work below. This runs
             // from every show and every launcher change, while the properties themselves are
             // written once, so an unchanged launcher must cost nothing, rather than saving an icon

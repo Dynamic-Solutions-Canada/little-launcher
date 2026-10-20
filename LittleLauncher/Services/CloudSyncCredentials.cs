@@ -4,18 +4,15 @@ namespace LittleLauncher.Services;
 /// OAuth client registrations for the native cloud providers.
 /// </summary>
 /// <remarks>
-/// <para><b>These are not secrets, and are not treated as such by either vendor.</b> A desktop
-/// app cannot keep a credential confidential — anyone can read it out of the binary — so both
-/// Microsoft and Google define the installed-app flow to be secure without one. Security comes
-/// from PKCE and from the redirect being a loopback address only a local process can receive.
-/// Google still issues a "client secret" for Desktop clients and still requires it on the token
-/// call; it is a client *identifier* in practice, which is why it can sit in a public repo.</para>
+/// <para>Desktop apps are public OAuth clients and cannot keep distributed credentials
+/// confidential. Client IDs are public; the configured Google secret remains a private build
+/// input under this project's policy. Google's current Desktop guide labels that secret optional;
+/// this app continues sending it when configured. PKCE and callback correlation protect the flow.</para>
 /// <para>The env-var overrides exist so a second registration can be pointed at for testing
 /// without editing source. They win when set.</para>
-/// <para>Registering these is a one-time manual step — see
-/// <see href="../../.codex/docs/sync.md">sync.md</see> for exactly what to create in the Entra
-/// and Google Cloud portals. Until they are filled in, the two providers report themselves as
-/// unconfigured rather than failing at sign-in.</para>
+/// <para>See <see href="../../.codex/docs/sync.md">sync.md</see> for the registration runbook.
+/// Availability checks only the client ID. It does not validate the secret or the provider's
+/// configuration, and a missing Google secret alone does not disable sign-in.</para>
 /// </remarks>
 public static class CloudSyncCredentials
 {
@@ -53,16 +50,15 @@ public static class CloudSyncCredentials
                 : GoogleClientSecretDefault;
 
     /// <summary>
-    /// A credential baked in at build time via an MSBuild property, e.g.
-    /// <c>-p:GoogleClientSecret=...</c>.
+    /// A credential baked in through the <c>GoogleClientSecret</c> MSBuild property, supplied by
+    /// a private props file or the build process's environment.
     /// </summary>
     /// <remarks>
-    /// <para>The env-var override above is a *runtime* lookup, which is fine for a developer
-    /// machine and useless for a shipped build: an end user has no such variable set. Anything
-    /// that must reach real users has to be compiled in, and this is how it gets there without
-    /// living in a public repository.</para>
-    /// <para>Absent in an ordinary local build, which is correct: Google Drive then reports
-    /// itself unconfigured rather than failing at sign-in with something unexplainable.</para>
+    /// <para>The LITTLELAUNCHER_GOOGLE_CLIENT_SECRET override is read at runtime. Setting only
+    /// that variable on a CI runner does not embed a value for end users. The build environment
+    /// variable GoogleClientSecret becomes an MSBuild property and is compiled into metadata.</para>
+    /// <para>The metadata is absent when neither private build input supplies the property.
+    /// HasGoogleDrive still checks only the client ID; it does not prove authorization works.</para>
     /// </remarks>
     private static string? BuildValue(string key) =>
         typeof(CloudSyncCredentials).Assembly
@@ -73,7 +69,7 @@ public static class CloudSyncCredentials
     /// <summary>True when this build has a usable registration for the provider.</summary>
     public static bool HasOneDrive => !string.IsNullOrWhiteSpace(OneDriveClientId);
 
-    /// <summary>True when this build has a usable registration for the provider.</summary>
+    /// <summary>True when a nonblank Google client ID is configured; does not validate authorization.</summary>
     public static bool HasGoogleDrive => !string.IsNullOrWhiteSpace(GoogleClientId);
 
     /// <summary>

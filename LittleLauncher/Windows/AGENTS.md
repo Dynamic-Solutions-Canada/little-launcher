@@ -1,6 +1,6 @@
 # LittleLauncher/Windows
 
-`FlyoutWindow` is the per-launcher popup **and the only place launcher items are edited** — the former in-settings items page was removed. Edit mode lives in the partial class `FlyoutWindow.EditMode.cs`.
+`FlyoutWindow` is the native per-launcher popup. `LauncherItemsEditorWindow` is the regular Settings-origin item editor, matching Launcher Settings Mica/chrome/app icon. Both host the same `Controls/LauncherItemsView` implementation through `ILauncherItemsHost`; do not duplicate item templates or editing logic, or reparent a native popup into another window. The regular host owns its inline toolbar, scrolling viewport and external Done, with immediate saving and no blue window outline. Settings remains normal behind it. Same-launcher invocation focuses the editor or its owned dialog, and host teardown closes its secondary windows and unregisters the view.
 
 Read this before touching drag/drop, edit mode, column logic, or flyout sizing. It covers the geometry contract (edit mode may grow height, never width or item size), the `_launcher.Items` vs `_columnLists` source-of-truth rule, and why height is computed arithmetically rather than measured:
 
@@ -22,3 +22,14 @@ The same guide governs `WebFlyoutWindow.FullscreenTitleBar.cs`, including its fu
 header overlay and hover lifecycle.
 It also governs `WebFlyoutWindow.ContentFullscreen.cs`, which detects visible video targets
 and requests page fullscreen from the header.
+`WebFlyoutWindow.IconPreview.cs` follows both [web-launchers.md](../../.codex/docs/web-launchers.md)
+and [icons.md](../../.codex/docs/icons.md). Preview reads must not start/resume/navigate a browser
+or adopt icons before Confirm.
+
+`LauncherSettingsWindow.TaskbarPin.cs` owns companion pin requests. Its
+`LauncherSettingsWindow.TaskbarPinStatus.cs` partial owns live pin state, effective-detail comparison
+and the normal row subtitle/button. Read [icons.md](../../.codex/docs/icons.md) and
+[xaml.md](../../.codex/docs/xaml.md) before changing them. Query the old identity through the isolated
+read-only helper on open/activation, not on every name/icon edit. Keep generation/cancellation and
+all subscriptions scoped to the window lifetime, and reap the query before pin replacement.
+Effective pin metadata remains local-only in `Shared/PinSnapshot.cs`.

@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using global::Windows.Graphics;
 using WinRT.Interop;
@@ -28,7 +29,7 @@ namespace LittleLauncher.Windows;
 /// implementation rather than a dialog and a window drifting apart.</para>
 /// <para>Settings apply immediately as they are changed; the name is committed on close.</para>
 /// </remarks>
-public sealed class LauncherSettingsWindow : Window
+public sealed partial class LauncherSettingsWindow : Window
 {
     private const int WindowWidthDips = 560;
 
@@ -53,6 +54,12 @@ public sealed class LauncherSettingsWindow : Window
     private Button? _doneButton;
     private bool _isNewLauncher;
 
+    /// <summary>Reports the final setup window bounds before its HWND is destroyed.</summary>
+    private readonly Action<RectInt32>? _onClosing;
+
+    /// <summary>Only one pin request may own this launcher snapshot at a time.</summary>
+    private bool _pinning;
+
     /// <summary>Re-reads the launcher into the icon button, so an icon that arrives is shown.</summary>
     private Action? _refreshIconPreview;
 
@@ -74,21 +81,34 @@ public sealed class LauncherSettingsWindow : Window
     /// Changes the accept button from "Done" to wording that signals a further step, since a
     /// launcher created this way goes straight on to item editing.
     /// </param>
+    /// <param name="onClosing">
+    /// Receives the actual window bounds in physical screen pixels before closing, for a
+    /// following setup step. Closing still applies changes and completes with true as before.
+    /// </param>
+    /// <param name="section">Optional section to expand and reveal after the form has loaded.</param>
     public static Task<bool> ShowAsync(
         Launcher launcher,
         IntPtr ownerHwnd = default,
         Action<Window>? onCreated = null,
-        bool isNewLauncher = false)
+        bool isNewLauncher = false,
+        Action<RectInt32>? onClosing = null,
+        LauncherSettingsSection? section = null)
     {
-        var window = new LauncherSettingsWindow(launcher, ownerHwnd, isNewLauncher);
+        var window = new LauncherSettingsWindow(launcher, ownerHwnd, isNewLauncher, onClosing);
+        window._requestedSection = section;
         onCreated?.Invoke(window);
         window.Activate();
         return window._completion.Task;
     }
 
-    private LauncherSettingsWindow(Launcher launcher, IntPtr ownerHwnd, bool isNewLauncher)
+    private LauncherSettingsWindow(
+        Launcher launcher,
+        IntPtr ownerHwnd,
+        bool isNewLauncher,
+        Action<RectInt32>? onClosing)
     {
         _launcher = launcher;
+        _onClosing = onClosing;
         OpenCount++;
         _hwnd = WindowNative.GetWindowHandle(this);
         Title = "Launcher Settings";
@@ -108,7 +128,7 @@ public sealed class LauncherSettingsWindow : Window
             HorizontalAlignment = HorizontalAlignment.Right,
             Margin = new Thickness(0, 16, 0, 0),
         };
-        doneButton.Click += (_, _) => Close();
+        doneButton.Click += (_, _) => CloseWithBounds();
 
         _isNewLauncher = isNewLauncher;
         _doneButton = doneButton;
@@ -149,6 +169,9 @@ public sealed class LauncherSettingsWindow : Window
         form.Loaded += (_, _) =>
         {
             ResizeToContent(form);
+            _formLoaded = true;
+            if (_requestedSection is { } section)
+                ShowSection(section);
 
             // A brand-new web launcher needs exactly one thing: an address. Put the caret there
             // rather than making the user find the field the window was opened for.
@@ -159,11 +182,18 @@ public sealed class LauncherSettingsWindow : Window
         // Hidden: WinUI otherwise pops an "Esc" accelerator tooltip over the window.
         root.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
         var escape = new KeyboardAccelerator { Key = global::Windows.System.VirtualKey.Escape };
-        escape.Invoked += (_, e) => { e.Handled = true; Close(); };
+        escape.Invoked += (_, e) => { e.Handled = true; CloseWithBounds(); };
         root.KeyboardAccelerators.Add(escape);
 
+        // Closing covers the system close button and Alt+F4. Programmatic Close does not
+        // raise that event, so Done and Escape report their bounds through CloseWithBounds.
+        AppWindow.Closing += (_, _) => ReportClosingBounds();
+
+        InitializePinStatus();
         Closed += (_, _) =>
         {
+            _settingsClosed = true;
+            DisposePinStatus();
             OpenCount = Math.Max(0, OpenCount - 1);
             CommitName();
             CommitWebUrl();
@@ -173,6 +203,21 @@ public sealed class LauncherSettingsWindow : Window
             Services.AutoSyncService.NotifyLaunchersChanged();
             _completion.TrySetResult(true);
         };
+    }
+
+    /// <summary>Closes from an in-window action after capturing the window's actual position.</summary>
+    private void CloseWithBounds()
+    {
+        ReportClosingBounds();
+        Close();
+    }
+
+    /// <summary>Reports physical screen bounds while the native settings window still exists.</summary>
+    private void ReportClosingBounds()
+    {
+        if (_onClosing == null || !NativeMethods.GetWindowRect(_hwnd, out var rect)) return;
+
+        _onClosing(new RectInt32(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top));
     }
 
     /// <summary>
@@ -428,51 +473,9 @@ public sealed class LauncherSettingsWindow : Window
         var (iconButton, customIconRow, refreshIconPreview) = BuildIconChooser(launcher);
         _refreshIconPreview = refreshIconPreview;
 
-        // ── Back to the page's own icon ──────────────────────────
-        // A web launcher adopts its page's icon until someone picks one, and picking one was a
-        // one-way door: every route out of Custom leads to another *chosen* icon, so there was no
-        // way back to "whatever the page says". This is that way back, and it only appears when
-        // there is something to undo.
-        var resetIconButton = new Button
-        {
-            Content = "Use page icon",
-            Padding = new Thickness(10, 6, 10, 6),
-            Visibility = launcher.IsWebLauncher && !WebFlyoutWindow.MayAdoptPageIcon(launcher)
-                ? Visibility.Visible
-                : Visibility.Collapsed,
-        };
-        ToolTipService.SetToolTip(resetIconButton, "Go back to the icon this launcher's page declares");
-        resetIconButton.Click += (_, _) =>
-        {
-            // The adopted state is Custom pointing at the managed page-icon path — that is exactly
-            // what MayAdoptPageIcon recognises, and it restores the real icon immediately when one
-            // has already been fetched. With nothing fetched yet, Composite is the "never chosen"
-            // state, so the next load adopts.
-            string adopted = WebFlyoutWindow.GetPageIconPath(launcher.Id);
-            if (File.Exists(adopted))
-            {
-                launcher.TrayIconMode = TrayIconModes.Custom;
-                launcher.CustomTrayIconPath = adopted;
-            }
-            else
-            {
-                launcher.TrayIconMode = TrayIconModes.Composite;
-                launcher.CustomTrayIconPath = "";
-            }
-
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            resetIconButton.Visibility = Visibility.Collapsed;
-            refreshIconPreview();
-        };
-
         var iconRow = new Grid();
         iconRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         iconRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var iconButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
-        iconButtons.Children.Add(resetIconButton);
-        iconButtons.Children.Add(iconButton);
 
         var iconLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         iconLabel.Children.Add(new TextBlock { Text = "Icon", FontSize = 14 });
@@ -480,9 +483,9 @@ public sealed class LauncherSettingsWindow : Window
         var iconSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
         iconLabel.Children.Add(iconSubtitle);
         Grid.SetColumn(iconLabel, 0);
-        Grid.SetColumn(iconButtons, 1);
+        Grid.SetColumn(iconButton, 1);
         iconRow.Children.Add(iconLabel);
-        iconRow.Children.Add(iconButtons);
+        iconRow.Children.Add(iconButton);
 
         // ── View mode combo ──────────────────────────────────────
         var viewModeCombo = new ComboBox { MinWidth = 160 };
@@ -627,26 +630,27 @@ public sealed class LauncherSettingsWindow : Window
         // ── Pin to taskbar row ──────────────────────────────────
         var pinBtn = new Button
         {
-            Content = "Pin to Taskbar",
+            Content = (string)Application.Current.Resources["TaskbarPinAction"],
             Tag = launcher,
         };
+        _pinButton = pinBtn;
         pinBtn.Click += PinToTaskbar_Click;
 
-        var taskbarRow = new Grid();
-        taskbarRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        taskbarRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var taskbarLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        taskbarLabel.Children.Add(new TextBlock { Text = "Show in Taskbar", FontSize = 14 });
-        taskbarLabel.Children.Add(new TextBlock { Text = "Pin a shortcut to the taskbar for quick access", FontSize = 12, Opacity = 0.5 });
-        taskbarLabel.Children.Add(new TextBlock { Text = "Changing the icon requires unpinning and re-pinning", FontSize = 11, Opacity = 0.4, FontStyle = global::Windows.UI.Text.FontStyle.Italic });
-        Grid.SetColumn(taskbarLabel, 0);
-        Grid.SetColumn(pinBtn, 1);
-        taskbarRow.Children.Add(taskbarLabel);
-        taskbarRow.Children.Add(pinBtn);
+        _pinStatus = new TextBlock
+        {
+            Text = (string)Application.Current.Resources["TaskbarPinDescription"],
+            FontSize = 12,
+            Opacity = 0.5,
+            TextWrapping = TextWrapping.Wrap,
+        };
+        var taskbarRow = BuildRow("Show in Taskbar", _pinStatus, pinBtn);
 
         // ── Web launcher rows ───────────────────────────────────
-        var (webAddressRows, webOptionRows, webAdvanced, refreshWebRows) = BuildWebRows(launcher);
+        var webAddressRow = BuildWebAddressRow(launcher);
+        var webAppearanceRows = BuildWebAppearanceRows(launcher);
+        var (webSizeRows, refreshSizeRows) = BuildWebSizeRows(launcher);
+        var (webBehaviorRows, refreshBehaviorVisibility) = BuildWebBehaviorRows(launcher);
+        var webPrivacyRows = BuildWebPrivacyRows(launcher);
 
         // ── Type ─────────────────────────────────────────────────
         // Last to be built, first to be shown: it decides which of the two sets of rows above
@@ -670,9 +674,17 @@ public sealed class LauncherSettingsWindow : Window
                 row.Visibility = isWeb ? Visibility.Collapsed : Visibility.Visible;
             if (!isWeb)
                 UpdateIconModeControls();   // the icons-per-row row has its own condition
-            foreach (var row in webAddressRows.Concat(webOptionRows).Append(webAdvanced))
+            webAddressRow.Visibility = isWeb ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var row in webAppearanceRows)
                 row.Visibility = isWeb ? Visibility.Visible : Visibility.Collapsed;
-            refreshWebRows();
+            foreach (var definition in LauncherSettingsSections.All)
+            {
+                if (_sectionExpanders.TryGetValue(definition.Id, out var expander))
+                    expander.Visibility = !definition.WebOnly || isWeb ? Visibility.Visible : Visibility.Collapsed;
+            }
+            refreshBehaviorVisibility();
+            refreshSizeRows();
+            SyncAddressBox();
             iconSubtitle.Text = isWeb
                 ? "Taken from the page automatically — or pick one here"
                 : "Icon style for this launcher";
@@ -697,45 +709,18 @@ public sealed class LauncherSettingsWindow : Window
 
         var typeRow = BuildRow("Type", "What the tray icon opens", typeCombo);
 
+        // Shared definitions determine both this form and the flyout menu's section order.
+        var sectionRows = new Dictionary<LauncherSettingsSection, IReadOnlyList<FrameworkElement>>
+        {
+            [LauncherSettingsSection.General] = [nameRow, typeRow, webAddressRow],
+            [LauncherSettingsSection.Appearance] = [iconRow, customIconRow, hideRow, taskbarRow,
+                viewModeRow, iconsPerRowRow, showTitleRow, .. webAppearanceRows],
+            [LauncherSettingsSection.SizeAndPosition] = webSizeRows,
+            [LauncherSettingsSection.Behavior] = webBehaviorRows,
+            [LauncherSettingsSection.PrivacyAndSignIns] = webPrivacyRows,
+        };
+        var panel = BuildSettingsSections(sectionRows);
         UpdateKindVisibility();
-
-        // ── Build dialog content ────────────────────────────────
-        // Ordered as three questions, then the fold: what is this launcher, how does it show its
-        // content, and how does it appear in the shell.
-        var panel = new StackPanel { Spacing = 12 };
-
-        // ── What it is ──────────────────────────────────────────
-        panel.Children.Add(nameRow);
-        panel.Children.Add(typeRow);
-
-        // Its content leads, and for a web launcher the address has to come before the icon
-        // anyway: the icon is *derived* from it, and asked the other way round the form made the
-        // user choose an icon for a page it had not been told about, which reads as a requirement
-        // rather than an override.
-        foreach (var row in webAddressRows)
-            panel.Children.Add(row);
-
-        // ── How it shows that content ───────────────────────────
-        panel.Children.Add(viewModeRow);
-        panel.Children.Add(iconsPerRowRow);
-        panel.Children.Add(showTitleRow);
-        foreach (var row in webOptionRows)
-            panel.Children.Add(row);
-
-        // ── How it appears in the shell ─────────────────────────
-        // The icon sits with the two rows that decide where it is *seen*. It used to sit up beside
-        // the launcher's content, where "Icon" read as the icon of the thing being configured
-        // rather than as the tray icon — which is the only place it appears.
-        panel.Children.Add(iconRow);
-        panel.Children.Add(customIconRow);
-        panel.Children.Add(hideRow);
-        panel.Children.Add(taskbarRow);
-
-        // ── Everything else ─────────────────────────────────────
-        // Last in the dialog, not last among the web rows. Advanced is the fold for the settings a
-        // working launcher does not need, so anything below it would be something the user had to
-        // scroll past a collapsed section to find.
-        panel.Children.Add(webAdvanced);
         return panel;
     }
 
@@ -899,617 +884,16 @@ public sealed class LauncherSettingsWindow : Window
     private static Task FetchBookmarkIconAsync(Launcher launcher, WebBookmark bookmark) =>
         WebFlyoutWindow.FetchBookmarkIconAsync(launcher, bookmark);
 
-    /// <summary>
-    /// Builds the rows that only apply to a web launcher.
-    /// </summary>
-    /// <remarks>
-    /// Only the two settings a web launcher cannot work without — its address and its size — are
-    /// shown outright. Everything else (zoom, what the browser does when hidden, reload, pin,
-    /// browsing data) is tuning for a launcher that already works, so it sits in a collapsed
-    /// <c>Advanced</c> expander rather than making the common case read as an eight-field form.
-    /// Pin is doubly safe to demote: it also has a button in the flyout's own header.
-    /// </remarks>
-    /// <returns>
-    /// The rows that say <em>what page</em>, the rows that say <em>how to show it</em>, the
-    /// Advanced fold, and a callback that re-reads the launcher into the controls. All four are
-    /// returned separately because <c>BuildForm</c> interleaves them with rows of its own —
-    /// Advanced in particular goes last in the whole dialog, below even the tray and taskbar rows.
-    /// </returns>
-    private (IReadOnlyList<FrameworkElement> AddressRows, IReadOnlyList<FrameworkElement> OptionRows,
-             FrameworkElement Advanced, Action Refresh)
-        BuildWebRows(Launcher launcher)
-    {
-        // ── Address ─────────────────────────────────────────────
-        var urlBox = new TextBox
-        {
-            PlaceholderText = "https://homeassistant.local:8123/lovelace/cameras",
-            Text = launcher.WebAddress,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            // Without this the box stretches to whatever height the row ends up being.
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        _urlBox = urlBox;
-
-        // Committed as soon as the address is finished with, rather than only on close: the icon
-        // is fetched from it, and until that has happened the launcher is still wearing a globe —
-        // which is what a user who pins to the taskbar from this window would get stuck with,
-        // since Windows never re-reads a pinned icon.
-        urlBox.LostFocus += (_, _) => CommitWebUrl();
-        urlBox.KeyDown += (_, e) =>
-        {
-            if (e.Key != global::Windows.System.VirtualKey.Enter) return;
-            e.Handled = true;
-            CommitWebUrl();
-        };
-
-        // Typing a dashboard URL from memory is the worst way to enter one; it is already a
-        // bookmark in the browser the user set it up in.
-        //
-        // Worded exactly as the button beside the bookmark list is. They open the same picker for
-        // the same reason, and two labels for one action reads as two features.
-        var bookmarkButton = new Button
-        {
-            Content = "From browser…",
-            Margin = new Thickness(8, 0, 0, 0),
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        bookmarkButton.Click += async (_, _) =>
-        {
-            var picked = await Pages.BookmarkPicker.PickAsync(Content.XamlRoot);
-            if (picked == null) return;
-
-            urlBox.Text = picked.Url;
-
-            // Committed immediately rather than on close: the name is worth adopting too, and
-            // doing that silently at close would overwrite a name the user had just typed.
-            CommitWebUrl();
-            if (_nameBox != null && string.IsNullOrWhiteSpace(_nameBox.Text))
-                _nameBox.Text = picked.Name;
-        };
-
-        var urlControls = new Grid();
-        urlControls.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        urlControls.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        Grid.SetColumn(urlBox, 0);
-        Grid.SetColumn(bookmarkButton, 1);
-        urlControls.Children.Add(urlBox);
-        urlControls.Children.Add(bookmarkButton);
-
-        // Still the first field of the form, because it is the one a launcher cannot work without
-        // and the one a new launcher is opened to fill in. It edits the first bookmark; the list
-        // below shows the same entry marked as the address, so neither is a second source of truth.
-        var urlRow = BuildStackedRow("Web Address", "The page this launcher opens", urlControls);
-        var bookmarksRow = BuildBookmarksRow(launcher);
-
-        // ── Panel size ──────────────────────────────────────────
-        var widthBox = new NumberBox
-        {
-            Value = launcher.ResolvedWebFlyoutWidth,
-            Minimum = Launcher.MinWebFlyoutWidth,
-            Maximum = Launcher.MaxWebFlyoutDimension,
-            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
-            Width = 120,
-        };
-        var heightBox = new NumberBox
-        {
-            Value = launcher.ResolvedWebFlyoutHeight,
-            Minimum = Launcher.MinWebFlyoutHeight,
-            Maximum = Launcher.MaxWebFlyoutDimension,
-            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
-            Width = 120,
-        };
-
-        var sizeControls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
-        sizeControls.Children.Add(widthBox);
-        sizeControls.Children.Add(new TextBlock { Text = "×", VerticalAlignment = VerticalAlignment.Center, Opacity = 0.5 });
-        sizeControls.Children.Add(heightBox);
-
-        widthBox.ValueChanged += (_, _) =>
-        {
-            if (double.IsNaN(widthBox.Value)) return;
-            launcher.WebFlyoutWidth = (int)widthBox.Value;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
-        };
-        heightBox.ValueChanged += (_, _) =>
-        {
-            if (double.IsNaN(heightBox.Value)) return;
-            launcher.WebFlyoutHeight = (int)heightBox.Value;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
-        };
-
-        var sizeRow = BuildRow("Flyout Size", "Width × height of the web flyout, in pixels", sizeControls);
-
-        // ── Zoom ────────────────────────────────────────────────
-        var zoomCombo = new ComboBox { MinWidth = 100 };
-
-        // The launcher's own level is folded into the ladder when it is not already a rung, so the
-        // combo always has the current value to select. It used to fall back to the first entry
-        // instead, which read as 50%, in the one place a user comes to put an odd zoom back.
-        int currentZoom = launcher.ResolvedWebZoomPercent;
-        int[] zoomLevels = Launcher.WebZoomLevelsIncluding(currentZoom);
-        foreach (int zoom in zoomLevels)
-            zoomCombo.Items.Add(new ComboBoxItem { Content = $"{zoom}%", Tag = zoom });
-        zoomCombo.SelectedIndex = Array.IndexOf(zoomLevels, currentZoom);
-        zoomCombo.SelectionChanged += (_, _) =>
-        {
-            if (zoomCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int zoom) return;
-            launcher.WebZoomPercent = zoom;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
-        };
-        var zoomRow = BuildRow("Zoom", "Page zoom inside the flyout, also on the flyout's “…” menu", zoomCombo);
-
-        // ── Hidden policy ───────────────────────────────────────
-        var policyCombo = new ComboBox { MinWidth = 200 };
-        var policies = new[]
-        {
-            (Label: "Unload when idle", Value: WebHiddenPolicies.UnloadWhenIdle),
-            (Label: "Stay loaded (suspended)", Value: WebHiddenPolicies.Suspend),
-            (Label: "Keep running", Value: WebHiddenPolicies.KeepRunning),
-        };
-        foreach (var policy in policies)
-            policyCombo.Items.Add(new ComboBoxItem { Content = policy.Label, Tag = policy.Value });
-        policyCombo.SelectedIndex = Array.FindIndex(policies, p => p.Value == WebHiddenPolicies.Normalize(launcher.WebHiddenPolicy));
-
-        var policyRow = BuildRow(
-            "When Hidden",
-            "Unloading frees all memory and stops video and polling; staying loaded reopens instantly",
-            policyCombo);
-
-        // ── Idle delay ──────────────────────────────────────────
-        var idleBox = new NumberBox
-        {
-            Value = launcher.ResolvedWebIdleUnloadMinutes,
-            Minimum = 1,
-            Maximum = 720,
-            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
-            Width = 120,
-        };
-        idleBox.ValueChanged += (_, _) =>
-        {
-            if (double.IsNaN(idleBox.Value)) return;
-            launcher.WebIdleUnloadMinutes = (int)idleBox.Value;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        var idleRow = BuildRow("Unload After", "Minutes the flyout may sit closed before the page is dropped", idleBox);
-
-        // Gated on the kind as well as the policy: the caller shows every web row at once, and
-        // this row is the one exception that must stay hidden even then.
-        void UpdateIdleVisibility()
-        {
-            idleRow.Visibility = launcher.IsWebLauncher &&
-                WebHiddenPolicies.Normalize(launcher.WebHiddenPolicy) == WebHiddenPolicies.UnloadWhenIdle
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-        }
-
-        policyCombo.SelectionChanged += (_, _) =>
-        {
-            if (policyCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int policy) return;
-            launcher.WebHiddenPolicy = policy;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            UpdateIdleVisibility();
-        };
-        UpdateIdleVisibility();
-
-        // ── Reload on show ──────────────────────────────────────
-        var reloadToggle = new ToggleSwitch { IsOn = launcher.WebReloadOnShow, OnContent = "", OffContent = "", MinWidth = 0 };
-        reloadToggle.Toggled += (_, _) =>
-        {
-            launcher.WebReloadOnShow = reloadToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        var reloadRow = BuildRow("Reload On Open", "Fetch the page again each time, instead of showing it as you left it", reloadToggle);
-
-        // ── Links in the real browser ───────────────────────────
-        // Its only home. It used to live in the flyout's More menu and nowhere else, which made it
-        // unfindable for anyone who had not opened that menu — and it is not a per-moment decision
-        // in the way the menu's other items are: how this launcher treats links is a property of
-        // the launcher, settled once.
-        //
-        // Named for what turning it on does rather than for the default it switches off, because
-        // "open links in tabs" is already what the launcher does.
-        var linksToggle = new ToggleSwitch { IsOn = launcher.WebLinksInBrowser, OnContent = "", OffContent = "", MinWidth = 0 };
-        linksToggle.Toggled += (_, _) =>
-        {
-            launcher.WebLinksInBrowser = linksToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        var linksRow = BuildRow("Open Links In Browser",
-            "Hand a link that opens a new window to your default browser, instead of opening it in a tab here",
-            linksToggle);
-
-        // ── Address bar ─────────────────────────────────────────
-        var addressToggle = new ToggleSwitch { IsOn = launcher.WebShowAddressBar, OnContent = "", OffContent = "", MinWidth = 0 };
-        addressToggle.Toggled += (_, _) =>
-        {
-            launcher.WebShowAddressBar = addressToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
-        };
-        // Not in Advanced: it is one of the few things that changes what the flyout *is* — a page
-        // versus a small browser — rather than tuning one that already works, and it is the setting
-        // the star for bookmarking the current page lives in.
-        var addressRow = BuildRow("Address Bar",
-            "Show the page address under the header, with a star for bookmarking it",
-            addressToggle);
-
-        // ── Tab bar ─────────────────────────────────────────────
-        // Beside the address bar, because they are the same question asked twice: which rows of
-        // chrome does this launcher keep. It was reachable only from the flyout's "…" menu, which
-        // is the wrong place to be the *only* place — the menu is for changing your mind while
-        // looking at a launcher, not for finding out that an option exists.
-        //
-        // **Listed before the address bar**, in both the returned rows and the More menu,
-        // because that is the order the two strips appear in on the flyout: header, then tabs,
-        // then the address of whichever tab they chose. Two toggles for two adjacent rows read
-        // as mislabelled when the list disagrees with what is on screen.
-        var tabBarToggle = new ToggleSwitch { IsOn = launcher.WebAlwaysShowTabs, OnContent = "", OffContent = "", MinWidth = 0 };
-        tabBarToggle.Toggled += (_, _) =>
-        {
-            launcher.WebAlwaysShowTabs = tabBarToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
-        };
-        var tabBarRow = BuildRow("Tab Bar",
-            "Keep the tab strip on screen with one page open. Off, it appears as soon as there is a second",
-            tabBarToggle);
-
-        // ── Keep open on focus loss ─────────────────────────────
-        var pinToggle = new ToggleSwitch { IsOn = launcher.WebPinFlyout, OnContent = "", OffContent = "", MinWidth = 0 };
-        pinToggle.Toggled += (_, _) =>
-        {
-            launcher.WebPinFlyout = pinToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        var pinRow = BuildRow("Pin Open", "Stay on screen when you click elsewhere, instead of dismissing like a flyout", pinToggle);
-
-        // ── Regular window ──────────────────────────────────────
-        var regularToggle = new ToggleSwitch { IsOn = launcher.WebRegularWindow, OnContent = "", OffContent = "", MinWidth = 0 };
-        regularToggle.Toggled += (_, _) =>
-        {
-            launcher.WebRegularWindow = regularToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        // Names the window kind rather than any one symptom of it. "Show in taskbar" would be the
-        // obvious label and would be a promise the shell cannot keep: the taskbar button and the
-        // Alt-Tab entry are the same switch, so a launcher cannot have one without the other.
-        var regularRow = BuildRow("Regular Window",
-            "Behave like an ordinary app window: taskbar button, Alt-Tab entry, not always on top, and stays open until closed",
-            regularToggle);
-
-        // ── What the taskbar button's click does ────────────────
-        var clickCombo = new ComboBox { MinWidth = 200 };
-        clickCombo.Items.Add(new ComboBoxItem { Content = "Minimize it", Tag = false });
-        clickCombo.Items.Add(new ComboBoxItem { Content = "Close it", Tag = true });
-        clickCombo.SelectedIndex = launcher.WebTaskbarClickCloses ? 1 : 0;
-        clickCombo.SelectionChanged += (_, _) =>
-        {
-            if (clickCombo.SelectedItem is not ComboBoxItem { Tag: bool closes }) return;
-            launcher.WebTaskbarClickCloses = closes;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        var clickRow = BuildRow("Taskbar Click",
-            "What clicking this launcher's taskbar button does while it is open",
-            clickCombo);
-
-        // ── Close on focus loss, as a window ────────────────────
-        var autoHideToggle = new ToggleSwitch { IsOn = launcher.WebWindowAutoHide, OnContent = "", OffContent = "", MinWidth = 0 };
-        autoHideToggle.Toggled += (_, _) =>
-        {
-            launcher.WebWindowAutoHide = autoHideToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        var autoHideRow = BuildRow("Close On Focus Loss",
-            "Dismiss like a flyout when you click elsewhere, while keeping the taskbar button and Alt-Tab entry",
-            autoHideToggle);
-
-        // Both only mean anything with Regular Window on — a flyout has no taskbar button to click,
-        // and already dismisses on focus loss unless pinned. They follow that toggle rather than
-        // sitting there inert. Shown and hidden rather than disabled: a greyed row still reads as a
-        // setting you are missing out on.
-        void UpdateWindowRowVisibility()
-        {
-            var visibility = launcher.WebRegularWindow ? Visibility.Visible : Visibility.Collapsed;
-            clickRow.Visibility = visibility;
-            autoHideRow.Visibility = visibility;
-        }
-        regularToggle.Toggled += (_, _) => UpdateWindowRowVisibility();
-        UpdateWindowRowVisibility();
-
-        // ── Opening position ────────────────────────────────────
-        var anchorCombo = new ComboBox { MinWidth = 200 };
-        (string Label, int Value)[] anchors =
-        [
-            ("Near its tray icon", WebAnchors.Tray),
-            // Second, beside the other answer that is not a fixed spot, and named for the gesture
-            // that sets it — so the list says how to change it as well as what it does.
-            ("Where you last dragged it", WebAnchors.LastPosition),
-            ("Top left", WebAnchors.TopLeft),
-            ("Top centre", WebAnchors.TopCenter),
-            ("Top right", WebAnchors.TopRight),
-            ("Left", WebAnchors.Left),
-            ("Centre", WebAnchors.Center),
-            ("Right", WebAnchors.Right),
-            ("Bottom left", WebAnchors.BottomLeft),
-            ("Bottom centre", WebAnchors.BottomCenter),
-            ("Bottom right", WebAnchors.BottomRight),
-        ];
-        foreach (var a in anchors)
-            anchorCombo.Items.Add(new ComboBoxItem { Content = a.Label, Tag = a.Value });
-        anchorCombo.SelectedIndex = Array.FindIndex(anchors, a => a.Value == WebAnchors.Normalize(launcher.WebAnchor));
-
-        var anchorSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
-
-        void UpdateAnchorText() => anchorSubtitle.Text =
-            WebAnchors.Normalize(launcher.WebAnchor) == WebAnchors.LastPosition
-                ? "Drag the flyout anywhere and it opens there next time"
-                : "Where it opens on the screen holding its tray icon. A move lasts until you close it";
-
-        anchorCombo.SelectionChanged += (_, _) =>
-        {
-            if (anchorCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int anchor) return;
-            if (anchor == WebAnchors.Normalize(launcher.WebAnchor)) return;
-
-            launcher.WebAnchor = anchor;
-
-            // Any answer but "where you last dragged it" forgets where that was — otherwise picking
-            // a corner would leave the flyout opening exactly where it did before, and switching
-            // back would restore a position the user had stopped using.
-            if (anchor != WebAnchors.LastPosition) launcher.WebFlyoutPosition = "";
-
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            UpdateAnchorText();
-        };
-
-        var anchorRow = BuildRow("Opens At", anchorSubtitle, anchorCombo);
-
-        // ── Remember size ───────────────────────────────────────
-        // Stored inverted (WebLockSize) because this one is ON by default, and a bool defaulting
-        // to true cannot be turned off under WhenWritingDefault.
-        var rememberSizeToggle = new ToggleSwitch { IsOn = !launcher.WebLockSize, OnContent = "", OffContent = "", MinWidth = 0 };
-        rememberSizeToggle.Toggled += (_, _) =>
-        {
-            launcher.WebLockSize = !rememberSizeToggle.IsOn;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-        };
-        var rememberSizeRow = BuildRow("Remember Size Changes",
-            "Keep this flyout at the size you drag it to; otherwise it reopens at the size above",
-            rememberSizeToggle);
-
-        // Set once the password row below exists; the profile combo above has to re-read it, and
-        // that handler is written before the row it refers to.
-        Action? refreshPasswordRow = null;
-
-        // ── Profile ─────────────────────────────────────────────
-        // A combo rather than a toggle: "shared with other launchers" is a statement about where
-        // the sign-ins live, and naming both ends of it beats an unlabelled switch.
-        //
-        // Shared leads, being what a new launcher gets. The order is display only — the value is
-        // read off each item's Tag, never off the index.
-        var profileCombo = new ComboBox { MinWidth = 200 };
-        profileCombo.Items.Add(new ComboBoxItem { Content = "Shared with other launchers", Tag = true });
-        profileCombo.Items.Add(new ComboBoxItem { Content = "Private to this launcher", Tag = false });
-        profileCombo.SelectedIndex = launcher.WebSharedProfile ? 0 : 1;
-
-        var clearSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
-
-        void UpdateProfileText() => clearSubtitle.Text = launcher.WebSharedProfile
-            ? "Signs out of the shared profile — every launcher using it"
-            : "Signs out of the page and clears its cookies and cache";
-
-        profileCombo.SelectionChanged += (_, _) =>
-        {
-            if (profileCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not bool shared) return;
-            if (shared == launcher.WebSharedProfile) return;
-
-            launcher.WebSharedProfile = shared;
-            SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-
-            // The folder is bound when the browser is created, so the running one is still on the
-            // old profile until it is dropped.
-            WebFlyoutWindow.ReloadProfile(launcher.Id);
-            UpdateProfileText();
-
-            // The profile changed, so both the wording and the value belong to a different profile
-            // now — a launcher moved onto the shared one adopts whatever the shared one is set to.
-            // Through a hook, because that row is built below this handler.
-            refreshPasswordRow?.Invoke();
-        };
-
-        var profileRow = BuildRow("Sign-ins",
-            "Pooled with every launcher set to share, so one sign-in covers them all. Private keeps this "
-            + "launcher's cookies to itself — for a second account on a site another launcher already uses",
-            profileCombo);
-
-        // ── Saved logins ────────────────────────────────────────
-        // Beside Sign-ins deliberately: both are properties of the *profile*, not the launcher, so a
-        // launcher on the shared profile is setting this for every launcher on it. Saved passwords
-        // live in the profile, so the switch that governs them has to be scoped the same way.
-        var passwordToggle = new ToggleSwitch
-        {
-            IsOn = WebFlyoutWindow.UsesBuiltInPasswordManager(launcher),
-            OnContent = "",
-            OffContent = "",
-            MinWidth = 0,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-
-        var passwordSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
-
-        void UpdatePasswordText() => passwordSubtitle.Text = launcher.WebSharedProfile
-            ? "Offer to save logins and fill them in, for every launcher on the shared profile. Turn off "
-              + "when a password manager extension is doing it, so the two do not compete"
-            : "Offer to save logins and fill them in. Turn off when a password manager extension is "
-              + "doing it, so the two do not compete";
-
-        passwordToggle.Toggled += (_, _) =>
-        {
-            WebFlyoutWindow.SetBuiltInPasswordManager(launcher, passwordToggle.IsOn);
-
-            // The setting is read when a browser starts, so a launcher already open keeps the old
-            // behaviour until it is reopened. Dropping its browser is what makes that immediate.
-            WebFlyoutWindow.ReloadProfile(launcher.Id);
-        };
-
-        UpdatePasswordText();
-        var passwordRow = BuildRow("Save Logins", passwordSubtitle, passwordToggle);
-
-        refreshPasswordRow = () =>
-        {
-            UpdatePasswordText();
-            passwordToggle.IsOn = WebFlyoutWindow.UsesBuiltInPasswordManager(launcher);
-        };
-
-        var forgetLoginsButton = new Button { Content = "Forget" };
-        forgetLoginsButton.Click += async (_, _) =>
-        {
-            forgetLoginsButton.IsEnabled = false;
-
-            // All of them, because WebView2 exposes no way to enumerate saved passwords — only to
-            // clear the category. The button is named for what it can actually do.
-            bool cleared = await WebFlyoutWindow.ClearSavedPasswordsAsync(launcher);
-            forgetLoginsButton.Content = cleared ? "Forgotten" : "Forget";
-
-            if (!cleared)
-                await ShowErrorAsync("Open this launcher first — its saved logins can only be cleared while its browser is running.");
-
-            forgetLoginsButton.IsEnabled = true;
-        };
-
-        var forgetLoginsRow = BuildRow("Saved Logins",
-            "Forget every login and form entry saved for this profile. Logins kept by a password "
-            + "manager extension are not affected",
-            forgetLoginsButton);
-
-        // ── Sign-out / clear data ───────────────────────────────
-        var clearButton = new Button { Content = "Clear" };
-        clearButton.Click += async (_, _) =>
-        {
-            clearButton.IsEnabled = false;
-            try
-            {
-                await WebFlyoutWindow.ClearBrowsingDataAsync(launcher);
-                clearButton.Content = "Cleared";
-            }
-            catch (Exception ex)
-            {
-                NLog.LogManager.GetCurrentClassLogger().Warn(ex, "Clearing web launcher data failed");
-                await ShowErrorAsync("Could not clear this launcher's browsing data. Close its panel and try again.");
-                clearButton.Content = "Clear";
-            }
-            finally
-            {
-                clearButton.IsEnabled = true;
-            }
-        };
-        UpdateProfileText();
-        var clearRow = BuildRow("Browsing Data", clearSubtitle, clearButton);
-
-        // ── Reset stored answers ────────────────────────────────
-        // Without this, an accidental Block could only be undone by clearing the whole profile,
-        // which also signs the launcher out.
-        var permissionsSubtitle = new TextBlock
-        {
-            Text = "Forget what you have allowed and blocked, so this launcher's pages ask again",
-            FontSize = 12,
-            Opacity = 0.5,
-            TextWrapping = TextWrapping.Wrap,
-        };
-        var resetPermissionsButton = new Button { Content = "Reset" };
-        resetPermissionsButton.Click += async (_, _) =>
-        {
-            resetPermissionsButton.IsEnabled = false;
-            try
-            {
-                // The stored answers live in the WebView2 profile, which is only reachable through
-                // a running browser — so a launcher that is not loaded has this applied when it
-                // next opens, and is told so rather than being shown a false "Reset".
-                bool applied = await WebFlyoutWindow.ResetSitePermissionsAsync(launcher.Id);
-                resetPermissionsButton.Content = "Reset";
-                permissionsSubtitle.Text = applied
-                    ? "Cleared. This launcher's pages will ask again."
-                    : "Will be cleared the next time this launcher opens.";
-            }
-            finally
-            {
-                resetPermissionsButton.IsEnabled = true;
-            }
-        };
-        var resetPermissionsRow = BuildRow("Site Permissions", permissionsSubtitle, resetPermissionsButton);
-
-        // ── Advanced ────────────────────────────────────────────
-        var advancedPanel = new StackPanel { Spacing = 12 };
-        // Opens At / Remember Position / Remember Size are deliberately *not* here — they sit with
-        // Flyout Size in the main form. They answer the same question it does ("where and how big
-        // does this open?"), they are the ones a user reaches for after dragging a flyout and
-        // finding the change did not stick, and Opens At's subtitle describes its interaction with
-        // Remember Position, which would read oddly with the two separated by the Advanced fold.
-        foreach (var row in new[] { zoomRow, policyRow, idleRow, reloadRow, linksRow, pinRow, regularRow, autoHideRow, clickRow, resetPermissionsRow, profileRow, passwordRow, forgetLoginsRow, clearRow })
-            advancedPanel.Children.Add(row);
-
-        var advanced = new Expander
-        {
-            Header = "Advanced",
-            IsExpanded = false,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            Content = advancedPanel,
-        };
-
-        // Deliberately *not* resizing the window as this expands. Growing the window to fit
-        // read as a jolt — the window jumped a beat after the expander had already animated —
-        // and the form is already inside a ScrollViewer with the button row pinned below it,
-        // so revealing the section just scrolls. Nothing to chase, nothing to animate.
-        //
-        // The scroll does have to be *made*, though: this section is last in the dialog by
-        // design, so expanding it always happens at the bottom of the scroller and everything
-        // it reveals lands below the fold. See ExpanderReveal.
-        ExpanderReveal.Attach(advanced);
-
-        void Refresh()
-        {
-            UpdateProfileText();
-            UpdateAnchorText();
-            urlBox.Text = launcher.WebAddress;
-            widthBox.Value = launcher.ResolvedWebFlyoutWidth;
-            heightBox.Value = launcher.ResolvedWebFlyoutHeight;
-            UpdateIdleVisibility();
-        }
-
-        // Ordered as the strips appear on the flyout: header, tabs, address, then the bar along
-        // the bottom. Two toggles for two rows of chrome read as mislabelled when the list disagrees
-        // with the window - the same reasoning that put tabs before address.
-        return ([urlRow],
-            [tabBarRow, addressRow, bookmarksRow, BuildBookmarkIconsOnlyRow(launcher),
-             sizeRow, anchorRow, rememberSizeRow],
-            advanced, Refresh);
-    }
-
     private (Button Button, Grid CustomRow, Action Refresh) BuildIconChooser(Launcher launcher)
     {
         // ── Preview elements for the button content ──
         var previewIcon = new FontIcon { FontSize = 18, VerticalAlignment = VerticalAlignment.Center };
         var previewImage = new Image { Width = 20, Height = 20, VerticalAlignment = VerticalAlignment.Center };
-        var previewEmoji = new TextBlock { FontSize = 18, VerticalAlignment = VerticalAlignment.Center };
+        var previewEmoji = new TextBlock
+        {
+            FontSize = 18, FontFamily = new FontFamily("Segoe UI Emoji"),
+            IsColorFontEnabled = true, VerticalAlignment = VerticalAlignment.Center
+        };
         var previewLabel = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
         var chevron = new FontIcon { Glyph = "", FontSize = 10, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
 
@@ -1521,12 +905,17 @@ public sealed class LauncherSettingsWindow : Window
         buttonContent.Children.Add(chevron);
 
         // ── Custom icon path row ──
-        var customIconRow = BuildCustomIconRow(launcher);
+        // Browse is invoked only after construction; initialize its captured preview state
+        // before wiring the callback so definite assignment also covers that call chain.
+        Grid customIconRow = null!;
+        Action refreshCustomPath = static () => { };
+        (customIconRow, refreshCustomPath) = BuildCustomIconRow(launcher, BrowseAsync);
         customIconRow.Visibility = launcher.TrayIconMode == TrayIconModes.Custom ? Visibility.Visible : Visibility.Collapsed;
 
         void UpdatePreview()
         {
             string mode = launcher.TrayIconMode;
+            refreshCustomPath();
             previewIcon.Visibility = Visibility.Collapsed;
             previewImage.Visibility = Visibility.Collapsed;
             previewEmoji.Visibility = Visibility.Collapsed;
@@ -1566,8 +955,20 @@ public sealed class LauncherSettingsWindow : Window
             }
             else if (mode == TrayIconModes.Custom)
             {
-                previewIcon.Glyph = "\uE8B9";
-                previewIcon.Visibility = Visibility.Visible;
+                if (File.Exists(launcher.CustomTrayIconPath))
+                {
+                    previewImage.Source = new BitmapImage
+                    {
+                        CreateOptions = BitmapCreateOptions.IgnoreImageCache,
+                        UriSource = new Uri(launcher.CustomTrayIconPath)
+                    };
+                    previewImage.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    previewIcon.Glyph = "\uE8B9";
+                    previewIcon.Visibility = Visibility.Visible;
+                }
                 previewLabel.Text = "Custom";
             }
             else if (TrayIconModes.IsGlyphMode(mode))
@@ -1653,25 +1054,43 @@ public sealed class LauncherSettingsWindow : Window
 
         var button = new Button { Content = buttonContent, Padding = new Thickness(10, 6, 10, 6) };
 
-        // ── Build the gallery flyout ──
-        var flyout = IconGallery.CreateLauncherIconFlyout(
-            currentMode: launcher.TrayIconMode,
-            onSelected: result =>
+        // Both Browse entry points and gallery selections use the same commit path.
+        async Task ApplySelectionAsync(IconGallery.IconResult result)
+        {
+            try
             {
-                if (result.Glyph != null)
+                if (result.UsePageIcon)
+                {
+                    if (!launcher.IsWebLauncher || result.PageIconPreview is not { } pagePreview ||
+                        !string.Equals(launcher.WebAddress, pagePreview.Url, StringComparison.Ordinal))
+                    {
+                        await ShowErrorAsync((string)Application.Current.Resources["PageIconAddressChanged"]);
+                        return;
+                    }
+                    // Keep the managed favicon path itself: copying it into a custom file
+                    // would stop the page from updating its own icon on later visits.
+                    launcher.CustomTrayIconPath = WebFlyoutWindow.StorePageIconPreview(launcher.Id, pagePreview);
+                    launcher.TrayIconMode = string.IsNullOrEmpty(launcher.CustomTrayIconPath)
+                        ? TrayIconModes.Composite
+                        : TrayIconModes.Custom;
+                }
+                else if (result.Glyph != null)
                 {
                     launcher.TrayIconMode = TrayIconModes.ToGlyphMode(result.Glyph, result.Color);
                     launcher.CustomTrayIconPath = "";
                 }
                 else if (result.ImagePath != null)
                 {
-                    // Copy to AppData as custom tray icon
-                    string destPath = Path.Combine(MainWindow.GetPhysicalAppDataDir(),
+                    string destination = Path.Combine(MainWindow.GetPhysicalAppDataDir(),
                         $"custom-tray-icon-{launcher.Id}{Path.GetExtension(result.ImagePath)}");
-                    Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-                    File.Copy(result.ImagePath, destPath, overwrite: true);
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                    // Re-confirming an existing custom image must not copy the file onto itself.
+                    if (!string.Equals(Path.GetFullPath(result.ImagePath), Path.GetFullPath(destination), StringComparison.OrdinalIgnoreCase))
+                    {
+                        File.Copy(result.ImagePath, destination, overwrite: true);
+                    }
+                    launcher.CustomTrayIconPath = destination;
                     launcher.TrayIconMode = TrayIconModes.Custom;
-                    launcher.CustomTrayIconPath = destPath;
                 }
                 else if (result.PresetMode != null)
                 {
@@ -1679,34 +1098,48 @@ public sealed class LauncherSettingsWindow : Window
                     launcher.CustomTrayIconPath = "";
                 }
                 SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
+                Services.AutoSyncService.NotifyLaunchersChanged();
                 UpdatePreview();
-            },
-            onBrowseRequested: async () =>
+            }
+            catch (Exception)
             {
-                var picker = new global::Windows.Storage.Pickers.FileOpenPicker();
-                picker.FileTypeFilter.Add(".ico");
-                picker.FileTypeFilter.Add(".png");
-                picker.FileTypeFilter.Add(".jpg");
-                picker.FileTypeFilter.Add(".jpeg");
-                picker.FileTypeFilter.Add(".bmp");
-                WinRT.Interop.InitializeWithWindow.Initialize(picker,
-                    _hwnd);
-                var file = await picker.PickSingleFileAsync();
-                if (file != null)
+                await ShowErrorAsync((string)Application.Current.Resources["IconSelectionFailed"]);
+            }
+        }
+
+        async Task BrowseAsync()
+        {
+            try
+            {
+                string? path = await IconGallery.PickImageAsync(_hwnd);
+                if (path != null)
                 {
-                    string destPath = Path.Combine(MainWindow.GetPhysicalAppDataDir(),
-                        $"custom-tray-icon-{launcher.Id}{Path.GetExtension(file.Path)}");
-                    Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-                    File.Copy(file.Path, destPath, overwrite: true);
-                    launcher.TrayIconMode = TrayIconModes.Custom;
-                    launcher.CustomTrayIconPath = destPath;
-                    SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-                    UpdatePreview();
+                    await ApplySelectionAsync(new IconGallery.IconResult(null, path));
                 }
             }
-        );
+            catch (Exception)
+            {
+                await ShowErrorAsync((string)Application.Current.Resources["IconSelectionFailed"]);
+            }
+        }
+
+        var flyout = IconGallery.CreateLauncherIconFlyout(
+            currentMode: launcher.TrayIconMode,
+            onSelected: async result => await ApplySelectionAsync(result),
+            onBrowseRequested: async () => await BrowseAsync(),
+            ownerHwnd: _hwnd,
+            getCurrentSelection: () => launcher.IsWebLauncher && WebFlyoutWindow.MayAdoptPageIcon(launcher)
+                ? new IconGallery.IconResult(null, null, UsePageIcon: true)
+                : IconGallery.LauncherSelection(launcher.TrayIconMode, launcher.CustomTrayIconPath),
+            canUsePageIcon: () => launcher.IsWebLauncher,
+            getPageIconPreview: () =>
+            {
+                string url = launcher.WebAddress;
+                bool IsCurrent() => launcher.IsWebLauncher && string.Equals(launcher.WebAddress, url, StringComparison.Ordinal);
+                return new PageIconPreviewSource(url, WebFlyoutWindow.GetPageIconPath(launcher.Id),
+                    token => WebFlyoutWindow.FetchPageIconPreviewAsync(launcher.Id, url, IsCurrent, token),
+                    IsCurrent);
+            });
 
         button.Flyout = flyout;
         UpdatePreview();
@@ -1714,7 +1147,8 @@ public sealed class LauncherSettingsWindow : Window
         return (button, customIconRow, UpdatePreview);
     }
 
-    private Grid BuildCustomIconRow(Launcher launcher)
+    /// <summary>Shows the current custom file and reuses the gallery's Browse action.</summary>
+    private (Grid Row, Action Refresh) BuildCustomIconRow(Launcher launcher, Func<Task> browseAsync)
     {
         var pathText = new TextBlock
         {
@@ -1728,24 +1162,14 @@ public sealed class LauncherSettingsWindow : Window
         };
 
         var browseBtn = new Button { Content = "Browse..." };
-        browseBtn.Click += async (s, e) =>
+        browseBtn.Click += async (_, _) => await browseAsync();
+
+        void RefreshPath()
         {
-            var picker = new global::Windows.Storage.Pickers.FileOpenPicker();
-            picker.FileTypeFilter.Add(".ico");
-            picker.FileTypeFilter.Add(".png");
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, _hwnd);
-            var file = await picker.PickSingleFileAsync();
-            if (file != null)
-            {
-                string destPath = Path.Combine(MainWindow.GetPhysicalAppDataDir(), $"custom-tray-icon-{launcher.Id}{Path.GetExtension(file.Path)}");
-                Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-                File.Copy(file.Path, destPath, overwrite: true);
-                launcher.CustomTrayIconPath = destPath;
-                pathText.Text = Path.GetFileName(destPath);
-                SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
-            }
-        };
+            pathText.Text = string.IsNullOrEmpty(launcher.CustomTrayIconPath)
+                ? "No file selected"
+                : Path.GetFileName(launcher.CustomTrayIconPath);
+        }
 
         var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -1758,97 +1182,7 @@ public sealed class LauncherSettingsWindow : Window
         Grid.SetColumn(browseBtn, 1);
         row.Children.Add(label);
         row.Children.Add(browseBtn);
-        return row;
-    }
-
-    /// <remarks>
-    /// A pinned icon is baked once: Windows never re-reads it, so anything not resolved by the
-    /// time this runs stays wrong until the user unpins and pins again. The two deferred fields
-    /// are therefore committed first, and a site-icon fetch they start is waited for — a web
-    /// launcher pinned the moment its address was typed used to pin the generic app icon.
-    /// </remarks>
-    private async void PinToTaskbar_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher) return;
-
-        CommitName();
-        CommitWebUrl();
-        await WaitForIconAdoptionAsync(sender as Button);
-
-        // Ensure the per-launcher icon .ico exists so the companion exe's
-        // RelaunchIconResource can reference it.
-        MainWindow.EnsureLauncherIconSaved(launcher);
-
-        string appDataDir = MainWindow.GetPhysicalAppDataDir();
-        string baseIco = Path.Combine(appDataDir, $"app-icon-{launcher.Id}.ico");
-        string? pinnedIconPath = null;
-        if (File.Exists(baseIco))
-        {
-            pinnedIconPath = Path.Combine(appDataDir, $"app-icon-{launcher.Id}-pin{Environment.TickCount64}.ico");
-            File.Copy(baseIco, pinnedIconPath, overwrite: true);
-        }
-
-        // Launch the companion exe in --pin mode with the launcher's ID
-        string flyoutExe = MainWindow.GetFlyoutCompanionPath();
-
-        if (!File.Exists(flyoutExe))
-        {
-            await ShowErrorAsync("The companion flyout exe was not found. Build the project first.");
-            return;
-        }
-
-        string iconArg = pinnedIconPath != null ? $" --icon \"{pinnedIconPath}\"" : "";
-
-        // Mint the pin's AUMID here rather than letting the companion do it, and record it on the
-        // launcher. It is the identity the taskbar groups the pinned button under, and a window
-        // that wants to light that button has to carry the identical string — so something has to
-        // remember it, and only this side can.
-        //
-        // The app used to read it back out of the taskbar's own pin store
-        // (HKCU\...\Explorer\Taskband). That works for some pins and not others: measured on a
-        // machine with eleven Little Launcher pins, those blobs held the AUMIDs of eight of them,
-        // and WhatsApp, Messenger and Web Launcher appeared in neither. Re-pinning did not add
-        // them. A window whose AUMID does not match its pin does not fail quietly — it raises a
-        // *second* taskbar button beside the pin, which is how that was noticed.
-        //
-        // Still stamped with a tick, for the reason the companion did it: the AUMID must be unique
-        // per pin attempt to bust Windows' per-AUMID icon cache.
-        launcher.PinAumid = $"LittleLauncher.Launcher.{launcher.Id}.{Environment.TickCount64}";
-        SettingsManager.SaveSettings();
-        Services.AutoSyncService.NotifyLaunchersChanged();
-
-        // Minimize the settings window while the companion exe is running.
-        // WinUI 3's ContentDialog aggressively reclaims focus, which can
-        // dismiss the taskbar right-click context menu the user needs to
-        // select "Pin to taskbar".
-        
-        IntPtr settingsHwnd = _hwnd;
-        if (settingsHwnd != IntPtr.Zero)
-            NativeMethods.ShowWindow(settingsHwnd, 6 /* SW_MINIMIZE */);
-
-        // Capture the dispatcher before leaving the UI thread
-        var dispatcher = DispatcherQueue;
-
-        var proc = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = flyoutExe,
-            Arguments = $"--pin --launcher {launcher.Id} --name \"{launcher.Name}\" --aumid {launcher.PinAumid}{iconArg}",
-            UseShellExecute = false,
-        });
-
-        // Restore the settings window after the companion exe exits (user clicked OK).
-        if (proc != null && settingsHwnd != IntPtr.Zero)
-        {
-            _ = Task.Run(async () =>
-            {
-                await proc.WaitForExitAsync();
-                dispatcher.TryEnqueue(() =>
-                {
-                    NativeMethods.ShowWindow(settingsHwnd, 9 /* SW_RESTORE */);
-                    NativeMethods.SetForegroundWindow(settingsHwnd);
-                });
-            });
-        }
+        return (row, RefreshPath);
     }
 
     /// <summary>

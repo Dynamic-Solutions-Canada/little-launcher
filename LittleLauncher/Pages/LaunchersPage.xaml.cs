@@ -7,6 +7,7 @@ using LittleLauncher.Models;
 using LittleLauncher.Services;
 using LittleLauncher.Windows;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -81,56 +82,94 @@ public sealed partial class LaunchersPage : Page
         return count;
     }
 
-    private Border BuildLauncherCard(Launcher launcher)
+    /// <summary>
+    /// Builds a launcher-card drill-in button with a label, subtitle and matching chevron.
+    /// The optional action name supplies a descriptive tooltip and accessibility label.
+    /// </summary>
+    private static Button CreateLauncherActionButton(string title, string subtitle, string? actionName = null)
     {
-        // ── Items row (clickable drill-in with chevron) ─────────────
-        // A web launcher has no items, so the same row reports its address instead and drills
-        // in to the one place that can change it.
-        int itemCount = CountLauncherItems(launcher.Items);
-        bool isWeb = launcher.IsWebLauncher;
-
-        var itemsLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        itemsLabel.Children.Add(new TextBlock { Text = isWeb ? "Web Page" : "Items", FontSize = 14 });
-        itemsLabel.Children.Add(new TextBlock
+        var label = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        label.Children.Add(new TextBlock { Text = title, FontSize = 14 });
+        label.Children.Add(new TextBlock
         {
-            Text = isWeb
-                ? (string.IsNullOrWhiteSpace(launcher.WebAddress) ? "No web address set" : launcher.WebAddress)
-                : $"{itemCount} item{(itemCount == 1 ? "" : "s")}",
+            Text = subtitle,
             FontSize = 12,
             Opacity = 0.5,
             TextTrimming = TextTrimming.CharacterEllipsis,
         });
-
         var chevron = new FontIcon
         {
-            Glyph = "",
+            Glyph = "\uE76C",
             FontSize = 12,
             Opacity = 0.6,
             VerticalAlignment = VerticalAlignment.Center,
         };
-
-        var itemsRowInner = new Grid();
-        itemsRowInner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        itemsRowInner.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        Grid.SetColumn(itemsLabel, 0);
+        var content = new Grid();
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        content.Children.Add(label);
         Grid.SetColumn(chevron, 1);
-        itemsRowInner.Children.Add(itemsLabel);
-        itemsRowInner.Children.Add(chevron);
+        content.Children.Add(chevron);
 
-        var itemsRow = new Button
+        var button = new Button
         {
-            Content = itemsRowInner,
-            Tag = launcher,
+            Content = content,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Padding = new Thickness(12, 10, 12, 10),
-            Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
+            Background = (Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
             BorderThickness = new Thickness(0),
         };
-        if (isWeb)
-            itemsRow.Click += async (_, _) => await ShowLauncherSettingsDialog(launcher);
-        else
-            itemsRow.Click += ItemsBulkOps_Click;
+        string description = actionName ?? title;
+        AutomationProperties.SetName(button, description);
+        ToolTipService.SetToolTip(button, description);
+        return button;
+    }
+
+    private Border BuildLauncherCard(Launcher launcher)
+    {
+        bool isWeb = launcher.IsWebLauncher;
+
+        // Only shortcut launchers need an Items row and bulk actions. Web launchers use
+        // their single Settings row below, with the address retained as its subtitle.
+        Grid? itemsActions = null;
+        if (!isWeb)
+        {
+            int itemCount = CountLauncherItems(launcher.Items);
+            string subtitle = $"{itemCount} item{(itemCount == 1 ? "" : "s")}";
+            string editActionName = string.Format(
+                (string)Application.Current.Resources["LauncherEditItemsAction"], launcher.Name);
+            var itemsRow = CreateLauncherActionButton("Items", subtitle, editActionName);
+            itemsRow.Tag = launcher;
+            itemsRow.IsEnabled = launcher is not { IsShared: true, IsSharedOwner: false };
+            itemsRow.Click += EditLauncherItems_Click;
+
+            // Sibling buttons keep bulk actions independently keyboard-accessible, including
+            // export on a read-only launcher whose primary editing action is disabled.
+            var actions = new Grid();
+            actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            actions.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            actions.Children.Add(itemsRow);
+
+            string bulkActionName = string.Format(
+                (string)Application.Current.Resources["LauncherItemBulkActions"], launcher.Name);
+            var bulkButton = new Button
+            {
+                Content = new FontIcon { Glyph = "\uE712", FontSize = 12, Opacity = 0.6 },
+                Tag = launcher,
+                MinWidth = 40,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Padding = new Thickness(12, 10, 12, 10),
+                Background = (Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
+                BorderThickness = new Thickness(0),
+            };
+            AutomationProperties.SetName(bulkButton, bulkActionName);
+            ToolTipService.SetToolTip(bulkButton, bulkActionName);
+            bulkButton.Click += ItemsBulkOps_Click;
+            Grid.SetColumn(bulkButton, 1);
+            actions.Children.Add(bulkButton);
+            itemsActions = actions;
+        }
 
         // ── Delete button (in header bar) ──────────────────────────
         var deleteBtn = new Button
@@ -147,35 +186,10 @@ public sealed partial class LaunchersPage : Page
         deleteBtn.Click += DeleteLauncher_Click;
 
         // ── Settings row (opens settings dialog) ────────────────
-        var settingsLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        settingsLabel.Children.Add(new TextBlock { Text = "Settings", FontSize = 14 });
-        settingsLabel.Children.Add(new TextBlock { Text = "Name, icon, view mode, and more", FontSize = 12, Opacity = 0.5 });
-
-        var settingsChevron = new FontIcon
-        {
-            Glyph = "\uE76C",
-            FontSize = 12,
-            Opacity = 0.6,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-
-        var settingsRowInner = new Grid();
-        settingsRowInner.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        settingsRowInner.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        Grid.SetColumn(settingsLabel, 0);
-        Grid.SetColumn(settingsChevron, 1);
-        settingsRowInner.Children.Add(settingsLabel);
-        settingsRowInner.Children.Add(settingsChevron);
-
-        var settingsRow = new Button
-        {
-            Content = settingsRowInner,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            Padding = new Thickness(12, 10, 12, 10),
-            Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
-            BorderThickness = new Thickness(0),
-        };
+        string settingsSubtitle = isWeb
+            ? (string.IsNullOrWhiteSpace(launcher.WebAddress) ? "No web address set" : launcher.WebAddress)
+            : "Name, icon, view mode, and more";
+        var settingsRow = CreateLauncherActionButton("Settings", settingsSubtitle);
         settingsRow.Click += async (s, e) =>
         {
             await ShowLauncherSettingsDialog(launcher);
@@ -185,7 +199,8 @@ public sealed partial class LaunchersPage : Page
         // ── Card container ──────────────────────────────────────────
         var content = new StackPanel { Spacing = 8 };
         content.Children.Add(settingsRow);
-        content.Children.Add(itemsRow);
+        if (itemsActions != null)
+            content.Children.Add(itemsActions);
 
         var headerIconElement = BuildLauncherHeaderIcon(launcher);
         var headerTitle = new TextBlock { Text = launcher.Name, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
@@ -362,15 +377,23 @@ public sealed partial class LaunchersPage : Page
     /// Opens launcher settings in its own window (shared with the flyout) and refreshes the
     /// cards afterwards so name and icon changes show up.
     /// </summary>
-    private async Task ShowLauncherSettingsDialog(Launcher launcher, bool isNewLauncher = false)
+    private async Task<global::Windows.Graphics.RectInt32?> ShowLauncherSettingsDialog(
+        Launcher launcher,
+        bool isNewLauncher = false)
     {
         IntPtr owner = IntPtr.Zero;
         var settingsWindow = SettingsWindow.GetCurrent();
         if (settingsWindow != null)
             owner = WinRT.Interop.WindowNative.GetWindowHandle(settingsWindow);
 
-        await LauncherSettingsWindow.ShowAsync(launcher, owner, isNewLauncher: isNewLauncher);
+        global::Windows.Graphics.RectInt32? closingBounds = null;
+        await LauncherSettingsWindow.ShowAsync(
+            launcher,
+            owner,
+            isNewLauncher: isNewLauncher,
+            onClosing: bounds => closingBounds = bounds);
         RebuildLauncherCards();
+        return closingBounds;
     }
 
     internal async Task ShowLauncherSettingsDialogPublic(Launcher launcher) => await ShowLauncherSettingsDialog(launcher);
@@ -504,16 +527,20 @@ public sealed partial class LaunchersPage : Page
         };
         RegisterLauncher(newLauncher);
 
-        // Show settings dialog for new launcher
-        await ShowLauncherSettingsDialog(newLauncher, isNewLauncher: true);
+        // Keep the first item-editing session where this launcher was just configured.
+        var setupBounds = await ShowLauncherSettingsDialog(newLauncher, isNewLauncher: true);
         RebuildLauncherCards();
 
         // A brand-new launcher is empty, so there is nothing on screen to discover editing
-        // from. Open it in edit mode; the flyout's own empty-state text takes it from there.
+        // from. Open the regular item editor with the same shared empty-state guidance.
         // A web launcher has no items to edit — its address was set in the settings window
         // that just closed, so there is nothing left to do.
-        if (MainWindow.Current is { } owner && !newLauncher.IsWebLauncher)
-            FlyoutWindow.ShowInEditMode(owner, newLauncher.Id);
+        if (!newLauncher.IsWebLauncher && MainWindow.Current is { } owner
+            && SettingsWindow.GetCurrent() is { } settings)
+        {
+            await settings.ShowItemEditor(owner, newLauncher.Id, setupBounds);
+            RebuildLauncherCards();
+        }
     }
 
     /// <summary>
@@ -547,9 +574,20 @@ public sealed partial class LaunchersPage : Page
         RebuildLauncherCards();
     }
 
+    /// <summary>Opens the regular item editor directly from the primary Items action.</summary>
+    private async void EditLauncherItems_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { Tag: Launcher launcher }) return;
+        if (MainWindow.Current is { } main && SettingsWindow.GetCurrent() is { } settings)
+        {
+            await settings.ShowItemEditor(main, launcher.Id);
+            RebuildLauncherCards();
+        }
+    }
+
     /// <summary>
-    /// Bulk operations on a launcher's items. Per-item editing is done in the flyout's edit
-    /// mode; only whole-list operations remain here.
+    /// Bulk operations on a launcher's items. Per-item editing uses the shared launcher
+    /// view; only whole-list operations remain here.
     /// </summary>
     private void ItemsBulkOps_Click(object sender, RoutedEventArgs e)
     {
@@ -559,22 +597,6 @@ public sealed partial class LaunchersPage : Page
         bool readOnly = launcher is { IsShared: true, IsSharedOwner: false };
 
         var menu = new MenuFlyout();
-
-        // First entry, because this row used to be the drill-in to the item editor — it
-        // should still answer "how do I edit this?".
-        var edit = new MenuFlyoutItem
-        {
-            Text = "Edit items",
-            Icon = new FontIcon { Glyph = "" },
-            IsEnabled = !readOnly,
-        };
-        edit.Click += (_, _) =>
-        {
-            if (MainWindow.Current is { } main)
-                FlyoutWindow.ShowInEditMode(main, launcher.Id);
-        };
-        menu.Items.Add(edit);
-        menu.Items.Add(new MenuFlyoutSeparator());
 
         var export = new MenuFlyoutItem { Text = "Export items…", Icon = new FontIcon { Glyph = "" } };
         export.Click += async (_, _) => await LauncherBulkOps.ExportItemsAsync(XamlRoot, launcher);

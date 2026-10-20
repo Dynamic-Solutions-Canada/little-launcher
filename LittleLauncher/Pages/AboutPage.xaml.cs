@@ -2,7 +2,6 @@ using LittleLauncher.Services;
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using WinRT.Interop;
 
 namespace LittleLauncher.Pages;
 
@@ -16,8 +15,17 @@ public partial class AboutPage : Page
         InitializeComponent();
     }
 
+    /// <summary>Checks GitHub releases for a portable build, or opens Store updates for MSIX.</summary>
     private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
     {
+        if (MainWindow.IsPackaged)
+        {
+            UpdateStatusText.Text = UpdateService.OpenStoreUpdates()
+                ? GetText("StoreUpdatesOpened")
+                : GetText("StoreUpdatesOpenFailed");
+            return;
+        }
+
         CheckUpdateButton.IsEnabled = false;
         CheckUpdateButton.Content = "Checking...";
         UpdateStatusText.Text = "Checking for updates...";
@@ -32,35 +40,11 @@ public partial class AboutPage : Page
             else if (result.UpdateAvailable)
             {
                 _updateResult = result;
-                // The Store path can know an update exists without knowing its version number.
-                UpdateStatusText.Text = (result.IsStoreManaged, string.IsNullOrEmpty(result.LatestVersion)) switch
-                {
-                    (true, true) => $"A new version is available in the Microsoft Store (you have {result.CurrentVersion})",
-                    (true, false) => $"Version {result.LatestVersion} is available in the Microsoft Store (you have {result.CurrentVersion})",
-                    _ => $"Version {result.LatestVersion} is available (you have {result.CurrentVersion})",
-                };
-                // Only a Store install can update itself; a portable copy gets the release
-                // page and replaces its own folder.
-                CheckUpdateButton.Content = result.IsStoreManaged ? "Download & Install" : "View Release";
+                UpdateStatusText.Text = $"Version {result.LatestVersion} is available (you have {result.CurrentVersion})";
+                CheckUpdateButton.Content = "View Release";
                 CheckUpdateButton.IsEnabled = true;
                 CheckUpdateButton.Click -= CheckForUpdates_Click;
-                CheckUpdateButton.Click += DownloadUpdate_Click;
-                return;
-            }
-            else if (result.IsStoreManaged)
-            {
-                // "Nothing to download" and "already staged, waiting for us to exit" look
-                // identical from the Store APIs, and Little Launcher lives in the tray and never
-                // exits on its own — so it is the app most likely to be sitting on a staged
-                // update indefinitely. Offer the restart rather than claiming everything is
-                // settled.
-                UpdateStatusText.Text =
-                    $"You're up to date ({result.CurrentVersion}). If the Store downloaded an "
-                    + "update in the background, restart to finish installing it.";
-                CheckUpdateButton.Content = "Restart Now";
-                CheckUpdateButton.Click -= CheckForUpdates_Click;
-                CheckUpdateButton.Click += RestartForUpdate_Click;
-                CheckUpdateButton.IsEnabled = true;
+                CheckUpdateButton.Click += ViewRelease_Click;
                 return;
             }
             else
@@ -78,57 +62,19 @@ public partial class AboutPage : Page
         CheckUpdateButton.IsEnabled = true;
     }
 
-    private async void DownloadUpdate_Click(object sender, RoutedEventArgs e)
+    private void ViewRelease_Click(object sender, RoutedEventArgs e)
     {
-        if (_updateResult == null) return;
-
-        if (!_updateResult.IsStoreManaged)
+        if (_updateResult?.ReleaseUrl is { Length: > 0 } url)
         {
-            if (!string.IsNullOrEmpty(_updateResult.ReleaseUrl))
-                Process.Start(new ProcessStartInfo(_updateResult.ReleaseUrl) { UseShellExecute = true });
-            return;
-        }
-
-        CheckUpdateButton.IsEnabled = false;
-        CheckUpdateButton.Content = "Downloading...";
-
-        var progress = new Progress<double>(p =>
-        {
-            int pct = (int)(p * 100);
-            CheckUpdateButton.Content = pct < 100 ? $"Downloading ({pct}%)..." : "Installing...";
-        });
-
-        var (success, message) = await UpdateService.DownloadAndInstallStoreUpdateAsync(
-            GetOwnerWindowHandle(),
-            progress);
-
-        UpdateStatusText.Text = message;
-
-        if (success)
-        {
-            await Task.Delay(1000);
-            Environment.Exit(0);
-        }
-        else
-        {
-            CheckUpdateButton.Content = "Retry";
-            CheckUpdateButton.IsEnabled = true;
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
     }
 
-    private async void RestartForUpdate_Click(object sender, RoutedEventArgs e)
+    private static string GetText(string key)
     {
-        UpdateStatusText.Text = "Restarting...";
-        CheckUpdateButton.IsEnabled = false;
-        UpdateService.RestartToApplyPackagedUpdate();
-        await Task.Delay(500);
-        Environment.Exit(0);
+        return Application.Current.Resources.TryGetValue(key, out object value) && value is string text
+            ? text
+            : key;
     }
 
-    private static nint GetOwnerWindowHandle()
-    {
-        Window? owner = SettingsWindow.GetCurrent();
-        owner ??= MainWindow.Current;
-        return owner == null ? 0 : WindowNative.GetWindowHandle(owner);
-    }
 }

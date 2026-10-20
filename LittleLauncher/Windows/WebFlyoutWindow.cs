@@ -1043,15 +1043,23 @@ public sealed partial class WebFlyoutWindow : Window
     /// its always-on-top flag — owner relationship alone does not beat a topmost owner, so the
     /// settings window would otherwise open *behind* the flyout that spawned it.
     /// </remarks>
-    private async Task OpenLauncherSettingsAsync()
+    private async Task OpenLauncherSettingsAsync(LauncherSettingsSection? section = null)
     {
+        if (_openModal is LauncherSettingsWindow settingsWindow && settingsWindow.IsOpenFor(_launcher.Id))
+        {
+            if (section is { } destination)
+                settingsWindow.ShowSection(destination);
+            settingsWindow.Activate();
+            await settingsWindow.Completion;
+            return;
+        }
         if (_isModalOpen) return;
 
         _isModalOpen = true;
         SetTopmost(false);
         try
         {
-            await LauncherSettingsWindow.ShowAsync(_launcher, _hwnd, w => _openModal = w);
+            await LauncherSettingsWindow.ShowAsync(_launcher, _hwnd, w => _openModal = w, section: section);
         }
         finally
         {

@@ -1,7 +1,5 @@
 # Developing Little Launcher
 
-Build prerequisites, architecture overview, and project layout for working on Little Launcher. For installation and features, see the [README](README.md).
-
 ## Prerequisites
 
 - Windows 10/11 (build 22000+)
@@ -10,16 +8,15 @@ Build prerequisites, architecture overview, and project layout for working on Li
 ## Build
 
 ```bash
-cd LittleLauncher
-dotnet build -c Debug
+npm run verify:desktop
 ```
 
-`Directory.Build.props` auto-detects the platform from `PROCESSOR_ARCHITECTURE` (ARM64 → ARM64, otherwise x64). To override: `-p:Platform=x64` or `-p:Platform=ARM64`.
+`Directory.Build.props` auto-detects the platform from `PROCESSOR_ARCHITECTURE` (ARM64 → ARM64, otherwise x64). For the shared npm commands, pass `-- --platform x64` or `-- --platform ARM64`.
 
 ## Run
 
 ```bash
-dotnet run --project LittleLauncher -c Debug
+npm run install:desktop
 ```
 
 Or open `LittleLauncher.sln` in Visual Studio / Rider and press F5.
@@ -100,8 +97,8 @@ Version is defined once in `Directory.Build.props`. Pushing a `v*` tag triggers 
 ### The Store package is built and submitted by hand
 
 ```powershell
-.\LittleLauncherMSIXuild-msix.ps1 -Platform x64   -NoSign
-.\LittleLauncherMSIXuild-msix.ps1 -Platform ARM64 -NoSign
+npm run package:desktop -- --platform x64
+npm run package:desktop -- --platform ARM64
 ```
 
 Upload the two `.msix` files individually in Partner Center. Store submission **cannot** be automated for this product — it is paid and on Pricing Version 2, which rules out both of Microsoft's automation paths — and the Store build must never be published as a CI artifact from this public repo. Both points are settled and written up, with the reasoning and the re-enable steps, in [.codex/docs/installer.md](.codex/docs/installer.md).
@@ -113,6 +110,16 @@ See the versioning and packaging guides under [`.codex/docs/`](.codex/docs/) for
 ## Codex workflow
 
 Start with [AGENTS.md](AGENTS.md) and the [Codex workflow index](.codex/README.md).
-Local verification in this workspace uses the sideloaded Release MSIX; the Debug commands above
-remain available for explicitly requested debugger sessions. The rebuild skill documents how to
+Local verification uses `npm run install:desktop` from WSL.
+`npm run verify:desktop` compiles Debug without installing. The rebuild skill documents how to
 update the package in place and verify its running identity.
+
+## Windows desktop workflow
+
+Source is authoritative in WSL. Read `.codex/docs/windows-development.md` and use
+`npm run build:desktop`, `npm run verify:desktop`, `npm run install:desktop`, and
+`npm run package:desktop` from the repository root. The common bridge builds in
+a disposable C: Windows TEMP directory and cleans it after use. Never use a D:
+checkout or build directly against WSL source with Windows tools. Dev install
+versions change only in the temporary copy; never uninstall to bypass an update
+error. Store releases keep their existing project-specific release workflow.

@@ -607,52 +607,7 @@ public sealed partial class WebFlyoutWindow
             // can be installed almost always declares something far better in its web app
             // manifest, or as an apple-touch-icon, and fetching it *here* is what makes it
             // reachable: these live behind the same login as the page.
-            function bestIconUrl() {
-                var best = { url: '', size: 0 };
-
-                function consider(url, size) {
-                    if (!url || size <= best.size) return;
-                    try { best = { url: new URL(url, location.href).href, size: size }; } catch (e) { }
-                }
-
-                function sizeOf(attr) {
-                    if (!attr) return 0;
-                    var m = /(\d+)\s*x\s*(\d+)/i.exec(attr);
-                    return m ? parseInt(m[1], 10) : 0;
-                }
-
-                document.querySelectorAll('link[rel~="icon"]').forEach(function (l) {
-                    var href = l.getAttribute('href') || '';
-                    var declared = sizeOf(l.getAttribute('sizes'));
-
-                    // An .ico is a container, and what it holds is not declared anywhere: a plain
-                    // favicon.ico routinely carries a 256px frame alongside the 16 and 32 the tab
-                    // uses. Discord is the case that proved it - no manifest, no apple-touch-icon,
-                    // one <link rel=icon> to favicon.ico, and a 256px PNG inside it. Guessing high
-                    // enough to be fetched is the only way to find out; the host measures what
-                    // actually arrives and will not shrink what it already has, so guessing wrong
-                    // costs a download and nothing else. Below a declared manifest icon on purpose,
-                    // so a site that does say what it has still wins.
-                    var isIco = /\.ico($|[?#])/i.test(href);
-                    consider(href, declared || (isIco ? 128 : 32));
-                });
-                document.querySelectorAll('link[rel~="apple-touch-icon"], link[rel~="apple-touch-icon-precomposed"]').forEach(function (l) {
-                    consider(l.getAttribute('href'), sizeOf(l.getAttribute('sizes')) || 180);
-                });
-
-                var manifest = document.querySelector('link[rel~="manifest"]');
-                if (!manifest || !manifest.getAttribute('href')) return Promise.resolve(best);
-
-                return fetch(new URL(manifest.getAttribute('href'), location.href).href, { credentials: 'include' })
-                    .then(function (r) { return r.ok ? r.json() : null; })
-                    .then(function (j) {
-                        (j && j.icons ? j.icons : []).forEach(function (i) {
-                            consider(i.src, sizeOf(i.sizes));
-                        });
-                        return best;
-                    })
-                    .catch(function () { return best; });
-            }
+        __LL_ICON_DISCOVERY__
 
             function reportBestIcon() {
                 // Every path says what happened. This ran silently for a long time and the only
@@ -791,7 +746,8 @@ public sealed partial class WebFlyoutWindow
             core.WebResourceRequested += (_, e) => OnServiceWorkerResourceRequested(core, e);
 
             await core.AddScriptToExecuteOnDocumentCreatedAsync(
-                ServiceWorkerBridgeScript.Replace("__LL_WRAP_VERSION__", WrapVersion, StringComparison.Ordinal));
+                ServiceWorkerBridgeScript.Replace("__LL_WRAP_VERSION__", WrapVersion, StringComparison.Ordinal)
+                    .Replace("__LL_ICON_DISCOVERY__", PageIconDiscoveryScript, StringComparison.Ordinal));
         }
         catch (Exception ex)
         {

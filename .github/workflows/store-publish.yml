@@ -66,7 +66,12 @@ jobs:
 
       - name: Build MSIX packages (x64 + ARM64, unsigned for Store)
         shell: pwsh
+        env:
+          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:GoogleClientSecret)) {
+            throw 'Missing GitHub Actions secret: GOOGLE_CLIENT_SECRET'
+          }
           foreach ($plat in @('x64', 'ARM64')) {
             Write-Host "::group::Build $plat MSIX"
             & "$env:GITHUB_WORKSPACE\LittleLauncherMSIX\build-msix.ps1" -Platform $plat -NoSign

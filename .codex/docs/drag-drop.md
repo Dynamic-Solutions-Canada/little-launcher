@@ -1,10 +1,9 @@
-> **Scope:** Use when modifying drag-and-drop or edit mode in the flyout. Covers the custom drag-drop system, cross-list moves, insertion indicators, the edit-mode geometry contract, and known WinUI 3 limitations.
-> **Governs:** `**/FlyoutWindow.xaml*`, `**/FlyoutWindow.EditMode.cs`.
+> **Scope:** Use when modifying shared launcher drag-and-drop, edit mode or its window hosts. Covers the custom drag-drop system, cross-list moves, insertion indicators, the edit-mode geometry contract, and known WinUI 3 limitations.
+> **Governs:** `Controls/LauncherItemsView.xaml*`, `Controls/LauncherItemsView.*.cs`, `Controls/ILauncherItemsHost.cs`, `Windows/FlyoutWindow.xaml*`, `Windows/FlyoutWindow.EditMode.cs`, `Windows/FlyoutWindow.ItemsHost.cs`, `Windows/FlyoutWindow.SetupPlacement.cs`, `Windows/LauncherItemsEditorWindow.cs`, `SettingsWindow.ItemEditing.cs`, `Windows/EditToolbarWindow.cs`.
 
-# Drag-and-Drop & Edit Mode Conventions (FlyoutWindow)
+# Launcher Drag-and-Drop & Edit Mode Conventions
 
-All launcher item editing lives in the flyout. The former in-settings `LauncherItemsPage` was
-deleted; do not reintroduce a second editor.
+All launcher item editing uses `LauncherItemsView`. The former `LauncherItemsPage` remains deleted; add behavior to the shared view rather than building another implementation.
 
 ## Why custom drag-drop (not CanReorderItems)
 
@@ -34,9 +33,7 @@ from building it are worth knowing before touching either:
 
 ## Edit mode
 
-Dragging is an **edit-mode-only** affordance. Both `DragItemsStarting` handlers cancel when
-`_isEditMode` is false. Entry is the hover-revealed pencil overlay; exit is the toolbar's Done
-button, Escape (first press exits edit mode, second dismisses), or hiding the flyout.
+Dragging is an **edit-mode-only** affordance. Both `DragItemsStarting` handlers cancel when `_isEditMode` is false. Entry is the hover-revealed pencil overlay; exit is the toolbar's Done button, Escape (first press exits edit mode, second dismisses), or hiding the flyout. Settings-origin editing starts in edit mode in a regular window; its external Done/Escape/close finishes that window, retaining the same immediate-save behavior.
 
 ### Geometry contract
 
@@ -48,38 +45,34 @@ popup clicks retain their existing below/above placement. Web flyouts follow the
 Edit mode may grow the flyout's **height**. It must never change its **width**, or the size of
 any item or group.
 
-- The **toolbar floats in its own window** (`EditToolbarWindow`) above the flyout, so it
-  contributes no height at all and cannot crowd the launcher's content. It is
-  `WS_EX_NOACTIVATE` so clicking it does not steal focus, and the flyout drops its
-  always-on-top flag while an owned editor is open — ownership alone does not beat a topmost
-  owner. Reposition it **after** the flyout settles: `ResizeWindowToCurrentContent` moves the
-  window with `SWP_ASYNCWINDOWPOS`, so reading its rect immediately returns the *old* bounds.
-- The **edit-mode border tint** uses the DWM border colour (`DWMWA_BORDER_COLOR`), not a XAML
-  border — a `BorderThickness` on `RootGrid` would inset the content.
-- `GetFlyoutWidth()` sums column widths arithmetically and never measures laid-out content, so
-  anything wider than it is **clipped**. In list mode the column width itself comes from
-  `ComputeListColumnWidth()`, which measures label *strings* (see "Sizing a list column" below).
-  That is a different thing from measuring the tree, and the only input to the arithmetic that is
-  not known up front.
-- Per-column headers and the empty-launcher placeholder *do* add height, and both are counted
-  in the arithmetic (`CurrentColumnHeaderHeight`, `CurrentEmptyPlaceholderHeight`). Anything
-  that reserves space must be added there, or the content overflows the window — an empty
-  column's drop-target `MinHeight` is skipped when the whole launcher is empty precisely
-  because only the placeholder is accounted for.
-- Per-item/group affordances must be **non-reflowing**: use `Background` and `CornerRadius`
-  only, which have no layout effect. A border was tried and rejected — compensating for it with
-  negative padding only works when the container already has padding on every side to give
-  back, which the icon-mode container style does not.
-- Empty groups get a `MinHeight` drop target in edit mode. This grows height only. In icon mode
-  it costs nothing extra: `MeasureIconModeHeight` already reserves one row for an empty group
-  via `Math.Max(1, …)`.
+- In the native popup, the **toolbar floats in its own window** (`EditToolbarWindow`) above the flyout, so it contributes no height at all and cannot crowd the launcher's content. It is `WS_EX_NOACTIVATE` so clicking it does not steal focus, and the flyout drops its always-on-top flag while an owned editor is open; ownership alone does not beat a topmost owner. Keep its right edge aligned with the launcher, subject to the existing monitor work-area clamp. Reposition it **after** the flyout settles: `ResizeWindowToCurrentContent` moves the window with `SWP_ASYNCWINDOWPOS`, so reading its rect immediately returns the *old* bounds.
+- The native popup **edit-mode border tint** uses the DWM border colour (`DWMWA_BORDER_COLOR`), not a XAML border; a `BorderThickness` on `RootGrid` would inset the content.
+- `GetFlyoutWidth()` sums column widths arithmetically and never measures laid-out content, so anything wider than it is **clipped**. In list mode the column width itself comes from `ComputeListColumnWidth()`, which measures label *strings* (see "Sizing a list column" below). That is a different thing from measuring the tree, and the only input to the arithmetic that is not known up front.
+- Per-column headers and the empty-launcher placeholder *do* add height, and both are counted in the arithmetic (`CurrentColumnHeaderHeight`, `CurrentEmptyPlaceholderHeight`). Anything that reserves space must be added there, or the content overflows the window; an empty column's drop-target `MinHeight` is skipped when the whole launcher is empty precisely because only the placeholder is accounted for.
+- Per-item/group affordances must be **non-reflowing**: use `Background` and `CornerRadius` only, which have no layout effect. A border was tried and rejected; compensating for it with negative padding only works when the container already has padding on every side to give back, which the icon-mode container style does not.
+- Empty groups get a `MinHeight` drop target in edit mode. This grows height only. In icon mode it costs nothing extra: `MeasureIconModeHeight` already reserves one row for an empty group via `Math.Max(1, …)`.
+
+### Shared view and window hosts
+
+`Controls/LauncherItemsView.xaml` owns the item templates and exact launcher layout for both `FlyoutWindow` and `LauncherItemsEditorWindow`. Its rendering, editing, drag/drop and external-drop partials share the same item/column/group state and immediate persistence. `ILauncherItemsHost` keeps native placement, modal ownership, completion and resize policy outside that view. Each host has its own view instance; do not transfer live visuals across XamlRoots or duplicate the renderer.
+
+Settings cards open `LauncherItemsEditorWindow`, a normal owned Mica window matching `LauncherSettingsWindow`: shared title bar, application icon/theme, 24-DIP body padding and an external accent Done button. The shared toolbar is inside that window, above a two-axis viewport. Its four regular buttons show icons and labels and wrap naturally; the native popup keeps its compact fixed-slot toolbar. The launcher retains its intrinsic item/column geometry and scrolls when larger than the viewport. The regular host wraps only the intrinsic preview in a subdued themed fill/neutral 1-DIP outline. That Border sits outside the view dimensions and adds only its stroke to the scroll extent; it must never become a border on RootGrid, stretch across the viewport, change item dimensions or alter local drop coordinates. There is no blue outer edit outline in this host. Changes save immediately; Done, Escape and close finish editing. Minimize and app switching retain the editor. Main Settings navigation/cards remain normal behind it, without a quiet surface or scrim.
+
+One regular editor may be open per launcher, with independent windows allowed for different launchers. Reopening the same launcher from Settings, tray or taskbar focuses its editor or active owned dialog. A native edit session is ended and parked before a regular editor opens. Native tray editing otherwise retains its popup, blue DWM border, separate floating toolbar and animation. Item, group-name and launcher-settings dialogs keep their existing owned-window implementations; the regular editor's HWND owns them and its disabled Control scope covers keyboard and pointer input until the dialog closes. Closing the editor or its Settings owner closes its owned dialog, invalidates pending session work and releases shared-view registrations before native destruction.
+
+New shortcut launchers use this same regular editor after launcher settings close. Its initial centre and monitor come from the actual captured setup-window rectangle, clamped to the work area with that monitor's DPI; the surviving Main Settings window owns it. This placement is transient. Web launchers still skip item editing.
+
+The primary **Items** row opens that regular editor directly. Its independent sibling **…** button contains only export, import and bookmark import. Read-only subscribers cannot edit/import, but the secondary button stays enabled for export.
+
+`ThemeManager` updates all open regular item editors. `FlyoutWindow.InvalidateItems` remains the compatibility entry point for icon/import/sync changes and refreshes every registered shared view plus the composite tray icons. Dispose removes the view registration and hover/container state.
+
+External payload reads capture the edit-session generation and resolve their insertion position before awaiting. They always complete the drag deferral, and reject a closed session or a derived target discarded during rebuilding. Once insertion has saved, enrichment remains valid after Done: persist and invalidate only live item launchers still holding those item objects, including a new destination after a move. Removed/replaced items and deleted/web launchers trigger no stale save. Keep structural edits flushing from `_launcher.Items`, and reorder edits flushing from derived columns. Late item-dialog results cannot act on an ended session; a closed item dialog also checks its lifetime before committing an awaited website title.
+
+The native popup still supports an optional transient setup anchor through `FlyoutWindow.SetupPlacement.cs`; current Settings-origin setup uses the regular editor instead. Its normal openings clear native setup state. Floating-toolbar repositioning remains dispatched after asynchronous native resizing and uses the popup owner's DPI.
 
 ### Height measurement
 
-`MeasureContentHeight` / `MeasureIconModeHeight` compute height **arithmetically** because
-forcing a layout pass on a window hidden via `ShowWindow(SW_HIDE)` while another WinUI 3 window
-is active causes a fatal `ExecutionEngineException`. Do not "fix" this by calling
-`UpdateLayout()`.
+`LauncherItemsView.MeasureContentHeight` / `MeasureIconModeHeight` compute intrinsic height **arithmetically**. The regular editor sets that exact extent inside its viewport; only the native host clamps height to the monitor. This separation must not change item geometry. Arithmetic is also required because forcing a layout pass on a window hidden via `ShowWindow(SW_HIDE)` while another WinUI 3 window is active causes a fatal `ExecutionEngineException`. Do not "fix" this by calling `UpdateLayout()`.
 
 > The flyout is no longer hidden at all — dismissing it now parks it off the virtual screen
 > (`ParkOffScreen`, see `ARCHITECTURE.md`) so its composition surfaces survive. That removes the
@@ -142,6 +135,8 @@ method clears `_launcher.Items` and regenerates it from `_columnLists`, so calli
 structural edit resurrects anything just removed — this is exactly how remove was once broken.
 Drag-drop is the opposite case and must flush the other way.
 
+Cross-launcher Move to actions accept only live, writable item launchers, excluding web launchers and read-only subscribers. Check that policy when constructing the menu and again before removing the source item. Resolve the current source collection by item identity; an invalid destination or missing source aborts without mutation or persistence.
+
 **Identity matters as much as content.** Every operation in the table finds a row's item **by
 reference** (`FindParentCollection`), and `_columnLists` holds the very objects that were in
 `_launcher.Items` when the panel was last built. Anything that swaps those objects for
@@ -159,6 +154,8 @@ symptom is a menu entry that does nothing.
 The flat `Items` collection is split at `IsColumnBreak` sentinel items into per-column
 `ObservableCollection<LauncherItem>` lists. Each column gets its own `ListView` (list mode) or
 `GridView` (icon mode) created in `CreateColumnListView()`.
+
+`BuildColumnContainer` binds its wrapper Width one way to the list/grid Width, keeping captions within the arithmetic item-column width while following density changes and initial list-label sizing. Keep the Auto header/Star content rows and stretched list so empty column space remains a drop target. Column captions and real group names stay visible with native ellipsis; `ConditionalNameToolTip` targets each caption itself and offers the full text only when actually trimmed.
 
 ### Synthetic groups
 
@@ -193,9 +190,7 @@ drop index, decrement `dropIndex` by 1 after removal. This applies to both
 
 ## External drops (Explorer, desktop, Start Menu, browsers)
 
-`FlyoutWindow.ExternalDrop.cs` accepts drags that did **not** start inside the flyout, turning
-files, shortcuts and links into new items. `Services/DroppedItemFactory.cs` does the payload →
-`LauncherItem` mapping.
+`LauncherItemsView.ExternalDrop.cs` accepts drags that did **not** start inside the flyout, turning files, shortcuts and links into new items. `Services/DroppedItemFactory.cs` does the payload → `LauncherItem` mapping.
 
 **Routing:** every per-list `DragOver`/`Drop` handler treats `_dragItem == null` as "this drag
 came from outside" and forwards to `ExternalDragOver` / `ExternalDrop`. There is no separate
@@ -281,6 +276,9 @@ first, DataContext as fallback) — checking `DataContext` silently rejects ever
 re-read on each event rather than capturing, since containers are recycled.
 
 ## Pointer events
+
+`LauncherItemsView.Hover.cs` owns the passive drag/edit cues shared by the native popup and regular editor. A drawn six-dot grip leads each row/header and the pencil trails it; large-icon tiles use top corners and 40-DIP tiles use compact opposite corners. Group cues use only header bounds. Each cue has an opaque dynamic `SolidBackgroundFillColorBaseBrush` backing and themed stroke/text, with a local clip preventing overdraw. List/header labels temporarily reserve cue space through margins, retaining native ellipsis and actual-trimming tooltips; restore their original local Margin on pointer exit, recycling, unload, rebuild and close. The overlay is not hit-testable or an accessibility control: the entire item retains its click-to-edit and drag behavior, conditional name tooltip, drag threshold and child-over-group priority. Read-only items, synthetic groups and column breaks do not gain an edit cue. Keep decoration outside item templates and layout arithmetic; do not introduce handle-only dragging or a competing tooltip.
+
 
 `ListViewItem` marks `PointerMoved` as **handled** for its own hover visuals, so a handler
 attached to `RootGrid` never fires over an actual item — only over empty space. Attach hover

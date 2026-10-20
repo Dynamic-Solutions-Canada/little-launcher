@@ -285,6 +285,7 @@ public sealed partial class SettingsWindow : Window
     /// </summary>
     public void NavigateToLauncherSettings(Launcher launcher)
     {
+
         // If LaunchersPage is already displayed, call the dialog directly
         if (ContentFrame.Content is LaunchersPage existingPage)
         {

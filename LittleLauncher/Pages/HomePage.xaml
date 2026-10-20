@@ -20,7 +20,7 @@
                  Severity="Informational"
                  Margin="0,8,0,0">
             <InfoBar.ActionButton>
-                <Button x:Name="UpdateActionButton" Content="Download &amp; Install" Click="UpdateAction_Click" />
+                <Button x:Name="UpdateActionButton" Content="View Release" Click="UpdateAction_Click" />
             </InfoBar.ActionButton>
         </InfoBar>
 

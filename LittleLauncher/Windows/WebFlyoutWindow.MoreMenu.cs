@@ -14,7 +14,7 @@ namespace LittleLauncher.Windows;
 
 /// <summary>
 /// The header's "…" menu: the per-launcher options worth changing while looking at the launcher,
-/// with the full settings window one item below them.
+/// grouped to match the settings window, with links for complex settings.
 /// </summary>
 /// <remarks>
 /// <para>These are the settings whose right value is a per-moment judgement — how this launcher
@@ -57,33 +57,6 @@ public sealed partial class WebFlyoutWindow
             ShouldConstrainToRootBounds = false,
         };
 
-        // ── How it presents itself ──────────────────────────────
-        menu.Items.Add(Toggle("Regular window", _launcher.WebRegularWindow, on =>
-        {
-            _launcher.WebRegularWindow = on;
-            ApplyWindowMode();
-        }));
-
-        // Only meaningful as a window: a flyout already dismisses on focus loss unless pinned, and
-        // its pin is the control for that. Hidden rather than disabled — a greyed item still reads
-        // as something you are missing out on.
-        if (_launcher.WebRegularWindow)
-        {
-            menu.Items.Add(Toggle("Close when focus is lost", _launcher.WebWindowAutoHide, on =>
-            {
-                _launcher.WebWindowAutoHide = on;
-            }));
-        }
-
-        menu.Items.Add(Toggle(PinMenuLabel(), _launcher.WebPinFlyout, on =>
-        {
-            _launcher.WebPinFlyout = on;
-            SetTopmost(true);
-            UpdatePinButton();
-        }));
-
-        menu.Items.Add(new MenuFlyoutSeparator());
-
         // ── This page ───────────────────────────────────────────
         // The address bar carries a star for this and is off by default, so without the item here
         // the only way to bookmark what is on screen would be to turn on a row of chrome first.
@@ -106,54 +79,9 @@ public sealed partial class WebFlyoutWindow
 
         menu.Items.Add(new MenuFlyoutSeparator());
 
-        // ── What it shows ───────────────────────────────────────
-        // Tabs above the address, which is the order the two strips sit in on the flyout —
-        // header, then tabs, then the address of whichever tab they chose. The settings dialog
-        // lists them the same way round.
-        // Off, the strip appears on its own as soon as there is a second tab and goes away again
-        // when there is not — so this reads as "keep it", not "switch tabs on". Turning it on with
-        // one tab open is also the only way to reach the "+" without following a link first.
-        menu.Items.Add(Toggle("Tab bar", _launcher.WebAlwaysShowTabs, on =>
-        {
-            _launcher.WebAlwaysShowTabs = on;
-            ApplyTabBarVisibility();
-        }));
-
-        menu.Items.Add(Toggle("Address bar", _launcher.WebShowAddressBar, on =>
-        {
-            _launcher.WebShowAddressBar = on;
-            ApplyAddressBarVisibility();
-        }));
-
-        // The bar is where bookmarks are managed, so being able to bring it back without walking to
-        // launcher settings matters more than it did when it appeared on its own. Listed after the
-        // address bar because that is the order the two strips appear in on the flyout.
-        menu.Items.Add(Toggle("Bookmarks bar", _launcher.ShowsBookmarkBar, on =>
-        {
-            _launcher.WebShowBookmarkBar = on;
-            RebuildBookmarkBar(force: true);
-        }));
-
-        menu.Items.Add(new MenuFlyoutSeparator());
-
-        // ── How big it is, and where it opens ───────────────────
-        // Zoom leads the section because it is the size question asked most often, and the only one
-        // a user arrives at the menu already needing fixed.
-        menu.Items.Add(BuildZoomSubmenu());
-
-        menu.Items.Add(BuildAnchorSubmenu());
-
-        // The one a user reaches for straight after dragging a flyout and finding the change did
-        // not stick — which is exactly a moment spent looking at the flyout, so the menu is the
-        // right place for it rather than two windows away. "Where you last dragged it" is one of the
-        // Opens at values, because remembering a position and choosing one are the same question.
-        // WebLockSize is the inverse of what is shown, because this one is on by default and a
-        // bool defaulting to true cannot be turned off under WhenWritingDefault. Inverted here, in
-        // the line that builds the item — never in the model.
-        menu.Items.Add(Toggle("Remember size changes", !_launcher.WebLockSize, on =>
-        {
-            _launcher.WebLockSize = !on;
-        }));
+        // Both surfaces enumerate the same definitions, so labels and order cannot drift.
+        foreach (var definition in LauncherSettingsSections.All)
+            menu.Items.Add(BuildSettingsSectionMenu(definition));
 
         menu.Items.Add(new MenuFlyoutSeparator());
 
@@ -184,7 +112,7 @@ public sealed partial class WebFlyoutWindow
     }
 
     /// <summary>
-    /// The "Advanced" submenu: fullscreen behavior and browser maintenance tools.
+    /// The "Advanced" submenu: browser troubleshooting and maintenance tools.
     /// </summary>
     /// <remarks>
     /// <para><b>Buried on purpose.</b> None of these is part of using a launcher, and two of them
@@ -200,18 +128,6 @@ public sealed partial class WebFlyoutWindow
     private MenuFlyoutSubItem BuildAdvancedSubmenu()
     {
         var submenu = new MenuFlyoutSubItem { Text = "Advanced" };
-
-        submenu.Items.Add(Toggle("Fullscreen fills launcher", _launcher.WebFullScreenInWindow, on =>
-        {
-            _launcher.WebFullScreenInWindow = on;
-        }));
-        var fitFullscreenToVideo = Toggle("Fit fullscreen to video", _launcher.WebFitFullscreenToVideo, on =>
-        {
-            _launcher.WebFitFullscreenToVideo = on;
-        });
-        fitFullscreenToVideo.IsEnabled = _launcher.WebFullScreenInWindow;
-        submenu.Items.Add(fitFullscreenToVideo);
-        submenu.Items.Add(new MenuFlyoutSeparator());
 
         // Nothing in the app opened DevTools. A web launcher is a browser with no menu bar, so the
         // only way in was a right-click on the page hoping the default context menu was still

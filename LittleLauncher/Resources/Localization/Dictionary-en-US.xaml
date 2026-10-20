@@ -13,6 +13,11 @@
 
     <!-- Launcher Items -->
     <x:String x:Key="LauncherItemsTitle">Launcher Items</x:String>
+    <x:String x:Key="LauncherItemsDone">Done</x:String>
+    <x:String x:Key="LauncherItemsAddItem">Add item</x:String>
+    <x:String x:Key="LauncherItemsAddGroup">Add group</x:String>
+    <x:String x:Key="LauncherItemsAddColumn">Add column</x:String>
+    <x:String x:Key="LauncherItemsSettingsAction">Launcher settings</x:String>
     <x:String x:Key="LauncherItemsDescription">Add applications or websites that appear in your taskbar widget for quick access.</x:String>
 
     <!-- Cloud Sync -->
@@ -74,6 +79,8 @@
     <!-- Updates -->
     <x:String x:Key="UpdateAvailableTitle">Update Available</x:String>
     <x:String x:Key="CheckForUpdates">Check for Updates</x:String>
+    <x:String x:Key="StoreUpdatesOpened">The Microsoft Store is open to Updates &amp; downloads. Check there for available updates.</x:String>
+    <x:String x:Key="StoreUpdatesOpenFailed">Unable to open the Microsoft Store.</x:String>
     <x:String x:Key="CheckingForUpdates">Checking...</x:String>
     <x:String x:Key="DownloadAndInstall">Download &amp; Install</x:String>
     <x:String x:Key="Downloading">Downloading...</x:String>
@@ -90,4 +97,37 @@
     <x:String x:Key="ExitFullscreenContent">Exit fullscreen content</x:String>
     <x:String x:Key="EnterFullscreenContent">Fullscreen video</x:String>
     <x:String x:Key="FullscreenContentUnavailable">This video could not enter fullscreen. Try the player's fullscreen control.</x:String>
+    <x:String x:Key="AppPickerOpen">Open</x:String>
+    <x:String x:Key="AppPickerOpenContainingFolder">Open containing folder</x:String>
+    <x:String x:Key="TaskbarPinUnconfirmed">Windows did not confirm whether this launcher was pinned. A pin may still appear.</x:String>
+    <x:String x:Key="TaskbarPinChangedHint">Unpin and pin again to apply these changes.</x:String>
+    <x:String x:Key="TaskbarAlreadyPinned">Pinned to the taskbar.</x:String>
+    <x:String x:Key="TaskbarPinDescription">Pin a shortcut to the taskbar for quick access</x:String>
+    <x:String x:Key="TaskbarPinChecking">Checking taskbar pin…</x:String>
+    <x:String x:Key="TaskbarPinDetailsUnknown">Pinned to the taskbar. Unpin before pinning again.</x:String>
+    <x:String x:Key="TaskbarPinAction">Pin to Taskbar</x:String>
+    <x:String x:Key="TaskbarPinAgainAction">Pin Again</x:String>
+    <x:String x:Key="TaskbarPinnedAction">Pinned</x:String>
+    <x:String x:Key="IconSelectionFailed">Could not change the icon. Choose a readable image file and try again.</x:String>
+    <x:String x:Key="LauncherSectionGeneral">General</x:String>
+    <x:String x:Key="LauncherSectionAppearance">Appearance</x:String>
+    <x:String x:Key="LauncherSectionSizeAndPosition">Size and position</x:String>
+    <x:String x:Key="LauncherSectionBehavior">Behavior</x:String>
+    <x:String x:Key="LauncherSectionPrivacyAndSignIns">Privacy and sign-ins</x:String>
+    <x:String x:Key="LauncherSectionSettingsLink">Open {0} settings…</x:String>
+    <x:String x:Key="LauncherEditItemsAction">Edit items in {0}</x:String>
+    <x:String x:Key="LauncherItemBulkActions">Import or export items for {0}</x:String>
+    <x:String x:Key="WebFullscreenFillsLauncher">Fullscreen fills launcher</x:String>
+    <x:String x:Key="WebFullscreenFillsLauncherDescription">Keep page fullscreen inside the launcher window</x:String>
+    <x:String x:Key="WebFitFullscreenToVideo">Fit fullscreen to video</x:String>
+    <x:String x:Key="WebFitFullscreenToVideoDescription">Fit the launcher to the video while fullscreen fills the launcher</x:String>
+    <x:String x:Key="PageIconChoiceLabel">Use page icon</x:String>
+    <x:String x:Key="PageIconRetry">Retry</x:String>
+    <x:String x:Key="PageIconRetryAccessibleName">Retry automatic page icon</x:String>
+    <x:String x:Key="PageIconMissing">No saved page icon. Retry to check the page.</x:String>
+    <x:String x:Key="PageIconLoading">Loading page icon…</x:String>
+    <x:String x:Key="PageIconRetryFailed">Could not retrieve the page icon. Open this launcher and sign in if needed, then retry. Your saved icon is unchanged.</x:String>
+    <x:String x:Key="PageIconReady">Page icon ready. Confirm to use it.</x:String>
+    <x:String x:Key="PageIconSavedPreview">Saved page icon</x:String>
+    <x:String x:Key="PageIconAddressChanged">The launcher address or type changed. Reopen the icon chooser to select its current page icon.</x:String>
 </ResourceDictionary>

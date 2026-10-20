@@ -229,6 +229,58 @@ The `#region Jump lists (COM)` section is what publishes the menu behind a pinne
 AppData, so jump lists work from the packaged build with nothing special done. Do not "fix" this by
 routing it through `GetPhysicalAppDataDir()` - nothing here writes a path of ours.
 
+## Companion desktop pinning
+
+`LauncherShortcut/NativeMethods.cs` owns the companion's new pinning imports. `TaskbarPinning`
+uses raw COM vtables, with IInspectable's six base slots, for `ITaskbarManager` and
+`IAsyncOperation<bool>`; `IAsyncInfo` is queried separately. References are created, polled and
+released on the foreground STA. `IAsyncInfo` slots 9/10 supply advisory Cancel and terminal Close.
+A 45-second deadline plus five-second grace bounds waiting; an unresolved pin preserves its resources
+and local pending marker instead of claiming cancellation removed the pin.
+A guarded timer runs inside `PinWindow`'s top-level native message pump;
+never move these calls to `Task.Run` or block the STA waiting for completion.
+
+`PinShortcut` uses `IShellLinkW`, `IPropertyStore` and `IPersistFile` through `ShellInterop`, with
+checked HRESULTs and explicit releases, preserving Native AOT without reflection marshalling.
+The identity guard calls `GetCurrentPackageFullName`, not a WindowsApps path heuristic.
+
+`ClearWindowRelaunchProperties` writes `VT_EMPTY` to the three relaunch properties and checks
+every HRESULT before regular-window mode caches success. A matching confirmed Start snapshot
+supplies launch metadata instead; the AUMID stays on the window for grouping.
+
+`PinWindow` uses pointer-sized window handles/callback parameters and source-generated Win32
+imports. Its appearance partial keeps real accessible STATIC text, DPI-scaled Segoe UI fonts, and
+`WM_DPICHANGED`'s suggested position. `WM_NCCALCSIZE` removes the classic caption while the frame
+styles, a one-pixel `DwmExtendFrameIntoClientArea` margin and DWM corner preference retain system
+rounding/shadow. It is an ordinary real foreground window, never a layered/offscreen proxy.
+
+`BeginPaint`/`EndPaint` paint the card with an owned brush, and `DrawIconEx(DI_NORMAL)` preserves
+icon alpha rather than using an `SS_ICON` control with a separate background. `WM_CTLCOLORSTATIC`
+uses the same card brush and transparent text backing. `SPI_GETHIGHCONTRAST` is read-only; when
+enabled, colours come from `GetSysColor`. Theme/settings messages refresh the palette, and font,
+brush and icon handles are released after controls stop using them. The manifest still selects
+system common-controls v6 without adding a package. Ordinary `WM_CLOSE` is consumed while the
+bounded operation owns the surface; unexpected destroy/quit returns unknown, never success.
+A failed ready-message queue also returns Unknown through cleanup, since no timer was armed.
+
+`HIGHCONTRAST.DefaultScheme` is a borrowed system pointer and must **not** be freed. The Learn
+`HIGHCONTRASTW` page's LocalFree instruction conflicts with Microsoft's actual WinForms wrapper,
+which explicitly corrects that ownership claim. Follow the [pinned upstream implementation](https://github.com/dotnet/winforms/blob/189b209933b2e244748a97e66b30be2f8d11b9e4/src/System.Private.Windows.Core/src/Windows/Win32/PInvokeCore.SystemParametersInfo.cs).
+Freeing that pointer can corrupt the native heap during card setup before its timer/request starts.
+On the supported x64/ARM64 targets, `HighContrast` is 16 bytes (two UINT32 fields, then a pointer);
+`PaintData` is the 72-byte PAINTSTRUCT with three 32-bit BOOL fields, RECT and 32 reserved bytes.
+This borrowed-pointer rule does not apply to unrelated caller-owned LocalFree allocations.
+See Microsoft's [DrawIconEx alpha rules](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-drawiconex)
+and [rounded-window guidance](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/ui/apply-rounded-corners).
+
+Old-state checks use the same timer/COM path with an unshown window, in a separate `--check-only`
+process. It sets only the OLD startup AUMID, validates the real shortcut's AUMID/target/arguments,
+and exits before snapshot mutation. The pinning process sets only its NEW AUMID before any UI or
+WinRT, including replacement warnings. Releasing a manager/`RoUninitialize` does not document a
+reset of `GetDefault`'s process identity. Missing registration or child timeout is Unknown. Do not
+query from packaged Settings or infer absence from taskbar caches. `PreviousPinProcess` may stop
+only its owned read-only child, never an outstanding native pin request.
+
 ## IShellItemImageFactory COM Section
 
 The `#region shell32.dll` section includes `SHCreateItemFromParsingName` and the `IShellItemImageFactory` COM interface for extracting app icons from `shell:AppsFolder` items (used for PWA and Store app icons). The `#region gdi32.dll` section provides `DeleteObject` (HBITMAP cleanup), `GetObject` / `GetObjectDibSection` (reading bitmap metadata), `CreateCompatibleDC` / `DeleteDC` / `SelectObject` / `BitBlt` (blitting source HBITMAPs into controlled DIBs), and `CreateDIBSection` with `BITMAPINFO` (creating a top-down 32bpp DIB section with known pixel layout for reliable icon extraction).
@@ -240,3 +292,20 @@ The `#region shell32.dll` section includes `SHCreateItemFromParsingName` and the
 | `BITMAP` | Basic bitmap dimensions and pixel pointer from `GetObject` |
 | `BITMAPINFOHEADER` | Extended header with signed `biHeight` (positive = bottom-up, negative = top-down) |
 | `DIBSECTION` | Full DIB info from `GetObjectDibSection`, contains both `BITMAP` and `BITMAPINFOHEADER` |
+
+## Direct2D and DirectWrite color icons
+
+The `Direct2D / DirectWrite color icon rendering` section declares `D3D11CreateDevice`,
+`D2D1CreateDevice`, `DWriteCreateFactory` and their blittable bitmap, geometry, transform,
+color and overhang structures. `Classes/GlyphIconRenderer.cs` is the only consumer.
+
+- The software WARP D3D11 device uses BGRA support; its Direct2D device context opts into color
+  fonts when drawing a complete DirectWrite text layout.
+- COM calls use explicit SDK ABI slots, including inherited `IUnknown` and resource methods.
+  Verify signatures against Microsoft's `d2d1.h`, `d2d1_1.h` and `dwrite.h` before adding calls.
+  In particular, `IDWriteFactory.CreateTextLayout` is slot 18, layout overhang metrics slot 61,
+  render-target `DrawTextLayout` slot 28 and device-context `CreateBitmap` slot 57.
+- Check every returned HRESULT, including `EndDraw`, where deferred drawing failures appear.
+  Release partially initialized chains in reverse ownership order and unmap every mapped bitmap.
+- Native BGRA data is premultiplied. Respect row pitch and destination stride and copy into
+  `Format32bppPArgb`, preserving alpha through ICO/PNG exports.

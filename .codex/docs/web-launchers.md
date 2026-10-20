@@ -1,7 +1,7 @@
 > **Scope:** Use when working on web launchers — the WebView2 flyout, its resource policy, or the
 > per-launcher web settings. Covers why the browser is torn down rather than kept warm, the
 > WebView2 APIs that make that work, and the WinUI-specific limits worked around here.
-> **Governs:** `**/WebFlyoutWindow.cs`, `**/LauncherPanels.cs`, `Models/WebLauncherPresets.cs`, the `Web*` properties on `Models/Launcher.cs`, and preset creation in `Pages/LaunchersPage.xaml*`.
+> **Governs:** `**/WebFlyoutWindow*.cs`, `**/LauncherSettingsWindow*.cs`, `**/LauncherSettingsSections.cs`, `**/LauncherPanels.cs`, `Models/WebLauncherPresets.cs`, the `Web*` properties on `Models/Launcher.cs`, and preset creation in `Pages/LaunchersPage.xaml*`.
 
 # Web Launchers
 
@@ -258,27 +258,27 @@ data folder does not isolate them.
 
 ## The header's More menu
 
-`WebFlyoutWindow.MoreMenu.cs`. The header's "…" replaced the gear: it opens a menu of the
-per-launcher options whose right value is a **per-moment judgement** — Regular window, Close when
-focus is lost (window mode only), the pin, add/remove this page from the bookmarks, **Tab bar**,
-**Address bar**, **Zoom**, **Opens at** (a submenu of radio items, being an eleven-way choice rather
-than a toggle — "Where you last dragged it" is one of its values, not a separate toggle; the maximize
-button's position picker borrows nine of these presets, but to *move* the window, and writes
-nothing), Remember
-size changes, an **Advanced** submenu — with **Keyboard shortcuts**, **Launcher settings…** and **App settings…** at its
-foot.
+`WebFlyoutWindow.MoreMenu.cs` owns page actions and troubleshooting; its
+`SettingsMenu` partial builds five settings submenus from `LauncherSettingsSections.All`.
+Their labels and order match the settings window: **General**, **Appearance**, **Size and
+position**, **Behavior**, and **Privacy and sign-ins**. Each has a link to the matching section
+in the owned settings window. Address, icons, dimensions, sign-in profiles, and destructive
+privacy actions keep their single full editor there.
 
-App settings dismisses a flyout on its way, as the item flyout’s context menu does: the flyout is
-always-on-top and would otherwise sit over the window it just opened. A regular window is left
-alone — it is not topmost unless pinned, and closing the page the user still has open would be a
-steep price for reaching a settings window.
+Quick controls stay immediate: Appearance contains the tab, address, and bookmark bars; Size and
+position contains zoom, opening anchor, and remember size; Behavior contains regular-window mode,
+conditional close-on-focus-loss, pin, and fullscreen options. Every menu is rebuilt on opening
+from the current launcher values. Fit fullscreen to video is enabled only when fullscreen fills
+the launcher. Reload on open, link handling, hidden policy, and unload delay are in the settings
+window's Behavior section, reached through that section link.
 
-**Per-moment is the whole membership test, and two items failed it.** Reload when opened and Open
-links in the browser were here and are now Advanced-only: how a launcher treats a reload or a link
-is a property of the launcher, settled once when it is set up, not something to reconsider while
-looking at it. Open links in the browser had no settings row at all before it was demoted, so it was
-unreachable for anyone who had never opened this menu — worth checking when moving an item *out* of
-here, because the menu is where several of these were born.
+The current-page bookmark action and Open in browser remain above the sections. **Advanced**
+retains the existing developer tools, hard reload, notification request, and bridge repairs as
+menu-only troubleshooting actions. **Keyboard shortcuts**, **Launcher settings…**, and **App
+settings…** remain accessible below the sections. No action is run by opening a menu or section.
+
+App settings still dismisses a flyout on its way, because an always-on-top flyout would cover it.
+A regular window remains open.
 
 Tab bar is named for what turning it *on* does, not for the default it switches off: it reads as
 "keep it", because the strip already appears on its own with a second tab.
@@ -292,12 +292,11 @@ both a permanent setting and a temporary reveal, and one affordance beats two th
 how long they last, which is a distinction the header had no room to explain. The menu carries the
 same toggle, since a button that is only in the header is a button nobody finds.
 
-Anything configured once and forgotten (address, profiles, browsing data)
-deliberately stays in the settings window; putting it all here would be a second settings window in
-a worse place. The "…" is the same idiom the item cards use, so the affordance is not new.
+Complex edits stay in the settings window, with section links providing direct routes from the
+matching menu groups. The "…" remains the same idiom the item cards use.
 
 **Zoom went the other way, and is the clearest case of an item the membership test read wrong.** It
-looks like a set-once setting and sits in Advanced accordingly, but the gestures that change it
+looks like a set-once setting and appears under Size and position, but the gestures that change it
 (Ctrl+wheel and Ctrl+plus/minus) are ones a user hits *by accident*, and nothing on screen then
 admits why the page is the wrong size. That makes it two things at once: a value worth **reading**
 off the menu, which is why the current level is in the parent item's own text (`Zoom (125%)`) rather
@@ -389,7 +388,7 @@ menu above; browsing data is in launcher settings.
 
 ## The address bar
 
-Off by default (`Launcher.WebShowAddressBar`, Advanced → **Address Bar**), because a flyout is a
+Off by default (`Launcher.WebShowAddressBar`, Appearance → **Address Bar**), because a flyout is a
 small window and a launcher usually opens one known page. Off does not mean unreachable: the
 header carries a button that turns it on and off, tooltipped for whichever it will do next.
 
@@ -705,7 +704,7 @@ normally on screen.
 
 ## Regular-window mode, and why the taskbar and Alt-Tab are one switch
 
-`Launcher.WebRegularWindow` (Advanced → **Regular Window**, off by default) presents a web launcher
+`Launcher.WebRegularWindow` (Behavior → **Regular Window**, off by default) presents a web launcher
 as an ordinary app window: it drops always-on-top and dismiss-on-focus-loss, appears in the taskbar
 and both switchers, and — because its window carries the pinned shortcut's AUMID — lights the
 **running indicator on its own pinned button**. Clicking that button closes it again.
@@ -752,7 +751,7 @@ Four things follow, each a guard rather than a convention:
   the close that intercepts it, silently did nothing. `presenter.IsMinimizable` in regular-window
   mode is what makes the click reach the window; it is not visible in `HandleTaskbarMinimize`,
   which simply never ran. (`WS_SYSMENU` was tried alongside it and is **not** needed — measured.)
-- **What that click does is `Launcher.WebTaskbarClickCloses`** (Advanced → **Taskbar Click**, shown
+- **What that click does is `Launcher.WebTaskbarClickCloses`** (Behavior → **Taskbar Click**, shown
   only while Regular Window is on, since a flyout has no button to click). Default is minimize,
   because that is what an ordinary app window does and this mode exists to be one; closing is the
   option, because a launcher is cheap to reopen from the same button. Minimize is simply the
@@ -1000,7 +999,7 @@ decision that the bar should be on screen. The address bar and the tab strip wer
 the header for the same reason; the bar is a row of its own below the page, so it had to be gated
 explicitly rather than by sitting in the same `StackPanel`.
 
-**Fullscreen can stay inside the launcher.** The **… > Advanced > Fullscreen fills launcher**
+**Fullscreen can stay inside the launcher.** The **… > Behavior > Fullscreen fills launcher**
 toggle persists `Launcher.WebFullScreenInWindow` per launcher and syncs with its settings. It is
 off by default, preserving display fullscreen. When enabled, `ApplyFullScreen` hides the same
 header and bars, but keeps the resize grips, a narrow content inset for their hit targets, and
@@ -1054,7 +1053,7 @@ so the existing contained/display policy applies. Cross-origin frames, shadow-ro
 and non-video fullscreen widgets
 continue to use their site's own controls. Stale results cannot update a different tab's header.
 
-**Fit fullscreen to video** in the same Advanced menu optionally fits the launcher's viewport to
+**Fit fullscreen to video** in the same Behavior menu optionally fits the launcher's viewport to
 the fullscreen video's intrinsic aspect ratio (`WebFlyoutWindow.VideoFit.cs`). It is off by default
 and only applies inside a non-maximized launcher. YouTube's fullscreen player wrapper is searched
 for its visible video, so its letterboxed container dimensions are never mistaken for the video's.
@@ -1313,62 +1312,42 @@ page updating itself, not a stale frame.
 
 ## Settings layout
 
-`BuildForm` lays the dialog out as **three questions and then the fold**, and the grouping is the
-point — a row read beside the wrong neighbours is a row the user misreads:
+`LauncherSettingsSections` owns stable destination IDs, localized labels, and order for both
+`LauncherSettingsWindow` and the flyout's settings submenus. The settings window uses stretched
+`Expander` sections and its existing scrolling form:
 
-| Group | Rows |
+| Section | Controls |
 |---|---|
-| What it is | Name, Type, Web Address, Bookmarks |
-| How it shows that content | View Mode / Icons Per Row / Show Title (shortcut launchers), Tab Bar, Address Bar, Flyout Size, Opens At, Remember Size |
-| How it appears in the shell | Icon, custom icon path, Show In Tray, Show In Taskbar |
-| Everything else | **Advanced** |
+| General | Name, Type, Web Address, From browser |
+| Appearance | Icon and custom file, tray visibility, taskbar pin and status, tab/address/bookmark bars, bookmark icons only; shortcut view mode, density and title for shortcut launchers |
+| Size and position | Dimensions, zoom, opening anchor, remember size |
+| Behavior | Regular window, close on focus loss and taskbar click when relevant, pin open, links, reload, hidden policy and conditional unload delay, fullscreen fills launcher and conditional video fit |
+| Privacy and sign-ins | Shared/private profile, save logins, forget saved logins, reset site permissions, clear browsing data |
 
-- **Advanced is last in the whole dialog, not last among the web rows.** It is the fold for what a
-  working launcher does not need, so anything below it is something the user has to scroll past a
-  collapsed section to reach. `BuildWebRows` therefore returns it separately from its option rows.
-- **The icon sits with the rows that decide where it is seen.** It used to sit directly under the
-  launcher's content, where "Icon" read as the icon of the thing being configured; beside Show In
-  Tray and Show In Taskbar it reads as what it is — the tray icon, and the only place it appears.
-  The "address before icon" rule below still holds, and now holds by a wide margin.
-- **Bookmarks is a collapsed `Expander`**, like Advanced. Most launchers hold one page, so laid out
-  flat the list was a second copy of the address already in the field above, taking up most of the
-  dialog. Its header carries the count and the sentence that has to survive being folded away —
-  that a *second* bookmark is what produces the bar. Every edit inside it moves that count
-  (`_bookmarksListChanged`), or the header describes the list as it was when the window opened.
-- **Tab Bar and Address Bar are promoted out of Advanced.** Both change what the flyout *is* — a
-  page versus a small browser — rather than tuning one that already works, and Address Bar is where
-  the star for bookmarking the current page lives. Tab Bar was reachable only from the flyout's "…"
-  menu, which is the wrong place to be the *only* place: that menu is for changing your mind while
-  looking at a launcher, not for discovering that an option exists.
-- **They are listed tabs-then-address, in the dialog and in the "…" menu both**, because that is the
-  order the strips appear in on the flyout: header, then tabs, then the address of whichever tab the
-  tabs chose. Two toggles for two adjacent rows of chrome read as mislabelled when the list
-  disagrees with the window.
-- **Opens At and Remember Size were promoted too**, for the same kind of reason: they answer the
-  question Flyout Size does, and they are what a user reaches for straight after dragging a flyout
-  and finding the change did not stick. Opens At used to sit beside a Remember Position toggle whose
-  subtitle it had to describe; that toggle is now one of its own values, so there is nothing to
-  explain across two rows.
+General, Appearance, and Size and position start expanded. Behavior and Privacy and sign-ins
+start collapsed. Name and Type remain in General, and a new web launcher keeps its initial
+address focus. Web-only sections and rows follow in-place launcher type changes; shortcut
+controls keep their existing view-mode conditions. The web row
+builders live in the `WebGeneral`, `WebAppearance`, `WebSize`, `WebBehavior`, and `WebPrivacy`
+partials; section assembly and reveal live in `LauncherSettingsWindow.Sections.cs`.
 
-Zoom, When Hidden, Unload After, Reload On Open, Open Links In Browser, Pin Open, Regular Window,
-Close On Focus Loss, Taskbar Click, Site Permissions, Profile and Browsing Data stay in Advanced: they tune a launcher
-that already works, and all of them on one surface made the common case (paste a URL, pick a size)
-read as a form to fill in. Pin is safe to demote twice over — the flyout's header has a button for it.
-Zoom is here *and* on the "…" menu rather than promoted out of Advanced, because it is genuinely both:
-the level a launcher is set up with, and the one to put back after an accidental Ctrl+wheel.
+`ShowAsync` accepts an optional section destination. After the initial Loaded sizing pass, an
+explicit destination expands that section if needed and requests one ordinary framework
+`StartBringIntoView`. A web-only destination falls back to General if the launcher is now a
+shortcut. Manual expansion does not request scrolling. There is no animation wait or temporary
+scroll extent. Opening a section does not change any setting or execute privacy or
+troubleshooting actions. Existing save, sync, live-apply, profile, permission, and repair handlers
+retain their behavior.
 
-New per-launcher web settings should default to Advanced unless a launcher is unusable without
-them, or unless the setting changes what the flyout is rather than how well it is tuned.
+Section links use the existing flyout modal contract: owner tracking, topmost suspension, and
+restoration remain in `OpenLauncherSettingsAsync`. Only that flyout's tracked, still-open settings
+window for the same launcher may be reused; a reuse awaits its original close completion. There
+is no global settings singleton. Done/Next, Escape/system close, final-bounds reporting, and pin
+status subscriptions keep their existing lifetime semantics.
 
-**A promoted toggle applies to the open flyout immediately.** Address Bar and Tab Bar both call
-`WebFlyoutWindow.ApplyLauncherChanges`, so they behave like their "…" menu twins rather than taking
-effect on the next open — a toggle whose effect is invisible until the window is reopened is
-indistinguishable from one that did nothing.
-
-**The window does not resize when Advanced expands.** Growing it to fit was tried and rejected:
-the window sizes to its form once on `Loaded`, so re-sizing afterwards lands a beat *after* the
-expander has already animated and reads as a jolt. The form already lives in a `ScrollViewer`
-with the button row pinned below it, so expanding simply scrolls.
+Address still precedes icon selection, and tabs precede address and bookmark bar controls in
+both surfaces. New web settings belong to their matching section; Advanced remains a menu-only
+troubleshooting submenu, closed until opened, rather than a second editor for those settings.
 
 **The page's own icon is the default tray icon.** `CoreWebView2.FaviconChanged` gives whatever the
 page declares, which is the only source that works for a dashboard behind a login —
@@ -1393,6 +1372,30 @@ a required decision. The icon row also names the state rather than the mode: whi
 loaded) labelled **From the page**, not `Composite` — which composes item icons a web launcher
 hasn't got — or `Custom`, which names a file the user never picked. The custom-path row stays
 hidden until they actually choose one.
+
+**Use page icon is inside the icon chooser's Launcher Presets tab.** It is a pending choice that
+requires Confirm, so Cancel keeps the current custom icon. Confirmation restores the managed
+favicon path itself, or the empty adoption state before a favicon has arrived. It never copies
+the managed image to a custom file, preserving future automatic updates. The option follows the
+launcher's current type even when the type is changed in the same settings window; shortcut
+launchers and item icon pickers do not offer it.
+
+The option previews the decoded saved managed image and exposes missing/loading/failure states
+plus Retry. `WebFlyoutWindow.IconPreview.cs` first reads an existing, awake, owned matching page,
+using the same discovery function as the bridge and its authenticated fetch context. If that
+cannot provide an icon, `FaviconService.IconPreview.cs` tries the actual site's existing HTTP
+HTML/manifest/favicon pipeline with fresh requests, cancellation and bounded response reads.
+This path never reads/writes the favicon cache and has no Google favicon-service fallback. It does not
+create, resume or navigate a browser, and never calls `AdoptPageIconAsync` or
+`AdoptHighResPageIcon` during preview. Reads are bounded and cancellation, current source,
+launcher kind, tab/core identity and chooser generation reject stale results. Suspended or
+unloaded pages use the direct-site fallback without browser startup or resume. HTTP does not
+inherit WebView authentication; failure keeps the last preview/custom selection and asks the
+user to open the launcher and sign in if needed, then retry. The direct attempt is limited to
+15 seconds and 512 KiB manifest/image bodies, within the chooser's 20-second complete request.
+Pending bytes are stored only after Confirm,
+with an adjacent exact address/type check and the existing larger-icon safeguard. Closing or
+Cancel discards pending bytes; failed Retry retains the saved custom choice and last good preview.
 
 **The address can be chosen from browser bookmarks.** `Pages/BookmarkPicker.PickAsync` shows a
 searchable, flattened list of the bookmarks in a chosen browser profile — a dashboard URL is
@@ -2236,7 +2239,7 @@ and what the interception exists to give it. It is why `TryHandleBrowserPageNavi
 ## Saved logins are scoped to the profile
 
 `UserSettings.ProfilesWithoutPasswordManager`, surfaced as **Save Logins** beside Sign-ins in
-Advanced. Turning it off stops WebView2 offering to save logins and filling them in, which is what
+Privacy and sign-ins. Turning it off stops WebView2 offering to save logins and filling them in, which is what
 a password manager extension needs — two of them competing means the built-in one keeps proposing
 its own older saved logins over the manager's.
 
@@ -2382,7 +2385,7 @@ untouched in `settings.json`.
 
 ### The shared profile
 
-`Launcher.WebSharedProfile` (Advanced → **Sign-ins**) points a launcher at `WebProfiles\Shared`
+`Launcher.WebSharedProfile` (Privacy and sign-ins → **Sign-ins**) points a launcher at `WebProfiles\Shared`
 instead of its own folder, pooling it with every other launcher that sets it. **New launchers are
 created shared**: several launchers onto one system otherwise means signing in to that system once
 per launcher, and again every time a session expires. Private is still there for the case that
@@ -2677,6 +2680,12 @@ that early exit is what let a live window keep a dead identity for as long as it
 window is torn off the taskbar and re-added when the identity changes, because the shell reads the
 AUMID when it creates the button and groups from that; rewriting the property under a live button
 leaves the grouping where it was.
+
+A confirmed shortcut-backed pin records its AUMID beside the stable companion. While that record
+and its Start snapshot match the launcher, `ApplyRelaunchProperties` clears all three old window
+relaunch properties instead of publishing a second metadata source. The window retains its AUMID
+for grouping, and the snapshot retains its name/icon until an explicit re-pin. Legacy manual pins
+continue using relaunch metadata. See [icons.md](icons.md) for cancellation and manual old-pin removal.
 
 ## The taskbar jump list
 

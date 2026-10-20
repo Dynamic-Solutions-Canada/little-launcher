@@ -204,10 +204,7 @@ model default, which would have flipped it on for every existing launcher.
 - `WebTaskbarClickCloses` (`bool`) — under `WebRegularWindow`, close on a taskbar-button click
   instead of minimizing. Defaults `false` (minimize), which is both what an ordinary app window does
   and the direction that survives `WhenWritingDefault`
-- `PinAumid` (`string`) — the AppUserModelID stamped on this launcher's pinned taskbar button,
-  written at pin time. **Not web-specific** despite sitting with the web settings: any launcher can
-  be pinned, and only regular-window mode happens to read it today. It exists because the AUMID
-  cannot be recovered afterwards for every pin — see [web-launchers.md](web-launchers.md)
+- `PinAumid` (`string`): the AppUserModelID stamped on this launcher's pinned taskbar button, saved after native success or explicit manual-pin confirmation. Cancellation and unconfirmed native requests retain the previous identity. The existing full-launcher sync serialization also carries this value: `CopyInto` preserves local identity for existing launchers, while a new import can initially carry the source machine's identity. Do not add `[JsonIgnore]`, because local settings use the same model and must retain the confirmed pin. Missing local registration is Unknown and permits a fresh pin. This property applies to every launcher kind; regular-window mode also uses it for grouping, since an AUMID cannot be recovered afterwards for every pin. See [web-launchers.md](web-launchers.md). The separate local `pin-pending-{id}.txt` marker records unresolved identity/resources; it does not force manual recovery or an old-pin warning on retry and is never serialized or synced. `pin-snapshot-{id}.json` is also local metadata: effective confirmed name/icon/command details. It adds no setting or sync field; missing/invalid legacy metadata means the comparison is unknown.
 - `WebRegularWindow` (`bool`) — present the launcher as an ordinary app window instead of a flyout:
   taskbar button (with the running indicator on its pin), task-switcher entry, not always on top,
   and no dismiss-on-focus-loss. Defaults `false`. **It is deliberately one setting naming a window

@@ -1,5 +1,5 @@
 > **Scope:** Use when editing XAML files for WinUI 3 controls, Fluent Design, NavigationView pages, or resource dictionaries. Covers WinUI 3 control conventions, resource localization, and Mica/Acrylic backdrop patterns.
-> **Governs:** `**/*.xaml` (all XAML across the solution).
+> **Governs:** `**/*.xaml` (all XAML across the solution), `**/LauncherSettingsWindow.Sections.cs`, `Controls/LauncherItemsView*`, `Controls/ILauncherItemsHost.cs`, `Controls/WrappingPanel.cs`, `Windows/LauncherItemsEditorWindow.cs`.
 
 # WinUI 3 XAML Conventions
 
@@ -30,6 +30,24 @@ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 - Use `ToggleSwitch` for boolean settings
 - Use `NumberBox` for numeric inputs
 - Use `FontIcon` with Segoe Fluent Icons glyphs
+
+## Conditional item-name tooltips
+
+`Controls/ConditionalNameToolTip.cs` is the shared attached behavior for full item names.
+Bind `ConditionalNameToolTip.Text` on the template root. When the template shows a label,
+set `ConditionalNameToolTip.LabelName` to its named `TextBlock`; the behavior reads
+`IsTextTrimmed` and listens to `IsTextTrimmedChanged`, including wrapped, two-line labels.
+Omit `LabelName` for an icon-only template, where the name is always available on hover.
+
+For group headers and column captions, attach `ConditionalNameToolTip.Text` directly to the `TextBlock` (or call `SetText` for a code-built label). A TextBlock root is its own label and tooltip target, so no namescope lookup is needed and its tooltip cannot appear over group children. It uses actual `IsTextTrimmed` and the same rename/load/unload cleanup; omitting `LabelName` here does not make the tooltip unconditional.
+
+The behavior attaches the native tooltip to the nearest `SelectorItem`, covering both list
+and grid item icons, labels and padding. Its bound text follows renamed/recycled items;
+load/unload wiring resolves the current container and releases label subscriptions and any
+open tooltip. Keep state with the template, never in a permanent window's container collection.
+Do not infer clipping from string length, force layout, change item geometry, or add redundant
+tooltips to fully visible names. Native tooltip placement can extend beyond the flyout window.
+Existing item focus/tab-stop behavior is preserved.
 
 ## Measuring a string, not a control
 
@@ -93,6 +111,9 @@ There is **no type dropdown**. The target is chosen via a two-item `SelectorBar`
 `Name` and `Icon` live below the tab content (shared across both tabs). `ShowTabPanel(tag)` toggles the two panels' visibility, keeps `tabBar.SelectedItem` in sync, and re-derives the target; the `SelectorBar.SelectionChanged` handler routes through it (a `populating` flag guards re-entrancy, same pattern as `_initializing` in `UserSettings`).
 
 - The list is fed by `AppPickerEntry` rows (display name, `LaunchPath`, `IsPwa`, icon target). The catalog combines `GetInstalledApplications()` + `GetInstalledPwas()` and is built on a **background STA thread** via `AppPickerService.RunStaAsync` (the shell enumeration is expensive and apartment-threaded), so the dialog opens instantly and the list fills in.
+- Duplicate names are detected case-insensitively against the complete catalog before filtering. Their list-only `DisplayName` includes the executable filename, for example `Steam (Steam.exe)` and `Steam (uninstall.exe)`; virtual shell entries use their activation target instead. The original `Name` still seeds the saved item's name. Filtering never changes these labels or removes catalog entries.
+- Every row has a tooltip with its full launch target (including the `shell:AppsFolder\` prefix for PWAs). `Windows/AppPickerRowActions.cs` attaches the tooltip and a `ContextFlyout` to the `ListViewItem` during `ContainerContentChanging`, clearing both when containers are recycled. This covers the entire row and supports right-click and the keyboard context-menu gesture.
+- The row menu offers **Open** and **Open containing folder**. Open immediately uses `FlyoutWindow.Launch`, including for uninstallers, with no confirmation or item save. It uses the editor's arguments when the row matches the current target; other rows use their unchanged catalog payload. Containing-folder is disabled for PWAs, virtual shell targets and missing filesystem parents. Opening the menu or invoking an action does not programmatically select the row or overwrite the editor's target.
 - Icons stream in asynchronously via `AppPickerService.LoadIcons` → `ShellIcons.Extract` (an `IShellItemImageFactory` 32px BGRA extraction). The `ListView` `DataTemplate` is built from a XAML string with `XamlReader.Load` and binds `{Binding Icon}` (`ObservableObject` change notification), since the dialog is code-built.
 - **Target resolution:** Selecting or preselecting an app also fills the File or link path, so switching tabs to enter arguments retains the selected target. `ResolveTarget()` keys off the active tab — `custom` → the typed path/link, retaining the picked entry's PWA type while its path matches and otherwise classifying it with `LooksLikeWebUrl` / `LooksLikeFilePath`; `list` → the remembered `pickedEntry`, even if search filtering hides its row. It returns `(path, isPwa, isWebsite)`; `SyncDerived()` pushes that into the derived flags and the app-window options' visibility.
 - Stored values are unchanged from before (PWA → AUMID in `Path` + `IsPwa`; Store app → `shell:AppsFolder\…` path; exe → file path; website URL → `IsWebsite`), so launch behaviour in `FlyoutWindow` is preserved.
@@ -132,8 +153,25 @@ Conventions for these windows:
 - `WindowChrome.ApplyIcon(hwnd)` for the app icon. Both paths are needed: `WM_SETICON` drives taskbar/Alt-Tab, `AppWindow.SetIcon` drives the title bar.
 - Set the owner via `SetWindowLongPtr(GWLP_HWNDPARENT)`, **and** have the flyout drop its `IsAlwaysOnTop` flag while the window is open — ownership alone does not beat a topmost owner.
 - Size to content. Surplus height shows as a large empty gap, because the form is top-aligned above a bottom-anchored button row.
+- When a following setup step needs the closing window's location, capture its actual HWND bounds before closing. `LauncherSettingsWindow.ShowAsync` exposes an optional `onClosing` callback for this; its Done/Escape path captures explicitly, and `AppWindow.Closing` covers system close actions. The close completion result and immediate-save behavior remain unchanged.
 - Don't leak the window: the flyout tracks the open editor and closes it when edit mode ends, so an orphan can't commit into a launcher the user has navigated away from.
 - **A dialog that both a settings window and the flyout need is split from its host.** `BookmarkPicker` was a `ContentDialog`; it is now `BookmarkPickerView` (the chooser) plus two hosts: the dialog for full-size windows, `BookmarkPickerWindow` for the flyout. Copying the chooser into a second window would have been the third place browser bookmarks are read.
+
+For a settings row with changing status, reuse `BuildRow(title, TextBlock, control)` and update its
+normal subtitle. Keep sibling font size 12, 0.5 opacity and wrapping, label/control spacing and vertical
+centering. Do not add a third line with its own centered `MaxWidth`; the taskbar pin row uses the
+same subtitle for its description, live state and replacement warning.
+
+
+### Shared launcher view and regular item editor
+
+`LauncherItemsEditorWindow` is a regular owned window matching `LauncherSettingsWindow`: `MicaBackdrop`, `WindowChrome.BuildTitleBar`/`ApplyIcon`, saved theme, 24-DIP body padding and an external accent Done button. Its four top actions use regular icon-and-text buttons in `WrappingPanel`, wrapping at their natural widths while preserving child/tab order. Done remains in the conventional footer. The item view preserves intrinsic dimensions and scrolls rather than reflows. A preview-only rounded Border uses dynamic `CardBackgroundFillColorDefaultBrush` and `CardStrokeColorDefaultBrush` ThemeResource references with a 1-DIP neutral stroke. Its dimensions equal the unchanged item view plus the outer stroke, so the surface never fills the viewport or insets items. The regular host has no blue outer edit outline; the native popup keeps its DWM outline and floating toolbar. Main Settings navigation/cards remain normal behind the owned editor.
+
+`Controls/LauncherItemsView` shares one renderer/edit implementation through `ILauncherItemsHost`, using a distinct control instance per host and no live transfer across XamlRoots. Existing owned item, group-name and launcher-settings dialogs use the active host HWND and keep their own XamlRoot/file-picker behavior. A disabled `ContentControl` ancestor scopes pointer/keyboard/accessibility input while a secondary dialog is open; restore its enabled state and prior focus after the dialog, without taking foreground from another app. Done/Escape/close finishes editing with changes already saved. Minimize/app switching retains the regular editor; same-launcher entry focuses it or its owned modal.
+
+Keep the same keyed resources, templates, bindings, events and `ConditionalNameToolTip` wiring in all three item modes. `UserControl` instances share implementation, not live visual trees. Natural height arithmetic and string-only label measurement remain in the shared view; monitor clamping belongs to the popup host, and window/viewport sizing never changes item geometry.
+
+`LaunchersPage.CreateLauncherActionButton` keeps Settings and Items labels, subtitles, padding and chevrons consistent. Web cards use it once for **Settings**, with their address or **No web address set** below. Shortcut cards use sibling primary Items and secondary ellipsis buttons, never nested interactive controls. Explicit names/tooltips cover both actions; read-only subscribers retain secondary export while edit/import stay disabled.
 
 ## Flyouts and menus inside the flyout window
 
@@ -208,26 +246,20 @@ Two rules, both learned the hard way:
 Give the expanders `HorizontalAlignment="Stretch"` *and* `HorizontalContentAlignment="Stretch"` (a
 shared `Style` is easiest) or they size to their content and the list looks ragged.
 
-### An expanding section must scroll its own start into view
+### Settings section expansion defaults
 
-`Classes/ExpanderReveal.Attach(expander)` — call it on every `Expander` that lives in a scrolling
-form. A section near the bottom of a scroller reveals its content **below the fold**: the header
-stays put, everything the click produced is off screen, and it reads as having done nothing.
-Launcher settings' **Advanced** is the worst case by construction, since it is deliberately last in
-the dialog.
+In launcher settings, General, Appearance, and Size and position start expanded; Behavior and
+Privacy and sign-ins start collapsed. All five Sync destination sections still start expanded.
+Users may collapse and reopen sections; ordinary expansion does not request scrolling.
+Sync expansion is independent of provider enablement, sign-in and stored connection settings.
 
-Two details are load-bearing, and both are in the helper so no call site has to know them:
+An explicit launcher section link expands its destination if needed and calls the framework's
+`StartBringIntoView` once after the form is loaded. A section hidden by the launcher type falls
+back to General. Use normal framework scrolling for this navigation, without animation waits,
+temporary scroll extent, or an automatic reveal handler on the expanders.
 
-- **`VerticalAlignmentRatio = 0`, not a bare `StartBringIntoView()`.** The default scrolls the
-  least amount that makes the target visible, which for a section taller than the viewport shows
-  its *end* — exactly the sections that most need the start.
-- **It runs twice**, the second pass at `DispatcherQueuePriority.Low`. The section's rows are still
-  being realised while `Expanding` runs, so the scroller's extent is not yet large enough to put a
-  bottom-most header at the top.
-
-Note this is *not* in tension with "the window does not resize when Advanced expands" (see
-[web-launchers.md](web-launchers.md)) — that rejects growing the **window**, which jolts. Scrolling
-the existing viewport is what that decision assumed would happen, and it now actually does.
+Advanced remains the web flyout's troubleshooting submenu, closed until opened. There is no
+Advanced section in the settings form.
 
 ## Drag-and-Drop (FlyoutWindow)
 
@@ -236,3 +268,58 @@ ListViews use `CanDragItems="True"` with custom handlers — **never `CanReorder
 ## Groups
 
 Groups render a heading plus a nested child `ListView`. In icon mode, consecutive ungrouped items are wrapped into ephemeral **synthetic groups** so loose icons pack into a wrapping grid; these are never persisted and never editable. See [drag-drop.md](drag-drop.md).
+
+## Shared icon gallery
+
+`IconGallery.CreateFlyout` and `CreateLauncherIconFlyout` are option wrappers over one gallery
+core. Keep sizing, selection, Browse, Confirm/Cancel and search behavior in that shared core.
+Use the actual owner HWND for the file picker and monitor/DPI lookup. A compact new-launcher
+settings window must offer the same complete gallery as an existing launcher's settings.
+
+The picker sets `ShouldConstrainToRootBounds = false` and caps its complete, definite height
+to the monitor work area in DIPs. Its star row contains a finite `Grid` host with `MinHeight = 0`;
+footer actions remain in Auto rows outside it. Avoid fixed list minimums or owner-height caps
+that force the footer off-screen. Emoji `TextBlock` previews explicitly enable color fonts and
+use Segoe UI Emoji. The color palette is for Fluent glyphs only.
+
+
+Use an explicit supported placement such as `Bottom`. In Windows App SDK 1.8,
+`FlyoutPlacementMode.Auto` is exposed by the enum but rejected by WinUI's show-time
+`ValidateFlyoutPlacementMode`, returning `E_INVALIDARG` before the Opening event. The framework
+can still choose a fitting side with explicit `Bottom`; do not replace it with `Auto`.
+
+
+Large local symbol catalogs use `IconCatalogView`: a grouped `GridView` with `ItemsWrapGrid` and `CacheLength = 1`, directly in that finite host. The small-list `ScrollViewer` is its sibling, never its parent. An outer scroller or Auto/infinite measure defeats UI virtualization even when the panel type is virtualizing. Data filtering runs synchronously over small plain records; WinUI creates/recycles only the nearby UI tiles on its UI thread. Reuse this view for both Fluent and emoji catalogs. Clear the source on close.
+
+For symbol selection outlines, use the native ListViewItemPresenter selected-border properties with the stock GridViewItem theme resources, including pointer-over, pressed, disabled and inner-border brushes. Keep the container BorderThickness fixed at zero so selection chrome does not change content geometry; leave keyboard/focus behavior and selected foreground tint native. ContainerContentChanging phase zero may run before Content is assigned, so container.Content is not a reliable selection identity there. Follow the [WinUI 1.8.5 GridViewItem template](https://github.com/microsoft/microsoft-ui-xaml/blob/468c624ca9131f60059eab9f92ec3dc33404edda/src/controls/dev/CommonStyles/GridViewItem_themeresources.xaml) and [container preparation ordering](https://github.com/microsoft/microsoft-ui-xaml/blob/468c624ca9131f60059eab9f92ec3dc33404edda/src/dxaml/xcp/dxaml/lib/ListViewBase_Partial_ContainerPhase.cpp).
+
+Use page icon belongs in the web launcher's presets tab and follows Confirm/Cancel. Check its
+availability from the current launcher kind on each opening. Give icon-only tab buttons and
+compound-content choices explicit automation names; a tooltip alone is insufficient.
+
+
+Browse is a full-width image option inside the first App Icons/Launcher Presets tab, never a
+cross-tab footer link. Keep Confirm/Cancel pinned. Constrain the small-list scroller horizontally
+and use responsive wrapping for app-color and bounded selfh.st tiles. Page/Composite/Browse labels
+use a finite Star column so text wraps instead of enlarging the horizontal scroll extent.
+
+Restored selections are revealed with `SelectionReveal.AfterLayout`: a cancellable one-shot
+layout subscription followed by a guarded low-priority callback. Use native `ScrollIntoView` for
+virtualized catalog entries and `StartBringIntoView` for option buttons. Re-sourcing, tab/query
+changes and close invalidate the callback. Never add an unconditional top reset in Opened.
+Category group ToString values must be their human-readable names for automation.
+
+`AutomaticPageIconChoice` keeps the selectable image/status in a finite Star column and a
+separate named Retry action in an Auto column. Missing/failed images have explicit text; do not
+present a globe as successful preview. Decode actual bytes before publishing success, retain the
+last good preview after a failed retry, and guard each awaited completion by request generation,
+current URL/kind and open lifetime. The latest undisposed request stops its own animation even
+when the source changed; that state shows the address/type-change message and disables Retry
+and the stale page choice until reopening. Newer generations retain ownership of their own UI.
+Dispose cancels work and stops the loading animation. The
+option instance survives tab/query refreshes within an opening but is disposed on close. Only
+Confirm passes its memory preview to the managed-file adoption path. Browse retains its existing
+file-picker commit flow and does not gain page-only Retry behavior. Retry may fetch directly
+from the actual site after the existing loaded-page path fails; failure text explains that the
+launcher may need to be opened and signed in. Keep the last good preview and saved custom icon,
+without showing a placeholder as success or changing pending selection on a failed request.

@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
@@ -10,6 +11,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using static LittleLauncher.Classes.NativeMethods;
 
 namespace LittleLauncher.Classes;
 
@@ -24,7 +26,10 @@ internal static class IconGallery
     /// <param name="ImagePath">Local file path for image-based icons. Null when a glyph was selected.</param>
     /// <param name="PresetMode">TrayIconMode preset string (e.g. "Blue", "Composite"). Null when a glyph/image was selected.</param>
     /// <param name="Color">Optional hex color for the glyph (e.g. "#FF0000"). Null or empty for default theme color.</param>
-    public record IconResult(string? Glyph, string? ImagePath, string? PresetMode = null, string? Color = null);
+    /// <param name="UsePageIcon">Restores a web launcher's managed automatic page icon when confirmed.</param>
+    /// <param name="PageIconPreview">Non-mutating preview tied to the address being confirmed.</param>
+    public record IconResult(string? Glyph, string? ImagePath, string? PresetMode = null,
+        string? Color = null, bool UsePageIcon = false, PageIconPreview? PageIconPreview = null);
 
     // ── Tab indices ──────────────────────────────────────────
     private const int TabGlyphs = 0;
@@ -33,9 +38,6 @@ internal static class IconGallery
     private const int TabSelfhSt = 3;
 
     // ── Layout constants ─────────────────────────────────────
-    private const double IconButtonSize = 40;
-    private const int IconsPerRow = 9;
-    private const int SelfhStIconsPerRow = 4;
     private const int MaxVisibleSelfhStIcons = 120;
 
     private static readonly HttpClient SelfhStHttp = new() { Timeout = TimeSpan.FromSeconds(10) };
@@ -63,361 +65,112 @@ internal static class IconGallery
     private static readonly TimeSpan SelfhStCatalogTtl = TimeSpan.FromHours(6);
 
     /// <summary>
-    /// Creates a Flyout containing the icon gallery. Attach it to a Button.
+    /// Creates the item icon gallery. Current selection is read again on every open when
+    /// a provider is supplied, so a confirmed choice is also the next opening's selection.
     /// </summary>
-    /// <param name="onSelected">Invoked when the user picks an icon.</param>
-    /// <param name="onBrowseRequested">Invoked when the user wants to browse for a custom file (caller handles the picker).</param>
-    /// <param name="onReset">Invoked when the user clicks "Reset to default".</param>
-    /// <param name="currentGlyph">Current glyph to pre-select when the flyout opens.</param>
-    /// <param name="currentColor">Current hex color to pre-select in the color palette.</param>
-    /// <param name="currentImagePath">Current image path to pre-select in the App Icons tab.</param>
     public static Flyout CreateFlyout(
         Action<IconResult> onSelected,
         Action onBrowseRequested,
         Action onReset,
         string? currentGlyph = null,
         string? currentColor = null,
-        string? currentImagePath = null)
+        string? currentImagePath = null,
+        IntPtr ownerHwnd = default,
+        Func<IconResult>? getCurrentSelection = null)
     {
-        var flyout = new Flyout
-        {
-            Placement = FlyoutPlacementMode.Bottom
-        };
-
-        // ── Flyout presenter sizing ──
-        var presenterStyle = new Style(typeof(FlyoutPresenter));
-        presenterStyle.Setters.Add(new Setter(FrameworkElement.MaxWidthProperty, 480.0));
-        presenterStyle.Setters.Add(new Setter(FrameworkElement.MinWidthProperty, 420.0));
-        presenterStyle.Setters.Add(new Setter(FrameworkElement.MaxHeightProperty, 600.0));
-        presenterStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(12)));
-        presenterStyle.Setters.Add(new Setter(ScrollViewer.HorizontalScrollBarVisibilityProperty,
-            ScrollBarVisibility.Disabled));
-        presenterStyle.Setters.Add(new Setter(ScrollViewer.VerticalScrollBarVisibilityProperty,
-            ScrollBarVisibility.Disabled));
-        flyout.FlyoutPresenterStyle = presenterStyle;
-
-        // ── State ──
-        int activeTab = TabGlyphs;
-        IconResult? pendingSelection = null;
-        int selfhStRequestVersion = 0;
-
-        // ── Root layout ──
-        var root = new Grid { Width = 396 };
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-        // ── Search box ──
-        var searchBox = new AutoSuggestBox
-        {
-            PlaceholderText = "Search icons\u2026",
-            QueryIcon = new SymbolIcon(Symbol.Find),
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-        Grid.SetRow(searchBox, 0);
-        root.Children.Add(searchBox);
-
-        // ── Tab bar ──
-        var tabBar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Thickness(0, 0, 0, 8) };
-        var tabButtons = new List<Button>();
-        var contentScroller = new ScrollViewer
-        {
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            MinHeight = 140,
-            MaxHeight = 320,
-            VerticalAlignment = VerticalAlignment.Stretch
-        };
-        var contentPanel = new StackPanel();
-        contentScroller.Content = contentPanel;
-
-        // Color getter — assigned after BuildColorPalette below
-        Func<string> getSelectedColor = () => "";
-        StackPanel colorPalette = null!;
-        FrameworkElement selfhStAttribution = CreateSelfhStAttributionBar();
-
-        // ── Confirm / Cancel bar ──
-        var confirmBar = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 8,
-            Margin = new Thickness(0, 8, 0, 0)
-        };
-        var confirmBtn = new Button
-        {
-            Content = "Confirm",
-            Style = (Style)Application.Current.Resources["AccentButtonStyle"],
-            IsEnabled = false
-        };
-        var cancelBtn = new Button { Content = "Cancel" };
-        confirmBar.Children.Add(confirmBtn);
-        confirmBar.Children.Add(cancelBtn);
-
-        confirmBtn.Click += (s, e) =>
-        {
-            if (pendingSelection != null)
-            {
-                // Reapply current color in case user changed it after selecting the icon
-                var sel = pendingSelection;
-                if (sel.Glyph != null)
-                    sel = sel with { Color = getSelectedColor() };
-                onSelected(sel);
-            }
-            flyout.Hide();
-        };
-        cancelBtn.Click += (s, e) => flyout.Hide();
-
-        Button? selectedIconButton = null;
-
-        void HighlightIconButton(Button btn)
-        {
-            if (selectedIconButton != null)
-            {
-                selectedIconButton.BorderThickness = new Thickness(0);
-                selectedIconButton.BorderBrush = null;
-            }
-            selectedIconButton = btn;
-            btn.BorderThickness = new Thickness(2);
-            btn.BorderBrush = GetAccentBrush();
-        }
-
-        void SetPending(IconResult result)
-        {
-            pendingSelection = result;
-            confirmBtn.IsEnabled = true;
-        }
-
-        void UpdateFlyoutHeights()
-        {
-            double availableHeight = root.XamlRoot?.Size.Height ?? 720;
-            double maxRootHeight = Math.Max(340, Math.Min(560, availableHeight - 24));
-            root.MaxHeight = maxRootHeight;
-
-            double reservedHeight = 164;
-            if (colorPalette.Visibility == Visibility.Visible)
-                reservedHeight += 64;
-            if (selfhStAttribution.Visibility == Visibility.Visible)
-                reservedHeight += 32;
-
-            double contentHeight = Math.Max(140, Math.Min(320, maxRootHeight - reservedHeight));
-            contentScroller.Height = contentHeight;
-        }
-
-        void SelectTab(int tabIndex, string? searchQuery = null, string? currentGlyphToSelect = null, string? currentImageToSelect = null)
-        {
-            activeTab = tabIndex;
-            selectedIconButton = null;
-            for (int i = 0; i < tabButtons.Count; i++)
-            {
-                tabButtons[i].Background = i == tabIndex
-                    ? GetAccentBrush()
-                    : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-                tabButtons[i].Foreground = i == tabIndex
-                    ? new SolidColorBrush(Microsoft.UI.Colors.White)
-                    : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
-            }
-
-            contentPanel.Children.Clear();
-            string query = (searchQuery ?? "").Trim().ToLowerInvariant();
-
-            // Color palette only applies to glyph/emoji tabs
-            colorPalette.Visibility = tabIndex is TabGlyphs or TabEmoji
-                ? Visibility.Visible : Visibility.Collapsed;
-            selfhStAttribution.Visibility = tabIndex == TabSelfhSt
-                ? Visibility.Visible : Visibility.Collapsed;
-            UpdateFlyoutHeights();
-
-            switch (tabIndex)
-            {
-                case TabGlyphs:
-                    BuildGlyphsContent(contentPanel, query, icon =>
-                    {
-                        SetPending(new IconResult(icon.Glyph, null, Color: getSelectedColor()));
-                    }, getSelectedColor(), HighlightIconButton, currentGlyphToSelect);
-                    break;
-                case TabEmoji:
-                    BuildEmojiContent(contentPanel, query, emoji =>
-                    {
-                        SetPending(new IconResult(emoji, null, Color: getSelectedColor()));
-                    }, getSelectedColor(), HighlightIconButton, currentGlyphToSelect);
-                    break;
-                case TabAppIcons:
-                    BuildAppIconsContent(contentPanel, query, path =>
-                    {
-                        SetPending(new IconResult(null, path));
-                    }, HighlightIconButton, currentImageToSelect);
-                    break;
-                case TabSelfhSt:
-                    int requestVersion = ++selfhStRequestVersion;
-                    BuildSelfhStLoadingContent(contentPanel);
-                    _ = LoadSelfhStContentAsync(
-                        contentPanel,
-                        query,
-                        path => SetPending(new IconResult(null, path)),
-                        HighlightIconButton,
-                        currentImageToSelect,
-                        () => requestVersion == selfhStRequestVersion && activeTab == TabSelfhSt);
-                    break;
-            }
-        }
-
-        // Tab: Glyphs
-        var glyphsBtn = MakeTabButton(new FontIcon { Glyph = "\uE790", FontSize = 16 }, "Segoe Fluent Icons");
-        glyphsBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabGlyphs); };
-        tabButtons.Add(glyphsBtn);
-        tabBar.Children.Add(glyphsBtn);
-
-        // Tab: Emoji
-        var emojiBtn = MakeTabButton(new TextBlock { Text = "😀", FontSize = 16 }, "Emoji");
-        emojiBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabEmoji); };
-        tabButtons.Add(emojiBtn);
-        tabBar.Children.Add(emojiBtn);
-
-        // Tab: App Icons
-        var appBtn = MakeTabButton(new FontIcon { Glyph = "\uE737", FontSize = 16 }, "App Icons");
-        appBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabAppIcons); };
-        tabButtons.Add(appBtn);
-        tabBar.Children.Add(appBtn);
-
-        var selfhStBtn = MakeTabButton(new TextBlock { Text = "sh", FontSize = 13, FontWeight = FontWeights.Bold }, "selfh.st Icons");
-        selfhStBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabSelfhSt); };
-        tabButtons.Add(selfhStBtn);
-        tabBar.Children.Add(selfhStBtn);
-
-        Grid.SetRow(tabBar, 1);
-        root.Children.Add(tabBar);
-
-        // ── Color palette ──
-        var (palette, colorGetter) = BuildColorPalette(currentColor,
-            onColorChanged: () => SelectTab(activeTab, searchBox.Text));
-        colorPalette = palette;
-        getSelectedColor = colorGetter;
-        Grid.SetRow(colorPalette, 2);
-        root.Children.Add(colorPalette);
-
-        Grid.SetRow(contentScroller, 3);
-        root.Children.Add(contentScroller);
-
-        // ── Bottom buttons ──
-        var bottomBar = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            Margin = new Thickness(0, 8, 0, 0)
-        };
-        var browseBtn = new HyperlinkButton
-        {
-            Content = "Browse for image\u2026",
-            Padding = new Thickness(0)
-        };
-        browseBtn.Click += (s, e) =>
-        {
-            flyout.Hide();
-            onBrowseRequested();
-        };
-        bottomBar.Children.Add(browseBtn);
-
-        var resetBtn = new HyperlinkButton
-        {
-            Content = "Reset to default",
-            Padding = new Thickness(0)
-        };
-        resetBtn.Click += (s, e) =>
-        {
-            flyout.Hide();
-            onReset();
-        };
-        bottomBar.Children.Add(resetBtn);
-        Grid.SetRow(bottomBar, 4);
-        root.Children.Add(bottomBar);
-        Grid.SetRow(selfhStAttribution, 5);
-        root.Children.Add(selfhStAttribution);
-        Grid.SetRow(confirmBar, 6);
-        root.Children.Add(confirmBar);
-
-        // ── Search handler ──
-        searchBox.TextChanged += (s, e) =>
-        {
-            SelectTab(activeTab, searchBox.Text);
-        };
-
-        flyout.Content = root;
-
-        // Initial load — pre-select the current icon if provided
-        flyout.Opened += (s, e) =>
-        {
-            pendingSelection = null;
-            confirmBtn.IsEnabled = false;
-            UpdateFlyoutHeights();
-
-            // Determine which tab to open based on current icon
-            if (!string.IsNullOrEmpty(currentImagePath))
-            {
-                // Check if image is an app color icon
-                string fileName = Path.GetFileName(currentImagePath);
-                if (fileName.StartsWith("app-", StringComparison.OrdinalIgnoreCase))
-                    SelectTab(TabAppIcons, null, currentImageToSelect: currentImagePath);
-                else if (IsSelfhStImagePath(currentImagePath))
-                    SelectTab(TabSelfhSt, null, currentImageToSelect: currentImagePath);
-                else
-                    SelectTab(TabGlyphs); // custom file — no tab to pre-select in
-            }
-            else if (!string.IsNullOrEmpty(currentGlyph) && !IsFluentGlyph(currentGlyph))
-                SelectTab(TabEmoji, null, currentGlyphToSelect: currentGlyph);
-            else if (!string.IsNullOrEmpty(currentGlyph))
-                SelectTab(TabGlyphs, null, currentGlyphToSelect: currentGlyph);
-            else
-                SelectTab(TabGlyphs);
-        };
-
-        return flyout;
+        return CreateGallery(onSelected, onBrowseRequested, onReset, ownerHwnd,
+            getCurrentSelection ?? (() => new IconResult(currentGlyph, currentImagePath, Color: currentColor)),
+            launcherPresets: false);
     }
 
-    /// <summary>
-    /// Creates a Flyout for choosing a launcher's tray icon. Includes all icon gallery tabs
-    /// plus a "Launcher Presets" tab with Composite and app color icons.
-    /// </summary>
+    /// <summary>Creates the same gallery with launcher presets in place of item app icons.</summary>
     public static Flyout CreateLauncherIconFlyout(
         string currentMode,
         Action<IconResult> onSelected,
-        Action onBrowseRequested)
+        Action onBrowseRequested,
+        IntPtr ownerHwnd = default,
+        Func<IconResult>? getCurrentSelection = null,
+        Func<bool>? canUsePageIcon = null,
+        Func<PageIconPreviewSource>? getPageIconPreview = null)
+    {
+        return CreateGallery(onSelected, onBrowseRequested, null, ownerHwnd,
+            getCurrentSelection ?? (() => LauncherSelection(currentMode, null)),
+            launcherPresets: true, canUsePageIcon: canUsePageIcon, getPageIconPreview: getPageIconPreview);
+    }
+
+    /// <summary>Converts a launcher's saved mode and image path to the gallery's shared selection.</summary>
+    public static IconResult LauncherSelection(string mode, string? imagePath)
+    {
+        if (TrayIconModes.IsGlyphMode(mode))
+        {
+            return new IconResult(TrayIconModes.GetGlyphCharacter(mode), null,
+                Color: TrayIconModes.GetGlyphColor(mode));
+        }
+
+        return mode == TrayIconModes.Custom
+            ? new IconResult(null, imagePath)
+            : new IconResult(null, null, mode);
+    }
+
+    /// <summary>
+    /// Opens the image picker on its actual owning HWND. All icon Browse buttons accept
+    /// the same formats; cancellation returns null without changing the saved selection.
+    /// </summary>
+    public static async Task<string?> PickImageAsync(IntPtr ownerHwnd)
+    {
+        var picker = new global::Windows.Storage.Pickers.FileOpenPicker();
+        foreach (string extension in new[] { ".ico", ".png", ".jpg", ".jpeg", ".bmp" })
+        {
+            picker.FileTypeFilter.Add(extension);
+        }
+
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, ownerHwnd);
+        var file = await picker.PickSingleFileAsync();
+        return file?.Path;
+    }
+
+    /// <summary>
+    /// Owns layout, navigation and pending selection for both galleries. Only icon content
+    /// and the optional reset action differ. The footer stays outside the shrinking scroller.
+    /// </summary>
+    private static Flyout CreateGallery(
+        Action<IconResult> onSelected, Action onBrowseRequested, Action? onReset,
+        IntPtr ownerHwnd, Func<IconResult> getCurrentSelection, bool launcherPresets,
+        Func<bool>? canUsePageIcon = null,
+        Func<PageIconPreviewSource>? getPageIconPreview = null)
     {
         var flyout = new Flyout
         {
-            Placement = FlyoutPlacementMode.Bottom
+            // WinUI's show-time validator rejects Auto with E_INVALIDARG. Bottom also
+            // allows the framework to choose another side when space is constrained.
+            Placement = FlyoutPlacementMode.Bottom,
+            ShouldConstrainToRootBounds = false
         };
-
         var presenterStyle = new Style(typeof(FlyoutPresenter));
+        presenterStyle.Setters.Add(new Setter(FrameworkElement.MinWidthProperty, 0.0));
+        presenterStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 0.0));
         presenterStyle.Setters.Add(new Setter(FrameworkElement.MaxWidthProperty, 480.0));
-        presenterStyle.Setters.Add(new Setter(FrameworkElement.MinWidthProperty, 420.0));
         presenterStyle.Setters.Add(new Setter(FrameworkElement.MaxHeightProperty, 600.0));
         presenterStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(12)));
-        presenterStyle.Setters.Add(new Setter(ScrollViewer.HorizontalScrollBarVisibilityProperty,
-            ScrollBarVisibility.Disabled));
-        presenterStyle.Setters.Add(new Setter(ScrollViewer.VerticalScrollBarVisibilityProperty,
-            ScrollBarVisibility.Disabled));
+        presenterStyle.Setters.Add(new Setter(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled));
+        presenterStyle.Setters.Add(new Setter(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled));
         flyout.FlyoutPresenterStyle = presenterStyle;
 
-        const int TabPresets = 0;
-        const int TabGlyphsL = 1;
-        const int TabEmojiL = 2;
-        const int TabSelfhStL = 3;
+        // A definite height gives the star row a finite viewport even in a compact owner window.
+        var root = new Grid { Width = 396, Height = 520 };
+        for (int row = 0; row < 7; row++)
+        {
+            root.RowDefinitions.Add(new RowDefinition
+            {
+                Height = row == 3 ? new GridLength(1, GridUnitType.Star) : GridLength.Auto
+            });
+        }
 
-        int activeTab = TabPresets;
-        IconResult? pendingSelectionL = null;
-        int selfhStRequestVersionL = 0;
-        var root = new Grid { Width = 396 };
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        void AddRow(FrameworkElement element, int row)
+        {
+            Grid.SetRow(element, row);
+            root.Children.Add(element);
+        }
 
         var searchBox = new AutoSuggestBox
         {
@@ -425,356 +178,334 @@ internal static class IconGallery
             QueryIcon = new SymbolIcon(Symbol.Find),
             Margin = new Thickness(0, 0, 0, 8)
         };
-        Grid.SetRow(searchBox, 0);
-        root.Children.Add(searchBox);
-
+        AddRow(searchBox, 0);
         var tabBar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2, Margin = new Thickness(0, 0, 0, 8) };
-        var tabButtons = new List<Button>();
+        AddRow(tabBar, 1);
+        var contentPanel = new StackPanel();
         var contentScroller = new ScrollViewer
         {
+            Content = contentPanel,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            MinHeight = 140,
-            MaxHeight = 320,
+            HorizontalScrollMode = ScrollMode.Disabled,
+            MinHeight = 0,
             VerticalAlignment = VerticalAlignment.Stretch
         };
-        var contentPanel = new StackPanel();
-        contentScroller.Content = contentPanel;
+        // The large symbol catalogs own their scrolling viewport. The legacy scroller is
+        // a sibling used only for the small preset/image lists, never their ancestor.
+        var contentHost = new Grid { MinHeight = 0 };
+        contentHost.Children.Add(contentScroller);
+        AddRow(contentHost, 3);
+        var attribution = CreateSelfhStAttributionBar();
+        AddRow(attribution, 5);
 
-        // Color getter — assigned after BuildColorPalette below
-        Func<string> getSelectedColorL = () => "";
-        StackPanel colorPaletteL = null!;
-        FrameworkElement selfhStAttributionL = CreateSelfhStAttributionBar();
-
-        // ── Confirm / Cancel bar ──
-        var confirmBarL = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 8,
-            Margin = new Thickness(0, 8, 0, 0)
-        };
-        var confirmBtnL = new Button
+        var confirmButton = new Button
         {
             Content = "Confirm",
-            Style = (Style)Application.Current.Resources["AccentButtonStyle"],
-            IsEnabled = false
+            Style = (Style)Application.Current.Resources["AccentButtonStyle"]
         };
-        var cancelBtnL = new Button { Content = "Cancel" };
-        confirmBarL.Children.Add(confirmBtnL);
-        confirmBarL.Children.Add(cancelBtnL);
-
-        confirmBtnL.Click += (s, e) =>
+        var cancelButton = new Button { Content = "Cancel" };
+        var confirmBar = new StackPanel
         {
-            if (pendingSelectionL != null)
-            {
-                var sel = pendingSelectionL;
-                if (sel.Glyph != null)
-                    sel = sel with { Color = getSelectedColorL() };
-                onSelected(sel);
-            }
-            flyout.Hide();
+            Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8, Margin = new Thickness(0, 8, 0, 0)
         };
-        cancelBtnL.Click += (s, e) => flyout.Hide();
+        confirmBar.Children.Add(confirmButton);
+        confirmBar.Children.Add(cancelButton);
+        AddRow(confirmBar, 6);
 
-        Button? selectedIconButtonL = null;
-
-        void HighlightIconButtonL(Button btn)
+        var bottomBar = new StackPanel
         {
-            if (selectedIconButtonL != null)
+            Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 8, 0, 0)
+        };
+        if (onReset != null)
+        {
+            var resetButton = new HyperlinkButton { Content = "Reset to default", Padding = new Thickness(0) };
+            resetButton.Click += (_, _) =>
             {
-                selectedIconButtonL.BorderThickness = new Thickness(0);
-                selectedIconButtonL.BorderBrush = null;
+                flyout.Hide();
+                onReset();
+            };
+            bottomBar.Children.Add(resetButton);
+        }
+        AddRow(bottomBar, 4);
+
+        int activeTab = TabAppIcons;
+        int requestVersion = 0;
+        bool changingTab = false;
+        bool galleryActive = false;
+        IconResult? pending = null;
+        Button? selectedButton = null;
+        StackPanel? palette = null;
+        Func<string> getColor = () => "";
+        var tabs = new List<(int Tab, Button Button)>();
+        Action? cancelOptionReveal = null;
+        bool revealRestoredOption = false;
+        AutomaticPageIconChoice? pageIconChoice = null;
+
+        void Highlight(Button button)
+        {
+            if (selectedButton != null)
+            {
+                selectedButton.BorderThickness = new Thickness(0);
+                selectedButton.BorderBrush = null;
             }
-            selectedIconButtonL = btn;
-            btn.BorderThickness = new Thickness(2);
-            btn.BorderBrush = GetAccentBrush();
-        }
-
-        void SetPendingL(IconResult result)
-        {
-            pendingSelectionL = result;
-            confirmBtnL.IsEnabled = true;
-        }
-
-        void UpdateFlyoutHeightsL()
-        {
-            double availableHeight = root.XamlRoot?.Size.Height ?? 720;
-            double maxRootHeight = Math.Max(320, Math.Min(540, availableHeight - 24));
-            root.MaxHeight = maxRootHeight;
-
-            double reservedHeight = 128;
-            if (colorPaletteL.Visibility == Visibility.Visible)
-                reservedHeight += 64;
-            if (selfhStAttributionL.Visibility == Visibility.Visible)
-                reservedHeight += 32;
-
-            double contentHeight = Math.Max(140, Math.Min(320, maxRootHeight - reservedHeight));
-            contentScroller.Height = contentHeight;
-        }
-
-        void SelectTab(int tabIndex, string? searchQuery = null, string? currentGlyphToSelect = null, string? currentPresetToSelect = null)
-        {
-            activeTab = tabIndex;
-            selectedIconButtonL = null;
-            for (int i = 0; i < tabButtons.Count; i++)
+            selectedButton = button;
+            button.BorderThickness = new Thickness(2);
+            button.BorderBrush = GetAccentBrush();
+            if (revealRestoredOption)
             {
-                tabButtons[i].Background = i == tabIndex
-                    ? GetAccentBrush()
-                    : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-                tabButtons[i].Foreground = i == tabIndex
+                revealRestoredOption = false;
+                int version = requestVersion;
+                cancelOptionReveal = SelectionReveal.AfterLayout(contentPanel,
+                    () => galleryActive && version == requestVersion && ReferenceEquals(selectedButton, button),
+                    () => button.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false }));
+            }
+        }
+
+        void SetPending(IconResult selection)
+        {
+            pending = selection;
+            confirmButton.IsEnabled = true;
+        }
+
+        var catalogView = new IconCatalogView(glyph =>
+        {
+            SetPending(new IconResult(glyph, null, Color: IsFluentGlyph(glyph) ? getColor() : null));
+        });
+        contentHost.Children.Add(catalogView);
+
+        void RefreshContent(bool revealSelection = false)
+        {
+            cancelOptionReveal?.Invoke();
+            cancelOptionReveal = null;
+            revealRestoredOption = revealSelection;
+            int version = ++requestVersion;
+            selectedButton = null;
+            if (pageIconChoice != null)
+            {
+                // This option survives content refreshes so its async preview is not restarted.
+                pageIconChoice.SelectButton.BorderThickness = new Thickness(0);
+                pageIconChoice.SelectButton.BorderBrush = null;
+            }
+            foreach (var (tab, button) in tabs)
+            {
+                button.Background = tab == activeTab ? GetAccentBrush() : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                button.Foreground = tab == activeTab
                     ? new SolidColorBrush(Microsoft.UI.Colors.White)
                     : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
             }
-
+            palette!.Visibility = activeTab == TabGlyphs ? Visibility.Visible : Visibility.Collapsed;
+            attribution.Visibility = activeTab == TabSelfhSt ? Visibility.Visible : Visibility.Collapsed;
             contentPanel.Children.Clear();
-            string query = (searchQuery ?? "").Trim().ToLowerInvariant();
+            catalogView.Clear();
+            bool symbols = activeTab is TabGlyphs or TabEmoji;
+            catalogView.Visibility = symbols ? Visibility.Visible : Visibility.Collapsed;
+            contentScroller.Visibility = symbols ? Visibility.Collapsed : Visibility.Visible;
+            string query = searchBox.Text.Trim();
 
-            // Color palette only applies to glyph/emoji tabs
-            colorPaletteL.Visibility = tabIndex is TabGlyphsL or TabEmojiL
-                ? Visibility.Visible : Visibility.Collapsed;
-            selfhStAttributionL.Visibility = tabIndex == TabSelfhStL
-                ? Visibility.Visible : Visibility.Collapsed;
-            UpdateFlyoutHeightsL();
-
-            switch (tabIndex)
+            switch (activeTab)
             {
-                case TabPresets:
-                    BuildLauncherPresetsContent(contentPanel, query, mode =>
-                    {
-                        SetPendingL(new IconResult(null, null, mode));
-                    }, () =>
-                    {
-                        flyout.Hide();
-                        onBrowseRequested();
-                    }, HighlightIconButtonL, currentPresetToSelect);
+                case TabGlyphs:
+                    catalogView.ShowCatalog(FluentIconCategories, query, emoji: false,
+                        ParseHexBrush(getColor()) ?? (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"], pending?.Glyph, revealSelection);
                     break;
-                case TabGlyphsL:
-                    BuildGlyphsContent(contentPanel, query, icon =>
-                    {
-                        SetPendingL(new IconResult(icon.Glyph, null, Color: getSelectedColorL()));
-                    }, getSelectedColorL(), HighlightIconButtonL, currentGlyphToSelect);
+                case TabEmoji:
+                    catalogView.ShowCatalog(EmojiCategories, query, emoji: true,
+                        (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"], pending?.Glyph, revealSelection);
                     break;
-                case TabEmojiL:
-                    BuildEmojiContent(contentPanel, query, emoji =>
-                    {
-                        SetPendingL(new IconResult(emoji, null, Color: getSelectedColorL()));
-                    }, getSelectedColorL(), HighlightIconButtonL, currentGlyphToSelect);
+                case TabAppIcons when launcherPresets:
+                    BuildLauncherPresetsContent(contentPanel, query,
+                        mode => SetPending(new IconResult(null, null, mode)), Highlight, pending?.PresetMode,
+                        pageIconChoice, pending?.UsePageIcon == true);
+                    BuildBrowseOption(contentPanel, query, onBrowseRequested, flyout, Highlight,
+                        !string.IsNullOrEmpty(pending?.ImagePath) && selectedButton == null);
                     break;
-                case TabSelfhStL:
-                    int requestVersion = ++selfhStRequestVersionL;
+                case TabAppIcons:
+                    BuildAppIconsContent(contentPanel, query,
+                        path => SetPending(new IconResult(null, path)), Highlight, pending?.ImagePath);
+                    BuildBrowseOption(contentPanel, query, onBrowseRequested, flyout, Highlight,
+                        !string.IsNullOrEmpty(pending?.ImagePath) && selectedButton == null);
+                    break;
+                case TabSelfhSt:
                     BuildSelfhStLoadingContent(contentPanel);
-                    _ = LoadSelfhStContentAsync(
-                        contentPanel,
-                        query,
-                        path => SetPendingL(new IconResult(null, path)),
-                        HighlightIconButtonL,
-                        null,
-                        () => requestVersion == selfhStRequestVersionL && activeTab == TabSelfhStL);
+                    _ = LoadSelfhStContentAsync(contentPanel, query,
+                        path => SetPending(new IconResult(null, path)), Highlight, pending?.ImagePath,
+                        () => version == requestVersion && activeTab == TabSelfhSt && galleryActive);
                     break;
             }
         }
 
-        // Tab: Presets
-        var presetsBtn = MakeTabButton(new FontIcon { Glyph = "\uE737", FontSize = 16 }, "Launcher Presets");
-        presetsBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabPresets); };
-        tabButtons.Add(presetsBtn);
-        tabBar.Children.Add(presetsBtn);
-
-        // Tab: Glyphs
-        var glyphsBtn = MakeTabButton(new FontIcon { Glyph = "\uE790", FontSize = 16 }, "Segoe Fluent Icons");
-        glyphsBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabGlyphsL); };
-        tabButtons.Add(glyphsBtn);
-        tabBar.Children.Add(glyphsBtn);
-
-        // Tab: Emoji
-        var emojiBtn = MakeTabButton(new TextBlock { Text = "😀", FontSize = 16 }, "Emoji");
-        emojiBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabEmojiL); };
-        tabButtons.Add(emojiBtn);
-        tabBar.Children.Add(emojiBtn);
-
-        var selfhStBtn = MakeTabButton(new TextBlock { Text = "sh", FontSize = 13, FontWeight = FontWeights.Bold }, "selfh.st Icons");
-        selfhStBtn.Click += (s, e) => { searchBox.Text = ""; SelectTab(TabSelfhStL); };
-        tabButtons.Add(selfhStBtn);
-        tabBar.Children.Add(selfhStBtn);
-
-        Grid.SetRow(tabBar, 1);
-        root.Children.Add(tabBar);
-
-        // ── Color palette ──
-        string? initialColorL = TrayIconModes.IsGlyphMode(currentMode) ? TrayIconModes.GetGlyphColor(currentMode) : null;
-        var (paletteL, colorGetterL) = BuildColorPalette(initialColorL,
-            onColorChanged: () => SelectTab(activeTab, searchBox.Text));
-        colorPaletteL = paletteL;
-        getSelectedColorL = colorGetterL;
-        Grid.SetRow(colorPaletteL, 2);
-        root.Children.Add(colorPaletteL);
-
-        Grid.SetRow(contentScroller, 3);
-        root.Children.Add(contentScroller);
-        Grid.SetRow(selfhStAttributionL, 4);
-        root.Children.Add(selfhStAttributionL);
-        Grid.SetRow(confirmBarL, 5);
-        root.Children.Add(confirmBarL);
-
-        searchBox.TextChanged += (s, e) => SelectTab(activeTab, searchBox.Text);
-
-        flyout.Content = root;
-
-        // Initial load — pre-select the current icon if provided
-        flyout.Opened += (s, e) =>
+        void AddTab(int tab, UIElement icon, string label)
         {
-            pendingSelectionL = null;
-            confirmBtnL.IsEnabled = false;
-            UpdateFlyoutHeightsL();
-
-            if (TrayIconModes.IsGlyphMode(currentMode))
+            var button = MakeTabButton(icon, label);
+            button.Click += (_, _) =>
             {
-                string? glyph = TrayIconModes.GetGlyphCharacter(currentMode);
-                if (!string.IsNullOrEmpty(glyph) && !IsFluentGlyph(glyph))
-                    SelectTab(TabEmojiL, null, currentGlyphToSelect: glyph);
-                else if (!string.IsNullOrEmpty(glyph))
-                    SelectTab(TabGlyphsL, null, currentGlyphToSelect: glyph);
-                else
-                    SelectTab(TabPresets);
-            }
-            else if (!string.IsNullOrEmpty(currentMode) && currentMode != TrayIconModes.Custom)
-                SelectTab(TabPresets, null, currentPresetToSelect: currentMode);
-            else
-                SelectTab(TabPresets);
-        };
+                changingTab = true;
+                searchBox.Text = "";
+                changingTab = false;
+                activeTab = tab;
+                contentScroller.ChangeView(0, 0, null);
+                RefreshContent();
+            };
+            tabs.Add((tab, button));
+            tabBar.Children.Add(button);
+        }
 
+        AddTab(TabAppIcons, new FontIcon { Glyph = "\uE737", FontSize = 16 },
+            launcherPresets ? "Launcher Presets" : "App Icons");
+        AddTab(TabGlyphs, new FontIcon { Glyph = "\uE790", FontSize = 16 }, "Segoe Fluent Icons");
+        AddTab(TabEmoji, new TextBlock { Text = "😀", FontFamily = new FontFamily("Segoe UI Emoji"), IsColorFontEnabled = true, FontSize = 16 }, "Emoji");
+        AddTab(TabSelfhSt, new TextBlock { Text = "sh", FontSize = 13, FontWeight = FontWeights.Bold }, "selfh.st Icons");
+
+        searchBox.TextChanged += (_, _) =>
+        {
+            if (!changingTab && palette != null)
+            {
+                contentScroller.ChangeView(0, 0, null);
+                RefreshContent();
+            }
+        };
+        confirmButton.Click += (_, _) =>
+        {
+            if (pending != null)
+            {
+                var result = pending;
+                if (result.UsePageIcon)
+                {
+                    result = result with { PageIconPreview = pageIconChoice?.Preview };
+                }
+                if (result.Glyph != null)
+                {
+                    result = result with { Color = IsFluentGlyph(result.Glyph) ? getColor() : null };
+                }
+                flyout.Hide();
+                onSelected(result);
+            }
+        };
+        cancelButton.Click += (_, _) => flyout.Hide();
+        flyout.Closed += (_, _) =>
+        {
+            galleryActive = false;
+            pageIconChoice?.Dispose();
+            pageIconChoice = null;
+            requestVersion++;
+            cancelOptionReveal?.Invoke();
+            cancelOptionReveal = null;
+            catalogView.Clear();
+            contentPanel.Children.Clear();
+        };
+        flyout.Content = root;
+        flyout.Opening += (_, _) =>
+        {
+            galleryActive = true;
+            pageIconChoice?.Dispose();
+            pageIconChoice = null;
+            if (canUsePageIcon?.Invoke() == true && getPageIconPreview != null)
+            {
+                pageIconChoice = new AutomaticPageIconChoice(getPageIconPreview(),
+                    () =>
+                    {
+                        Highlight(pageIconChoice!.SelectButton);
+                        SetPending(new IconResult(null, null, UsePageIcon: true));
+                    },
+                    () =>
+                    {
+                        // A fetch finishing while another tile is selected never changes it.
+                        if (galleryActive && pending?.UsePageIcon == true)
+                        {
+                            pending = pending with { PageIconPreview = pageIconChoice?.Preview };
+                        }
+                    });
+            }
+            SizeGalleryToWorkArea(root, ownerHwnd);
+            var current = getCurrentSelection();
+            // Item icons can retain a fallback glyph alongside an image. The image wins
+            // in every preview and must also win when re-confirming that saved selection.
+            bool hasImage = !string.IsNullOrEmpty(current.ImagePath);
+            pending = current with
+            {
+                Glyph = hasImage || string.IsNullOrEmpty(current.Glyph) ? null : current.Glyph,
+                ImagePath = hasImage ? current.ImagePath : null,
+                PresetMode = hasImage || string.IsNullOrEmpty(current.PresetMode) ? null : current.PresetMode,
+                Color = hasImage ? null : current.Color
+            };
+            confirmButton.IsEnabled = pending.Glyph != null || pending.ImagePath != null || pending.PresetMode != null || pending.UsePageIcon;
+            changingTab = true;
+            searchBox.Text = "";
+            changingTab = false;
+            if (palette != null)
+            {
+                root.Children.Remove(palette);
+            }
+            (palette, getColor) = BuildColorPalette(pending.Color, () => RefreshContent());
+            AddRow(palette, 2);
+            activeTab = GetSelectionTab(pending, launcherPresets);
+            RefreshContent(revealSelection: true);
+            if (pageIconChoice != null)
+            {
+                _ = pageIconChoice.LoadCachedAsync();
+            }
+        };
+        flyout.Opened += (_, _) =>
+        {
+            SizeGalleryToWorkArea(root, ownerHwnd);
+        };
         return flyout;
+    }
+
+    /// <summary>Finds the tab containing a saved selection, retaining custom image selections.</summary>
+    private static int GetSelectionTab(IconResult selection, bool launcherPresets)
+    {
+        if (!string.IsNullOrEmpty(selection.ImagePath))
+        {
+            if (IsSelfhStImagePath(selection.ImagePath))
+            {
+                return TabSelfhSt;
+            }
+            return TabAppIcons;
+        }
+        if (!string.IsNullOrEmpty(selection.Glyph))
+        {
+            return IsFluentGlyph(selection.Glyph) ? TabGlyphs : TabEmoji;
+        }
+        return TabAppIcons;
+    }
+
+    /// <summary>
+    /// Caps the complete gallery to the owning monitor's visible work area in DIPs.
+    /// Owner-window height is deliberately irrelevant: new launchers have compact settings windows.
+    /// </summary>
+    private static void SizeGalleryToWorkArea(FrameworkElement root, IntPtr ownerHwnd)
+    {
+        double scale = ownerHwnd != IntPtr.Zero
+            ? GetDpiForWindow(ownerHwnd) / 96.0
+            : root.XamlRoot?.RasterizationScale ?? 1;
+        if (scale <= 0)
+        {
+            scale = 1;
+        }
+        double height = root.XamlRoot?.Size.Height ?? 600;
+        double width = root.XamlRoot?.Size.Width ?? 440;
+        if (ownerHwnd != IntPtr.Zero)
+        {
+            var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
+                Microsoft.UI.Win32Interop.GetWindowIdFromWindow(ownerHwnd),
+                Microsoft.UI.Windowing.DisplayAreaFallback.Nearest);
+            if (area != null)
+            {
+                height = area.WorkArea.Height / scale;
+                width = area.WorkArea.Width / scale;
+            }
+        }
+        // Includes presenter padding plus breathing room against the taskbar/screen edges.
+        root.Height = Math.Max(1, Math.Min(520, height - 48));
+        root.Width = Math.Max(1, Math.Min(396, width - 48));
     }
 
     // ═══════════════════════════════════════════════════════════
     //  Tab Content Builders
     // ═══════════════════════════════════════════════════════════
-
-    private static void BuildGlyphsContent(StackPanel panel, string query, Action<(string Glyph, string Name)> onPick, string? previewColor = null, Action<Button>? onButtonClicked = null, string? currentGlyph = null)
-    {
-        Brush? colorBrush = ParseHexBrush(previewColor);
-        foreach (var (category, icons) in FluentIconCategories)
-        {
-            var filtered = string.IsNullOrEmpty(query)
-                ? icons
-                : icons.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (filtered.Length == 0) continue;
-
-            if (string.IsNullOrEmpty(query))
-                panel.Children.Add(CategoryHeader(category));
-
-            var grid = new StackPanel();
-            var currentRow = new StackPanel { Orientation = Orientation.Horizontal };
-            int count = 0;
-
-            foreach (var icon in filtered)
-            {
-                var btn = new Button
-                {
-                    Width = IconButtonSize,
-                    Height = IconButtonSize,
-                    Padding = new Thickness(0),
-                    Margin = new Thickness(2),
-                    CornerRadius = new CornerRadius(4),
-                    Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-                    BorderThickness = new Thickness(0)
-                };
-                var fi = new FontIcon { Glyph = icon.Glyph, FontSize = 18 };
-                if (colorBrush != null) fi.Foreground = colorBrush;
-                btn.Content = fi;
-                ToolTipService.SetToolTip(btn, icon.Name);
-                btn.Click += (s, e) => { onButtonClicked?.Invoke((Button)s!); onPick(icon); };
-
-                // Pre-select if this matches the current icon
-                if (currentGlyph != null && icon.Glyph == currentGlyph)
-                {
-                    onButtonClicked?.Invoke(btn);
-                    onPick(icon);
-                }
-
-                currentRow.Children.Add(btn);
-
-                if (++count % IconsPerRow == 0)
-                {
-                    grid.Children.Add(currentRow);
-                    currentRow = new StackPanel { Orientation = Orientation.Horizontal };
-                }
-            }
-            if (currentRow.Children.Count > 0)
-                grid.Children.Add(currentRow);
-
-            panel.Children.Add(grid);
-        }
-
-        if (panel.Children.Count == 0)
-            panel.Children.Add(NoResults());
-    }
-
-    private static void BuildEmojiContent(StackPanel panel, string query, Action<string> onPick, string? previewColor = null, Action<Button>? onButtonClicked = null, string? currentGlyph = null)
-    {
-        Brush? colorBrush = ParseHexBrush(previewColor);
-        foreach (var (category, emojis) in EmojiCategories)
-        {
-            var filtered = string.IsNullOrEmpty(query)
-                ? emojis
-                : emojis.Where(e => e.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (filtered.Length == 0) continue;
-
-            if (string.IsNullOrEmpty(query))
-                panel.Children.Add(CategoryHeader(category));
-
-            var grid = new StackPanel();
-            var currentRow = new StackPanel { Orientation = Orientation.Horizontal };
-            int count = 0;
-
-            foreach (var emoji in filtered)
-            {
-                var btn = new Button
-                {
-                    Width = IconButtonSize,
-                    Height = IconButtonSize,
-                    Padding = new Thickness(0),
-                    Margin = new Thickness(2),
-                    CornerRadius = new CornerRadius(4),
-                    Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-                    BorderThickness = new Thickness(0)
-                };
-                btn.Content = new TextBlock
-                {
-                    Text = emoji.Emoji,
-                    FontSize = 22,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    TextAlignment = TextAlignment.Center
-                };
-                ToolTipService.SetToolTip(btn, emoji.Name);
-                btn.Click += (s, e) => { onButtonClicked?.Invoke((Button)s!); onPick(emoji.Emoji); };
-
-                // Pre-select if this matches the current icon
-                if (currentGlyph != null && emoji.Emoji == currentGlyph)
-                {
-                    onButtonClicked?.Invoke(btn);
-                    onPick(emoji.Emoji);
-                }
-
-                currentRow.Children.Add(btn);
-
-                if (++count % IconsPerRow == 0)
-                {
-                    grid.Children.Add(currentRow);
-                    currentRow = new StackPanel { Orientation = Orientation.Horizontal };
-                }
-            }
-            if (currentRow.Children.Count > 0)
-                grid.Children.Add(currentRow);
-
-            panel.Children.Add(grid);
-        }
-
-        if (panel.Children.Count == 0)
-            panel.Children.Add(NoResults());
-    }
 
     private static void BuildAppIconsContent(StackPanel panel, string query, Action<string> onImageSelected, Action<Button>? onButtonClicked = null, string? currentImagePath = null)
     {
@@ -791,8 +522,7 @@ internal static class IconGallery
 
         panel.Children.Add(CategoryHeader("App Color Icons"));
 
-        var grid = new StackPanel();
-        var currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var grid = CreateOptionWrapPanel(68, 76);
 
         foreach (string color in filtered)
         {
@@ -840,7 +570,7 @@ internal static class IconGallery
 
             // Pre-select if this matches the current icon
             if (currentImagePath != null &&
-                Path.GetFileName(currentImagePath).Equals($"app-{color.ToLowerInvariant()}.png", StringComparison.OrdinalIgnoreCase))
+                AreSameIconPath(currentImagePath, Path.Combine(ItemIconCacheDirectory, $"app-{color.ToLowerInvariant()}.png")))
             {
                 onButtonClicked?.Invoke(btn);
                 string cacheDir = GetItemIconCacheDir();
@@ -849,10 +579,9 @@ internal static class IconGallery
                 onImageSelected(dest);
             }
 
-            currentRow.Children.Add(btn);
+            grid.Children.Add(btn);
         }
 
-        grid.Children.Add(currentRow);
         panel.Children.Add(grid);
     }
 
@@ -890,7 +619,22 @@ internal static class IconGallery
             if (isCurrentRequest?.Invoke() == false)
                 return;
 
-            var filtered = FilterSelfhStIcons(catalog, query).Take(MaxVisibleSelfhStIcons).ToArray();
+            var visible = FilterSelfhStIcons(catalog, query).Take(MaxVisibleSelfhStIcons).ToList();
+            if (string.IsNullOrWhiteSpace(query) && !string.IsNullOrEmpty(currentImagePath))
+            {
+                // Keep thumbnail work bounded while reserving a place for a saved choice
+                // outside the first page. That choice must still be highlighted and revealed.
+                var current = catalog.FirstOrDefault(icon => IsMatchingSelfhStImagePath(currentImagePath, icon.Reference));
+                if (current != null && !visible.Contains(current))
+                {
+                    if (visible.Count == MaxVisibleSelfhStIcons)
+                    {
+                        visible.RemoveAt(visible.Count - 1);
+                    }
+                    visible.Add(current);
+                }
+            }
+            var filtered = visible.ToArray();
 
             panel.Children.Clear();
             panel.Children.Add(CategoryHeader("selfh.st Icons"));
@@ -913,9 +657,8 @@ internal static class IconGallery
                 return;
             }
 
-            var grid = new StackPanel();
-            var currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            int count = 0;
+            var grid = CreateOptionWrapPanel(96, 96);
+            int selectionRequestVersion = 0;
 
             foreach (var icon in filtered)
             {
@@ -958,9 +701,15 @@ internal static class IconGallery
                 ToolTipService.SetToolTip(btn, icon.Name);
                 btn.Click += async (s, e) =>
                 {
+                    // Downloads may finish out of click order. Only the latest choice may
+                    // replace pending selection, even when the tab/query is still unchanged.
+                    int selectionVersion = ++selectionRequestVersion;
                     string? localPath = await CacheSelfhStIconAsync(icon);
-                    if (string.IsNullOrEmpty(localPath))
+                    if (selectionVersion != selectionRequestVersion ||
+                        string.IsNullOrEmpty(localPath) || isCurrentRequest?.Invoke() == false)
+                    {
                         return;
+                    }
 
                     onButtonClicked?.Invoke((Button)s!);
                     onImageSelected(localPath);
@@ -972,18 +721,8 @@ internal static class IconGallery
                     onImageSelected(currentImagePath!);
                 }
 
-                currentRow.Children.Add(btn);
-                count++;
-
-                if (count % SelfhStIconsPerRow == 0)
-                {
-                    grid.Children.Add(currentRow);
-                    currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-                }
+                grid.Children.Add(btn);
             }
-
-            if (currentRow.Children.Count > 0)
-                grid.Children.Add(currentRow);
 
             panel.Children.Add(grid);
         }
@@ -1006,8 +745,20 @@ internal static class IconGallery
     }
 
     private static void BuildLauncherPresetsContent(StackPanel panel, string query,
-        Action<string> onPresetMode, Action onBrowseRequested, Action<Button>? onButtonClicked = null, string? currentPresetMode = null)
+        Action<string> onPresetMode, Action<Button>? onButtonClicked = null, string? currentPresetMode = null,
+        AutomaticPageIconChoice? pageIconChoice = null, bool usePageIconSelected = false)
     {
+        if (pageIconChoice != null &&
+            (string.IsNullOrEmpty(query) || "use page icon".Contains(query, StringComparison.OrdinalIgnoreCase)))
+        {
+            pageIconChoice.Margin = new Thickness(0, 0, 0, 8);
+            if (usePageIconSelected)
+            {
+                onButtonClicked?.Invoke(pageIconChoice.SelectButton);
+            }
+            panel.Children.Add(pageIconChoice);
+        }
+
         // ── Composite mode ──
         if (string.IsNullOrEmpty(query) || "composite".Contains(query, StringComparison.OrdinalIgnoreCase))
         {
@@ -1021,13 +772,9 @@ internal static class IconGallery
                 Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                 BorderThickness = new Thickness(0)
             };
-            var compositeRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-            compositeRow.Children.Add(new FontIcon { Glyph = "\uF0E2", FontSize = 20 });
-            var compositeText = new StackPanel();
-            compositeText.Children.Add(new TextBlock { Text = "Composite", FontWeight = FontWeights.Medium });
-            compositeText.Children.Add(new TextBlock { Text = "Shows first 4 item icons in a 2\u00d72 grid", FontSize = 12, Opacity = 0.6 });
-            compositeRow.Children.Add(compositeText);
-            compositeBtn.Content = compositeRow;
+            compositeBtn.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            compositeBtn.Content = CreateOptionContent(new FontIcon { Glyph = "\uF0E2", FontSize = 20 },
+                "Composite", "Shows first 4 item icons in a 2\u00d72 grid");
             compositeBtn.Click += (s, e) => { onButtonClicked?.Invoke((Button)s!); onPresetMode("Composite"); };
             if (currentPresetMode == "Composite") { onButtonClicked?.Invoke(compositeBtn); onPresetMode("Composite"); }
             panel.Children.Add(compositeBtn);
@@ -1043,9 +790,7 @@ internal static class IconGallery
         {
             panel.Children.Add(CategoryHeader("App Color Icons"));
 
-            var wrapGrid = new StackPanel();
-            var currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            int count = 0;
+            var wrapGrid = CreateOptionWrapPanel(68, 76);
 
             foreach (string color in filteredColors)
             {
@@ -1078,47 +823,72 @@ internal static class IconGallery
                 ToolTipService.SetToolTip(btn, $"{color} app icon");
                 btn.Click += (s, e) => { onButtonClicked?.Invoke((Button)s!); onPresetMode(color); };
                 if (currentPresetMode == color) { onButtonClicked?.Invoke(btn); onPresetMode(color); }
-                currentRow.Children.Add(btn);
-
-                // Wrap after 6 items per row (fits ~396px width)
-                if (++count % 6 == 0)
-                {
-                    wrapGrid.Children.Add(currentRow);
-                    currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-                }
+                wrapGrid.Children.Add(btn);
             }
-            if (currentRow.Children.Count > 0)
-                wrapGrid.Children.Add(currentRow);
 
             panel.Children.Add(wrapGrid);
         }
 
-        // ── Browse for image ──
-        if (string.IsNullOrEmpty(query) || "browse image custom".Contains(query, StringComparison.OrdinalIgnoreCase))
-        {
-            panel.Children.Add(CategoryHeader("Custom"));
-            var browseBtn = new Button
-            {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Left,
-                Padding = new Thickness(12, 8, 12, 8),
-                Margin = new Thickness(0, 0, 0, 4),
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-                BorderThickness = new Thickness(0)
-            };
-            var browseRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-            browseRow.Children.Add(new FontIcon { Glyph = "\uE8B9", FontSize = 20 });
-            var browseText = new StackPanel();
-            browseText.Children.Add(new TextBlock { Text = "Browse for image\u2026", FontWeight = FontWeights.Medium });
-            browseText.Children.Add(new TextBlock { Text = "Choose a .png, .ico, or other image file", FontSize = 12, Opacity = 0.6 });
-            browseRow.Children.Add(browseText);
-            browseBtn.Content = browseRow;
-            browseBtn.Click += (s, e) => onBrowseRequested();
-            panel.Children.Add(browseBtn);
-        }
-
         if (panel.Children.Count == 0)
             panel.Children.Add(NoResults());
+    }
+
+    /// <summary>Wraps only small image-option lists; large symbol catalogs keep native UI virtualization.</summary>
+    private static VariableSizedWrapGrid CreateOptionWrapPanel(double width, double height) => new()
+    {
+        Orientation = Orientation.Horizontal,
+        ItemWidth = width,
+        ItemHeight = height,
+        HorizontalAlignment = HorizontalAlignment.Stretch
+    };
+
+    /// <summary>Constrains option labels to the available row width instead of expanding the scroll extent.</summary>
+    private static Grid CreateOptionContent(FrameworkElement preview, string label, string? description = null)
+    {
+        var row = new Grid { ColumnSpacing = 10 };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        preview.VerticalAlignment = VerticalAlignment.Center;
+        row.Children.Add(preview);
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.Medium, TextWrapping = TextWrapping.Wrap });
+        if (description != null)
+        {
+            text.Children.Add(new TextBlock { Text = description, FontSize = 12, Opacity = 0.6, TextWrapping = TextWrapping.Wrap });
+        }
+        Grid.SetColumn(text, 1);
+        row.Children.Add(text);
+        return row;
+    }
+
+    /// <summary>Offers custom image browsing only inside the first options tab.</summary>
+    private static void BuildBrowseOption(StackPanel panel, string query, Action browse, Flyout flyout,
+        Action<Button> highlight, bool currentImageIsSelected)
+    {
+        if (!string.IsNullOrEmpty(query) && !"browse image custom".Contains(query, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+        var button = new Button
+        {
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Padding = new Thickness(12, 8, 12, 8),
+            Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+            BorderThickness = new Thickness(0),
+            Content = CreateOptionContent(new FontIcon { Glyph = "\uE8B9", FontSize = 20 }, "Browse for image\u2026")
+        };
+        AutomationProperties.SetName(button, "Browse for image");
+        button.Click += (_, _) =>
+        {
+            flyout.Hide();
+            browse();
+        };
+        if (currentImageIsSelected)
+        {
+            highlight(button);
+        }
+        panel.Children.Add(button);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1151,6 +921,7 @@ internal static class IconGallery
             BorderThickness = new Thickness(0)
         };
         ToolTipService.SetToolTip(btn, tooltip);
+        AutomationProperties.SetName(btn, tooltip);
         return btn;
     }
 
@@ -1163,7 +934,7 @@ internal static class IconGallery
         Margin = new Thickness(4, 4, 0, 6)
     };
 
-    private static TextBlock NoResults() => new()
+    internal static TextBlock NoResults() => new()
     {
         Text = "No matching icons",
         FontSize = 13,
@@ -1219,11 +990,12 @@ internal static class IconGallery
         return row;
     }
 
+    private static string ItemIconCacheDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LittleLauncher", "icons");
+
     private static string GetItemIconCacheDir()
     {
-        string cacheDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "LittleLauncher", "icons");
+        string cacheDir = ItemIconCacheDirectory;
         Directory.CreateDirectory(cacheDir);
         return cacheDir;
     }
@@ -1338,13 +1110,31 @@ internal static class IconGallery
         }
     }
 
+    /// <summary>Recognizes selfh.st selections only within the gallery's persisted item cache.</summary>
     private static bool IsSelfhStImagePath(string? path) =>
         !string.IsNullOrEmpty(path) &&
+        AreSameIconPath(Path.GetDirectoryName(path), ItemIconCacheDirectory) &&
         Path.GetFileName(path).StartsWith("selfhst-", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsMatchingSelfhStImagePath(string? path, string reference) =>
-        !string.IsNullOrEmpty(path) &&
-        Path.GetFileName(path).Equals($"selfhst-{SelfhStFileName(reference)}.png", StringComparison.OrdinalIgnoreCase);
+        AreSameIconPath(path, Path.Combine(ItemIconCacheDirectory, $"selfhst-{SelfhStFileName(reference)}.png"));
+
+    /// <summary>Compares normalized Windows paths without confusing user filenames with cache provenance.</summary>
+    private static bool AreSameIconPath(string? left, string? right)
+    {
+        if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right))
+        {
+            return false;
+        }
+        try
+        {
+            return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
 
     private static IEnumerable<SelfhStIconEntry> FilterSelfhStIcons(IEnumerable<SelfhStIconEntry> icons, string query)
     {
@@ -2083,7 +1873,7 @@ internal static class IconGallery
             ("🤣", "Rolling"),
             ("😂", "Joy"),
             ("🙂", "Slight Smile"),
-            ("�", "Upside Down"),
+            ("🙃", "Upside Down"),
             ("😉", "Wink"),
             ("😊", "Blush"),
             ("😇", "Halo"),

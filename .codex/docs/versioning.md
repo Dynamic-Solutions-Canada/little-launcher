@@ -61,3 +61,10 @@ and can conflict with packages already submitted to Partner Center.
 - **Patch** (`v1.0.1`): Bug fixes, minor tweaks, no new features
 - **Minor** (`v1.1.0`): New features, non-breaking changes
 - **Major** (`v2.0.0`): Breaking changes to settings format, major redesigns
+
+## Local WSL build and install
+
+Use `npm run build:desktop`, `npm run verify:desktop`, `npm run install:desktop`,
+and `npm run package:desktop` from WSL. See [the common desktop workflow](windows-development.md).
+Direct PowerShell packaging commands above describe release internals, not the
+local development entry point. Never uninstall to bypass a same-version error.

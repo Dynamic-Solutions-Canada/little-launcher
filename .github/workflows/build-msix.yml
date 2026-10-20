@@ -52,7 +52,14 @@ jobs:
 
       # ── Regular build ──────────────────────────────────────────
       - name: Build (dotnet)
-        run: dotnet build LittleLauncher/LittleLauncher.csproj -c Release -p:Platform=$env:PLATFORM
+        shell: pwsh
+        env:
+          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:GoogleClientSecret)) {
+            throw 'Missing GitHub Actions secret: GOOGLE_CLIENT_SECRET'
+          }
+          dotnet build LittleLauncher/LittleLauncher.csproj -c Release -p:Platform=$env:PLATFORM
 
       # ── Authenticode signing ────────────────────────────────────
       # Requires two GitHub repository secrets:

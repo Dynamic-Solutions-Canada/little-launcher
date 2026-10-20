@@ -111,7 +111,7 @@ internal static partial class FaviconService
     /// Fetches the site's HTML, looks for a PWA manifest link and HTML link icons.
     /// Returns the best icon bytes found, or null.
     /// </summary>
-    private static async Task<byte[]?> TryFetchIconFromSiteAsync(string pageUrl)
+    private static async Task<byte[]?> TryFetchIconFromSiteAsync(string pageUrl, IconFetchOptions? options = null)
     {
         try
         {
@@ -122,8 +122,10 @@ internal static partial class FaviconService
 
             using var request = new HttpRequestMessage(HttpMethod.Get, pageUrl);
             request.Headers.Add("User-Agent", "Mozilla/5.0");
+            ApplyIconFetchOptions(request, options);
 
-            using var response = await TolerantHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await TolerantHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                options?.CancellationToken ?? CancellationToken.None);
             if (!response.IsSuccessStatusCode)
                 return null;
 
@@ -135,10 +137,10 @@ internal static partial class FaviconService
                 return null;
             }
 
-            using var stream = await response.Content.ReadAsStreamAsync();
+            using var stream = await response.Content.ReadAsStreamAsync(options?.CancellationToken ?? CancellationToken.None);
             using var reader = new StreamReader(stream);
             var buffer = new char[65536];
-            int read = await reader.ReadAsync(buffer, 0, buffer.Length);
+            int read = await reader.ReadAsync(buffer.AsMemory(), options?.CancellationToken ?? CancellationToken.None);
             var html = new string(buffer, 0, read);
 
             // 1. Try PWA manifest icons (preferred — linked in HTML, or common paths)
@@ -149,14 +151,14 @@ internal static partial class FaviconService
                 var manifestHref = manifestMatch.Groups[1].Value;
                 var manifestUrl = ResolveUrl(baseUrl, manifestHref);
                 if (manifestUrl != null)
-                    manifestIconBytes = await TryFetchManifestIconAsync(manifestUrl);
+                    manifestIconBytes = await TryFetchManifestIconAsync(manifestUrl, options);
             }
 
             if (manifestIconBytes is not { Length: >= 100 })
             {
                 foreach (var path in CommonManifestPaths)
                 {
-                    manifestIconBytes = await TryFetchManifestIconAsync(baseUrl + path);
+                    manifestIconBytes = await TryFetchManifestIconAsync(baseUrl + path, options);
                     if (manifestIconBytes is { Length: >= 100 }) break;
                 }
             }
@@ -201,11 +203,15 @@ internal static partial class FaviconService
                 var iconUrl = ResolveUrl(baseUrl, bestHref);
                 if (iconUrl != null)
                 {
-                    var bytes = await TryDownloadAsync(TolerantHttp, iconUrl);
+                    var bytes = await TryDownloadAsync(TolerantHttp, iconUrl, options);
                     if (bytes is { Length: >= 100 })
                         return bytes;
                 }
             }
+        }
+        catch (OperationCanceledException) when (options?.CancellationToken.IsCancellationRequested == true)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -218,15 +224,27 @@ internal static partial class FaviconService
     /// <summary>
     /// Fetches a PWA manifest.json and downloads the largest icon listed.
     /// </summary>
-    private static async Task<byte[]?> TryFetchManifestIconAsync(string manifestUrl)
+    private static async Task<byte[]?> TryFetchManifestIconAsync(string manifestUrl, IconFetchOptions? options = null)
     {
         try
         {
-            using var response = await TolerantHttp.GetAsync(manifestUrl);
+            using var response = options == null
+                ? await TolerantHttp.GetAsync(manifestUrl)
+                : await SendIconPreviewRequestAsync(TolerantHttp, manifestUrl, options);
             if (!response.IsSuccessStatusCode)
                 return null;
 
-            var json = await response.Content.ReadAsStringAsync();
+            string json;
+            if (options == null)
+            {
+                json = await response.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                byte[]? manifest = await ReadBoundedIconPreviewAsync(response, options);
+                if (manifest == null) return null;
+                json = System.Text.Encoding.UTF8.GetString(manifest).TrimStart('\uFEFF');
+            }
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -269,7 +287,11 @@ internal static partial class FaviconService
             var baseForManifest = lastSlash >= 0 ? manifestUrl.Substring(0, lastSlash + 1) : manifestUrl;
             var iconUrl = ResolveUrl(baseForManifest, bestSrc);
 
-            return iconUrl != null ? await TryDownloadAsync(TolerantHttp, iconUrl) : null;
+            return iconUrl != null ? await TryDownloadAsync(TolerantHttp, iconUrl, options) : null;
+        }
+        catch (OperationCanceledException) when (options?.CancellationToken.IsCancellationRequested == true)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -279,13 +301,21 @@ internal static partial class FaviconService
     }
 
     /// <summary>Downloads bytes from a URL. Returns null on failure.</summary>
-    private static async Task<byte[]?> TryDownloadAsync(HttpClient client, string url)
+    private static async Task<byte[]?> TryDownloadAsync(HttpClient client, string url, IconFetchOptions? options = null)
     {
         try
         {
-            using var response = await client.GetAsync(url);
+            using var response = options == null
+                ? await client.GetAsync(url)
+                : await SendIconPreviewRequestAsync(client, url, options);
             if (!response.IsSuccessStatusCode) return null;
-            return await response.Content.ReadAsByteArrayAsync();
+            return options == null
+                ? await response.Content.ReadAsByteArrayAsync()
+                : await ReadBoundedIconPreviewAsync(response, options);
+        }
+        catch (OperationCanceledException) when (options?.CancellationToken.IsCancellationRequested == true)
+        {
+            throw;
         }
         catch { return null; }
     }

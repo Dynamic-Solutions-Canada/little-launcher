@@ -1,15 +1,18 @@
 using LittleLauncher.Models;
+using LittleLauncher.Windows;
+using LittleLauncher.Classes.Settings;
 using LittleLauncher.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using DataPackageOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation;
 using DataPackageView = global::Windows.ApplicationModel.DataTransfer.DataPackageView;
 
-namespace LittleLauncher.Windows;
+namespace LittleLauncher.Controls;
 
 /// <summary>
 /// Dropping files, shortcuts and links into the flyout from File Explorer, the desktop,
@@ -21,17 +24,17 @@ namespace LittleLauncher.Windows;
 /// user has switched to Explorer to pick something up. <c>SuppressDismiss</c> is what keeps
 /// it on screen long enough to be a drop target at all.</para>
 /// <para>The per-list handlers in <c>FlyoutWindow.xaml.cs</c> route here whenever a drag
-/// arrives with no <c>_dragItem</c> set — that is exactly the case of a drag that did not
+/// arrives with no <c>_dragItem</c> set , that is exactly the case of a drag that did not
 /// start inside this flyout.</para>
 /// </remarks>
-public partial class FlyoutWindow
+public sealed partial class LauncherItemsView
 {
     /// <summary>Read-only shared launchers have no editing affordances at all, including this one.</summary>
     private bool AcceptsExternalDrops => _isEditMode && !IsReadOnlyLauncher;
 
     /// <summary>
-    /// Picks a drop operation the source is willing to perform. Link is the honest one — a
-    /// launcher item references its target, it doesn't take a copy — but a source that only
+    /// Picks a drop operation the source is willing to perform. Link is the honest one , a
+    /// launcher item references its target, it doesn't take a copy , but a source that only
     /// offers Copy would reject it, and an operation the source refuses reads to the user as
     /// "this app won't accept the drop" with no visible reason.
     /// </summary>
@@ -71,7 +74,7 @@ public partial class FlyoutWindow
 
     /// <summary>
     /// Accepts an external payload over the flyout's empty space. This is the only drop
-    /// surface an empty launcher has — with no items there is no list big enough to hit.
+    /// surface an empty launcher has , with no items there is no list big enough to hit.
     /// </summary>
     private void RootGrid_DragOver(object sender, DragEventArgs e)
     {
@@ -94,7 +97,7 @@ public partial class FlyoutWindow
     /// </summary>
     /// <remarks>
     /// <paramref name="target"/> is a derived collection (a column list, or a group's
-    /// children reached through one), so this persists via <c>PersistFlyoutReorder</c> —
+    /// children reached through one), so this persists via <c>PersistFlyoutReorder</c> ,
     /// the same flush direction a drag reorder uses.
     /// </remarks>
     private void ExternalDrop(ListViewBase listView, DragEventArgs e, ObservableCollection<LauncherItem> target)
@@ -111,7 +114,7 @@ public partial class FlyoutWindow
 
     /// <summary>
     /// Drops an external payload that landed on the flyout's empty space. It appends to the
-    /// flat list, which lands in the last column — the same place the toolbar's add button
+    /// flat list, which lands in the last column , the same place the toolbar's add button
     /// puts a new item.
     /// </summary>
     private void RootGrid_Drop(object sender, DragEventArgs e)
@@ -132,9 +135,10 @@ public partial class FlyoutWindow
         int dropIndex,
         Action persist)
     {
+        int version = _sessionVersion;
         var deferral = e.GetDeferral();
         e.Handled = true;
-        _ = CompleteExternalDropAsync(e.DataView, target, dropIndex, persist, deferral);
+        _ = CompleteExternalDropAsync(e.DataView, target, dropIndex, persist, deferral, version);
     }
 
     /// <summary>
@@ -146,7 +150,8 @@ public partial class FlyoutWindow
         ObservableCollection<LauncherItem> target,
         int dropIndex,
         Action persist,
-        DragOperationDeferral deferral)
+        DragOperationDeferral deferral,
+        int version)
     {
         List<LauncherItem> added;
 
@@ -161,10 +166,12 @@ public partial class FlyoutWindow
         }
         finally
         {
-            // Release the source app before any of the slower work below — Explorer
+            // Release the source app before any of the slower work below , Explorer
             // keeps its drag loop spinning until the deferral completes.
             deferral.Complete();
         }
+
+        if (!IsCurrentSession(version) || !AcceptsExternalDrops || !IsCurrentDropTarget(target)) return;
 
         if (added.Count == 0)
         {
@@ -181,8 +188,30 @@ public partial class FlyoutWindow
         // Website titles and icons need the network or the shell, so they land on the
         // already-visible items rather than stalling the drop behind them.
         await DroppedItemFactory.EnrichAsync(added);
-        PersistFlyoutItemChanges();
+
+        // Insertion was already committed, so closing the editor does not discard its metadata.
+        // Re-resolve live membership: deletion, a kind change, a rebuild or a move to another
+        // launcher may have happened while the network/shell work was pending.
+        var enriched = new HashSet<LauncherItem>(added);
+        var affected = SettingsManager.Current.Launchers
+            .Where(launcher => !launcher.IsWebLauncher && ContainsAnyItem(launcher.Items, enriched))
+            .ToArray();
+        if (affected.Length > 0) PersistItemChanges(affected);
 
         Logger.Info($"Added {added.Count} item(s) to {_launcher.Name} by drag-and-drop");
     }
+
+    /// <summary>Rejects a payload targeting a derived column discarded during its async read.</summary>
+    private bool IsCurrentDropTarget(ObservableCollection<LauncherItem> target)
+    {
+        if (_launcher.IsWebLauncher || !SettingsManager.Current.Launchers.Contains(_launcher)) return false;
+        return ReferenceEquals(target, _launcher.Items)
+            || _columnLists.Contains(target)
+            || _launcher.Items.Any(item => item.IsGroup && ReferenceEquals(item.Children, target))
+            || _syntheticGroups.Any(group => ReferenceEquals(group.Children, target));
+    }
+
+    /// <summary>Matches the committed item objects, including ones moved into a group meanwhile.</summary>
+    private static bool ContainsAnyItem(IEnumerable<LauncherItem> items, HashSet<LauncherItem> sought) =>
+        items.Any(item => sought.Contains(item) || (item.IsGroup && ContainsAnyItem(item.Children, sought)));
 }

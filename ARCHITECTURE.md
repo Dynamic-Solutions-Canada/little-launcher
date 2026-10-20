@@ -29,31 +29,21 @@ App.xaml  →  MainWindow (invisible, owns tray icon)
                       └── AboutPage
 ```
 
-## Flyout edit mode
+## Item-name tooltips
 
-All launcher item editing happens in the flyout. There is no in-settings items editor; the
-former `LauncherItemsPage` was removed and its logic consolidated into `FlyoutWindow`.
+`Controls/ConditionalNameToolTip.cs` provides full-name tooltips for all three launcher item templates. Small icons always offer the hidden name; list and large-icon labels offer it only when WinUI reports actual trimming. Item templates target the containing list/grid item; real group-header and column captions use the same behavior directly on the TextBlock, targeting only the trimmed label. The behavior follows bound name changes, detaches label events and closes tooltips on unload without measuring or changing item geometry, click handling, dragging or keyboard focus.
 
-A hover-revealed pencil in the flyout enters edit mode (`FlyoutWindow.EditMode.cs`), which:
+## Shared launcher editor
 
-- reveals a toolbar row (add item, add group, add/remove column via overflow, done),
-- tints group containers and gives empty groups a drop target,
-- enables drag-and-drop reordering (disabled outside edit mode),
-- shows a pencil overlay on the hovered item/group,
-- restricts item context menus to launcher-level entries outside edit mode,
-- pins the flyout open so it cannot dismiss itself while editing.
+The primary **Items** row opens `LauncherItemsEditorWindow`, using the same `Controls/LauncherItemsView` as the native flyout. A separate sibling ellipsis contains bulk export/import/bookmark import; read-only subscribers retain export. Web launcher cards show only Settings, with their web address or No web address set as the subtitle.
 
-**Geometry contract:** edit mode may grow the flyout''s *height* but must never change its
-width or the size of any item or group. Width is derived arithmetically by `GetFlyoutWidth()`
-from fixed column widths and is never measured, so chrome wider than the content is clipped —
-hence icon-only toolbar buttons sized for the narrowest case (small-icon mode). Per-item
-affordances are `Background`/`CornerRadius` only, which have no layout effect, so
-`PackedIconPanel` cannot repack rows.
+Settings-origin item editing uses a regular owned Mica window matching Launcher Settings, with the application title bar/icon/theme, inline shared toolbar, two-axis viewport and external accent Done. Wide/tall launchers scroll without reflowing or changing item dimensions. Main Settings stays normal behind it. Edits save immediately; Done, Escape and close finish the window, while minimize/app switching retain it.
 
-Height is normally computed arithmetically, because forcing a layout pass on a *hidden* WinUI
-window is a hard crash (see the comment in `MeasureContentHeight`). Edit-mode toggles are the
-exception: the window is visible then, so `ResizeForEditChrome()` measures `ContentStack`
-directly and sizes to the real value.
+One regular editor per launcher is reused on repeated entry, including tray/taskbar invocation; different launchers can edit independently. Item/group/launcher-settings dialogs remain owned secondary windows. New shortcut setup opens this same editor at the captured setup-window centre/monitor, owned by Main Settings. Web launchers skip this step. Native tray editing retains its popup, floating toolbar, DWM outline and placement.
+
+The shared view owns templates, rendering, hover/group affordances, custom reorder/external-drop handlers and toolbar commands. `LauncherItemsView.Hover.cs` provides the passive drag-grip and pencil cue in both hosts. Native lifecycle and placement remain in `FlyoutWindow`, with the floating toolbar following the launcher's right edge through the existing work-area clamp and deferred repositioning; the regular editor owns its viewport, normal chrome, focus and secondary-dialog lifetime.
+
+**Geometry contract:** entering edit mode may add column headers/empty targets to height but must not change column width or item size. The toolbar stays outside the item body in both hosts. Height uses arithmetic throughout; label width measures only strings with the in-tree measurer. The regular host scrolls the natural extent, while the popup applies monitor clamping. Never add `UpdateLayout` or feed measured container sizes back into the layout arithmetic.
 
 **Source of truth:** `_launcher.Items` is authoritative and `_columnLists` is a derived view.
 Structural edits (add/remove/rename) mutate the flat list and let the rebuild regenerate
@@ -66,14 +56,7 @@ Drag-and-drop supports cross-column and cross-group moves. All ListViews use
 intentionally avoided because it takes full internal control of drag events and cannot support
 cross-collection moves. See [.codex/docs/drag-drop.md](.codex/docs/drag-drop.md).
 
-The same handlers also accept drags from **outside** the app (`FlyoutWindow.ExternalDrop.cs`):
-a drag arriving with no `_dragItem` set came from File Explorer, the desktop, the Start Menu or
-a browser, and `DroppedItemFactory` maps its payload to launcher items. This is edit-mode-only
-out of necessity rather than symmetry — the flyout dismisses on `Deactivated`, so only a pinned
-flyout survives the user switching to Explorer to pick something up. The Windows 11 Start Menu
-is *not* a usable drag source: its data package exposes only the app name as text, with the
-shell item hidden in a clipboard format WinUI 3''s `DataPackageView` does not surface. Dragging
-the same apps from their `.lnk` files under `Start Menu\Programs` in Explorer works.
+The same handlers also accept drags from **outside** the app (`LauncherItemsView.ExternalDrop.cs`): a drag arriving with no `_dragItem` set came from File Explorer, the desktop, the Start Menu or a browser, and `DroppedItemFactory` maps its payload to launcher items. This is edit-mode-only out of necessity rather than symmetry; the flyout dismisses on `Deactivated`, so only a pinned flyout survives the user switching to Explorer to pick something up. The Windows 11 Start Menu is *not* a usable drag source: its data package exposes only the app name as text, with the shell item hidden in a clipboard format WinUI 3''s `DataPackageView` does not surface. Dragging the same apps from their `.lnk` files under `Start Menu\Programs` in Explorer works.
 
 
 ## Web launchers
@@ -135,12 +118,20 @@ the window and writes nothing, borrowing nine of the presets the "Opens at" sett
 touching the setting itself — that menu says where a launcher *opens*, this says where it should be
 right now.
 
-The header's **"…" menu** carries the per-launcher options that are per-moment decisions — window
-mode, whether it closes on focus loss, the pin, bookmarking the page on screen, the tab and address
-bars, where it opens (including "where you last dragged it") and whether a resize is remembered —
-with launcher settings one item below them. Reload on open and whether links go to the real browser
-were here and are now Advanced-only: how a launcher treats a reload or a link is settled once, not
-reconsidered while looking at it.
+The header's **"…" menu** groups launcher settings into General, Appearance, Size and position,
+Behavior, and Privacy and sign-ins. A shared ordered definition list supplies the same labels and
+order to the settings window's expanders. Each menu group links to its settings section, while
+bar visibility, zoom, anchor, size memory, window mode, pin, and fullscreen controls remain immediate
+quick controls. Address, icon, dimensions, and profile edits use their existing owned settings
+window. Page actions, keyboard shortcuts, app settings, and Advanced troubleshooting remain
+accessible; opening a section runs no maintenance or privacy action.
+
+In launcher settings, General, Appearance, and Size and position start expanded; Behavior and
+Privacy and sign-ins start collapsed. All Sync destination sections still start expanded. Users
+may collapse and reopen sections without an automatic scroll request. Explicit launcher section
+links expand their target if needed and use one ordinary framework `StartBringIntoView` request
+after the form loads.
+Advanced remains the existing troubleshooting submenu, closed until opened.
 
 An **address bar** can sit under the header (`Launcher.WebShowAddressBar`, off by default). It is
 switched on from that menu; there is no separate reveal-for-this-visit button, because one
@@ -185,7 +176,7 @@ Command Palette or anything else that indexes the Start Menu. The shortcuts run 
 taskbar pin does, and deliberately carry **no AUMID** — an earlier version of them did, competed
 with the companion's relaunch properties for pin identity, and produced duplicate pins.
 
-A web launcher can also stop being a flyout altogether: `Launcher.WebRegularWindow` (Advanced) drops
+A web launcher can also stop being a flyout altogether: `Launcher.WebRegularWindow` (Behavior) drops
 always-on-top and dismiss-on-focus-loss and puts it in the taskbar and the task switcher, so its
 pinned button shows the running indicator and closes it when clicked. **The switcher entry cannot be
 declined** — taskbar eligibility is `WS_EX_TOOLWINDOW`, which governs both, and four ways round it
@@ -255,7 +246,13 @@ frequently narrower and shorter than the form.
 |---|---|
 | `ItemEditorWindow` | Add/edit a launcher item; returns `ItemEditorResult` (Cancelled/Saved/Deleted) |
 | `TextPromptWindow` | Single-field prompt (group name) |
-| `LauncherSettingsWindow` | Per-launcher settings; opened from both the flyout and the Launchers page |
+| `LauncherSettingsWindow` | Per-launcher settings in shared ordered sections; owned section links from the flyout and normal entry from the Launchers page |
+
+The item editor's app picker labels duplicate catalog names with executable filenames,
+without changing the name or target saved on selection. Duplicate detection runs before search
+filtering. `AppPickerRowActions` gives each recycled list container a full-target tooltip and
+a keyboard-accessible menu: Open uses the shared item launch path immediately, including for
+uninstallers, and Open containing folder is disabled for virtual targets or missing parents.
 
 All three share `WindowChrome` for the app icon and a themed custom title bar (a default WinUI
 title bar does not follow `RequestedTheme`). The flyout **drops its always-on-top flag** while
@@ -283,6 +280,37 @@ By default, launching the app opens the Settings window. Silent mode (tray icon 
 - On first load, migrates from legacy `settings.xml` (XmlSerializer) to `settings.json` (System.Text.Json), renaming the old file to `.bak`.
 - On startup, `RestoreSettings()` deserialises and calls `CompleteInitialization()` to enable change handlers.
 - `SaveSettings()` is called on settings window close and after SFTP download.
+
+## Icon selection and rendering
+
+`Classes/IconGallery.cs` owns one shared picker core for items and launchers. The wrappers retain
+item app icons/reset versus launcher presets. Browse is an image option in the first tab;
+Confirm/Cancel stay visible outside the scrolling icon list. The picker uses the owning monitor's work area and DPI instead of the size
+of its settings window, and it reads the current selection again on each opening. Every Browse
+entry point initializes the same image picker with its actual owner HWND.
+
+`Classes/IconCatalogView.cs` virtualizes the grouped Fluent and emoji catalogs in a native
+`GridView` with `ItemsWrapGrid` and a modest viewport cache. It owns scrolling inside the finite
+content row; the small preset/image scroller is a sibling. Only nearby tiles are created, and
+recycling refreshes their accessible names, tint and selection borders. Sources are released
+on tab changes and close. `Classes/SelectionReveal.cs` restores saved choices into view only after
+layout, with source/query/open-state guards. Small image lists wrap inside their constrained width;
+large symbol catalogs keep their native virtualization. Use page icon is a web-only pending preset in the shared chooser;
+confirmation restores managed favicon adoption rather than copying the favicon to a custom file.
+`Classes/AutomaticPageIconChoice.cs` decodes the actual saved preview and owns cancellable Retry
+state. `Windows/WebFlyoutWindow.IconPreview.cs` tries an already loaded, awake matching page,
+then the actual site through `Services/FaviconService.IconPreview.cs`, without adopting an icon
+or starting a browser. Direct preview reads reuse HTML/manifest/favicon selection with fresh,
+bounded, cancellable requests and no cache writes or Google fallback. Failed reads explain that
+opening/signing in may be needed. Pending URL-bound PNG bytes remain in memory until Confirm
+atomically stores them; Cancel, failure and stale completions leave the custom choice intact.
+
+`MainWindow.RenderGlyphBitmap` preserves the existing Fluent icon tint renderer. Complete emoji
+strings instead go through `Classes/GlyphIconRenderer.cs`, which shapes with DirectWrite and draws
+Direct2D color glyphs on a software device. It fits visible ink bounds before drawing and preserves
+premultiplied alpha through bitmap readback. Tray, pin, composite-item and jump-list exports share
+that path, including sequences with surrogate pairs, variation selectors and ZWJ ligatures.
+Native declarations remain in `Classes/NativeMethods.cs`. See [.codex/docs/icons.md](.codex/docs/icons.md).
 
 ## Launcher item icons
 
@@ -432,9 +460,57 @@ For pinned taskbar launches, `MainWindow` now tries to resolve the actual taskba
 - **Never add heavy dependencies** (NuGet packages, large frameworks) to the `LauncherShortcut` project — it must remain a minimal P/Invoke-only program.
 - **Never run expensive work** (icon regeneration, shell notifications, file I/O) synchronously in the main app's `_wmShowFlyout` WndProc handler — it blocks the flyout from appearing.
 
+### Native launcher pinning
+
+Explicit pinning requests Windows confirmation from the companion using one physical Start menu
+snapshot per launcher. It preserves the stable companion target, launcher argument, name, icon and
+fresh AUMID. Actual process package identity, desktop API support and LAF checks gate native
+pinning; unsupported systems retain manual pinning. A snapshot shortcut and window relaunch
+metadata are mutually exclusive, including on a regular web window created before re-pinning.
+
+Re-pinning requires manual old-pin removal only when a live query confirms it is still pinned.
+Unknown old state proceeds without that warning or acknowledgement; users may remove duplicates. Windows has no supported normal-app unpin API. A completed false result or explicit dialog Cancel restores
+the old shortcut bytes and leaves saved `PinAumid` unchanged. Only native success or explicit
+manual-pin confirmation saves the new identity. All immutable pin icons remain available for older
+pins. See [.codex/docs/icons.md](.codex/docs/icons.md) for exit codes and diagnostics.
+
+An unresponsive native request is bounded by 45 seconds plus five seconds for advisory cancellation.
+An unknown outcome retains its shortcut/icon and a local `pin-pending-{id}.txt` marker; it does not
+replace `PinAumid`. The next attempt may request native confirmation again; the earlier marker alone
+does not force manual mode or old-pin acknowledgement. Current unknown outcomes still retain their
+resources for any late pin. A completed false/dialog cancel restores the earlier snapshot/marker;
+confirmation clears the current marker. This local record never enters the sync payload.
+
+Pin replacement checks the saved old identity live in an isolated read-only helper process before
+touching its Start snapshot. The pinning process sets its new AUMID once during startup, before any
+UI or WinRT, and never adopts the old identity. The query child must exit before snapshot replacement;
+a ten-second outer bound stops only that owned read-only child. This avoids relying on a process-wide
+TaskbarManager identity reset after releasing a COM object. A known
+unpinned launcher proceeds directly; an unchanged known pin is retained and reported inline. Failed
+resolution stays Unknown diagnostically and permits a fresh attempt without old-pin instructions. Confirmed local snapshot metadata compares
+rendered icon bytes as well as the displayed name and launch command, so automatic favicon and
+composite-icon changes use the same effective-detail comparison as a manual icon change.
+
+Launcher settings also queries current state on open and return to the window, using the same
+isolated unshown `--check-only` path through `TaskbarPinStatusService`. It caches that per-identity
+result while name/icon/save events recompute details locally. Known absence hides removal warnings;
+a known unchanged pin shows Pinned with no redundant action; changed pins offer Pin Again.
+Unknown uses the standard pin row/action, including missing/mismatched caller registration. The row uses one
+ordinary subtitle rather than an indented third line. Cancellation/generation guards reject stale
+results, close stops the read-only child, and replacement waits for it to exit. Native confirmation
+seeds the cache directly; manual/unconfirmed outcomes are rechecked without altering resources.
+
+The native request uses a compact rounded foreground card with the launcher icon/name and a short
+reminder to look for the Windows pinning prompt,
+without a classic caption, progress bar or buttons. Unsupported systems retain the instructional manual fallback.
+Its high-contrast scheme pointer is borrowed, following Microsoft's implementation rather than the
+conflicting Learn free instruction. It is never freed. Narrow card/ready/timer milestones distinguish
+setup from a submitted pin request; a failed ready queue exits Unknown instead of waiting forever.
+Read-only `--pin --check-only` uses the same old-identity path unshown and never submits a pin.
+
 ### Companion exe deployment
 
-At startup, `EnsureFlyoutShortcut()` copies the companion exe to the external helper directory returned by `GetPhysicalAppDataDir()` and writes a `main-exe-path.txt` breadcrumb alongside it so the helper can launch the main app with `--silent` if `FindWindow` fails. No Start Menu flyout shortcut is created anymore.
+At startup, `EnsureFlyoutShortcut()` copies the companion exe to the external helper directory returned by `GetPhysicalAppDataDir()` and writes a `main-exe-path.txt` breadcrumb alongside it so the helper can launch the main app with `--silent` if `FindWindow` fails. Explicit pinning creates a snapshot Start shortcut when supported; startup deployment does not.
 
 **There is exactly one destination, and a second one cannot be added.** This used to write another copy into the real shared `%AppData%\LittleLauncher\`, so that pins made by an unpackaged build would stop cold-starting the exe they were pinned against. Under MSIX that copy never happened: a write to `C:\Users\{user}\AppData\Roaming\LittleLauncher\` from a process with package identity is redirected into the package's `LocalCache\Roaming\LittleLauncher\`, and reads from inside the package see it at the path that was asked for, so every call reported success while the file stayed invisible to everything outside. Measured directly, and visible on any machine that ran an unpackaged build first: that folder still holds a frozen snapshot of it, its own `settings.json` and all. The destination that survives is genuinely unredirected: `GetPhysicalAppDataDir()` resolves through `ApplicationData.Current.RoamingFolder.Path` to the package's `RoamingState`, which is not filtered, and is why shortcuts and jump list tasks can be pointed at it at all.
 

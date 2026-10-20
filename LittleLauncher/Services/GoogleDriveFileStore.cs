@@ -74,9 +74,9 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
         if (!IsAvailable)
             return (false, CloudSyncCredentials.NotConfiguredMessage(ProviderName));
 
-        var tokens = await OAuthPkceClient.SignInAsync(Endpoint, scopeOverride: null, ct);
-        if (tokens == null)
-            return (false, "Google Drive sign-in was cancelled or failed.");
+        var result = await OAuthPkceClient.SignInAsync(Endpoint, scopeOverride: null, ct);
+        if (result.Tokens is not { } tokens)
+            return (false, $"Google Drive: {result.Message}");
 
         tokens.AccountName = await FetchAccountNameAsync(tokens.AccessToken, ct);
         CloudTokenStore.Save(Provider, tokens);
@@ -110,9 +110,9 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
             return (true, "Already granted.");
 
         var existing = CloudTokenStore.Load(Provider);
-        var tokens = await OAuthPkceClient.SignInAsync(Endpoint, SharingScope, ct);
-        if (tokens == null)
-            return (false, "Google Drive did not grant the extra permission.");
+        var result = await OAuthPkceClient.SignInAsync(Endpoint, SharingScope, ct);
+        if (result.Tokens is not { } tokens)
+            return (false, $"Google Drive: {result.Message}");
 
         // Belt and braces: a provider can return a narrower grant than was asked for, and
         // storing it as though sharing were enabled would fail later with an opaque error.

@@ -1,5 +1,5 @@
 > **Scope:** Use when working with app icons, tray icons, shortcut icons, or window icons. Covers which icon files exist, where each icon surface pulls from, and how to update them correctly.
-> **Governs:** `**/MainWindow.xaml.cs`, `**/SettingsWindow.xaml.cs`, `**/LaunchersPage.xaml*`, `**/LauncherShortcut/**`, `**/HomePage.xaml.cs`, `**/FlyoutConverters.cs`, `**/FlyoutWindow.xaml*`, `**/IconGallery.cs`.
+> **Governs:** `Shared/PinSnapshot.cs`, `**/LauncherSettingsWindow*.cs`, `**/MainWindow.xaml.cs`, `**/SettingsWindow.xaml.cs`, `**/LaunchersPage.xaml*`, `**/LauncherShortcut/**`, `**/HomePage.xaml.cs`, `**/FlyoutConverters.cs`, `**/FlyoutWindow.xaml*`, `Controls/LauncherItemsView*`, `Windows/LauncherItemsEditorWindow.cs`, `**/IconGallery.cs`, `**/IconCatalogView.cs`, `**/SelectionReveal.cs`, `**/AutomaticPageIconChoice.cs`, `**/WebFlyoutWindow.IconPreview.cs`, `Services/FaviconService*.cs`, `Services/TaskbarPinStatusService.cs`, `**/GlyphIconRenderer.cs`.
 
 > **Note on glyph code points:** Segoe Fluent Icons glyphs below are written in `U+XXXX` code-point notation. In C# they are string escapes — e.g. `U+E840` is written `""`.
 
@@ -7,19 +7,24 @@
 
 Little Launcher uses a flat upright rocket as its identity icon. The **app identity** (Start Menu, settings window, Home page) always shows the blue rocket. Users can change each launcher's **tray icon** and **pinned taskbar icon** independently.
 
+Launcher settings groups its icon, custom-file, tray visibility and taskbar pin control
+under **Appearance**. The pin state uses that control row's normal subtitle. The flyout's matching section links to that same owned editor; the icon
+chooser, automatic page-icon adoption, and pin snapshot/lifetime behavior are unchanged.
+
 ## Icon Surfaces
 
 | Surface | Source | User-configurable? |
 |---|---|---|
 | **System tray (per launcher)** | `ResolveTrayIcon(Launcher)` → preset PNG, glyph, composite, or custom image | Yes (`Launcher.TrayIconMode`) |
-| **Pinned taskbar shortcut** | Per-launcher `app-icon-{id}.ico` in `<AppDataDir>` via `.lnk` IconLocation | Yes (per launcher `TrayIconMode`) |
-| **Settings window titlebar** | `settings-icon.ico` (blue rocket + gear overlay) | No — always Blue rocket |
-| **Settings window taskbar entry** | `settings-icon.ico` via `WM_SETICON` + `AppWindow.SetIcon(IconId)` | No — always Blue rocket |
-| **Settings window Alt-Tab** | `settings-icon.ico` via `AppWindow.SetIcon(IconId)` | No — always Blue rocket |
-| **Home page app icon** | `Resources/AppIcons/Blue.png` loaded directly | No — always Blue rocket |
-| **Start menu shortcut** | `exe,0` (embedded icon) | No — always Blue rocket |
-| **Exe embedded icon** | `Resources/LittleLauncher.ico` (compiled into exe) | No — always Blue rocket |
-| **Pin-to-taskbar dialog** | Per-launcher `app-icon-{id}.ico` loaded via `WM_SETICON` in companion exe | Yes (per launcher `TrayIconMode`) |
+| **Pinned taskbar shortcut** | Immutable `app-icon-{id}-pin{stamp}.ico` in physical AppData via snapshot shortcut or legacy relaunch metadata | Yes (per launcher `TrayIconMode`) |
+| **Settings window titlebar** | `settings-icon.ico` (blue rocket + gear overlay) | No; always Blue rocket |
+| **Settings window taskbar entry** | `settings-icon.ico` via `WM_SETICON` + `AppWindow.SetIcon(IconId)` | No; always Blue rocket |
+| **Settings window Alt-Tab** | `settings-icon.ico` via `AppWindow.SetIcon(IconId)` | No; always Blue rocket |
+| **Regular item editor** | Packaged app icon via `WindowChrome.ApplyIcon` (`WM_SETICON` + `AppWindow.SetIcon`) | No, normal app identity; no launcher pin/relaunch identity |
+| **Home page app icon** | `Resources/AppIcons/Blue.png` loaded directly | No; always Blue rocket |
+| **Start menu shortcut** | `exe,0` (embedded icon) | No; always Blue rocket |
+| **Exe embedded icon** | `Resources/LittleLauncher.ico` (compiled into exe) | No; always Blue rocket |
+| **Pin-to-taskbar reminder card** | Immutable per-attempt `.ico` drawn with alpha and supplied via `WM_SETICON` in the companion | Yes (per launcher `TrayIconMode`) |
 | **Web launcher taskbar button** (regular-window mode) | Per-launcher `app-icon-{id}.ico` via `WM_SETICON`, from `WebFlyoutWindow.LoadWindowIcon` | Yes (per launcher `TrayIconMode`) |
 | **Web launcher task switcher** (regular-window mode) | The same file via `AppWindow.SetIcon(IconId)`, set in the same call | Yes (per launcher `TrayIconMode`) |
 | **Windows notifications (per launcher)** | `toast-icon-{id}.png` written by `SaveToastIconToAppData(Launcher)` | Yes (per launcher `TrayIconMode`) |
@@ -36,7 +41,7 @@ unread count. See the web-launchers guide.
 - **`Resources/LittleLauncher.ico`** — Multi-resolution Blue rocket (16–256px). Embedded into the exe at build time. This is the fallback icon for all surfaces. Generated from `Resources/AppIcons/Blue.png`.
 - **`Resources/AppIcons/*.png`** — Preset icon PNGs (Blue, Green, Teal, Red, Orange, Purple). Flat upright rockets stretched 20% horizontally for a wider profile. Copied to output at build time. Loaded at runtime by `ResolveBaseIconBitmap()`.
 - **`<AppDataDir>/app-icon-{launcherId}.ico`** — Per-launcher runtime icon. Written by `SaveResolvedIconToAppData(Launcher)`. The first launcher's icon is also copied to `app-icon.ico` by this method.
-- **`<AppDataDir>/app-icon-{launcherId}-pin{tick}.ico`** — Timestamped copy created at pin time. Used by the companion exe for both `LoadImage` (WM_SETICON) and `RelaunchIconResource`. Windows caches icon bitmaps per file path, so each pin gets a unique filename. `CleanUpStaleIconFiles()` keeps only the most recent per launcher.
+- **`<AppDataDir>/app-icon-{launcherId}-pin{uniqueStamp}.ico`**: Immutable copy created for each pin attempt. Used by the companion exe for both `LoadImage` (WM_SETICON) and `RelaunchIconResource`. Windows caches icon bitmaps per file path, so each pin gets a unique filename. All pin snapshots are retained because older taskbar pins may still reference them.
 - **`<AppDataDir>/toast-icon-{launcherId}.png`** — Per-launcher notification icon, 256px PNG.
   Written by `SaveToastIconToAppData(Launcher)` from the same `ResolveBaseIconBitmap` every
   other surface uses. **PNG, not `.ico`:** the notification platform does not render
@@ -76,7 +81,24 @@ unread count. See the web-launchers guide.
 
 Preset icons are full-color PNGs — they do **not** change with OS theme.
 Glyph presets render in black (light theme) or white (dark theme) and update automatically on theme change.
-Gallery-chosen glyphs (stored as `"Glyph:X"` or `"Glyph:#RRGGBB:X"`) are resolved by `ResolveBaseIconBitmap()` using `TrayIconModes.IsGlyphMode()`, `GetGlyphCharacter()`, and `GetGlyphColor()`, then rendered via `RenderGlyphBitmap()` with "Segoe Fluent Icons" or "Segoe UI Emoji" font depending on `IconGallery.IsFluentGlyph()`. When a color is encoded, it overrides the theme-dependent black/white.
+Gallery selections keep the complete Unicode string, including supplementary code points,
+variation selectors and ZWJ sequences. `RenderGlyphBitmap()` keeps the existing GDI path and
+custom/theme tint for Fluent icons. Emoji use `Classes/GlyphIconRenderer.cs`: DirectWrite shapes
+the complete sequence, then Direct2D draws it with `ENABLE_COLOR_FONT` on a WARP software device.
+The renderer fits and centers the visible ink from `IDWriteTextLayout.GetOverhangMetrics`, leaving
+room for antialiasing, so glyphs extending outside the layout box are not clipped. Its readback
+copies premultiplied BGRA rows into `Format32bppPArgb`; treating those pixels as straight alpha
+would produce dark fringes. The same rendering is used for launcher icons, composite item icons
+and jump-list icon exports, including background-thread requests. A bounded 32-image cache avoids
+repeated device creation for identical exports, and each caller owns its returned bitmap.
+Emoji retain their native font colors; the palette applies to Fluent icons only. Legacy encoded
+emoji colors remain readable and can fill monochrome characters, but never replace intrinsic
+emoji colors. Do not truncate a glyph string with `[0]` or send emoji through GDI `DrawString`.
+
+The native ABI declarations and structures are centralized in `NativeMethods.cs`; no new package
+is required. The explicit COM slots in `GlyphIconRenderer` follow Microsoft's SDK `d2d1.h`,
+`d2d1_1.h` and `dwrite.h`, including inherited interface methods. See
+[Microsoft's color-font documentation](https://learn.microsoft.com/en-us/windows/win32/directwrite/color-fonts).
 
 ## How Icon Updates Flow
 
@@ -86,7 +108,7 @@ All icon surfaces derive from a single source of truth: `ResolveBaseIconBitmap(L
 2. `CreateTrayIconForLauncher` subscription → `MainWindow.UpdateTrayIcon(Launcher)`
 3. `UpdateTrayIcon(Launcher)` calls `ResolveTrayIcon(Launcher)` → `ResolveBaseIconBitmap(Launcher)` → `BitmapToIcon()` → updates that launcher's native tray icon
 4. `UpdateTrayIcon(Launcher)` calls `SaveResolvedIconToAppData(Launcher)` → writes `app-icon-{id}.ico` (and `app-icon.ico` for first launcher)
-5. `UpdateTrayIcon(Launcher)` calls `CleanUpStaleIconFiles()` → removes old versioned/pin icon copies
+5. `UpdateTrayIcon(Launcher)` calls `CleanUpStaleIconFiles()` to remove legacy versioned copies while preserving every pin icon snapshot
 6. `UpdateTrayIcon(Launcher)` calls `SaveSettingsIconToAppData()` → first launcher's bitmap + gear overlay → `BitmapToIcon()` → writes `settings-icon.ico`
 7. `SettingsWindow.RefreshIcon()` reloads `settings-icon.ico` into titlebar, taskbar, and overlay
 
@@ -114,14 +136,15 @@ window appears, did.
 
 Tray icons are registered with Shell_NotifyIcon using a stable `guidItem` derived from `Launcher.Id`. This keeps Windows' per-icon tray visibility/pin preference stable across app restarts, Store updates, and icon/name changes. Only changing a launcher's `Id` causes Windows to treat it as a new tray icon identity.
 
-**Pinned taskbar icons are NOT updated at runtime.** Windows 11's taskbar caches the icon bitmap per AUMID at pin time and does not re-read it. Changing a launcher's icon requires unpinning and re-pinning. The Launcher Settings dialog shows a note about this near the "Pin to Taskbar" button.
+**Pinned taskbar icons are NOT updated at runtime.** Windows 11's taskbar caches the icon bitmap per AUMID at pin time and does not re-read it. Changing a launcher's icon requires unpinning and re-pinning. Launcher settings warns beside the pin button only when Windows confirms that the launcher is pinned and its effective details changed.
 
 ### Key rendering methods
 
 | Method | Purpose |
 |---|---|
 | `ResolveBaseIconBitmap(Launcher)` | Single source of truth — returns 256×256 bitmap for a launcher's `TrayIconMode`. Handles Composite, Custom, named glyph presets, `Glyph:` gallery modes, and color presets (with fallback to Blue) |
-| `RenderGlyphBitmap()` | Renders a Segoe Fluent Icons or Segoe UI Emoji glyph to bitmap at specified size. Accepts optional `fontName` parameter (called by `ResolveBaseIconBitmap` for glyph modes and composite sub-icons) |
+| `RenderGlyphBitmap()` | Renders a complete glyph string: tinted GDI for Fluent icons, `GlyphIconRenderer.RenderEmoji()` for color emoji; shared by launcher and item icon exports |
+| `GlyphIconRenderer.RenderEmoji()` | Shapes full Unicode sequences with DirectWrite, fits their ink bounds, draws native color glyphs with Direct2D, and returns an owned premultiplied-alpha bitmap |
 | `RenderCompositeIconBitmap()` | Renders a 2×2 grid composite from first 4 launchable items (`"Composite"` mode) |
 | `CollectLaunchableItems()` | Collects first N launchable items from a launcher, flattening groups, skipping headings/column breaks |
 | `RoundedRectPath()` | Creates a `GraphicsPath` for a rounded rectangle (used by composite background) |
@@ -160,42 +183,170 @@ The companion exe is deployed to `<AppDataDir>` by `EnsureFlyoutShortcut()` for 
 
 ### Pin identity (all builds)
 
-Pin identity comes **solely from relaunch properties** set on the companion exe's MessageBox HWND via a CBT hook:
-- `PKEY_AppUserModel_ID` = `LittleLauncher.Launcher.{guid}.{TickCount64}` — unique per pin attempt to bust Windows' per-AUMID icon cache. **Minted by the main app and passed in as `--aumid`**, and stored on the launcher as `Launcher.PinAumid`; the companion only mints its own as a fallback for an older app. It has to be written down because a window that wants to light the pinned button must carry the identical string, and the companion exits the moment the pin is made — and the AUMID cannot be recovered afterwards for every pin (see [web-launchers.md](web-launchers.md))
-- `PKEY_AppUserModel_RelaunchCommand` = the companion exe path + `--launcher {guid}`
-- `PKEY_AppUserModel_RelaunchIconResource` = timestamped `app-icon-{id}-pin{tick}.ico` path (same path as `LoadImage` uses), written as an **icon resource reference — `"path,0"`, never a bare path**
-- `PKEY_AppUserModel_RelaunchDisplayNameResource` = `"Little Launcher - {name}"`
-- CBT hook also calls `SetWindowTextW()` to set the MessageBox title (taskbar reads this for the button tooltip)
+Pinning uses one shell identity source at a time:
 
-The pin flow (in `LauncherSettingsWindow.PinToTaskbar_Click`):
-1. `CommitName()` + `CommitWebUrl()` — flushes the two fields the window defers to close
-2. `WaitForIconAdoptionAsync()` — waits out a site-icon fetch the address just started
-3. `EnsureLauncherIconSaved(launcher)` — ensures `app-icon-{id}.ico` exists
-4. Creates a timestamped copy `app-icon-{id}-pin{tick}.ico`
-5. Minimizes the Settings window (prevents focus stealing that dismisses taskbar context menu)
-6. Launches companion exe with `--pin --launcher {guid} --name "{name}" --icon "{pinnedPath}"`
-7. Restores Settings window + `SetForegroundWindow` after companion exe exits
+- On supported Windows versions, the companion creates a physical Start menu snapshot at
+  `Programs/Little Launcher Pins/{launcherId}/Little Launcher - {name}.lnk`. It targets the stable
+  deployed companion with `--launcher {id}`, a fresh AUMID and an immutable pin icon. The window
+  carries that AUMID but no relaunch metadata. `TaskbarManager.RequestPinCurrentAppAsync` requests
+  Windows confirmation from the helper's foreground STA.
+- Unsupported systems retain manual right-click pinning. Without a snapshot shortcut, window
+  relaunch properties supply the command, name and `"iconPath,0"` resource. If a snapshot was created
+  but Windows currently disallows a native request, manual pinning uses that shortcut instead.
+  Never combine shortcut launch metadata with window relaunch metadata.
+- `GetCurrentPackageFullName` must return `APPMODEL_ERROR_NO_PACKAGE`; executable location alone
+  does not prove the helper is unpackaged. The helper also checks desktop-support marker
+  `ITaskbarManagerDesktopAppSupportStatics` and the documented LAF registry value. Systems still
+  requiring an unlock token use manual pinning. A packaged helper must never request the Settings pin.
 
-> **Pinning bakes whatever the launcher looks like at that instant**, and Windows never re-reads it
-> (see the warning below), so steps 1–2 exist because the window's *own* pending state used to be
-> excluded from it. A web launcher pins the generic app icon if it is pinned before its favicon has
-> been fetched — and since the address only committed on close, that was every launcher created and
-> pinned in one sitting. Both text fields now also commit on Enter and on losing focus, so the icon
-> arrives while the window is still open and is visible in the icon row before the user pins.
-> `IconAdoptionWait` (8s) bounds the wait: an unreachable host must not leave the button dead.
+The explicit pin flow:
 
-> **`RelaunchIconResource` must carry a resource index.** It is an icon *resource* string
-> (`"C:\...\app-icon-{id}-pin{tick}.ico,0"`), the same format the Start Menu shortcut's
-> `IconLocation` uses — not a bare file path. Windows cannot parse a path on its own and silently
-> falls back to the generic document icon, so the pinned taskbar button comes up **blank**. This is
-> easy to misdiagnose, because the window's *title bar* icon still looks right: that one comes from
-> `WM_SETICON`, which is unaffected. If a pin is blank, check this string before anything else.
+1. Commit the name/address and wait at most eight seconds for site-icon adoption.
+2. Save the launcher icon, copy it to `app-icon-{id}-pin{uniqueStamp}.ico`, and mint
+   `LittleLauncher.Launcher.{id}.{uniqueStamp}`. Current app stamps are random GUIDs; the helper's
+   legacy fallback still uses `TickCount64`. Both AUMID and icon filename must change.
+3. Minimize launcher settings and launch `--pin --launcher {id} --name {name} --aumid {aumid}
+   --icon {path}`. `ProcessStartInfo.ArgumentList` preserves quoted names.
+4. Pass the saved identity separately as `--previous-aumid`. The pinning process sets its NEW
+   identity once at startup before any UI or WinRT. It launches the same executable with
+   `--pin --check-only` in a separate read-only process for the OLD identity. That child verifies
+   the intact physical Start link matches the old AUMID, launcher arguments and deployed executable,
+   then calls `IsCurrentAppPinnedAsync`. It reuses the guarded STA timer/pump unshown, with a
+   five-second deadline and one-second cancellation grace, and never takes foreground or pins.
+   `PreviousPinProcess` bounds the whole child to ten seconds and reaps it before any Start snapshot
+   replacement. Timeout/unexpected exit remains Unknown; only that owned read-only child may be
+   terminated. Failure to stop it aborts the attempt instead of changing the snapshot.
+5. A completed false old-state query skips removal instructions. A known pinned launcher whose
+   confirmed name/icon/command details are unchanged exits 4; settings shows an inline already-pinned
+   status and leaves its identity/resources untouched. Changed details require removing the old pin
+   before replacement only when Windows confirms the old pin exists. Unsupported, missing/mismatched
+   shortcut, timeout or error stays Unknown diagnostically, but product policy permits a fresh pin
+   without an old-pin warning or acknowledgement. History, missing metadata and an earlier pending
+   marker alone do not force manual recovery. Users may remove any duplicate themselves. No taskbar
+   registry scan is used to infer state, and Unknown is never logged as proof of absence.
+6. The old-query process exits before the new snapshot is written. The pinning process never
+   adopts the old identity or creates its WinRT manager. Its sole manager uses the NEW startup
+   identity. Releasing an old manager or calling `RoUninitialize` is not a documented reset of
+   process-scoped caller identity; process isolation avoids relying on such a reset.
+   Native requests use a compact real
+   foreground `PinWindow` showing the launcher name and "Look for the Windows pinning prompt."
+   on a restrained rounded card. `PinWindow.Appearance.cs` supplies Segoe UI text, light/dark themes,
+   high-contrast system colours, and per-monitor DPI layout. There is no classic caption strip,
+   progress bar or action button. Native STATIC text remains accessible; `DrawIconEx(DI_NORMAL)`
+   composites the original icon alpha over the card background, avoiding an `SS_ICON` white box
+   without editing user icon files. It closes on the outcome. Only manual fallback shows the
+   right-click pin instructions. The foreground owner is
+   required by Windows; it must not be replaced with an invisible/offscreen request window.
+7. Exit 1 means native success, 2 explicit manual-pin confirmation, 0 cancellation, 3 unknown
+   request outcome, and 4 unchanged already pinned. Only 1/2 replace `PinAumid`. Snapshot/pending files remain local. Settings is restored on exit/error only while its host remains open.
+8. A completed false result or explicit dialog Cancel restores the previous shortcut and pending marker bytes. Confirmation writes
+   `pin-shortcut-{id}.txt` and local `pin-snapshot-{id}.json`: exact identity, display name, executable,
+   arguments and SHA-256 of the effective immutable icon bytes. Optional metadata failure is logged;
+   unreadable, invalid, missing or mismatched baseline stays unknown rather than unchanged/changed.
+   Metadata uses source-generated JSON shared by both builds and is never serialized into settings.
 
-Both `LoadImage` (WM_SETICON on the MessageBox HWND) and `RelaunchIconResource` use the **same timestamped path**. Windows caches icon bitmaps per file path in its icon cache DB, so reusing a stable path across pin attempts would serve stale cached bitmaps.
+### Live state in launcher settings
 
-`CleanUpStaleIconFiles()` keeps the **most recent** `-pin*.ico` per launcher and deletes older ones. This ensures the pinned shortcut's `RelaunchIconResource` still points to a valid file after app restart.
+`LauncherSettingsWindow.TaskbarPinStatus.cs` owns the normal pin row subtitle and action state.
+`TaskbarPinStatusService` asynchronously runs the production `--pin --check-only` phase in a separate
+unshown process with the saved OLD AUMID. It does not minimize settings, take foreground, submit a pin,
+or mutate shell resources. Only exits 4/5 mean known pinned/not pinned; all other results are Unknown.
+The outer deadline is ten seconds, with two seconds to stop/reap only the owned read-only child.
 
-> **WARNING:** Windows 11's taskbar caches the pin icon bitmap per AUMID at pin time. Changing the icon on disk does NOT update the pinned icon. The only way to update is to unpin and re-pin. The stamped AUMID ensures each re-pin sees a fresh identity.
+Query on open and return from deactivation, after identity changes, and after unconfirmed/manual
+pin outcomes. Cache the result for that identity between those events. Saves, typed names and
+`MainWindow.LauncherIconSaved` only recompute effective name/icon/command differences against that
+cached state, including automatic favicons and composites. Do not start one helper per keystroke.
+Native success and an already-pinned result are fresh live evidence and seed the cache directly.
+
+Children are serialized. A generation rejects stale results, close cancels the child and detaches
+all subscriptions, and an explicit pin waits for the read-only child to exit before replacing a
+snapshot. If that child cannot be stopped, report a check failure rather than proceeding with a new
+pin. An earlier pending record does not select a different row or require manual recovery.
+
+The independent pin helper can finish after launcher settings closes. Confirmed identity is still persisted, but closed-host continuations never restore/focus the HWND, update controls, or open an error dialog on a detached XamlRoot. Pin errors are logged; a dialog-reporting failure cannot escape the async event handler.
+
+`PinAumid` is persisted in local settings and is also carried by the existing full-launcher sync serialization. Existing-launcher `CopyInto` merges preserve the local value, while a newly imported launcher can initially carry the source machine's identity. This release preserves that behavior. Missing local caller registration remains Unknown and uses the standard pin action. The separate snapshot/pending files are never synced.
+
+Known not pinned uses the ordinary pin description with no removal warning. Known pinned with
+changed effective details says to unpin and pin again; unchanged details show Pinned and disable
+the redundant action. Known pinned with missing metadata does not assert the details changed.
+Unknown/legacy state uses the ordinary pin description and enabled action, just like known absence.
+This is a product policy, not a claim that an old pin was proved absent. An earlier pending marker or
+saved snapshot alone does not show an old-pin warning. One `BuildRow` subtitle (font size 12,
+0.5 opacity, wrapping) replaces the old third line and its arbitrary centered width cap.
+
+Microsoft documents `IsCurrentAppPinnedAsync` for the current application, separately from the
+foreground/Start-entry requirements for a pin request. Our physical Start-link validation is a
+conservative caller-resolution guard, not a documented prerequisite for the state query itself.
+Keep missing/mismatched links Unknown: this implementation has no verified general lookup for an
+arbitrary saved AUMID after its source registration has disappeared. Do not infer absence from
+incomplete taskbar caches. See the [state query contract](https://learn.microsoft.com/en-us/uwp/api/windows.ui.shell.taskbarmanager.iscurrentapppinnedasync).
+
+All `-pin*.ico` snapshots are retained: a new attempt or cancellation does not prove an older pin
+stopped referencing its file. This trades a small amount of disk space for preserving older pins.
+
+> Windows caches names by AUMID and icons by identity and path. To change a pinned name or icon,
+> remove the old pin and pin again. Native confirmation creates a new pin; it does not automatically
+> replace the old entry.
+
+For the legacy manual fallback, `RelaunchIconResource` must be `"path,0"`, never a bare path.
+`WM_SETICON` uses the same snapshot, but a correct title-bar icon does not prove the pin resource is
+valid. Pin-only diagnostics in `taskbar-pin.log` beside the deployed helper report package status,
+eligibility, fallback reason, request start and result, with UTC timestamps. Windows returns false
+for both a declined prompt and a denied request; the log does not claim to distinguish them.
+
+See Microsoft's [pinning contract](https://learn.microsoft.com/en-us/windows/apps/develop/windows-integration/pin-to-taskbar)
+and [unpackaged desktop sample](https://github.com/microsoft/Windows-classic-samples/tree/main/Samples/TaskbarManager/CppUnpackagedDesktopTaskbarPin).
+
+### A native request that does not finish
+
+The native request flow has a 45-second deadline followed by a five-second cancellation grace period.
+`IAsyncInfo.Cancel` only requests cancellation. A completed true result saves the new identity;
+a completed false result restores the previous snapshot. Canceled/error status or a request still
+pending after the grace period exits with code 3, preserves its shortcut/icon, and leaves the saved
+`PinAumid` unchanged. Unexpected destruction/quit of the reminder card is also unknown; ordinary close requests cannot
+stop its deadline timer. The settings window says the result was not confirmed and a pin may still
+appear. It does not require removal before retrying. No uncertain outcome is treated as success.
+
+Before replacing the Start snapshot, the helper writes local `pin-pending-{launcherId}.txt` beside
+its stable executable, containing the exact attempted AUMID. This also guards against an unexpected
+helper exit. The marker is neither serialized nor synced. Regular-window mode rejects a pending
+snapshot even if an older confirmation record still matches the saved identity.
+
+A subsequent attempt may request native Windows confirmation again. The marker alone never adds
+`--manual` or an old-pin acknowledgement. Only a fresh live Pinned result can require manual removal
+of an old pin. `--manual` remains an explicit helper option, and unsupported native systems still use
+the manual fallback. Confirmation saves the new identity and clears the current marker. A completed
+false/cancelled dialog restores the previous shortcut bytes and earlier marker; an unresolved current
+request retains its new snapshot/marker. All immutable pin icon files remain available. Do not treat
+`IAsyncInfo.Cancel` or an unknown old-state result as permission to delete late-pin resources.
+
+Pin diagnostics include status heartbeats every 15 seconds, advisory cancellation HRESULTs and the
+unconfirmed outcome. Narrow `pin-window` milestones report card creation, appearance, layout and
+ready dispatch; native-window logs report timer arming and its first callback. `eligible` means only
+preparation succeeded, not that Windows received a pin request. A failed ready-message queue exits
+Unknown through cleanup instead of waiting without a timer. Only terminal operations are closed; an active native request is never described
+as successfully cancelled merely because `Cancel` returned success. See
+[Microsoft's cancellation contract](https://learn.microsoft.com/en-us/windows/win32/api/asyncinfo/nf-asyncinfo-iasyncinfo-cancel).
+
+The startup identity rule follows [SetCurrentProcessExplicitAppUserModelID](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-setcurrentprocessexplicitappusermodelid).
+`TaskbarManager.GetDefault` returns the [object active in the current process](https://learn.microsoft.com/en-us/uwp/api/windows.ui.shell.taskbarmanager.getdefault),
+not a guaranteed fresh identity object. Process isolation enforces the documented lifetime; it does
+not by itself prove that caller caching caused any particular missing prompt.
+
+### Read-only pin-state verification
+
+Run the same old-identity phase without any pin submission:
+
+```text
+LittleLauncherFlyout.exe --pin --check-only --launcher {id} --previous-aumid {savedAumid}
+```
+
+Exit 4 means known pinned, 5 known not pinned, and 3 unknown. It only reads the old shortcut and
+writes diagnostics; it does not replace a shortcut, icon, metadata or saved identity, and does not
+show/foreground its query window. The log records `previous-pin: pinned`, `not-pinned`, or an unknown
+reason. This reuses the production query path and requires no mouse/keyboard automation.
 
 ### Diagnosing a blank pin icon
 
@@ -226,7 +377,9 @@ Debug builds also deploy the **framework-dependent** companion (~175 KB apphost 
 Both embed the app icon via `<ApplicationIcon>`, so the icon itself is not the difference — but
 prefer a Release build when validating anything about pinning.
 
-**Per-launcher Start Menu shortcuts are NOT created.** Previous versions used AUMID-stamped `.lnk` files in the Start Menu as the primary pin identity source. This was removed because combining shortcuts with relaunch properties caused Windows to see two identity sources and create duplicate "(2)" pins. `CleanUpStaleFlyoutShortcuts()` removes any leftover per-launcher shortcuts from previous versions on startup.
+**Pin snapshots are created only by explicit pinning.** They live under `Little Launcher Pins`,
+separate from live web-launcher discovery shortcuts under `Little Launcher`. Startup cleanup removes
+only the old root-level flyout shortcuts, never the current pin snapshots.
 
 > **WARNING:** Windows caches pin display names per AUMID in CloudStore. Changing the display name format requires changing the AUMID format to bust the cache. See `ARCHITECTURE.md` and repo memory `msix-taskbar-pinning.md`.
 
@@ -266,6 +419,8 @@ actually in use.
   icons per view, a few KB each), which is why that is acceptable and a stored icon is kept
   outside it.
 
+A selfh.st tile download must also match the latest click within its current tab content before it may highlight a tile or replace pending selection. Tab/query/open guards alone do not reject an earlier click that finishes after a later click in the same view. A failed latest download retains the preceding valid pending choice; older in-flight clicks never replace it afterward.
+
 ## Regenerating `LittleLauncher.ico`
 
 `Resources/LittleLauncher.ico` is the embedded exe icon. It **must be regenerated** whenever `Resources/AppIcons/Blue.png` changes. The `.ico` is not auto-generated by the build — it's a committed binary.
@@ -275,6 +430,10 @@ To regenerate, create a multi-resolution ICO (16, 24, 32, 48, 64, 256px) from `B
 ## Start Menu Shortcut
 
 Nothing creates a Start Menu shortcut before the app runs: the portable build has no installer, and MSIX registers its own entry from the manifest. On first launch, `EnsureStartMenuShortcuts()` in `MainWindow.xaml.cs` writes `Programs\Little Launcher.lnk` with the exe's embedded icon, and `UpdateShortcutIcons()` re-stamps it when the user changes the icon. The shortcut must sit directly in `ProgramMenuFolder` (not a subfolder) so the app's runtime management can find and update it — `RemoveLegacyMsiSubfolderShortcut()` clears the subfolder copy the retired MSI used to create.
+
+## Launcher item names on hover
+
+List and large-icon item templates show the full name in a tooltip only when the visible label is actually trimmed. Small-icon items have no label and always offer the name on hover. `Controls/ConditionalNameToolTip.cs` shares the behavior across all three templates, including apps, websites and PWAs, and targets the item container so its icon and padding work too. The same behavior attaches directly to real group-header labels in all three modes and to column captions, targeting only that label and offering its full text when trimmed. Fully visible names have no redundant tooltip. See [xaml.md](xaml.md) for lifecycle conventions.
 
 ## Launcher Item Icons (Favicons & App Icons)
 
@@ -312,10 +471,10 @@ Two paths fetch a site's icon, and both must aim higher than the browser favicon
 `FaviconService.RefreshStaleItemIconsAsync()` re-fetches **auto-fetched** item icons whose cached file is older than `FaviconService.IconMaxAge` (7 days), so favicons, extracted app icons, and PWA icons don't rot as sites and apps update. Rules:
 
 - **Custom icons are never touched.** Auto-fetched vs custom is decided by `IsAutoFetchedIconPath()`: auto-fetched icons all live in the `favicons` cache folder (`{host}.png`, `app_{name}.png`, `pwa_{aumid}.png`); user-chosen images live in the separate `icons` folder (`custom-*`, `selfhst-*`) or an arbitrary path.
-- **Failures keep the existing file** — `FetchAndCacheCoreAsync` only writes on success, so icons only ever improve. A failed fetch leaves the old timestamp, so it's retried on the next check.
+- **Failures keep the existing file**; `FetchAndCacheCoreAsync` only writes on success, so icons only ever improve. A failed fetch leaves the old timestamp, so it's retried on the next check.
 - Items sharing a cache file (same host) are deduped per pass via a shared visited-path set.
 - Triggered from `MainWindow`: on startup (inside `FetchMissingIconsOnStartupAsync`) and by `_iconRefreshTimer`, a daily `System.Threading.Timer` (the tray app stays resident for weeks, so launch-only would not be enough). The timer callback marshals to the UI thread via `App.MainDispatcherQueue` before touching `IconPath`. After any change, `ApplyItemIconChanges()` saves settings, invalidates flyouts, and re-renders tray/settings icons (Composite mode embeds item icons).
-- **Cache-busting:** the refresh rewrites cache files in place (same path), so the item-icon `BitmapImage` loads in `IconPathToImageConverter` and `FlyoutWindow.CreateIconTile` set `BitmapCreateOptions.IgnoreImageCache` — without it, WinUI's per-URI decoded-image cache keeps showing the old bitmap for the rest of the session.
+- **Cache-busting:** the refresh rewrites cache files in place (same path), so the item-icon `BitmapImage` loads in `IconPathToImageConverter` and `LauncherItemsView.CreateIconTile` set `BitmapCreateOptions.IgnoreImageCache`; without it, WinUI's per-URI decoded-image cache keeps showing the old bitmap for the rest of the session.
 
 The add/edit dialog's unified app/PWA picker shows its own **transient list icons** (not the persisted item icon): `AppPickerService.LoadIcons` extracts them via `ShellIcons.Extract` (`IShellItemImageFactory`, 32px BGRA → `WriteableBitmap`) on a background STA thread. These are display-only — the item's saved `IconPath` is still produced by the `FaviconService` calls above when a row is selected.
 
@@ -325,14 +484,16 @@ The add/edit dialog's unified app/PWA picker shows its own **transient list icon
 
 For Chromium PWAs, prefer the site's own icon/manifest asset when the AUMID encodes a domain (for example `example.com-HEX_hash!App`). The shell image factory often returns a softer rasterized bitmap than the original web icon. `GetBestPwaIconAsync()` handles this preference, but it must reject off-origin login redirects and skip generic Google favicon-service fallbacks for PWAs; when the site does not expose a real app icon, it should fall back to `GetPwaIconFromShell()`.
 
-After any bulk icon change, call `FlyoutWindow.InvalidateItems()` so the flyout rebuilds its item containers on the next toggle. The flyout's `RebuildItemsIfNeeded()` nulls `ItemsSource` before reassigning to force full container recreation.
+After any bulk icon change, call `FlyoutWindow.InvalidateItems()`. That compatibility entry point refreshes every registered `LauncherItemsView`, including open regular editors, and composite tray icons. Forced invalidation rebuilds containers even when an in-place cache rewrite keeps the same path. Closed regular editors unregister their view; native popup views remain for warm reopening.
 
 ## Gotchas
 
 - **MSIX VFS redirection** — see the [dedicated section below](#msix-vfs-redirection). All file paths referenced by external processes (shell `.lnk` files, companion exe) **must** use the physical path from `MainWindow.GetPhysicalAppDataDir()`, never raw `Environment.GetFolderPath(ApplicationData)`. The latter is VFS-redirected inside MSIX and invisible to the shell.
 - **`LauncherItem.IconGlyph` must be a Unicode character**, not a text name. Use `""` (globe, `U+E774`) for websites and `""` (open, `U+E8E5`) for apps. Text strings like `"Globe24"` render as rectangle tofu in `FontIcon`.
-- **`LauncherItem.IconGlyph` can be an emoji character** (e.g. `"🚀"`, `"💻"`). Use `IconGallery.IsFluentGlyph()` to determine whether a glyph is a Segoe Fluent icon (PUA range U+E000–U+F8FF) or an emoji. Fluent glyphs render via `FontIcon`; emojis render via `TextBlock`. The `IsFluentGlyphConverter` XAML converter handles this in data templates. In `System.Drawing` code (composite tray icon), use `"Segoe UI Emoji"` font for emoji glyphs instead of `"Segoe Fluent Icons"`.
-- **Icon Gallery** (`Classes/IconGallery.cs`) provides a gallery-style Flyout for choosing glyphs, emojis, bundled app color icons, selfh.st catalog icons, or custom images. It is shown from the item edit dialog via a "Choose" button and from the launcher icon chooser. The item gallery has tabs (Glyphs, Emoji, App Icons, selfh.st) plus a color palette for choosing glyph colors; the launcher tray icon gallery now exposes presets, glyphs, emojis, and a selfh.st tab that feeds image-based selections into `TrayIconModes.Custom`. Selected colors are returned in `IconResult.Color` and stored as `LauncherItem.IconColor` (hex string) or encoded in the launcher `TrayIconMode` string (`"Glyph:#RRGGBB:X"`). selfh.st icons are fetched manually from the public catalog/index and cached locally as `AppData\LittleLauncher\icons\selfhst-{reference}.png` when selected. When a selfh.st tab is active, the gallery shows attribution links for selfh.st and the CC BY 4.0 license in the footer. When opened, the gallery pre-selects the current icon: it opens the correct tab, highlights the matching color swatch, and highlights + selects the matching icon button so the user can immediately Confirm or change just the color. Pre-selection is driven by `currentGlyph`/`currentColor`/`currentImagePath` params on `CreateFlyout()` and by parsing `currentMode` in `CreateLauncherIconFlyout()`.
+- **`LauncherItem.IconGlyph` can hold a complete emoji sequence**, for example `"🚀"`, `"👩‍💻"` or `"❤️"`. Use `IconGallery.IsFluentGlyph()` to distinguish Fluent PUA glyphs from emoji. Fluent previews use `FontIcon`; emoji previews use `TextBlock` with `FontFamily = "Segoe UI Emoji"` and `IsColorFontEnabled = true`. Bitmap exports must use `GlyphIconRenderer`, including composite and jump-list icons.
+- **Icon Gallery** (`Classes/IconGallery.cs`) has one shared core for item and launcher pickers. The item wrapper exposes App Icons, Glyphs, Emoji and selfh.st plus Reset; the launcher wrapper replaces App Icons with Launcher Presets (Composite, app colors and, for a web launcher, Use page icon). Both retain search, selection highlighting, Confirm/Cancel, attribution and the same pinned confirmation footer. Browse for image is an option inside the first App Icons/Launcher Presets tab only. `getCurrentSelection` is read on every opening, including after Confirm or Cancel; selecting a tile remains pending until Confirm. Custom images also remain valid pending selections when no gallery tile represents them. Empty paths and glyphs do not enable Confirm.
+- **Gallery geometry uses the monitor work area, not owner-window height.** Callers supply their actual HWND. `ShouldConstrainToRootBounds = false` lets the picker escape compact settings windows; a definite monitor-capped height gives its star-row content host a finite viewport with no minimum height. Large symbol catalogs use a directly hosted `GridView` with its own scroller; the small preset/image lists use a sibling `ScrollViewer`. Never put the catalog view inside that scroller. Search, tabs, palette, attribution and Confirm/Cancel remain outside that shrinking viewport. Browse belongs inside the first tab's scrolling options. Physical monitor bounds are converted to DIPs using the owner window's DPI, including scaling on secondary monitors. The virtualized symbol grid wraps to the available width, with at most nine columns. Small image/preset/selfh.st lists use responsive wrapping within a horizontally constrained scroller. Full-width option text has a finite Star column and wraps rather than widening the extent.
+- **All icon Browse actions use `IconGallery.PickImageAsync(ownerHwnd)`**, accepting ICO, PNG, JPG, JPEG and BMP. In launcher settings, the gallery and custom-file row share the same browse/commit path. Files are copied into the physical AppData directory before the launcher switches to Custom; confirming the existing file skips a copy onto itself. The preview and filename refresh together, and file/picker failures are reported. Cancellation leaves the saved selection unchanged. selfh.st selections keep their existing cache and attribution behavior.
 - **A notification's icon comes from `toast-icon-{id}.png`, not the adopted page icon.** It used
   to read `web-favicon-{id}.png` directly, which is written *only* for a web launcher nobody
   has chosen an icon for — so a launcher wearing a custom image or a glyph had no file at
@@ -376,3 +537,91 @@ Icon files (`app-icon.ico`, `settings-icon.ico`) and the companion exe (`LittleL
 2. **Internal-only paths** (settings.xml read/written only by the main app, favicon cache) → `Environment.GetFolderPath(ApplicationData)` is fine because VFS redirects reads too within the same package context.
 3. **Companion exe** should use `AppContext.BaseDirectory` to find `app-icon.ico` — since the exe resides in the physical AppData dir, this resolves correctly for both MSIX and unpackaged.
 4. **Never hardcode `%AppData%\LittleLauncher`** in any code path that writes files referenced externally. Always call `GetPhysicalAppDataDir()`.
+
+## Virtualized symbol catalogs
+
+`Classes/IconCatalogView.cs` displays both the 427 Fluent entries and 496 emoji entries.
+`IconGallery` passes the existing category arrays, name filter, current glyph and tint to it.
+Filtering builds lightweight data records only. `CollectionViewSource` projects named groups
+into a `GridView` whose `ItemsWrapGrid` uses `CacheLength = 1` (one viewport of total prefetch,
+rather than the default four). Its own scroller receives the finite star-row viewport directly.
+The framework creates and recycles nearby tiles instead of creating the whole catalog when a
+tab opens. There is no background-thread XAML construction or fake loading spinner.
+
+Category headers remain visible when browsing and hidden during search, matching the previous picker. Tiles retain their existing sizes (Fluent glyphs 18px, emoji 22px inside 40px tiles), full Unicode strings, color fonts, tooltips and accent selection outline. Native single selection keeps keyboard navigation and focus visuals. The native presenter's selected-border properties use the stock GridView theme resources for normal, hover, pressed, disabled and inner strokes; selection does not change the container's fixed zero border or tile geometry. Native GridViewItem selection drives the outline on opening and recycling, while the container callback reapplies accessible names, tint and tooltips. Do not compare container.Content during ContainerContentChanging phase zero: WinUI 1.8.5 raises that event before assigning the incoming content. Tab changes and close clear the source and invalidate old work. The selfh.st async selection callback also checks its request is still current after caching. Tabs and the symbol grid have meaningful automation names for assistive tools.
+
+Use actual realized `GridViewItem` counts to verify virtualization while opening and scrolling,
+not merely the presence of `ItemsWrapGrid`. Counts should remain well below the complete catalog
+at this gallery's normal height. Verify the last categories remain reachable, search stays usable,
+selection survives recycling, and Cancel/reopen restores the saved glyph and color. See
+[Microsoft's WinUI collection performance guidance](https://learn.microsoft.com/en-us/windows/apps/develop/performance/optimize-gridview-and-listview)
+and the [App SDK 1.8 CacheLength contract](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.itemswrapgrid.cachelength?view=windows-app-sdk-1.8).
+
+## Automatic page icon choice
+
+Use page icon is a web-only pending choice inside Launcher Presets, not a separate settings-row
+button. `IconResult.UsePageIcon` distinguishes it from an ordinary image or Composite preset.
+Both availability and the current adopted selection are read from the live launcher on every
+opening, including after changing launcher type in the same settings window. The option is
+selected even before a managed favicon has been fetched.
+
+`AutomaticPageIconChoice` displays the actual decoded managed image, or an explicit missing,
+loading or failed state. Opening reads the saved file only. Retry obtains a raster from an
+already loaded, awake, owned tab at the launcher's current canonical address first. If that
+cannot supply one, it tries the actual site directly over HTTP, without starting, resuming or
+navigating a browser. A failed retry retains the last good preview. Preview bytes and
+their source URL stay in memory until Confirm; Retry never calls the mutating adoption methods.
+Closing cancels the request and invalidates its generation. Address/type changes reject results.
+
+`WebFlyoutWindow.IconPreview.cs` shares the bridge's exact `bestIconUrl` discovery function,
+fetching through the loaded page's authenticated context without posting an adoption message.
+CDP and favicon reads have bounded waits, reject suspension/navigation and cap payloads at
+512 KiB. The expanded service-worker bridge must remain unchanged by extraction.
+
+`FaviconService.IconPreview.cs` provides the direct fallback as bytes only. It shares existing
+HTML/manifest/icon selection with optional preview request policy, skips all local cache reads
+and writes, and never invokes the Google favicon service. Requests use `Cache-Control: no-cache,
+no-store`, cancellation for headers/body reads, a linked 15-second direct-attempt deadline,
+512 KiB manifest/image limits and the existing 64 Ki-character HTML read. The chooser's complete
+request remains bounded to 20 seconds, including any preceding loaded-page wait. Ordinary item
+favicon fetches pass no preview options and keep their existing cache/fallback behavior.
+
+HTTP does not inherit WebView sign-ins. A failed, unsupported or timed-out result retains the
+last good preview and saved custom icon, with text asking the user to open the launcher, sign
+in if needed, then retry. No browser is initialized or resumed automatically. The captured
+launcher address/type and open/request generation still gate every result before use.
+
+Confirm first validates the preview's exact launcher address/type, atomically writes pending PNG
+bytes, and restores `web-favicon-{id}.png` directly. The existing larger-icon safeguard still
+applies. Without a saved or fetched raster it restores the empty Composite adoption state so
+the next page load can provide an icon. Never copy that managed file
+into `custom-tray-icon-*`, which would disable subsequent automatic adoption. The settings preview
+refreshes immediately after confirmation. Cancel leaves the chosen custom icon untouched, and
+shortcut/item pickers never show the page option.
+
+## Restoring and revealing the saved selection
+
+On opening, the saved glyph selects its own catalog tab and native selected item. Saved presets,
+page adoption and custom images select their corresponding options; unmatched custom images are
+represented by the Browse choice. Browse is only in the first options tab for both picker kinds.
+The item picker's App Icons tab is therefore first, followed by Fluent, Emoji and selfh.st.
+
+`SelectionReveal.AfterLayout` is shared by catalog and option selections. It waits for a live
+viewport and a layout pass, then dispatches a one-shot reveal at low priority. Catalog selections
+use `GridView.ScrollIntoView`; option buttons use `StartBringIntoView`. Source/request versions,
+current selection and open state guard the callback; tab changes, typing and close cancel it.
+Do not reset the scroller to zero unconditionally from `Flyout.Opened`, which would undo the
+restored selection. This does not change selection or move keyboard focus.
+
+For selfh.st, reserve a slot for the saved match if it lies beyond the first 120 unfiltered results.
+Keep at most 120 choices/thumbnails and preserve search filtering. Async preselection can then
+highlight and reveal the saved option after its content attaches. Match bundled and selfh.st
+images against the exact persisted cache directory and filename contract, not arbitrary user
+basenames. A custom file called `app-blue.png` outside the app cache is still a custom image.
+`IconCatalogGroup.ToString` returns its category name so automation does not expose a helper type.
+
+Small image lists use `VariableSizedWrapGrid`; large symbol catalogs retain virtualized
+`ItemsWrapGrid`. The former is intentionally limited to small/bounded lists and must never
+replace the catalog's virtualizing panel. See the App SDK 1.8 contracts for
+[ScrollIntoView](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.listviewbase.scrollintoview?view=windows-app-sdk-1.8)
+and [VariableSizedWrapGrid](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.controls.variablesizedwrapgrid?view=windows-app-sdk-1.8).

@@ -383,3 +383,5 @@ local.secrets.props
 
 # Local crash diagnostics (cdb scripts, dumps)
 .crashdiag/
+
+/.artifacts/

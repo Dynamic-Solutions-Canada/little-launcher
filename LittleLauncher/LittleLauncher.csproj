@@ -22,7 +22,7 @@
     <FrameworkReference Include="Microsoft.WindowsDesktop.App" />
 
     <!-- WinUI 3 (Windows App SDK) — Fluent Design, Mica, NavigationView -->
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260209005" />
 
     <!-- System tray icon for WinUI 3 -->
@@ -96,9 +96,9 @@
        fallback; the page refreshes its public manifest at runtime. -->
   <Import Project="..\external\promo\PromotedApps.projitems" Label="Shared" />
   <!--
-    Bake build-time credentials into the assembly. Read back by CloudSyncCredentials.BuildValue;
-    an environment variable cannot serve here because it is a runtime lookup and an end user has
-    no such variable set.
+    Bake the GoogleClientSecret MSBuild property into assembly metadata for BuildValue. The
+    property can come from local.secrets.props or the build environment. The runtime override
+    LITTLELAUNCHER_GOOGLE_CLIENT_SECRET alone does not populate metadata for shipped builds.
   -->
   <ItemGroup Condition="'$(GoogleClientSecret)' != ''">
     <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
@@ -107,4 +107,7 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\Shared\PinSnapshot.cs" Link="Shared\PinSnapshot.cs" />
+  </ItemGroup>
 </Project>

@@ -7,9 +7,13 @@
     <AssemblyName>LittleLauncherFlyout</AssemblyName>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\LittleLauncher\Resources\LittleLauncher.ico</ApplicationIcon>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\PinSnapshot.cs" Link="Shared\PinSnapshot.cs" />
+  </ItemGroup>
 </Project>

@@ -58,6 +58,7 @@ public sealed class ItemEditorWindow : Window
     private readonly TaskCompletionSource<ItemEditorResult> _completion = new();
     private readonly IntPtr _hwnd;
     private ItemEditorResult _result = ItemEditorResult.Cancelled;
+    private bool _closed;
 
     /// <summary>
     /// Opens the editor. When <paramref name="existingItem"/> is null a new item is appended
@@ -109,7 +110,11 @@ public sealed class ItemEditorWindow : Window
         WindowChrome.ApplyIcon(_hwnd);
 
         SizeAndCentre();
-        Closed += (_, _) => _completion.TrySetResult(_result);
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            _completion.TrySetResult(_result);
+        };
     }
 
     /// <summary>Sizes the window in DIPs and centres it on the monitor it opened on.</summary>
@@ -233,6 +238,15 @@ public sealed class ItemEditorWindow : Window
                 list.Add(new AppPickerEntry(app.DisplayName, app.ExePath, false, app.ExePath));
             foreach (var pwa in AppCatalog.GetInstalledPwas())
                 list.Add(new AppPickerEntry(pwa.DisplayName, pwa.Aumid, true, $@"shell:AppsFolder\{pwa.Aumid}"));
+
+            // Duplicate identity comes from the full catalog, never the filtered results.
+            foreach (var group in list.GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                bool isDuplicate = group.Count() > 1;
+                foreach (var entry in group)
+                    entry.HasDuplicateName = isDuplicate;
+            }
+
             return list.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
@@ -350,7 +364,7 @@ public sealed class ItemEditorWindow : Window
             "<Grid ColumnSpacing=\"12\" Padding=\"0,4\">" +
             "<Grid.ColumnDefinitions><ColumnDefinition Width=\"Auto\"/><ColumnDefinition Width=\"*\"/></Grid.ColumnDefinitions>" +
             "<Image Grid.Column=\"0\" Source=\"{Binding Icon}\" Width=\"24\" Height=\"24\"/>" +
-            "<TextBlock Grid.Column=\"1\" Text=\"{Binding Name}\" VerticalAlignment=\"Center\" TextTrimming=\"CharacterEllipsis\"/>" +
+            "<TextBlock Grid.Column=\"1\" Text=\"{Binding DisplayName}\" VerticalAlignment=\"Center\" TextTrimming=\"CharacterEllipsis\"/>" +
             "</Grid></DataTemplate>");
 
         // -- 3. Arguments (Application only) --
@@ -556,6 +570,8 @@ public sealed class ItemEditorWindow : Window
         };
         var iconEmojiPreview = new TextBlock
         {
+            FontFamily = new FontFamily("Segoe UI Emoji"),
+            IsColorFontEnabled = true,
             FontSize = 24,
             Visibility = Visibility.Collapsed,
             VerticalAlignment = VerticalAlignment.Center,
@@ -687,23 +703,16 @@ public sealed class ItemEditorWindow : Window
             },
             onBrowseRequested: async () =>
             {
-                var picker = new FileOpenPicker();
-                picker.FileTypeFilter.Add(".png");
-                picker.FileTypeFilter.Add(".ico");
-                picker.FileTypeFilter.Add(".jpg");
-                picker.FileTypeFilter.Add(".jpeg");
-                picker.FileTypeFilter.Add(".bmp");
-                InitializePicker(picker);
-                var file = await picker.PickSingleFileAsync();
-                if (file != null)
+                string? selectedPath = await IconGallery.PickImageAsync(_hwnd);
+                if (selectedPath != null)
                 {
                     // Copy to AppData cache for persistence
                     string cacheDir = Path.Combine(
                         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                         "LittleLauncher", "icons");
                     Directory.CreateDirectory(cacheDir);
-                    string dest = Path.Combine(cacheDir, $"custom-{Guid.NewGuid():N}{Path.GetExtension(file.Path)}");
-                    File.Copy(file.Path, dest, true);
+                    string dest = Path.Combine(cacheDir, $"custom-{Guid.NewGuid():N}{Path.GetExtension(selectedPath)}");
+                    File.Copy(selectedPath, dest, true);
                     fetchedIconPath = dest;
                     RefreshIconPreview();
                 }
@@ -722,7 +731,9 @@ public sealed class ItemEditorWindow : Window
             },
             currentGlyph: customGlyph,
             currentColor: customColor,
-            currentImagePath: fetchedIconPath
+            currentImagePath: fetchedIconPath,
+            ownerHwnd: _hwnd,
+            getCurrentSelection: () => new IconGallery.IconResult(customGlyph, fetchedIconPath, Color: customColor)
         );
         iconRow.Children.Add(chooseIconButton);
 
@@ -750,6 +761,22 @@ public sealed class ItemEditorWindow : Window
         }
 
         // -- Picker event wiring --
+        appList.ContainerContentChanging += (_, args) =>
+        {
+            var container = args.ItemContainer;
+            // Containers are reused while filtering and scrolling. Drop old row closures.
+            container.ContextFlyout = null;
+            ToolTipService.SetToolTip(container, null);
+            if (args.InRecycleQueue || args.Item is not AppPickerEntry entry) return;
+
+            AppPickerRowActions.Configure(container, entry, () =>
+            {
+                var (target, targetIsPwa, _) = ResolveTarget();
+                bool isCurrentTarget = entry.IsPwa == targetIsPwa &&
+                    string.Equals(entry.LaunchPath, target, StringComparison.OrdinalIgnoreCase);
+                return isCurrentTarget && !entry.IsPwa ? argsBox.Text : "";
+            });
+        };
         searchBox.TextChanged += (s, args) =>
         {
             if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
@@ -1050,6 +1077,7 @@ public sealed class ItemEditorWindow : Window
         // -- Commit --
         async Task CommitAsync()
         {
+            if (_closed) return;
             SyncDerived();
             var (finalPath, finalIsPwa, finalIsWebsite) = ResolveTarget();
             finalPath = finalPath.Trim();
@@ -1067,6 +1095,9 @@ public sealed class ItemEditorWindow : Window
                 else
                     name = FaviconService.GetApplicationName(finalPath) ?? Path.GetFileNameWithoutExtension(finalPath);
             }
+            // An owner can close while a missing website title is being fetched.
+            // A completed request must not commit into the session that has already ended.
+            if (_closed) return;
             var args = finalIsPwa ? "" : argsBox.Text.Trim();
             var glyph = customGlyph ?? (finalIsWebsite || finalIsPwa ? "" : "");
 
@@ -1102,7 +1133,7 @@ public sealed class ItemEditorWindow : Window
             saveButton.IsEnabled = false;
             debounceTimer?.Stop();
             await CommitAsync();
-            Close();
+            if (!_closed) Close();
         };
         cancelButton.Click += (s, ev) =>
         {

@@ -683,7 +683,7 @@ public sealed partial class MainWindow : Window
                     string fontName = Classes.IconGallery.IsFluentGlyph(glyphStr)
                         ? "Segoe Fluent Icons"
                         : "Segoe UI Emoji";
-                    return RenderGlyphBitmap(glyphStr[0], fg, 256, 240f, fontName);
+                    return RenderGlyphBitmap(glyphStr, fg, 256, 240f, fontName);
                 }
             }
 
@@ -709,7 +709,7 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private static System.Drawing.Bitmap RenderGlyphBitmap(char glyph, System.Drawing.Color fg)
     {
-        return RenderGlyphBitmap(glyph, fg, 256, 240f);
+        return RenderGlyphBitmap(glyph.ToString(), fg, 256, 240f);
     }
 
     /// <summary>Parses "#RRGGBB" to a System.Drawing.Color, returning fallback on failure.</summary>
@@ -731,10 +731,16 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Renders a Segoe Fluent Icons glyph at a specified size.
+    /// Renders a complete glyph sequence. Fluent icons keep their existing tint renderer;
+    /// emoji use DirectWrite shaping and Direct2D color glyphs rather than monochrome GDI.
     /// </summary>
-    private static System.Drawing.Bitmap RenderGlyphBitmap(char glyph, System.Drawing.Color fg, int size, float fontPx, string fontName = "Segoe Fluent Icons")
+    private static System.Drawing.Bitmap RenderGlyphBitmap(string glyph, System.Drawing.Color fg, int size, float fontPx, string fontName = "Segoe Fluent Icons")
     {
+        if (!Classes.IconGallery.IsFluentGlyph(glyph))
+        {
+            return GlyphIconRenderer.RenderEmoji(glyph, fg, size, fontPx);
+        }
+
         var bitmap = new System.Drawing.Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         using (var g = System.Drawing.Graphics.FromImage(bitmap))
         {
@@ -790,7 +796,7 @@ public sealed partial class MainWindow : Window
                 string fontName = Classes.IconGallery.IsFluentGlyph(iconGlyph)
                     ? "Segoe Fluent Icons"
                     : "Segoe UI Emoji";
-                return RenderGlyphBitmap(iconGlyph[0], fg, size, size * 0.8f, fontName);
+                return RenderGlyphBitmap(iconGlyph, fg, size, size * 0.8f, fontName);
             }
         }
         catch { /* best-effort: an unreadable icon is not a reason to fail the whole surface */ }
@@ -1013,6 +1019,9 @@ public sealed partial class MainWindow : Window
         return ms.ToArray();
     }
 
+    /// <summary>Raised after effective icon bytes are saved, including automatic favicon/composite updates.</summary>
+    internal static event Action<string>? LauncherIconSaved;
+
     /// <summary>
     /// Ensures the per-launcher .ico file exists in AppData. Called before
     /// pinning to the taskbar so the companion exe and Start Menu shortcut
@@ -1092,6 +1101,7 @@ public sealed partial class MainWindow : Window
             var icoBytes = BitmapToIcoBytes(bitmap);
 
             File.WriteAllBytes(launcherIcoPath, icoBytes);
+            LauncherIconSaved?.Invoke(launcher.Id);
 
             // Also update the canonical app-icon.ico if this is the first (or only) launcher
             var firstLauncher = SettingsManager.Current.Launchers.FirstOrDefault();
@@ -1237,33 +1247,8 @@ public sealed partial class MainWindow : Window
             foreach (string f in Directory.GetFiles(appDataDir, "app-icon-*-v*.ico"))
                 try { File.Delete(f); } catch { }
 
-            // For pin copies (app-icon-{id}-pin*.ico), keep the most recent per launcher.
-            // RelaunchIconResource points to the timestamped pin copy, so deleting ALL
-            // of them would make existing pinned icons go blank. Windows also caches
-            // icon bitmaps per file path, so we need unique filenames per pin attempt.
-            var pinFiles = Directory.GetFiles(appDataDir, "app-icon-*-pin*.ico");
-            var pinGroups = new Dictionary<string, List<string>>();
-            foreach (string f in pinFiles)
-            {
-                // Extract launcher ID: "app-icon-{id}-pin{tick}.ico"
-                string name = Path.GetFileNameWithoutExtension(f);
-                int pinIdx = name.LastIndexOf("-pin", StringComparison.Ordinal);
-                if (pinIdx > 0)
-                {
-                    string prefix = name[..pinIdx]; // "app-icon-{id}"
-                    if (!pinGroups.TryGetValue(prefix, out var list))
-                        pinGroups[prefix] = list = [];
-                    list.Add(f);
-                }
-            }
-            foreach (var group in pinGroups.Values)
-            {
-                if (group.Count <= 1) continue;
-                // Keep the newest (highest LastWriteTime), delete the rest
-                group.Sort((a, b) => File.GetLastWriteTimeUtc(b).CompareTo(File.GetLastWriteTimeUtc(a)));
-                for (int i = 1; i < group.Count; i++)
-                    try { File.Delete(group[i]); } catch { }
-            }
+            // Retain every pin snapshot. A cancelled re-pin or an older manual pin may still
+            // reference any one of them; the newest file is not evidence that older pins are gone.
 
             // Legacy single-icon versioned files
             foreach (string f in Directory.GetFiles(appDataDir, "app-icon-v*.ico"))
@@ -1431,18 +1416,17 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Checks for app updates on startup. In unpackaged builds this also shows
-    /// a toast notification; in packaged builds it only caches the result for UI use.
-    /// The result is cached in
-    /// <see cref="UpdateService.LatestResult"/> for the HomePage to consume.
+    /// Checks GitHub releases on startup for portable builds and shows a toast when newer.
+    /// The result is cached for the Home page to consume.
     /// </summary>
     private async Task CheckForUpdateOnStartupAsync()
     {
+        if (IsPackaged) return;
+
         try
         {
             var result = await UpdateService.CheckForUpdateAsync();
             if (result is not { UpdateAvailable: true }) return;
-            if (IsPackaged) return;
 
             // Tagged, because this one fires on every launch until the update is actually taken.
             // Untagged, a user who ignores it collects one more undismissed toast per start, all
@@ -1862,8 +1846,8 @@ public sealed partial class MainWindow : Window
 
     /// <summary>
     /// Removes stale per-launcher flyout shortcuts from the Start Menu.
-    /// Previous versions created these for taskbar pin identity; pinning is
-    /// now handled entirely by the companion exe's relaunch properties.
+    /// These legacy root-level links are unrelated to the current explicit pin snapshots,
+    /// which live under Little Launcher Pins and must survive startup.
     /// </summary>
     private static void CleanUpStaleFlyoutShortcuts()
     {
@@ -1892,8 +1876,7 @@ public sealed partial class MainWindow : Window
     private static void EnsureStartMenuShortcuts()
     {
         // Clean up per-launcher flyout shortcuts from previous versions.
-        // Pinning is now handled entirely by the companion exe's relaunch
-        // properties — no Start Menu flyout shortcuts needed.
+        // Current explicit pin snapshots live in their own folder and are not swept here.
         CleanUpStaleFlyoutShortcuts();
 
         // MSIX packages register their own Start Menu entry via the manifest.
@@ -2042,6 +2025,31 @@ public sealed partial class MainWindow : Window
         return File.Exists(deployed)
             ? deployed
             : Path.Combine(AppContext.BaseDirectory, "LittleLauncherFlyout.exe");
+    }
+
+    /// <summary>
+    /// Whether the helper confirmed a shortcut-backed pin for this exact local AUMID.
+    /// A cancelled request leaves the previous record intact. Never infer identity from the exe path.
+    /// </summary>
+    internal static bool HasPinShortcutIdentity(Launcher launcher)
+    {
+        if (string.IsNullOrEmpty(launcher.PinAumid)) return false;
+        try
+        {
+            string pending = Path.Combine(GetPhysicalAppDataDir(), $"pin-pending-{launcher.Id}.txt");
+            if (File.Exists(pending)) return false;
+            string record = Path.Combine(GetPhysicalAppDataDir(), $"pin-shortcut-{launcher.Id}.txt");
+            string directory = Path.Combine(GetPhysicalStartMenuProgramsDir(), "Little Launcher Pins", launcher.Id);
+            return File.Exists(record)
+                && File.ReadAllText(record) == launcher.PinAumid
+                && Directory.Exists(directory)
+                && Directory.GetFiles(directory, "*.lnk").Length == 1;
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Could not check Start shortcut identity for {Name}", launcher.Name);
+            return false;
+        }
     }
 
     private static void EnsureFlyoutShortcut()

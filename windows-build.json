@@ -1,0 +1,10 @@
+{
+  "project": "LittleLauncher/LittleLauncher.csproj",
+  "package_script": "LittleLauncherMSIX/build-msix.ps1",
+  "package_output": "LittleLauncherMSIX/bin/msix-output",
+  "certificate": ".windows-build/signing.pfx",
+  "version_file": "Directory.Build.props",
+  "dev_identity": "27766TechnicallyReal.LittleLauncher",
+  "trusted_certificate": true,
+  "signing": "shared-dev"
+}

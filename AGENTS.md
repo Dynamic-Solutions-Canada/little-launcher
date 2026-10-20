@@ -16,10 +16,10 @@ These guides hold detailed conventions for specific areas. Codex auto-loads the 
 |---|---|---|
 | [.codex/docs/pinvoke.md](.codex/docs/pinvoke.md) | P/Invoke, Win32 interop, native signatures | `Classes/NativeMethods.cs` |
 | [.codex/docs/user-settings.md](.codex/docs/user-settings.md) | Observable settings, Launcher model, serialization | `ViewModels/UserSettings*.cs`, `Models/Launcher.cs` |
-| [.codex/docs/drag-drop.md](.codex/docs/drag-drop.md) | Flyout drag-and-drop and edit mode | `Windows/FlyoutWindow.xaml*`, `Windows/FlyoutWindow.EditMode.cs` |
+| [.codex/docs/drag-drop.md](.codex/docs/drag-drop.md) | Shared launcher drag-and-drop, edit mode and hosts | `Controls/LauncherItemsView*`, `Controls/ILauncherItemsHost.cs`, `Windows/FlyoutWindow*.cs`, `Windows/LauncherItemsEditorWindow.cs`, `SettingsWindow.ItemEditing.cs` |
 | [.codex/docs/web-launchers.md](.codex/docs/web-launchers.md) | Web launchers, the WebView2 flyout, its resource policy | `Windows/WebFlyoutWindow.cs`, `Windows/LauncherPanels.cs` |
 | [.codex/docs/sync.md](.codex/docs/sync.md) | Global sync, sync providers, adding a transport | `Services/*SyncService.cs`, `Services/LauncherPayload.cs`, `Services/CloudFolderService.cs`, `Pages/SyncPage.xaml*` |
-| [.codex/docs/xaml.md](.codex/docs/xaml.md) | WinUI 3 XAML, controls, localization, backdrops | `**/*.xaml` |
+| [.codex/docs/xaml.md](.codex/docs/xaml.md) | WinUI 3 XAML, controls, localization, backdrops | `**/*.xaml`, `SettingsWindow.ItemEditing.cs` |
 | [.codex/docs/icons.md](.codex/docs/icons.md) | App/tray/shortcut/window icons | `MainWindow.xaml.cs`, `SettingsWindow.xaml.cs`, `LaunchersPage.xaml*`, `HomePage.xaml.cs`, `FlyoutConverters.cs`, `FlyoutWindow.xaml*`, `IconGallery.cs`, `LauncherShortcut/**` |
 | [.codex/docs/installer.md](.codex/docs/installer.md) | Packaging (portable zip + Store MSIX), install/upgrade, update flows | `UpdateService.cs`, `build-msix.ps1`, `Package.appxmanifest` |
 | [.codex/docs/versioning.md](.codex/docs/versioning.md) | Version bumps and releases | `Directory.Build.props`, `MainWindow.xaml.cs`, `Package.appxmanifest`, `build-msix.ps1`, `.github/workflows/build-msix.yml` |
@@ -39,10 +39,10 @@ These guides hold detailed conventions for specific areas. Codex auto-loads the 
 ## Build
 
 ```bash
-dotnet build LittleLauncher/LittleLauncher.csproj -c Debug
+npm run verify:desktop
 ```
 
-`Directory.Build.props` auto-detects the platform from `PROCESSOR_ARCHITECTURE` (ARM64 → ARM64, otherwise x64). To override: `-p:Platform=x64` or `-p:Platform=ARM64`.
+`Directory.Build.props` auto-detects the platform from `PROCESSOR_ARCHITECTURE` (ARM64 → ARM64, otherwise x64). For the shared npm commands, pass `-- --platform x64` or `-- --platform ARM64`.
 
 Target: `net10.0-windows10.0.22000.0`, unpackaged (`WindowsPackageType=None`), platforms `x64` and `ARM64`.
 
@@ -56,22 +56,22 @@ Release builds AOT-publish the companion exe (`LauncherShortcut`) automatically.
 - CommunityToolkit.Mvvm 8.4.0
 - SSH.NET 2026.0.0
 - NLog 6.1.1
-- Microsoft.Data.Sqlite 9.0.3 (Firefox bookmark import from places.sqlite)
+- Microsoft.Data.Sqlite 10.0.13 (Firefox bookmark import from places.sqlite)
 - Microsoft Edge WebView2 — the managed API arrives transitively with the Windows App SDK (no explicit `PackageReference`), and web launchers need the **Evergreen WebView2 Runtime** on the machine. It ships with Windows 11; `WebFlyoutWindow` surfaces an install prompt if `CoreWebView2Environment` cannot start.
 
 ## Common tasks
 
 - **Add a new settings page:** Create `Pages/FooPage.xaml` + `.cs`, add a `NavigationViewItem` in `SettingsWindow.xaml`, add any new string keys to `Dictionary-en-US.xaml`.
-- **Add a new launcher feature:** Extend `LauncherItem` model, update `FlyoutWindow` to render it, update `ItemEditorWindow` for editing.
+- **Add a new launcher feature:** Extend `LauncherItem`, update the shared `LauncherItemsView` renderer/edit behavior, and update `ItemEditorWindow` for its form. Preserve both native and regular hosts.
 - **Add a new setting:** Add an `[ObservableProperty]` to `UserSettings.cs`. It will auto-serialize to JSON.
-- **Add/extend icon gallery tabs:** Edit `Classes/IconGallery.cs` — add entries to `FluentIconCategories` or `EmojiCategories` arrays. The gallery supports Segoe Fluent Icons (PUA glyphs), emojis, and app color icons. Icon selection uses a pending-selection model with Confirm/Cancel buttons. Selected icons get an accent border. Color swatches override `ButtonBackgroundPointerOver`/`ButtonBackgroundPressed` to keep their color on hover. When opened, the gallery pre-selects the current icon (correct tab, color swatch, and icon button) so the user can change just the color without re-finding the icon.
+- **Add/extend icon gallery tabs:** Edit `Classes/IconGallery.cs`; add entries to `FluentIconCategories` or `EmojiCategories` arrays. The gallery supports Segoe Fluent Icons (PUA glyphs), emojis, and app color icons. Icon selection uses a pending-selection model with Confirm/Cancel buttons. Selected icons get an accent border. Color swatches override `ButtonBackgroundPointerOver`/`ButtonBackgroundPressed` to keep their color on hover. When opened, the gallery pre-selects the current icon (correct tab, color swatch, and icon button) so the user can change just the color without re-finding the icon.
 
 ## Launcher kinds
 
 | Kind | `Launcher.Kind` | Tray click opens | Editing |
 |---|---|---|---|
-| Shortcuts | `LauncherKinds.Items` (0, default) | `FlyoutWindow` with the launcher's items | Flyout edit mode |
-| Web page | `LauncherKinds.Web` (1) | `WebFlyoutWindow` on `Launcher.WebAddress` — the first of its `WebBookmarks` — with the rest as a bar along the bottom | Launcher settings — address (typed or chosen from browser bookmarks), bookmarks and size, with zoom (also on the flyout's "…" menu)/hidden-policy/reload/address-bar/pin/regular-window/browsing-data under **Advanced**; the bar itself edits bookmarks too, including a right-click on its empty space to add one |
+| Shortcuts | `LauncherKinds.Items` (0, default) | `FlyoutWindow` with the launcher's items | Shared item view in the tray flyout or regular Settings-origin editor |
+| Web page | `LauncherKinds.Web` (1) | `WebFlyoutWindow` on `Launcher.WebAddress`; the first of its `WebBookmarks`; with the rest as a bar along the bottom | Launcher settings grouped into General, Appearance, Size and position, Behavior, and Privacy and sign-ins, with matching quick controls and section links in the flyout menu. Advanced holds troubleshooting actions; the bookmark bar supports direct editing |
 
 A web launcher has no items, so item editing, sharing and bulk operations are hidden for it. See [.codex/docs/web-launchers.md](.codex/docs/web-launchers.md).
 
@@ -86,11 +86,11 @@ A web launcher has no items, so item editing, sharing and bulk operations are hi
 | Group | — | — | — | — | Not launchable (collapsible parent containing child items/headings via `Children` collection) |
 | Column Break | — | — | — | — | Not launchable (splits the flyout into a new side-by-side column; `IsColumnBreak = true`) |
 
-Groups have a `Children` (`ObservableCollection<LauncherItem>`) that holds nested items and headings. In the settings page, groups render as custom expand/collapse cards (StackPanel with `Tag="GroupRoot"` / `Tag="GroupChildren"`), not WinUI Expanders — this allows the entire group card to be a drag-and-drop source. `LauncherItem.IsExpanded` (`[JsonIgnore]`, defaults `true`) tracks the collapse state so it survives `RebuildColumns()` re-renders. In the flyout, the hierarchy is flattened for display.
+Groups have a `Children` (`ObservableCollection<LauncherItem>`) collection for child items/headings. The shared `LauncherItemsView` templates render their child lists in both native and regular hosts. `LauncherItem.IsExpanded` remains transient (`[JsonIgnore]`, defaults `true`); extracting a view must not change that model state or serialization.
 
-Column breaks (`IsColumnBreak = true`) are structural dividers stored as sentinel items in the flat `Items` list. They cause both the flyout and the settings page to render items in side-by-side columns. In the settings page, `RebuildColumns()` splits the flat list at column break sentinels into per-column `ListView` controls (fixed 280px wide) within a dynamic `Grid` (`ColumnsPanel`). Column breaks are not displayed as inline items — they are invisible. Users add/remove columns via "Add Column" / "Remove Column" buttons. Changes sync back to the flat list via `SyncColumnsToFlatList()`. Created via `LauncherItem.CreateColumnBreak()`.
+Column breaks (`IsColumnBreak = true`) are invisible sentinels in the flat `Items` list. `LauncherItemsView.BuildColumnLists()` derives side-by-side column collections; `SyncColumnsToFlatList()` flushes reorder operations back to the flat list. Structural edits instead mutate `Launcher.Items` and rebuild derived columns. Column widths come from shared layout arithmetic and string measurement, preserving identical item geometry in the native popup and the regular scrolling editor. Add/remove columns through the shared edit commands. Create a sentinel with `LauncherItem.CreateColumnBreak()`.
 
-Item and group cards show a single `...` context menu button (hidden via `Opacity=0` / `IsHitTestVisible=false`, revealed on hover) that opens a `MenuFlyout` with Move up/down, Move to… (groups and other launchers), Edit, and Remove actions. The Move to… submenu lists available groups within the current launcher, plus all other launchers for cross-launcher moves.
+While editing, item/group context menus offer move, edit/rename and remove actions; the shared hover pencil is an overlay that does not affect layout. Move to lists groups and other launchers for cross-launcher moves. Read-only shared subscribers cannot edit. Per-launcher bulk export/import stays on the separate ellipsis action beside Settings Items.
 
 PWAs are auto-detected by enumerating `shell:AppsFolder` for Chromium-registered app entries (AUMIDs matching `{domain}-{HEX}_{hash}!App`). Icons are fetched from the PWA domain via `FaviconService.FetchAndCacheAsync()`.
 - **Release a new version:** Edit `<Version>` in `Directory.Build.props`, commit, tag `vX.Y.Z`, push — that file is the only version string to touch. The MSIX manifest version is auto-stamped by `LittleLauncherMSIX/build-msix.ps1`. See [.codex/docs/versioning.md](.codex/docs/versioning.md) for the full checklist.
@@ -136,3 +136,13 @@ requests a debug or unpackaged build. Follow the
 and sign-ins survive. Confirm `SignatureKind = Developer` and that the running executable is
 inside the installed package's `InstallLocation`; stop any debug copy before launching.
 A path under WindowsApps alone does not distinguish a Store install from a sideloaded one.
+
+## Windows desktop workflow
+
+Source is authoritative in WSL. Read `.codex/docs/windows-development.md` and use
+`npm run build:desktop`, `npm run verify:desktop`, `npm run install:desktop`, and
+`npm run package:desktop` from the repository root. The common bridge builds in
+a disposable C: Windows TEMP directory and cleans it after use. Never use a D:
+checkout or build directly against WSL source with Windows tools. Dev install
+versions change only in the temporary copy; never uninstall to bypass an update
+error. Store releases keep their existing project-specific release workflow.

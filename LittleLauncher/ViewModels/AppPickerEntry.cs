@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Media;
+using System.IO;
 
 namespace LittleLauncher.ViewModels;
 
@@ -9,8 +10,34 @@ namespace LittleLauncher.ViewModels;
 /// </summary>
 public partial class AppPickerEntry : ObservableObject
 {
-    /// <summary>Display name shown in the list and used to seed the item name.</summary>
+    /// <summary>Original catalog name used to seed the saved item name.</summary>
     public string Name { get; }
+
+    /// <summary>Set against the complete catalog before binding, so search cannot change labels.</summary>
+    internal bool HasDuplicateName { get; set; }
+
+    /// <summary>List-only label; the original name still seeds the saved item name.</summary>
+    public string DisplayName
+    {
+        get
+        {
+            if (!HasDuplicateName) return Name;
+
+            string identity = LaunchTarget;
+            if (ContainingFolder != null)
+                identity = Path.GetFileName(LaunchPath);
+
+            return $"{Name} ({identity})";
+        }
+    }
+
+    /// <summary>Full shell activation target shown on hover, including a PWA's AppsFolder prefix.</summary>
+    public string LaunchTarget => IsPwa ? $@"shell:AppsFolder\{LaunchPath}" : LaunchPath;
+
+    /// <summary>Filesystem parent, or null for virtual shell targets and PWAs.</summary>
+    public string? ContainingFolder => !IsPwa && Path.IsPathFullyQualified(LaunchPath)
+        ? Path.GetDirectoryName(LaunchPath)
+        : null;
 
     /// <summary>
     /// Value stored into <c>LauncherItem.Path</c> when this entry is chosen.

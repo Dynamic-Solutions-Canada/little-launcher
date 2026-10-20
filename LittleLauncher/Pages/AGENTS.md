@@ -4,7 +4,14 @@ Settings pages are WinUI 3 `Page` objects navigated via `NavigationView`. Follow
 
 Read and follow [xaml.md](../../.codex/docs/xaml.md) before changing the code described above.
 
-**There is no item editor here.** All launcher item editing lives in the flyout's edit mode (`Windows/FlyoutWindow.EditMode.cs`); the former `LauncherItemsPage` was removed. `LaunchersPage` keeps only launcher-level concerns — cards, sharing, and the per-launcher bulk operations in `LauncherBulkOps` (export, import, bookmark import). Per-launcher settings open in `LauncherSettingsWindow`, shared with the flyout.
+**There is no item renderer here.** `Controls/LauncherItemsView` shares rendering/edit behavior between the native flyout and regular `Windows/LauncherItemsEditorWindow`; the former `LauncherItemsPage` remains removed. Settings Items and new-launcher Next open that regular owned editor, preserving captured setup placement for the latter. `LaunchersPage` keeps only launcher-level concerns; cards, sharing, and the per-launcher bulk operations in `LauncherBulkOps` (export, import, bookmark import). Per-launcher settings open in `LauncherSettingsWindow`, shared with the flyout.
+
+Shortcut cards use a direct **Items** edit button and a separate sibling ellipsis button for
+export/import/bookmark import. Reuse `CreateLauncherActionButton` for the Settings/Items
+chevron row shape. Keep the secondary button enabled for read-only subscribers so export
+remains available, while editing and imports remain disabled. Do not nest interactive buttons.
+Web launcher cards have one **Settings** row, showing their web address or **No web address set**
+as its subtitle. It opens the existing launcher settings window; do not add a second address row.
 
 `LaunchersPage` drives per-launcher tray/pin icons. When editing it, follow the icon system conventions: [.codex/docs/icons.md](../../.codex/docs/icons.md).
 

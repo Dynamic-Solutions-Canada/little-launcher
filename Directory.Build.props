@@ -1,16 +1,16 @@
 <Project>
   <!--
     Local build secrets, untracked. Holds the OAuth client secret that cannot live in a public
-    repository but still has to be compiled into shipped builds. Absent on a fresh clone and on
-    CI, which is correct: Google Drive then reports itself unconfigured rather than failing at
-    sign-in with something unexplainable. See .codex/docs/sync.md.
+    repository but is compiled into shipped builds. Fresh clones and CI have no private file;
+    shipping CI supplies the GoogleClientSecret build environment variable instead. Availability
+    checks only the client ID, not the presence of a secret. See .codex/docs/sync.md.
   -->
   <Import Project="$(MSBuildThisFileDirectory)local.secrets.props"
           Condition="Exists('$(MSBuildThisFileDirectory)local.secrets.props')" />
 
   <!-- Single source of truth for the app version -->
   <PropertyGroup>
-    <Version>1.40.3</Version>
+    <Version>1.41.0</Version>
   </PropertyGroup>
 
   <!--

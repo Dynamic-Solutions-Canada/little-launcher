@@ -8,7 +8,7 @@ Little Launcher ships through **two channels, and neither of them is an installe
 | Channel | Artifact | Put in place by | Updates |
 |---|---|---|---|
 | **Portable** | `LittleLauncher-{x64,ARM64}-portable.zip`, attached to the GitHub release | the user, unzipping it wherever they like | in-app check against GitHub Releases; the app opens the release page and the user replaces the folder |
-| **Microsoft Store** | MSIX, submitted by CI to Partner Center | the Store | in-app through the Store APIs, or silently by the Store itself |
+| **Microsoft Store** | MSIX, submitted by CI to Partner Center | the Store | About opens the Store updates page; the Store installs updates |
 
 **There is no MSI.** A per-user WiX installer shipped up to v1.35.1 and was retired: it duplicated
 what the Store already does properly — managed install, silent update, clean uninstall — while
@@ -58,66 +58,16 @@ drop. If it is ever reconsidered, that is the work involved.
 
 ## MSIX / Store update flow
 
-For packaged installs, `UpdateService` takes a separate path through `Windows.Services.Store.StoreContext` instead of GitHub Releases:
+Packaged installs leave update discovery and installation in the Microsoft Store. The About
+page's **Check for Updates** button launches
+`ms-windows-store://downloadsandupdates`, the Store's Updates and downloads page.
+The Store checks the signed-in account's apps, so the page may include updates for other apps.
+The URI opens the page; the app does not claim that a fresh scan or installation completed.
 
-1. `CheckForUpdateAsync()` calls `GetAppAndOptionalStorePackageUpdatesAsync()` to detect Store updates. That list also contains framework/dependency packages, so `CheckForStoreUpdateAsync` filters to the main app package by `FamilyName` — and the presence of that entry **is** the update signal (see the trap below).
-2. The version number to display comes from the Store's public display-catalog endpoint (`TryGetPublishedVersionAsync`), not from the update list. It is best-effort: `null` means "cannot say", and the Store's list is then trusted on its own rather than vetoed by a failed lookup. When it *does* answer and the published version is not newer than what's installed, the update is suppressed — that is the guard against a stale list offering an update to the running version. `LatestVersion` is left **empty** when an update exists but its number is unknown, and Home/About word that case without a version rather than inventing one.
-3. Home/About pages reuse the same cached result shape as the GitHub path, but only the Store one gets an install button — see the portable flow above
-4. Clicking `Download & Install` calls `RequestDownloadAndInstallStorePackageUpdatesAsync()` on the UI thread
-5. The `StoreContext` is associated with the Settings window handle via `InitializeWithWindow.Initialize(...)` so Store consent dialogs are correctly owned in the desktop app
-6. After the Store API reports success, `UpdateService` writes a small `.cmd` helper that waits for the current process to exit and then launches `explorer.exe shell:AppsFolder\<PackageFamilyName>!App`
-7. The app exits, the helper relaunches the packaged app, and the normal default launch path reopens Settings
+Little Launcher does not query StoreContext on startup or show a Store update banner on Home.
+Its portable build still checks GitHub Releases and links to the release page.
 
-Only unpackaged installs show the custom update toast on startup. Packaged installs still prefetch update state at startup so Home/About can immediately surface available Store updates.
-
-When a packaged copy reports **no** update, About offers **Restart Now** rather than a bare "up to date". "Nothing to download" and "already staged, waiting for every process in the package to exit" are indistinguishable from the Store APIs, and Little Launcher lives in the tray and starts with Windows — so it is the app most likely to sit on a staged update indefinitely while the Store reports it as current. `RestartToApplyPackagedUpdate()` sets up the return trip (`RegisterApplicationRestart` + the relaunch helper) and the caller exits; applying a staged update needs no update API and no way to detect one, which is just as well since `Package.CheckUpdateAvailabilityAsync` only covers `.appinstaller` installs. The sibling apps (Drive for Immich, Repilot) do the same thing through their own `RestartToApplyUpdates()`.
-
-### The trap: a pending update reports the version you already have
-
-**`StorePackageUpdate.Package` describes the package as *installed*, so `Package.Id.Version` is the
-version already on the machine — never the version being offered.** There is no WinRT API that
-reports a pending update's version.
-
-Measured against a live Store update: installed 1.27.1.0, published 1.28.0.0, and
-`GetAppAndOptionalStorePackageUpdatesAsync` returned exactly one entry — the app's own family —
-reporting **1.27.1.0**.
-
-This bit once already. An earlier version required the listed version to be *strictly newer* than
-the installed one, meaning to stop the UI offering an update to the running version. Because that
-comparison can never be true, the Store path reported "You're up to date" permanently while the
-Store itself showed the update sitting there ready to install, and it did so **silently** — the
-check succeeded, so nothing was logged. `CheckForStoreUpdateAsync` now logs the list contents,
-the installed version and the published version on every check, so a repeat is visible in
-`logs.*.txt` rather than needing to be re-derived.
-
-**Do not reintroduce that comparison.** Presence in the list is the signal; the catalog supplies
-the number.
-
-### Verifying Store update behaviour without shipping a build
-
-Two things make this testable in minutes instead of via a Store submission round-trip:
-
-- **What is actually published**, from the same public endpoint the Store client reads:
-
-  ```bash
-  curl -s "https://displaycatalog.mp.microsoft.com/v7.0/products/9P3ZZBDQ6PJF?market=US&languages=en-us&fieldsTemplate=Details"
-  ```
-
-  The human-readable version is in each `PackageFullName` (`…_1.28.0.0_arm64__hash`) — the
-  numeric `Version` field beside it is a packed 64-bit value, not a version string.
-
-- **What the WinRT API reports for the real install**, by running any process under the installed
-  package's identity (`StoreContext` and `Package.Current` need it, so a plain script cannot call
-  them):
-
-  ```powershell
-  Invoke-CommandInDesktopPackage -PackageFamilyName '27766TechnicallyReal.LittleLauncher_gfb69tsnc4jnp' -AppId 'App' -Command 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Args '-NoProfile -ExecutionPolicy Bypass -File <script>'
-  ```
-
-  Use Windows PowerShell 5.1, not `pwsh` — the WinRT projection needed to call
-  `GetAppAndOptionalStorePackageUpdatesAsync` is only there. The launched process is detached, so
-  have the script write its output to a file outside the package's redirected AppData
-  (e.g. `C:\Users\Public\`).
+The Store handles any update and restart prompt after the page opens.
 
 ## Uninstall cleanup
 
@@ -136,7 +86,7 @@ script:
 Run it *before* deleting the folder — it lives in that folder, and it does not remove the folder
 itself.
 
-**MSIX limitation:** MSIX has no custom uninstall actions. When an MSIX package is removed, Windows deletes the package files, its own Start Menu entry, **and all VFS-redirected data** (settings, cached icons, companion exe) because the entire `%LocalAppData%\Packages\{PFN}\` tree is removed. Pinned taskbar shortcuts survive as dead `.lnk` files — Windows 11 eventually detects and offers to remove stale pins. Settings **do** survive MSIX upgrades — Windows preserves package data during version updates, including updates initiated through the Store API path above.
+**MSIX limitation:** MSIX has no custom uninstall actions. When an MSIX package is removed, Windows deletes the package files, its own Start Menu entry, **and all VFS-redirected data** (settings, cached icons, companion exe) because the entire `%LocalAppData%\Packages\{PFN}\` tree is removed. Pinned taskbar shortcuts survive as dead `.lnk` files — Windows 11 eventually detects and offers to remove stale pins. Settings **do** survive MSIX upgrades — Windows preserves package data during version updates, including updates initiated in the Store.
 
 ## Building the MSIX (`build-msix.ps1`)
 
@@ -146,61 +96,29 @@ itself.
 - **VS C++ build tools** (incl. `VC.Tools.ARM64`) for the Native AOT companion. The script prepends the **VS Installer dir to `PATH`** when `vswhere.exe` isn't resolvable, because the ILCompiler targets shell out to `vswhere`; without it the native link fails with **exit code 123**.
 - **`-NoSign`** is Store mode: skips signing and leaves the Store `Identity`/`Publisher` intact for the Store to re-sign on ingestion. Without it, the manifest publisher is rewritten to the dev cert subject so `signtool` can sign locally.
 
-### Sideloading a build over the installed package
+### Sideloading over the installed package from WSL
 
-**The output filename carries the version** (`LittleLauncher-1.33.0-ARM64.msix`). After an unsigned
-Store package has been created successfully, the script removes MSIX files for older releases while
-preserving both architecture packages for the current version. This leaves one upload-ready pair
-after sequential x64 and ARM64 builds, keeps the previous release intact when a new build fails,
-and prevents a signed fourth-component local-test build from deleting the Store upload artifacts.
-It used to write `LittleLauncher-ARM64.msix`, which left nothing on disk to identify the version,
-and later accumulated every version indefinitely. Partner Center reads the version from the
-manifest either way; the name is so the human cannot pick the wrong file. CI globs
-`LittleLauncher-*.msix`, so it is unaffected.
+Run `npm run install:desktop`. The shared bridge signs with the preserved
+Store-identity development certificate, matching the existing package family.
+It assigns a higher dev revision only in disposable C: staging, updates in place,
+checks the installed version, and launches the app. Never uninstall to bypass
+`0x80073CFB`: package settings, profiles and caches are removed on uninstall.
 
-The cleanup candidate list must remain an array even when empty or containing one package,
-so strict-mode PowerShell can read its count after sequential architecture builds.
+`npm run build:desktop` creates the signed package without installation;
+`npm run install:desktop -- --skip-build` reuses the last successful dev package.
+`npm run package:desktop` creates the unsigned Store package. Use
+`-- --platform x64` for x64. Output packages include their version in the filename
+and return to `.artifacts/windows-build/` in WSL.
 
-**Plain `build-msix.ps1` (no arguments) is the wrong tool for "put my build on this machine".** It
-stamps the *dev* cert's subject (`CN=RyanEwen`) as the publisher, and the publisher is part of the
-package identity — so the result installs as a **second, separate package** with its own family
-name and its own VFS-redirected `settings.json`. It comes up with no launchers at all, and both
-copies then write to the same *physical* AppData for icons, web profiles and the companion exe.
+All four apps select the same local signer in `windows-build.json`. The single
+private key lives beside `~/development/windows-build-tools`, outside the app
+repositories. Do not recreate it or switch publisher to fix an install failure.
+Read [the shared desktop workflow](windows-development.md) for the signer,
+certificate trust, cleanup and container transport policy.
 
-To update the package that is already installed, sign with a cert whose subject **is** the Store
-publisher, so the identity is unchanged and Windows treats it as an upgrade:
-
-```powershell
-.\LittleLauncherMSIX\build-msix.ps1 -Platform ARM64 `
-    -TrustedPfxPath .\LittleLauncherMSIX\LittleLauncher-store-identity.pfx `
-    -TrustedPfxPassword LittleLauncher
-Add-AppxPackage -Path .\LittleLauncherMSIX\bin\msix-output\LittleLauncher-1.33.0-ARM64.msix -ForceUpdateFromAnyVersion
-```
-
-`LittleLauncher-store-identity.pfx` is a self-signed cert whose subject is
-`CN=C21E6CEF-D0D1-4497-93F9-3718D054DA0E` — the publisher Partner Center assigned this app. Because
-the subject matches, `build-msix.ps1` takes its `-TrustedPfxPath` branch and stamps a publisher
-identical to the one already in the manifest, i.e. changes nothing. Settings, sign-ins and web
-profiles all survive, and the Store can still update the package later since the identity matches.
-
-- **The `.pfx`/`.cer` are gitignored and exist only on the dev machine** (as `*.pfx` / `*.cer`
-  patterns; nothing of the sort is tracked). Regenerate with `New-SelfSignedCertificate -Subject
-  "CN=C21E6CEF-D0D1-4497-93F9-3718D054DA0E"` and import the `.cer` into
-  **`LocalMachine\TrustedPeople`** (needs elevation) — without that trust the install is refused.
-- **`0x80073CFB` "already installed … contents are different"** means the manifest version matches
-  the installed one exactly. `-ForceUpdateFromAnyVersion` does not cover this: it allows a *lower*
-  version, not an identical one with different bytes. Bump a fourth component in
-  `Directory.Build.props` for the test install (`1.34.0` → `1.34.0.1`); `build-msix.ps1` passes a
-  four-part version through untouched. Put it back afterwards. **Do not `Remove-AppxPackage`
-  instead:** that deletes the package's `LocalCache`, which is where the real `settings.json`, the
-  web profiles and every sign-in live.
-- **`Get-AppxPackage … | Select SignatureKind` tells you which you are on.** `Developer` means a
-  sideloaded build is installed, `Store` means the shipped one.
-- **`0x80073D02` "resources … currently in use"** means the app is running — including a copy
-  started by clicking a tray icon or pinned shortcut a moment earlier. Kill `LittleLauncher` and
-  retry; the other packages Windows lists alongside it are usually not the real blocker.
-- **This is for testing your own build, not for shipping.** Store users get the package through the
-  Store; a sideloaded build simply sits there until the next Store update replaces it.
+`SignatureKind = Developer` identifies a sideloaded build; `Store` identifies
+the Store-signed copy. The shared helper stops on a conflicting development
+publisher and never removes packages or forces a downgrade.
 
 ## Toast notifications in MSIX
 
@@ -391,3 +309,10 @@ See the [complete regional comparison](store-pricing-comparison-2026-09-23.md).
 The user accepted those regional price changes on September 23, 2026.
 Submission 42 will publish automatically if it passes certification.
 
+
+## Local WSL build and install
+
+Use `npm run build:desktop`, `npm run verify:desktop`, `npm run install:desktop`,
+and `npm run package:desktop` from WSL. See [the common desktop workflow](windows-development.md).
+Direct PowerShell packaging commands above describe release internals, not the
+local development entry point. Never uninstall to bypass a same-version error.

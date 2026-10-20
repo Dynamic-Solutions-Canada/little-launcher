@@ -9,7 +9,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
-using WinRT.Interop;
 
 namespace LittleLauncher.Pages;
 
@@ -90,6 +89,8 @@ public partial class HomePage : Page
 
     private async Task CheckForUpdateAsync()
     {
+        if (MainWindow.IsPackaged) return;
+
         try
         {
             // Use the cached startup result if available; otherwise check now.
@@ -97,19 +98,11 @@ public partial class HomePage : Page
             if (result is { UpdateAvailable: true })
             {
                 _updateResult = result;
-                // The Store path can know an update exists without knowing its version number.
-                UpdateInfoBar.Message = (result.IsStoreManaged, string.IsNullOrEmpty(result.LatestVersion)) switch
-                {
-                    (true, true) => $"A new version is available in the Microsoft Store. You are running {result.CurrentVersion}.",
-                    (true, false) => $"A new version ({result.LatestVersion}) is available in the Microsoft Store. You are running {result.CurrentVersion}.",
-                    _ => $"A new version ({result.LatestVersion}) is available. You are running {result.CurrentVersion}.",
-                };
+                UpdateInfoBar.Message =
+                    $"A new version ({result.LatestVersion}) is available. You are running {result.CurrentVersion}.";
                 UpdateInfoBar.IsOpen = true;
 
-                // Only a Store install can update itself. A portable copy is a folder the user
-                // placed and owns, so the action hands them the release page to download the new
-                // zip rather than pretending there is an installer to run.
-                UpdateActionButton.Content = result.IsStoreManaged ? "Download & Install" : "View Release";
+                UpdateActionButton.Content = "View Release";
             }
         }
         catch (Exception ex)
@@ -118,51 +111,12 @@ public partial class HomePage : Page
         }
     }
 
-    private async void UpdateAction_Click(object sender, RoutedEventArgs e)
+    private void UpdateAction_Click(object sender, RoutedEventArgs e)
     {
-        if (_updateResult == null) return;
-
-        if (!_updateResult.IsStoreManaged)
+        if (_updateResult?.ReleaseUrl is { Length: > 0 } url)
         {
-            if (!string.IsNullOrEmpty(_updateResult.ReleaseUrl))
-                Process.Start(new ProcessStartInfo(_updateResult.ReleaseUrl) { UseShellExecute = true });
-            return;
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
-
-        UpdateActionButton.IsEnabled = false;
-        UpdateActionButton.Content = "Downloading...";
-
-        var progress = new Progress<double>(p =>
-        {
-            int pct = (int)(p * 100);
-            UpdateActionButton.Content = pct < 100 ? $"Downloading ({pct}%)..." : "Installing...";
-        });
-
-        var (success, message) = await UpdateService.DownloadAndInstallStoreUpdateAsync(
-            GetOwnerWindowHandle(),
-            progress);
-
-        if (success)
-        {
-            UpdateInfoBar.Message = message;
-            UpdateInfoBar.Severity = InfoBarSeverity.Success;
-            await Task.Delay(1000);
-            Environment.Exit(0);
-        }
-        else
-        {
-            UpdateActionButton.Content = "Download & Install";
-            UpdateActionButton.IsEnabled = true;
-            UpdateInfoBar.Message = message;
-            UpdateInfoBar.Severity = InfoBarSeverity.Error;
-        }
-    }
-
-    private static nint GetOwnerWindowHandle()
-    {
-        Window? owner = SettingsWindow.GetCurrent();
-        owner ??= MainWindow.Current;
-        return owner == null ? 0 : WindowNative.GetWindowHandle(owner);
     }
 
     private void LauncherItems_Click(object sender, PointerRoutedEventArgs e)

@@ -11,6 +11,93 @@ namespace LittleLauncher.Classes;
 /// </summary>
 public static partial class NativeMethods
 {
+    #region Direct2D / DirectWrite color icon rendering
+
+    [LibraryImport("d3d11.dll")]
+    internal static partial int D3D11CreateDevice(
+        IntPtr adapter, uint driverType, IntPtr software, uint flags,
+        IntPtr featureLevels, uint featureLevelCount, uint sdkVersion,
+        out IntPtr device, out uint featureLevel, IntPtr immediateContext);
+
+    [LibraryImport("d2d1.dll")]
+    internal static partial int D2D1CreateDevice(
+        IntPtr dxgiDevice, IntPtr creationProperties, out IntPtr device);
+
+    [LibraryImport("dwrite.dll")]
+    internal static partial int DWriteCreateFactory(uint factoryType, in Guid iid, out IntPtr factory);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct D2D_BITMAP_PROPERTIES1
+    {
+        internal uint Format;
+        internal uint AlphaMode;
+        internal float DpiX;
+        internal float DpiY;
+        internal uint Options;
+        internal IntPtr ColorContext;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct D2D_SIZE_U
+    {
+        internal uint Width;
+        internal uint Height;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct D2D_RECT_F
+    {
+        internal float Left;
+        internal float Top;
+        internal float Right;
+        internal float Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct D2D_POINT_F
+    {
+        internal float X;
+        internal float Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct D2D_MATRIX_3X2_F
+    {
+        internal float M11;
+        internal float M12;
+        internal float M21;
+        internal float M22;
+        internal float Dx;
+        internal float Dy;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DWRITE_OVERHANG_METRICS
+    {
+        internal float Left;
+        internal float Top;
+        internal float Right;
+        internal float Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct D2D_COLOR_F
+    {
+        internal float R;
+        internal float G;
+        internal float B;
+        internal float A;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct D2D_MAPPED_RECT
+    {
+        internal uint Pitch;
+        internal IntPtr Bits;
+    }
+
+    #endregion
+
     #region Constants
 
     // Window Styles
@@ -612,6 +699,36 @@ public static partial class NativeMethods
         }
         finally
         {
+            Marshal.ReleaseComObject(store);
+        }
+    }
+
+    /// <summary>
+    /// Removes window relaunch metadata when a matching Start shortcut owns the pin identity.
+    /// Keeping both sources can make Windows create duplicate pins with a "(2)" suffix.
+    /// </summary>
+    internal static void ClearWindowRelaunchProperties(IntPtr hwnd)
+    {
+        var iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99");
+        int hr = SHGetPropertyStoreForWindow(hwnd, ref iid, out var store);
+        Marshal.ThrowExceptionForHR(hr);
+        if (store == null) throw new InvalidOperationException("The window property store is unavailable.");
+
+        IntPtr empty = Marshal.AllocCoTaskMem(24);
+        try
+        {
+            for (int i = 0; i < 24; i++) Marshal.WriteByte(empty, i, 0);
+            var command = PKEY_AppUserModel_RelaunchCommand;
+            var icon = PKEY_AppUserModel_RelaunchIconResource;
+            var name = PKEY_AppUserModel_RelaunchDisplayNameResource;
+            Marshal.ThrowExceptionForHR(store.SetValue(ref command, empty));
+            Marshal.ThrowExceptionForHR(store.SetValue(ref icon, empty));
+            Marshal.ThrowExceptionForHR(store.SetValue(ref name, empty));
+            Marshal.ThrowExceptionForHR(store.Commit());
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(empty);
             Marshal.ReleaseComObject(store);
         }
     }

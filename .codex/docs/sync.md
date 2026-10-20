@@ -175,11 +175,47 @@ both providers. Points that are load-bearing:
 - **Hand-rolled rather than MSAL + the Google SDK.** Both flows are plain OAuth 2.0 and the app
   needs one small file from each; two large SDKs with two token-cache and threading idioms would
   be more surface, not less, and this project keeps its dependency list short on purpose.
+- **Correlate the browser callback.** Each attempt has its own random `state` and PKCE verifier.
+  Only a GET to the registered root path with matching state and exactly one nonblank `code` or
+  `error` completes the wait. Missing state, duplicate parameters, favicons, other paths and other
+  methods get a fixed rejection response and leave the attempt running.
+- **One callback deadline per attempt.** Unrelated requests cannot restart the five-minute wait.
+  Caller cancellation, browser timeout, authorization denial, token HTTP failure and network failure
+  produce separate safe messages in `SignInResult`; both providers and sharing-consent callers
+  pass these to the UI. Failed authorization never saves or clears the existing account's tokens.
+- **Browser authorization is not a saved sign-in.** The local page waits for the token exchange.
+  A successful exchange says "Authorization received. Return to Little Launcher to confirm sign-in."
+  Account-label lookup and encrypted persistence still belong to the provider caller.
+- **Keep OAuth diagnostics safe.** Token failure logs and messages include only HTTP status and
+  fixed, allowlisted OAuth error names. Never log or surface a raw token body, `error_description`,
+  callback URL, code, verifier, state, client secret, access token or refresh token. This differs
+  from ordinary Drive/Graph API errors, whose service messages follow `CloudErrors`.
 - **Carry the refresh token forward on refresh.** Google returns one only on the first consent, so
   a refresh response that overwrote it with empty would sign the user out an hour later.
 - **A rejected refresh token is terminal** — revoked, expired, password changed. `GetAccessToken`
   clears the stored tokens so later calls report a clean "signed out" instead of retrying an
   endpoint that will keep saying no.
+
+### Troubleshooting browser completion followed by app failure
+
+Check which page finished. Google's consent screen completing only proves consent was reached.
+The former local "Signed in" page proved a callback contained a code, but was displayed before
+code exchange and could appear even when the token request failed. It did not prove tokens were
+received or saved. The current local page asks the user to confirm in the app instead.
+
+Collect the installed app version, the final page's text, and only the sanitized failure stage,
+HTTP status and known OAuth error name. Do not request a full callback URL or raw OAuth response.
+`invalid_grant` identifies a rejected code or grant; `invalid_client` identifies a provider rejection
+of the app credentials. Neither should be guessed from the old combined cancellation message.
+Drive API enablement is a later issue: the account-label lookup is optional and cannot produce
+that former combined cancellation message.
+
+Google continues to support Desktop loopback redirects, including `localhost`; the mobile
+loopback deprecation does not apply. Keep this project's deployed redirect host and Google secret
+behavior unless evidence justifies a configuration change. See Google's
+[Desktop OAuth flow](https://developers.google.com/identity/protocols/oauth2/native-app),
+[loopback migration scope](https://developers.google.com/identity/protocols/oauth2/resources/loopback-migration)
+and Microsoft's [localhost redirect rules](https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#localhost-exceptions).
 
 `ProtectedStore` keeps every sync credential — OAuth tokens and the WebDAV password — in
 `%AppData%\LittleLauncher\cloud-{name}.dat`, encrypted with DPAPI to the current Windows user.
@@ -369,7 +405,10 @@ adopted.
 ## The Cloud Sync page
 
 `SyncPage` is one `Expander` per destination: chevron, icon, name, live status, and a toggle in
-the header; that destination's settings as the content. Points to keep:
+the header; that destination's settings as the content. All five destination sections start
+expanded through their shared style. Manual collapse and expansion do not request scrolling.
+This initial presentation does not enable providers, sign in, or change connection data.
+Points to keep:
 
 - **Enabled and expanded are separate, and both are visible.** The toggle answers "is this
   syncing?", the chevron answers "do I want to see its settings?". An earlier version used a
@@ -411,15 +450,14 @@ tokens. The URL and username are ordinary settings and stay, so "Forget" is chea
 
 ## Runbook: registering the OAuth clients
 
-`CloudSyncCredentials.cs` ships with empty client IDs, and until they are filled in both cloud
-providers report themselves unconfigured and disable their Sign in button rather than offering
-one that can only fail. Registering is a one-time manual step.
+`CloudSyncCredentials.cs` contains the public client IDs. `HasOneDrive` and `HasGoogleDrive` check only whether their client ID is nonblank; a missing ID disables that provider's Sign in button. A missing Google secret alone does not make the provider unconfigured, and these checks do not validate the registration or prove authorization will succeed. Registering is a one-time manual step.
 
-**These identifiers are not secrets.** A desktop app cannot keep one — anyone can read it out of
-the binary — which is why both vendors define the installed-app flow to be secure without one.
-Google still issues a "client secret" for Desktop clients and still requires it on the token call;
-it is a client *identifier* in practice. Both can sit in this public repo. Security comes from
-PKCE and the loopback redirect.
+**Desktop apps are public OAuth clients.** Values distributed in the binary cannot remain
+confidential. Google's current Desktop guide labels `client_secret` optional, while this app
+continues sending the configured secret for its deployed registration. Preserve that compatibility
+until a change is separately verified; an unexplained sign-in failure is not evidence to remove or
+rotate it. Client IDs live in source; the Google secret follows the private build-input policy
+below. PKCE and callback correlation protect the authorization flow.
 
 ### OneDrive — Microsoft Entra
 
@@ -452,8 +490,7 @@ PKCE and the loopback redirect.
    sensitive or restricted review for no gain
 5. **Credentials → Create credentials → OAuth client ID** → application type **Desktop app**.
    Loopback redirects are permitted automatically for this type
-6. Copy the **client ID** and **client secret** → `CloudSyncCredentials.GoogleClientIdDefault` /
-   `GoogleClientSecretDefault`
+6. Set the public client ID in `CloudSyncCredentials.GoogleClientIdDefault`. Supply this registration's configured secret through the private `GoogleClientSecret` build property below; keep `GoogleClientSecretDefault` empty in source.
 7. Publish the consent screen. While it is in *Testing*, only accounts added as test users can
    sign in and refresh tokens expire after 7 days
 
@@ -462,8 +499,7 @@ PKCE and the loopback redirect.
 Client **IDs** are in `CloudSyncCredentials.cs` and committed. They appear in every auth request
 URL and are not secrets.
 
-The Google **client secret is not in the repository**, because this repo is public and git history
-cannot be unpublished. It comes from an untracked `local.secrets.props` at the repo root:
+The Google **client secret is not in the repository**, because this repo is public and git history cannot be unpublished. Local builds can supply it through an untracked `local.secrets.props` at the repo root:
 
 ```xml
 <Project>
@@ -473,17 +509,11 @@ cannot be unpublished. It comes from an untracked `local.secrets.props` at the r
 </Project>
 ```
 
-`Directory.Build.props` imports it when present, `LittleLauncher.csproj` turns each property into
-an `AssemblyMetadata` attribute, and `CloudSyncCredentials.BuildValue` reads it back at runtime.
+`Directory.Build.props` imports the file when present. Shipping workflows instead expose the existing GitHub Actions secret `GOOGLE_CLIENT_SECRET` as the build process's `GoogleClientSecret` environment variable on the portable build and Store package build steps. Each step checks that the value is present before building. MSBuild imports that variable as a property; `LittleLauncher.csproj` writes it to the `GoogleClientSecret` assembly metadata entry, which `CloudSyncCredentials.BuildValue` reads at runtime. This applies to both x64 and ARM64. An explicit property in a private props file can override an environment-derived property, so keep that file absent in hosted CI.
 
-**An environment variable cannot do this job for a shipped build** — it is a runtime lookup, and
-an end user has no such variable set. Anything that must reach real users has to be compiled in.
-The env-var overrides below still exist, but only for pointing a developer machine at a second
-registration.
+**Build-time and runtime environment variables have different roles.** `GoogleClientSecret` is consumed by MSBuild and embedded for end users. `LITTLELAUNCHER_GOOGLE_CLIENT_SECRET` is a runtime override for a developer's machine; setting only that variable on a CI runner does not embed a credential. See Microsoft's [environment-property rules](https://learn.microsoft.com/en-us/visualstudio/msbuild/how-to-use-environment-variables-in-a-build) and [assembly-attribute generation](https://learn.microsoft.com/en-us/dotnet/standard/assembly/set-attributes-project-file).
 
-**A fresh clone and CI have no such file, and that is the intended state:** Google Drive reports
-itself unconfigured rather than failing at sign-in with something unexplainable. Keep a copy of
-the file somewhere safe, because it cannot be recovered from the repository.
+A fresh clone and hosted CI have no private props file. Preserve the configured secret in private credential storage outside the repository and supply it to shipping builds through the protected CI secret. Missing build metadata does not disable Google sign-in because availability checks only the client ID; it also does not establish the cause of any particular authorization failure. Never print the property, generated AssemblyInfo contents or secret-bearing build diagnostics.
 
 ```
 LITTLELAUNCHER_ONEDRIVE_CLIENT_ID

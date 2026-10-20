@@ -8,6 +8,7 @@
         <Style x:Key="DestinationExpander" TargetType="Expander">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="IsExpanded" Value="True"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
     </Page.Resources>
@@ -20,7 +21,7 @@
                    FontSize="14" Opacity="0.6" Margin="0,0,0,16" TextWrapping="Wrap"/>
 
         <TextBlock Text="Destinations" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,2"/>
-        <TextBlock Text="Switch on as many as you like. Every change uploads to all of them; a download takes whichever holds the newest copy. Expand one to set it up."
+        <TextBlock Text="Switch on as many as you like. Every change uploads to all of them; a download takes whichever holds the newest copy."
                    FontSize="12" Opacity="0.6" Margin="0,0,0,8" TextWrapping="Wrap"/>
 
         <!-- ── SSH / SFTP ── -->

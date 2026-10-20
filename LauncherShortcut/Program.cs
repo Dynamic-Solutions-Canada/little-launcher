@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using LittleLauncher.Shared;
 using System.Runtime.InteropServices;
 
 namespace LauncherShortcut;
@@ -15,19 +16,12 @@ namespace LauncherShortcut;
 ///                task on the pinned button's jump list runs; the app publishes those tasks and
 ///                bakes the position and token into each one. Same "start the app if it is not
 ///                running" path as the default mode.
-/// --pin mode:    Keeps the process alive with a MessageBox dialog so the user can
-///                right-click the taskbar icon and choose "Pin to taskbar".
+/// --pin mode:    Requests Windows confirmation using a matching Start menu shortcut.
+///                Unsupported systems retain the manual taskbar context-menu flow.
+///                A shortcut and window relaunch properties are never used together.
 ///
-/// Taskbar pinning strategy (MSIX):
-///   In MSIX builds, Start Menu shortcuts are NOT used for launcher flyout pinning
-///   because VFS-redirected shortcuts cause duplicate "(2)" pins when combined with
-///   relaunch properties. Instead, pinning relies entirely on window-level relaunch
-///   properties (PKEY_AppUserModel_ID, RelaunchCommand, RelaunchIconResource,
-///   RelaunchDisplayNameResource) set on the MessageBox HWND via IPropertyStore.
-///   A CBT hook intercepts the MessageBox before it becomes visible to set the
-///   per-launcher icon, relaunch properties, and window title.
-///
-/// AUMID format: LittleLauncher.Launcher.{guid}.{TickCount64}
+/// AUMID format: LittleLauncher.Launcher.{guid}.{uniqueStamp} (GUID stamp from current app;
+/// legacy direct-helper fallback uses TickCount64).
 ///   WARNING: Windows caches pin display names per AUMID in CloudStore. If you
 ///   ever need to change the pin display name format, you MUST change the AUMID
 ///   format to bust the cache. Simply changing RelaunchDisplayNameResource is
@@ -42,7 +36,9 @@ namespace LauncherShortcut;
 ///   --action {n}       Run one of the launcher's own commands (settings, edit, open in browser).
 ///                      The number is meaningless here and is forwarded as-is; Models/
 ///                      LauncherActions.cs on the app side is the only place it means anything.
-///   --pin              Show the MessageBox for pin-to-taskbar flow
+///   --pin              Request native pin confirmation, with manual fallback
+///   --repin            Require old-pin removal only when Windows confirms it is still pinned
+///   --manual           Explicitly use the manual pinning fallback
 ///   --layout {guid}    Legacy alias for --launcher
 /// </summary>
 static class Program
@@ -88,9 +84,8 @@ static class Program
     private static extern int GetSystemMetrics(int nIndex);
 
     // Shell imports for per-launcher AUMID and window property stores.
-    // In MSIX, these are the sole mechanism for taskbar pin identity — no Start Menu
-    // shortcuts are created for launchers (VFS shortcuts + relaunch properties conflict
-    // and cause duplicate "(2)" pins). See repo memory: msix-taskbar-pinning.md.
+    // The window always carries the AUMID. A matching physical Start shortcut supplies
+    // launch metadata for native pinning; relaunch properties supply the manual-only fallback.
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SetCurrentProcessExplicitAppUserModelID(string AppID);
 
@@ -124,10 +119,11 @@ static class Program
 
     // Relaunch properties set on the MessageBox HWND via IPropertyStore.
     // These tell the taskbar exactly what command, icon, and display name to use
-    // for the pin. In MSIX this is the ONLY identity mechanism (no Start Menu
-    // shortcuts). In non-MSIX it supplements the Start Menu shortcut as a fallback.
+    // for the manual-only fallback. A shortcut-backed pin sets only the AUMID here,
+    // avoiding competing launch metadata from two shell identity sources.
     // The display name format must be "Little Launcher - {name}" — changing this
     // requires a new AUMID format to bust Windows' per-AUMID CloudStore cache.
+    private static bool _shortcutIdentity;
     private static string? _relaunchAppId;
     private static string? _relaunchCommand;
     private static string? _relaunchIcon;
@@ -152,8 +148,7 @@ static class Program
                 // Unhook on activate — the dialog is fully initialized at this point
                 if (code == HCBT_ACTIVATE && _cbtHook != 0)
                 {
-                    // Set relaunch properties so the taskbar pin uses the correct
-                    // command, icon, and display name — independent of shell indexing.
+                    // Stamp the AUMID; add relaunch metadata only without a matching shortcut.
                     if (_relaunchAppId != null)
                         SetWindowRelaunchProperties(wParam);
 
@@ -162,6 +157,8 @@ static class Program
                     // so this must match the relaunch display name.
                     if (_relaunchDisplayName != null)
                         SetWindowText(wParam, _relaunchDisplayName);
+
+                    TaskbarPinning.OnActivated(wParam);
 
                     UnhookWindowsHookEx(_cbtHook);
                     _cbtHook = 0;
@@ -189,6 +186,7 @@ static class Program
         string? launcherName = null;
         string? explicitIconPath = null;
         string? explicitAumid = null;
+        string? previousAumid = null;
         int itemIndex = -1;
         int itemToken = 0;
         int launcherAction = 0;
@@ -202,6 +200,8 @@ static class Program
                 explicitIconPath ??= args[i + 1];
             else if (args[i] == "--aumid")
                 explicitAumid ??= args[i + 1];
+            else if (args[i] == "--previous-aumid")
+                previousAumid ??= args[i + 1];
             else if (args[i] == "--item" && itemIndex < 0)
                 _ = int.TryParse(args[i + 1], out itemIndex);
             else if (args[i] == "--token")
@@ -212,13 +212,34 @@ static class Program
 
         if (args.Length > 0 && args[0] == "--pin")
         {
+            if (args.Contains("--check-only"))
+            {
+                // A read-only process uses only the old identity and exits before any pin setup.
+                ExistingPinState state = ExistingPinState.Unknown;
+                if (!string.IsNullOrEmpty(launcherId) && !string.IsNullOrEmpty(previousAumid))
+                {
+                    state = TaskbarPinning.CheckExistingPin(launcherId, previousAumid);
+                }
+                if (state == ExistingPinState.Pinned) Environment.ExitCode = 4;
+                else if (state == ExistingPinState.NotPinned) Environment.ExitCode = 5;
+                else Environment.ExitCode = 3;
+                return;
+            }
+
+            // Process identity is a startup contract. This process never adopts the old identity
+            // or creates an old-identity WinRT object, even when replacing an existing pin.
+            string aumid = !string.IsNullOrEmpty(explicitAumid)
+                ? explicitAumid
+                : $"LittleLauncher.Launcher.{launcherId}.{Environment.TickCount64}";
+            Marshal.ThrowExceptionForHR(SetCurrentProcessExplicitAppUserModelID(aumid));
+            TaskbarPinning.Log($"pin-process: pid={Environment.ProcessId}; aumid={aumid}");
+
             // Resolve icon path:
             // Both LoadImage (WM_SETICON) and RelaunchIconResource use the same
             // --icon timestamped path. Windows caches icon bitmaps per file path
             // in its icon cache DB, so reusing a stable path across pin attempts
             // serves stale cached bitmaps. The timestamped copy busts this cache.
-            // CleanUpStaleIconFiles keeps the most recent -pin*.ico per launcher
-            // so the file persists for the pinned shortcut's RelaunchIconResource.
+            // All pin snapshots are retained because an earlier taskbar pin may still use one.
             string loadIconPath = Path.Combine(AppContext.BaseDirectory, "app-icon.ico");
 
             if (!string.IsNullOrEmpty(explicitIconPath) && File.Exists(explicitIconPath))
@@ -230,23 +251,45 @@ static class Program
                     loadIconPath = perLauncherIcon;
             }
 
+            ExistingPinState previousState = ExistingPinState.Unknown;
+            if (!string.IsNullOrEmpty(launcherId) && !string.IsNullOrEmpty(previousAumid) && !args.Contains("--manual"))
+            {
+                previousState = PreviousPinProcess.Query(launcherId, previousAumid);
+            }
+            string displayName = string.IsNullOrEmpty(launcherName) ? "Little Launcher" : $"Little Launcher - {launcherName}";
+            string executable = Path.Combine(AppContext.BaseDirectory, "LittleLauncherFlyout.exe");
+            PinSnapshot? baseline = string.IsNullOrEmpty(launcherId) ? null : PinSnapshot.Read(AppContext.BaseDirectory, launcherId);
+            PinSnapshot? current = null;
             if (!string.IsNullOrEmpty(launcherId))
             {
-                // --aumid is the main app telling us which identity it has recorded against this
-                // launcher. It must win: a window that wants to light this pinned button has to
-                // carry the identical string, and only the app side can remember it — this process
-                // exits as soon as the pin is made. Minting our own is the fallback for an older
-                // app calling a newer companion.
-                //
-                // Either way it carries a tick, for the original reason: every pin attempt needs a
-                // unique AUMID to bust Windows' per-AUMID icon cache from any previous (possibly
-                // broken) pin. File size alone isn't enough — it stays the same if the icon content
-                // hasn't changed.
-                string aumid = !string.IsNullOrEmpty(explicitAumid)
-                    ? explicitAumid
-                    : $"LittleLauncher.Launcher.{launcherId}.{Environment.TickCount64}";
-                SetCurrentProcessExplicitAppUserModelID(aumid);
+                current = PinSnapshot.Capture(previousAumid ?? "", displayName, executable,
+                    $"--launcher {launcherId}", File.Exists(loadIconPath) ? loadIconPath : executable);
+            }
+            bool knownDetails = baseline != null && baseline.Aumid == previousAumid && current != null;
+            if (previousState == ExistingPinState.Pinned && knownDetails && baseline!.HasSameDetails(current!))
+            {
+                Environment.ExitCode = 4;
+                return; // An unchanged existing pin needs neither replacement nor another native prompt.
+            }
+            // Unknown history does not block a fresh attempt. Only a live pinned result warrants
+            // asking the user to remove an old pin; pending markers alone never force manual mode.
+            TaskbarPinning.Log($"previous-pin-policy: state={previousState}; replacement-warning={args.Contains("--repin") && previousState == ExistingPinState.Pinned}");
+            if (args.Contains("--repin") && previousState == ExistingPinState.Pinned)
+            {
+                string explanation = knownDetails
+                    ? "This launcher is still pinned. Its name, icon or launch details have changed."
+                    : "This launcher is still pinned. Its previous details could not be compared. Cancel to keep the existing pin.";
+                int confirmed = MessageBoxW(0, explanation + "\n\n" +
+                    "Remove its taskbar pin by right-clicking it and choosing \"Unpin from taskbar\". " +
+                    "Click OK when none remain to create a fresh pin, or Cancel to stop.",
+                    "Replace taskbar pin", 0x00010041);
+                if (confirmed != 1) return;
+            }
 
+            if (!string.IsNullOrEmpty(launcherId))
+            {
+                // The main app supplied the new identity so it can record the pin after success.
+                // It was set once at process startup, before the optional old-state child or any UI.
                 string exePath = Path.Combine(AppContext.BaseDirectory, "LittleLauncherFlyout.exe");
                 _relaunchAppId = aumid;
                 _relaunchCommand = $"\"{exePath}\" --launcher {launcherId}";
@@ -259,6 +302,10 @@ static class Program
                 _relaunchDisplayName = string.IsNullOrEmpty(launcherName)
                     ? "Little Launcher"
                     : $"Little Launcher - {launcherName}";
+
+                _shortcutIdentity = TaskbarPinning.Prepare(
+                    aumid, exePath, launcherId, _relaunchDisplayName, loadIconPath, args.Contains("--manual"));
+
             }
 
             if (File.Exists(loadIconPath))
@@ -272,20 +319,25 @@ static class Program
                 _hIconSmall = LoadImage(0, loadIconPath, 1 /* IMAGE_ICON */, smallSize, smallSize,
                     0x0010 /* LR_LOADFROMFILE */);
 
-                // Install a CBT hook to set the icon on the MessageBox window
-                // before it becomes visible (HCBT_ACTIVATE fires pre-paint).
-                _hookDelegate = CbtCallback;
-                _cbtHook = SetWindowsHookEx(5 /* WH_CBT */, _hookDelegate, 0,
-                    GetCurrentThreadId());
             }
 
-            MessageBoxW(
-                0,
-                "This app is now running so you can pin it to the taskbar.\n\n" +
-                "Right-click the taskbar icon for this app and choose \"Pin to taskbar\".\n\n" +
-                "Click OK to close this window once you're done.",
-                "Pin to Taskbar",
-                0x00010040 /* MB_ICONINFORMATION | MB_SETFOREGROUND */);
+            int result = TaskbarPinning.RunNativeWindow(_relaunchDisplayName ?? displayName,
+                loadIconPath, SetWindowRelaunchProperties);
+            if (result == 11)
+            {
+                // Instructions belong only to the unsupported/manual fallback, after native work ends.
+                _hookDelegate = CbtCallback;
+                _cbtHook = SetWindowsHookEx(5 /* WH_CBT */, _hookDelegate, 0, GetCurrentThreadId());
+                result = MessageBoxW(0, TaskbarPinning.InitialMessage,
+                    _relaunchDisplayName ?? displayName, 0x00010041);
+            }
+
+            TaskbarPinning.Finish(result);
+            // Native success is IDYES; OK explicitly confirms the user completed manual pinning.
+            if (result == 6) Environment.ExitCode = 1;
+            else if (result == 1) Environment.ExitCode = 2;
+            else if (result == 3) Environment.ExitCode = 3;
+            else Environment.ExitCode = 0;
 
             // Clean up in case the hook wasn't triggered
             if (_cbtHook != 0)
@@ -389,14 +441,14 @@ static class Program
 
             if (_relaunchAppId != null)
                 SetPropString(pStore, setValue, PKEY_AppUserModel_ID, _relaunchAppId);
-            if (_relaunchCommand != null)
+            if (!_shortcutIdentity && _relaunchCommand != null)
                 SetPropString(pStore, setValue, PKEY_AppUserModel_RelaunchCommand, _relaunchCommand);
-            if (_relaunchIcon != null)
+            if (!_shortcutIdentity && _relaunchIcon != null)
                 SetPropString(pStore, setValue, PKEY_AppUserModel_RelaunchIconResource, _relaunchIcon);
-            if (_relaunchDisplayName != null)
+            if (!_shortcutIdentity && _relaunchDisplayName != null)
                 SetPropString(pStore, setValue, PKEY_AppUserModel_RelaunchDisplayNameResource, _relaunchDisplayName);
 
-            commit(pStore);
+            Marshal.ThrowExceptionForHR(commit(pStore));
         }
         finally
         {
@@ -420,7 +472,7 @@ static class Program
             Marshal.WriteInt16(pv, 0, 31); // VT_LPWSTR
             Marshal.WriteIntPtr(pv, 8, Marshal.StringToCoTaskMemUni(value));
 
-            setValue(pStore, &key, pv);
+            Marshal.ThrowExceptionForHR(setValue(pStore, &key, pv));
         }
         finally
         {
