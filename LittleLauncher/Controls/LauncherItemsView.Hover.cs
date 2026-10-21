@@ -15,6 +15,7 @@ public sealed partial class LauncherItemsView
     // ── Hover affordance ────────────────────────────────────────────
 
     private Border? _hoverAffordance;
+    private Border? _hoverGroupScope;
     private Control? _hoverTarget;
     private Border? _hoverGrip;
     private Border? _hoverPencil;
@@ -25,14 +26,26 @@ public sealed partial class LauncherItemsView
     /// Creates the single hover overlay reused for every item and group.
     /// </summary>
     /// <remarks>
-    /// Edge/corner cues never take input or contribute to item measurement. Solid themed
-    /// backing keeps the glyphs readable over icons; list/header labels temporarily trim
+    /// Edge/corner cues never take input or contribute to item measurement. A translucent
+    /// themed scrim softens icons behind accent glyphs; high contrast keeps opaque backing.
+    /// List/header labels temporarily trim
     /// before the cues, with their original local spacing restored when hover ends.
     /// </remarks>
     private void InitializeHoverAffordance()
     {
         // Draw the grip explicitly so its six-dot shape does not depend on a font version.
-        // SolidBackground is opaque in light/dark and follows the system window color in HC.
+        // Theme dictionaries keep contrast explicit without system-event subscriptions.
+        // The group outline is separate from its header cues and never paints over children.
+        _hoverGroupScope = (Border)XamlReader.Load(
+            """
+            <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    HorizontalAlignment="Left" VerticalAlignment="Top" CornerRadius="6"
+                    BorderThickness="1" BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                    IsHitTestVisible="False" Visibility="Collapsed"
+                    AutomationProperties.AccessibilityView="Raw" />
+            """);
+        _hoverGroupScope.SetValue(Canvas.ZIndexProperty, 11);
+        RootGrid.Children.Add(_hoverGroupScope);
         _hoverAffordance = (Border)XamlReader.Load(
             """
             <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -40,28 +53,42 @@ public sealed partial class LauncherItemsView
                     HorizontalAlignment="Left" VerticalAlignment="Top"
                     IsHitTestVisible="False" Visibility="Collapsed"
                     AutomationProperties.AccessibilityView="Raw">
+                <Border.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.ThemeDictionaries>
+                            <ResourceDictionary x:Key="Default">
+                                <SolidColorBrush x:Key="CueBackground" Color="{ThemeResource SolidBackgroundFillColorBase}" Opacity="0.82" />
+                                <SolidColorBrush x:Key="CueForeground" Color="{ThemeResource SystemAccentColorLight2}" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="Light">
+                                <SolidColorBrush x:Key="CueBackground" Color="{ThemeResource SolidBackgroundFillColorBase}" Opacity="0.82" />
+                                <SolidColorBrush x:Key="CueForeground" Color="{ThemeResource SystemAccentColorDark2}" />
+                            </ResourceDictionary>
+                            <ResourceDictionary x:Key="HighContrast">
+                                <SolidColorBrush x:Key="CueBackground" Color="{ThemeResource SystemColorWindowColor}" />
+                                <SolidColorBrush x:Key="CueForeground" Color="{ThemeResource SystemColorWindowTextColor}" />
+                            </ResourceDictionary>
+                        </ResourceDictionary.ThemeDictionaries>
+                    </ResourceDictionary>
+                </Border.Resources>
                 <Grid>
-                    <Border x:Name="HoverGrip" Width="12" Height="20" Padding="1" CornerRadius="3"
+                    <Border x:Name="HoverGrip" Width="12" Height="20" Padding="1" CornerRadius="7"
                             HorizontalAlignment="Left" VerticalAlignment="Center" Margin="2,0,0,0"
-                            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
-                            BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                            BorderThickness="1">
+                            Background="{ThemeResource CueBackground}">
                         <Canvas Width="6" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Ellipse Width="2" Height="2" Canvas.Left="0" Canvas.Top="0" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                            <Ellipse Width="2" Height="2" Canvas.Left="4" Canvas.Top="0" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                            <Ellipse Width="2" Height="2" Canvas.Left="0" Canvas.Top="5" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                            <Ellipse Width="2" Height="2" Canvas.Left="4" Canvas.Top="5" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                            <Ellipse Width="2" Height="2" Canvas.Left="0" Canvas.Top="10" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                            <Ellipse Width="2" Height="2" Canvas.Left="4" Canvas.Top="10" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
+                            <Ellipse Width="2" Height="2" Canvas.Left="0" Canvas.Top="0" Fill="{ThemeResource CueForeground}" />
+                            <Ellipse Width="2" Height="2" Canvas.Left="4" Canvas.Top="0" Fill="{ThemeResource CueForeground}" />
+                            <Ellipse Width="2" Height="2" Canvas.Left="0" Canvas.Top="5" Fill="{ThemeResource CueForeground}" />
+                            <Ellipse Width="2" Height="2" Canvas.Left="4" Canvas.Top="5" Fill="{ThemeResource CueForeground}" />
+                            <Ellipse Width="2" Height="2" Canvas.Left="0" Canvas.Top="10" Fill="{ThemeResource CueForeground}" />
+                            <Ellipse Width="2" Height="2" Canvas.Left="4" Canvas.Top="10" Fill="{ThemeResource CueForeground}" />
                         </Canvas>
                     </Border>
-                    <Border x:Name="HoverPencil" Width="20" Height="20" Padding="1" CornerRadius="3"
+                    <Border x:Name="HoverPencil" Width="20" Height="20" Padding="1" CornerRadius="7"
                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,2,0"
-                            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
-                            BorderBrush="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
-                            BorderThickness="1">
+                            Background="{ThemeResource CueBackground}">
                         <FontIcon Glyph="&#xE70F;" FontSize="14"
-                                  Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                  Foreground="{ThemeResource CueForeground}"
                                   AutomationProperties.AccessibilityView="Raw" />
                     </Border>
                 </Grid>
@@ -75,7 +102,12 @@ public sealed partial class LauncherItemsView
 
         RootGrid.AddHandler(
             UIElement.PointerExitedEvent,
-            new PointerEventHandler((_, _) => HideHoverAffordance()),
+            new PointerEventHandler((_, e) =>
+            {
+                var point = e.GetCurrentPoint(RootGrid).Position;
+                if (point.X < 0 || point.Y < 0 || point.X >= RootGrid.ActualWidth || point.Y >= RootGrid.ActualHeight)
+                    HideHoverAffordance();
+            }),
             handledEventsToo: true);
     }
 
@@ -124,6 +156,8 @@ public sealed partial class LauncherItemsView
         if (!isNew) return;
         container.PointerEntered += Container_PointerEnteredForEdit;
         container.PointerExited += Container_PointerExitedForEdit;
+        container.AddHandler(UIElement.PointerMovedEvent,
+            new PointerEventHandler(Container_PointerMovedForEdit), handledEventsToo: true);
         container.Unloaded += HoverContainer_Unloaded;
     }
 
@@ -144,6 +178,8 @@ public sealed partial class LauncherItemsView
         {
             container.PointerEntered -= Container_PointerEnteredForEdit;
             container.PointerExited -= Container_PointerExitedForEdit;
+            container.RemoveHandler(UIElement.PointerMovedEvent,
+                new PointerEventHandler(Container_PointerMovedForEdit));
             container.Unloaded -= HoverContainer_Unloaded;
         }
         _hoverWiredContainers.Clear();
@@ -162,30 +198,57 @@ public sealed partial class LauncherItemsView
         (container as ContentControl)?.Content as LauncherItem
         ?? container.DataContext as LauncherItem;
 
-    private void Container_PointerEnteredForEdit(object sender, PointerRoutedEventArgs e)
+    private void Container_PointerEnteredForEdit(object sender, PointerRoutedEventArgs e) =>
+        UpdateHoverFromPointer(sender, e);
+
+    private void Container_PointerMovedForEdit(object sender, PointerRoutedEventArgs e) =>
+        UpdateHoverFromPointer(sender, e);
+
+    /// <summary>Shows decoration only for editable real objects, without changing input state.</summary>
+    private bool TryShowHoverAffordance(Control container)
     {
-        if (!_isEditMode || IsReadOnlyLauncher || sender is not Control container) return;
+        if (!_isEditMode || IsReadOnlyLauncher || _dragItem != null)
+            return false;
 
         var item = GetContainerItem(container);
-        if (item == null) return;
-        if (item.IsColumnBreak) return;
-        if (item.IsGroup && !IsEditableGroup(item)) return;
+        if (item == null || item.IsColumnBreak || (item.IsGroup && !IsEditableGroup(item)))
+            return false;
 
         PositionHoverAffordance(container);
+        return true;
+    }
 
-        // Stop the enclosing group container from claiming the hover: the child's handler
-        // runs first, so without this the parent would immediately overwrite the position
-        // with the whole group's bounds.
-        e.Handled = true;
+    /// <summary>
+    /// Resolves the innermost container for both entry and movement, keeping child priority
+    /// and restoring group scope when moving back to its header. Never set Handled here:
+    /// WinUI can carry an enter's handled state into the following press, preventing the
+    /// native item from capturing the pointer and arming its drag gesture.
+    /// </summary>
+    private void UpdateHoverFromPointer(object sender, PointerRoutedEventArgs e)
+    {
+        var current = e.OriginalSource as DependencyObject;
+        while (current != null)
+        {
+            if (current is Control candidate && _hoverWiredContainers.Contains(candidate))
+            {
+                if (ReferenceEquals(candidate, sender))
+                    TryShowHoverAffordance(candidate);
+                return;
+            }
+            current = VisualTreeHelper.GetParent(current);
+        }
     }
 
     private void Container_PointerExitedForEdit(object sender, PointerRoutedEventArgs e)
     {
-        HideHoverAffordance();
+        if (sender is Control container && ReferenceEquals(container, _hoverTarget))
+        {
+            var point = e.GetCurrentPoint(container).Position;
+            if (point.X < 0 || point.Y < 0 || point.X >= container.ActualWidth || point.Y >= container.ActualHeight)
+                HideHoverAffordance();
+        }
 
-        // Deliberately not marked handled. Starting a drag moves the pointer out of the
-        // container, and swallowing that exit interfered with the ListView's own drag
-        // gesture , items inside groups became hard to pick up.
+        // Keep exits unhandled: swallowing an exit interferes with nested ListView dragging.
     }
 
     private void HoverContainer_Unloaded(object sender, RoutedEventArgs e)
@@ -195,11 +258,15 @@ public sealed partial class LauncherItemsView
     }
 
     /// <summary>
-    /// Places cues at item edges or icon corners; groups use only their header bounds.
+    /// Outlines the whole hovered group while keeping its cues inside the header.
+    /// Places item cues at row edges or icon corners.
     /// Label margins affect native ellipsis only, never item or column dimensions.
     /// </summary>
     private void PositionHoverAffordance(Control container)
     {
+        if (ReferenceEquals(_hoverTarget, container))
+            return;
+
         HideHoverAffordance();
         if (_hoverAffordance == null || _hoverGrip == null || _hoverPencil == null)
             return;
@@ -228,6 +295,16 @@ public sealed partial class LauncherItemsView
                 return;
 
             _hoverTarget = container;
+            if (isGroup && _hoverGroupScope != null)
+            {
+                var groupOrigin = container.TransformToVisual(RootGrid)
+                    .TransformPoint(new global::Windows.Foundation.Point(0, 0));
+                _hoverGroupScope.Width = container.ActualWidth;
+                _hoverGroupScope.Height = container.ActualHeight;
+                _hoverGroupScope.Margin = new Thickness(groupOrigin.X, groupOrigin.Y, 0, 0);
+                _hoverGroupScope.Visibility = Visibility.Visible;
+            }
+
             bool isIconTile = IsIconMode && !isGroup;
             ConfigureHoverCues(isIconTile, IsSmallIconMode);
             if (label != null)
@@ -323,5 +400,7 @@ public sealed partial class LauncherItemsView
         _hoverTarget = null;
         if (_hoverAffordance != null)
             _hoverAffordance.Visibility = Visibility.Collapsed;
+        if (_hoverGroupScope != null)
+            _hoverGroupScope.Visibility = Visibility.Collapsed;
     }
 }

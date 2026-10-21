@@ -49,14 +49,16 @@ any item or group.
 - The native popup **edit-mode border tint** uses the DWM border colour (`DWMWA_BORDER_COLOR`), not a XAML border; a `BorderThickness` on `RootGrid` would inset the content.
 - `GetFlyoutWidth()` sums column widths arithmetically and never measures laid-out content, so anything wider than it is **clipped**. In list mode the column width itself comes from `ComputeListColumnWidth()`, which measures label *strings* (see "Sizing a list column" below). That is a different thing from measuring the tree, and the only input to the arithmetic that is not known up front.
 - Per-column headers and the empty-launcher placeholder *do* add height, and both are counted in the arithmetic (`CurrentColumnHeaderHeight`, `CurrentEmptyPlaceholderHeight`). Anything that reserves space must be added there, or the content overflows the window; an empty column's drop-target `MinHeight` is skipped when the whole launcher is empty precisely because only the placeholder is accounted for.
-- Per-item/group affordances must be **non-reflowing**: use `Background` and `CornerRadius` only, which have no layout effect. A border was tried and rejected; compensating for it with negative padding only works when the container already has padding on every side to give back, which the icon-mode container style does not.
+- Per-item/group affordances must be **non-reflowing**: keep container styling background-only and draw outlines/carets in the independent RootGrid overlay plane. A border on the item container changes layout; compensating with negative padding works only when that container already has padding to give back, which the icon-mode style does not.
 - Empty groups get a `MinHeight` drop target in edit mode. This grows height only. In icon mode it costs nothing extra: `MeasureIconModeHeight` already reserves one row for an empty group via `Math.Max(1, …)`.
 
 ### Shared view and window hosts
 
 `Controls/LauncherItemsView.xaml` owns the item templates and exact launcher layout for both `FlyoutWindow` and `LauncherItemsEditorWindow`. Its rendering, editing, drag/drop and external-drop partials share the same item/column/group state and immediate persistence. `ILauncherItemsHost` keeps native placement, modal ownership, completion and resize policy outside that view. Each host has its own view instance; do not transfer live visuals across XamlRoots or duplicate the renderer.
 
-Settings cards open `LauncherItemsEditorWindow`, a normal owned Mica window matching `LauncherSettingsWindow`: shared title bar, application icon/theme, 24-DIP body padding and an external accent Done button. The shared toolbar is inside that window, above a two-axis viewport. Its four regular buttons show icons and labels and wrap naturally; the native popup keeps its compact fixed-slot toolbar. The launcher retains its intrinsic item/column geometry and scrolls when larger than the viewport. The regular host wraps only the intrinsic preview in a subdued themed fill/neutral 1-DIP outline. That Border sits outside the view dimensions and adds only its stroke to the scroll extent; it must never become a border on RootGrid, stretch across the viewport, change item dimensions or alter local drop coordinates. There is no blue outer edit outline in this host. Changes save immediately; Done, Escape and close finish editing. Minimize and app switching retain the editor. Main Settings navigation/cards remain normal behind it, without a quiet surface or scrim.
+Native Done calls RestoreFlyoutActivation after ending edit mode and hiding the non-activating floating toolbar. An editor can survive switching to another application, and a Done click on WS_EX_NOACTIVATE does not reactivate its owner. Without restoration, the already-inactive popup cannot emit another deactivation when the user clicks away and remains stuck open. This native-host policy does not apply to regular Done, which closes the editor. Regression coverage includes direct toolbar return and body return before Done, followed by a physical foreign-window click.
+
+Settings cards open `LauncherItemsEditorWindow`, a normal owned Mica window matching `LauncherSettingsWindow`: shared title bar, application icon/theme, 24-DIP body padding and an external accent Done button. The shared toolbar is inside that window, above a two-axis viewport. Its three regular add buttons show icons and labels and wrap naturally in a finite Star column. A separate Auto column pins the compact settings icon at the top right with the existing localized tooltip and accessible name. The regular presenter stretches across the padded body and supplies the whole viewport width; the native popup keeps its five compact fixed slots and Done. The launcher retains its intrinsic item/column geometry and scrolls when larger than the viewport. The regular host wraps only the intrinsic preview in a subdued themed fill/neutral 1-DIP outline. That Border sits outside the view dimensions and adds only its stroke to the scroll extent; it must never become a border on RootGrid, stretch across the viewport, change item dimensions or alter local drop coordinates. There is no blue outer edit outline in this host. Changes save immediately; Done, Escape and close finish editing. Minimize and app switching retain the editor. Main Settings navigation/cards remain normal behind it, without a quiet surface or scrim.
 
 One regular editor may be open per launcher, with independent windows allowed for different launchers. Reopening the same launcher from Settings, tray or taskbar focuses its editor or active owned dialog. A native edit session is ended and parked before a regular editor opens. Native tray editing otherwise retains its popup, blue DWM border, separate floating toolbar and animation. Item, group-name and launcher-settings dialogs keep their existing owned-window implementations; the regular editor's HWND owns them and its disabled Control scope covers keyboard and pointer input until the dialog closes. Closing the editor or its Settings owner closes its owned dialog, invalidates pending session work and releases shared-view registrations before native destruction.
 
@@ -169,15 +171,18 @@ be renamed, removed, reordered, or persisted. Guard with `IsEditableGroup(item)`
 | Surface | Tag | Source collection | Notes |
 |---|---|---|---|
 | Column items | column index (`int`) | `_columnLists[idx]` | Cross-column drag-drop |
-| Group children | the group `LauncherItem` | `group.Children` | Rejects `IsGroup`/`IsColumnBreak` drops (no nesting) |
+| Group children | the group `LauncherItem` | `group.Children` or owning column | Real-group interior inserts into children; outer bands insert siblings; whole groups use column midpoint reordering (no nesting) |
 
 ### Shared state fields
 
 - `_dragItem` — the `LauncherItem` being dragged
 - `_dragSourceCollection` — the collection it came from
-- `_lastIndicatorContainer` / `_lastIndicatorListView` — insertion-indicator restore state
+- `_dragToken` identifies the current internal DataPackage; rebuilt/cancelled packages stay distinguishable from external imports.
+- `_insertionIndicator` is a passive RootGrid overlay with no retained target-container state.
 
 ### Drop index calculation
+
+`LauncherItemsView.DropTargets.cs` resolves nested-list and header events against the same full-group container bounds on DragOver and Drop. `LauncherDropGeometry` classifies up to eight DIPs at the outer top/bottom as before/after siblings, capped to one quarter of a short group's height so an interior remains available. The real-group interior targets its child list and retains precise child insertion; a header drop appends inside. Synthetic wrappers keep their ordinary child-grid targets and do not gain visible group zones. Whole-group drags retain their existing column midpoint policy and cannot nest. Both internal moves and external payloads use this resolver; external insertion resolves before awaiting payload reads.
 
 `GetDropIndex(ListViewBase, DragEventArgs)` dispatches to `GetDropIndexGrid` when the panel is
 an `ItemsWrapGrid` or `PackedIconPanel` (row-band hit test, then X-midpoint); otherwise it scans
@@ -198,8 +203,7 @@ event wiring for the lists — the same `AllowDrop` surfaces serve both.
 
 `RootGrid` has its own `AllowDrop` + `RootGrid_DragOver` / `RootGrid_Drop`. It is not redundant:
 an **empty launcher has no list big enough to hit**, since the empty-column `MinHeight` drop
-target is skipped when the whole launcher is empty. Root handlers bail out when `_dragItem` is
-set, and only ever run for drags that missed every list (the lists mark their events handled).
+target is skipped when the whole launcher is empty. Root handlers reject stale internal tokens, clear old group/caret feedback and reject internal moves that missed every list. Only external payloads may append there; lists mark their accepted events handled.
 
 **Edit-mode-only, for a load-bearing reason.** The flyout dismisses on `Deactivated`, so outside
 edit mode it is already gone by the time the user has switched to Explorer to pick something up.
@@ -253,20 +257,17 @@ path — see [icons.md](icons.md). Do not add a parallel fetch here.
 
 ## Visual feedback
 
-`ShowInsertionIndicator(ListView, int)` sets an accent-coloured border on the target container.
-In list mode this is a horizontal line; in icon-grid mode it's a vertical line **compensated by
-subtracting the border's width from the container's own padding on the same side**, so the
-container's outer dimensions stay constant and the grid doesn't reflow.
-`ClearInsertionIndicator()` restores border, padding and margin from the saved `_lastIndicator*`
-fields.
+`ShowInsertionIndicator(ListViewBase, int)` draws a themed accent caret in the RootGrid overlay plane. List boundaries use a horizontal line; icon-grid boundaries use a vertical line unless the position starts or wraps onto a new row. Empty columns use an outline over their existing bounds; empty real groups use an inset child caret. None changes list/container BorderThickness, Padding or Margin. The old compensated border could reflow zero-padding icon cells by 3 DIPs, moving hit-test midpoints while dragging. Clear the overlay on leave, rejection, completion, rebuild and close.
 
-**Always clamp the compensation at zero** (`Math.Max(0, padding.Left - 3)`), never write a bare
-negative `Thickness`. WinUI **throws** `ArgumentException` on a negative `Control.Padding` rather
-than clamping it, and the icon-mode container style has no padding to give back — so the grid
-branch used to kill the entire drag with an unhandled exception on every `DragOver` tick. Where
-the container has no padding, the indicator costs 3px of reflow; that is the accepted trade.
+Receiving a child tints the full real group with a low-opacity themed accent fill and draws its child caret inset from the group edges. High contrast uses a transparent fill and explicit system highlight outline. A sibling drop has no group tint and uses a full-width caret at the exact outer top/bottom boundary, even when its event came through a child list. The live hint explicitly names before/after the group or inside the group. At the end of a nonempty real group, the receiving overlay adds a vertical theme gradient over only the final child. Most of the child stays clear, then progressively fades toward an inset horizontal marker overlapping its lower area. Paint the receiving fill first, the gradient second and the transparent full-group outline last, so the fade never covers the group boundary. The inset marker remains in the higher caret plane. Child Opacity, native drag-source visuals and local layout/input values are untouched; clearing the overlay restores the exact child presentation. High contrast makes the scrim transparent while retaining the inset marker, system outline and caption. After-group feedback has no receiving tint or fade and places its full-width line outside the normal group bottom. Empty groups retain their inset marker without fading a nonexistent child. Tint, fade and caret share cleanup on leave, rejection, drop, cancellation, rebuild and disposal. They remain non-hit-testable overlays and never mutate child/template geometry. No expansion slot or model placeholder is used.
 
-`DragUIOverride.Caption` shows contextual text ("Move above X", "Move into X", "Move to end").
+`LauncherItemsView.DragPreview.cs` renders a mode-sized identity body: small icons use 128x28 DIPs for an item or 136x36 for a group, list uses 156x32 or 156x40, and large icons use 176x44. The group retains its name and count. A separate 20-DIP destination-hint row sits above a 4-DIP gap in the same bitmap, because DragUIOverride exposes no native caption-position property. Normal feedback hides the native caption and glyph. Render failure restores the current native caption/glyph only when the same token and feedback version are still live; rejection uses Cannot move here, never an old allowed hint. That failure fallback has OS-controlled placement.
+
+Normal in-tree layout in a zero-size, off-content Canvas preserves the launcher extent; never snapshot a tall group or force UpdateLayout. Cache by caption and mode, rerendering only when that key changes. Async DragOver feedback uses a one-second cancellation/wait bound and completes every deferral. Departures, newer feedback, rebuild, close and cancellation invalidate application and fallback through token/version guards. Only one current bitmap is retained; cancelled render results are disposed when they finish. ListView's CanDragItems gesture remains native and exposes no source DragUI, so this override applies over the shared view's targets; elsewhere the native image remains.
+
+`LauncherItemReorder` owns move validation and column flattening without window dependencies. Validate exact source membership and current derived source/target collections before mutation. Reject sentinels, synthetic wrappers themselves, duplicate destination membership and nested groups. Same-list moves adjust the pre-removal insertion index once and use Collection.Move; a no-op does not save or rebuild. The caller rechecks edit/read-only state. Rebuilding clears the active token and drag state before replacing columns; the old DataPackage is rejected rather than reclassified as an external drop.
+
+Whole-group drags over a group's child body route to its owning column's reorder handler, using the existing whole-container midpoint policy and before/after caret. This broadens the usable target beyond the header while still forbidding nesting. Item drags over the interior insert into the group's children; its outer bands instead insert a sibling. Keep DragOver and Drop routing identical.
 
 ## Container item lookup
 
@@ -277,14 +278,19 @@ re-read on each event rather than capturing, since containers are recycled.
 
 ## Pointer events
 
-`LauncherItemsView.Hover.cs` owns the passive drag/edit cues shared by the native popup and regular editor. A drawn six-dot grip leads each row/header and the pencil trails it; large-icon tiles use top corners and 40-DIP tiles use compact opposite corners. Group cues use only header bounds. Each cue has an opaque dynamic `SolidBackgroundFillColorBaseBrush` backing and themed stroke/text, with a local clip preventing overdraw. List/header labels temporarily reserve cue space through margins, retaining native ellipsis and actual-trimming tooltips; restore their original local Margin on pointer exit, recycling, unload, rebuild and close. The overlay is not hit-testable or an accessibility control: the entire item retains its click-to-edit and drag behavior, conditional name tooltip, drag threshold and child-over-group priority. Read-only items, synthetic groups and column breaks do not gain an edit cue. Keep decoration outside item templates and layout arithmetic; do not introduce handle-only dragging or a competing tooltip.
+`LauncherItemsView.Hover.cs` owns the passive drag/edit cues shared by both hosts. A six-dot grip leads each row/header and the pencil trails it; large-icon tiles use top corners and 40-DIP tiles use compact opposite corners. Cues have rounded translucent theme scrims and accent glyphs without per-cue strokes; high contrast uses opaque system window/text colors. Hovering a real group's header/empty space outlines the whole group in a separate non-hit-testable overlay, while its cues remain inside the header. Hovering a child replaces the group outline with that child's cues.
+
+The three real-group headers use shared GroupHeaderStyle. Transparent Background plus 8,4,8,4 Padding preserve the old outer-margin/text geometry and make the entire drawn header a native hit target, including the passive pencil area. An unpainted Grid and trimmed label leave that area without ink, so the visual pencil can otherwise miss ItemClick. Keep the overlay passive and route through the existing group rename command, without adding a button or changing pointer Handled.
+
+List/header labels temporarily reserve cue space through margins, retaining native ellipsis and actual-trimming tooltips; restore their original local Margin on pointer exit, recycling, unload, rebuild and close. The overlay is not hit-testable or an accessibility control: the entire item retains its click-to-edit and drag behavior, conditional name tooltip and native drag threshold. Read-only items, synthetic groups and column breaks do not gain a cue. Keep decoration outside item templates and layout arithmetic; do not introduce handle-only dragging or a competing tooltip.
+
+Entry and movement share the same innermost-wired-container resolver, so moving from a child back to its header restores group scope without letting the parent steal child hover. Never change Handled in any hover handler. WinUI can reuse native pointer arguments across an enter and the following press; handling the enter can cause ListViewItem to skip pointer capture and never arm its drag gesture. A native VM A/B test reproduced the failure and restored capture, drag start and saved reordering by removing only that handled mutation. Root PointerExited hides only when the pointer actually leaves RootGrid, not on every bubbled child exit. Detach recovery handlers with existing container wiring on rebuild/dispose.
 
 
 `ListViewItem` marks `PointerMoved` as **handled** for its own hover visuals, so a handler
 attached to `RootGrid` never fires over an actual item — only over empty space. Attach hover
 handlers to the **containers** (via `ContainerContentChanging`, plus an immediate pass over
-`ContainerFromIndex` for already-realised ones). In nested lists the child's handler runs first,
-so set `e.Handled = true` to stop the enclosing group claiming the hover.
+`ContainerFromIndex` for already-realised ones). In nested lists, resolve the innermost wired container from OriginalSource and let only that container claim hover. Never set `e.Handled` for hover priority, because native enter state can affect the following press and prevent drag capture.
 
 ## Common pitfalls
 
@@ -292,13 +298,13 @@ so set `e.Handled = true` to stop the enclosing group claiming the hover.
 2. **Always adjust drop index** when removing from the same collection before inserting.
 3. **`RebuildColumnsPanel()` re-creates all containers** — any visual state must be model-backed
    or re-applied in `Loaded` / `ContainerContentChanging`.
-4. **Groups cannot be dropped into other groups** — `GroupChildList_DragOver` rejects `IsGroup`.
+4. **Groups cannot be dropped into other groups**; whole-group drags over a child list route to the enclosing column for before/after reorder.
 5. **Never persist synthetic groups.**
 6. **Never call `SettingsManager.SaveSettings()` alone** for an item change — always pair it with
    `AutoSyncService.NotifyItemsChanged()` (use `PersistFlyoutItemChanges` / `PersistFlyoutReorder`),
    or a periodic sync download will silently revert the edit.
 7. **Column breaks are invisible** — they exist only as sentinel items in the flat list.
-8. **`_dragItem == null` means an external drag**, not a bug — don't "fix" a drag handler by
+8. **`_dragItem == null` without an internal DataPackage marker means an external drag**, not a bug; don't "fix" a drag handler by
    early-returning on it without routing to the external-drop path.
 9. **Anything that tracks realised containers in a field must be cleared on rebuild.** The
    `FlyoutWindow` instances are **permanent** (one per launcher in the static `_instances`
@@ -308,3 +314,11 @@ so set `e.Handled = true` to stop the enclosing group claiming the hover.
    minutes). `RebuildColumnsPanel` now calls `ClearHoverWiring()` alongside
    `_editStyledContainers.Clear()` / `_loadedIconChildLists.Clear()`; detach the pointer
    handlers too, not just clear the set, so the WinRT event registrations release as well.
+
+## Regression checks
+
+Run `dotnet run --project tests/LauncherItemReorder.Tests` with .NET 10, or use the Docker command in that directory's README. The console runner links the real LauncherItem model and production move/flatten policy. Cases cover same/cross-column moves, group membership and identity, exact outer-band thresholds and invalid group geometry, distinct inside-versus-sibling persistence, end-marker containment and invalid last-child dimensions, invalid nesting, synthetic wrappers, stale sources/targets, mutation-free validation, no-ops, clamped indices and save/reload ordering. Native pointer routing, drag cancellation, preview rendering, layout stability and themes require the actual Windows hosts; policy checks are not native acceptance.
+
+The repeatable native suite is `tests/native-drag/native-drag-suite.ps1`, launched by its consoleless `run-hidden.py` executor. Read [the native suite README](../../tests/native-drag/README.md) before running it. Defaults are the regular host, dark theme and all three modes. Both hosts use the verified physical companion deployed by the app: regular setup explicitly opens App Settings before navigation, while HostMode=native invokes edit-items directly. Theme=1 selects light. Cancellation holds Escape before and through mouse release, records both held keys and releases Escape in finally. The suite verifies ordering/inventory/no nesting, saved column boundaries and unchanged target UIA bounds during the held insertion cue. Each run requires the named disposable computer and explicit desktop-interaction opt-in, preserves/restores prior settings, and records package/runtime versions and screenshots. Native pointer movement is injected rather than relocating only the cursor, and the executor must not create an activating console. Screenshot review, high contrast, accessibility and lifetime/sync cases remain separate acceptance work.
+
+The optional follow-up native cases in interaction-cases.ps1 cover actual group-pencil taps, changing preview targets and cancellation, and foreign-window return/Done/dismissal for both hosts. Group-boundary cases additionally cross inside/after/inside targets, compare receiver/last-child/following-group bounds at each waypoint and two held samples, and assert saved items remain unchanged before Drop. Their leave/cancel checks review fade cleanup and retain exact geometry restoration. The default eight drag cases remain stable. Follow the native README for expected geometry, isolated Notepad ownership, historical and current qualification, and manual screenshot limits.

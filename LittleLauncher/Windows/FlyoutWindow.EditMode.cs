@@ -308,6 +308,9 @@ public partial class FlyoutWindow
         _editToolbarBar?.HideBar();
         SetEditModeBorder(false);
         ResizeForEditChrome();
+        // The floating Done button does not activate windows. If edit mode survived an
+        // app switch, restore activation so the next outside click can deactivate us.
+        RestoreFlyoutActivation();
     }
 
     private void ResizeForEditChrome()

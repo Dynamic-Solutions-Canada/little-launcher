@@ -148,24 +148,8 @@ public sealed partial class LauncherItemsView
     {
         _launcher.Items.Clear();
 
-        for (int columnIndex = 0; columnIndex < _columnLists.Count; columnIndex++)
-        {
-            if (columnIndex > 0)
-                _launcher.Items.Add(LauncherItem.CreateColumnBreak());
-
-            foreach (var item in _columnLists[columnIndex])
-            {
-                if (_syntheticGroups.Contains(item))
-                {
-                    foreach (var child in item.Children)
-                        _launcher.Items.Add(child);
-                }
-                else
-                {
-                    _launcher.Items.Add(item);
-                }
-            }
-        }
+        foreach (var item in LauncherItemReorder.Flatten(_columnLists, _syntheticGroups))
+            _launcher.Items.Add(item);
     }
 
     private ListViewBase CreateColumnListView(int columnIndex)
@@ -713,6 +697,9 @@ public sealed partial class LauncherItemsView
 
     private void RebuildColumnsPanel()
     {
+        // A sync or structural edit invalidates every derived drag source and pending preview.
+        ClearInsertionIndicator();
+        ClearDragState();
         _columnLists = BuildColumnLists();
         _loadedIconChildLists.Clear();
         _syntheticGroups.Clear();

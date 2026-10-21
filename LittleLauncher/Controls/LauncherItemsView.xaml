@@ -36,15 +36,21 @@
                 SyntheticGroupTemplate="{StaticResource SmallIconSyntheticGroupTemplate}"
                 ItemTemplate="{StaticResource SmallIconItemTemplate}" />
 
-            <!-- The header's 8px side margins and its font are ListGroupHeaderChromeWidth /
+            <!-- The header's 8px side padding and its font are ListGroupHeaderChromeWidth /
                  ListGroupHeaderFontSize in LauncherItemsView.Rendering.cs, which sizes list columns to the
                  longest label they hold. Change one and change the other. -->
+            <Style x:Key="GroupHeaderStyle" TargetType="Grid">
+                <!-- Keep the cue area inside the native group hit target, even where the
+                     trimmed label leaves no ink. Padding preserves the old margin geometry. -->
+                <Setter Property="Padding" Value="8,4,8,4" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="ColumnSpacing" Value="8" />
+            </Style>
             <DataTemplate x:Key="ListGroupTemplate">
                 <StackPanel Margin="0"
                             HorizontalAlignment="Stretch">
-                    <Grid Margin="8,4,8,4"
-                          HorizontalAlignment="Stretch"
-                                                    ColumnSpacing="8">
+                    <Grid Style="{StaticResource GroupHeaderStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
@@ -439,9 +445,7 @@
                 <StackPanel Margin="0"
                             Loaded="IconGroupRoot_Loaded"
                             HorizontalAlignment="Center">
-                    <Grid Margin="8,4,8,4"
-                          HorizontalAlignment="Stretch"
-                          ColumnSpacing="8">
+                    <Grid Style="{StaticResource GroupHeaderStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
@@ -522,9 +526,7 @@
                 <StackPanel Margin="0"
                             Loaded="IconGroupRoot_Loaded"
                             HorizontalAlignment="Center">
-                    <Grid Margin="8,4,8,4"
-                          HorizontalAlignment="Stretch"
-                          ColumnSpacing="8">
+                    <Grid Style="{StaticResource GroupHeaderStyle}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>

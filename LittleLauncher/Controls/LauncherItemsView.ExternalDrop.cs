@@ -54,21 +54,30 @@ public sealed partial class LauncherItemsView
     /// Accepts an external payload over a list, showing the same insertion indicator a
     /// reorder would, so the drop position is as precise as an internal move.
     /// </summary>
-    /// <param name="group">The group being hovered, or null for a top-level column.</param>
-    private void ExternalDragOver(ListViewBase listView, DragEventArgs e, LauncherItem? group)
+    private void ExternalDragOver(ListViewBase listView, DragEventArgs e)
     {
         if (!AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
             return;
 
         e.AcceptedOperation = ExternalDropOperation(e);
 
-        ShowInsertionIndicator(listView, GetDropIndex(listView, e));
+        var target = ResolveItemDropTarget(listView, e);
+        ShowDropTarget(target);
 
         e.DragUIOverride.IsCaptionVisible = true;
         e.DragUIOverride.IsGlyphVisible = true;
-        e.DragUIOverride.Caption = group != null
-            ? $"Add to {GetItemDisplayName(group)}"
-            : "Add to launcher";
+        string caption = "Add to launcher";
+        if (target.Group != null)
+        {
+            string name = GetItemDisplayName(target.Group);
+            if (target.Zone == LauncherDropGeometry.GroupZone.Before)
+                caption = FormatDropCaption("LauncherDropBeforeGroup", "Add before {0}", name);
+            else if (target.Zone == LauncherDropGeometry.GroupZone.After)
+                caption = FormatDropCaption("LauncherDropAfterGroup", "Add after {0}", name);
+            else
+                caption = FormatDropCaption("LauncherDropIntoGroup", "Add into {0}", name);
+        }
+        e.DragUIOverride.Caption = caption;
         e.Handled = true;
     }
 
@@ -78,9 +87,18 @@ public sealed partial class LauncherItemsView
     /// </summary>
     private void RootGrid_DragOver(object sender, DragEventArgs e)
     {
-        // An internal reorder that reaches the root has missed every list; leaving it
-        // unaccepted lets it fall back to the source list's own handling.
-        if (_dragItem != null || !AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
+        if (RejectStaleInternalDrag(e))
+            return;
+
+        ClearInsertionIndicator();
+        if (_dragItem != null)
+        {
+            RejectInternalDrag(e);
+            return;
+        }
+
+        // Only external payloads may append through otherwise empty root space.
+        if (!AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
             return;
 
         e.AcceptedOperation = ExternalDropOperation(e);
@@ -96,20 +114,20 @@ public sealed partial class LauncherItemsView
     /// Drops an external payload into a column or group at the hovered position.
     /// </summary>
     /// <remarks>
-    /// <paramref name="target"/> is a derived collection (a column list, or a group's
+    /// The resolved target is a derived collection (a column list, or a group's
     /// children reached through one), so this persists via <c>PersistFlyoutReorder</c> ,
     /// the same flush direction a drag reorder uses.
     /// </remarks>
-    private void ExternalDrop(ListViewBase listView, DragEventArgs e, ObservableCollection<LauncherItem> target)
+    private void ExternalDrop(ListViewBase listView, DragEventArgs e)
     {
         if (!AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
             return;
 
         // e.GetPosition is only meaningful while the event is on the stack, so the
         // insertion point has to be resolved before the deferral takes this async.
-        int dropIndex = GetDropIndex(listView, e);
-
-        BeginExternalDrop(e, target, dropIndex, PersistFlyoutReorder);
+        var target = ResolveItemDropTarget(listView, e);
+        if (target.List.ItemsSource is ObservableCollection<LauncherItem> collection)
+            BeginExternalDrop(e, collection, target.Index, PersistFlyoutReorder);
     }
 
     /// <summary>
@@ -119,6 +137,10 @@ public sealed partial class LauncherItemsView
     /// </summary>
     private void RootGrid_Drop(object sender, DragEventArgs e)
     {
+        ClearInsertionIndicator();
+        if (RejectStaleInternalDrag(e))
+            return;
+
         if (_dragItem != null || !AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
             return;
 

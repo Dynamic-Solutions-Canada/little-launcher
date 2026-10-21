@@ -2,6 +2,10 @@
 
 `FlyoutWindow` is the native per-launcher popup. `LauncherItemsEditorWindow` is the regular Settings-origin item editor, matching Launcher Settings Mica/chrome/app icon. Both host the same `Controls/LauncherItemsView` implementation through `ILauncherItemsHost`; do not duplicate item templates or editing logic, or reparent a native popup into another window. The regular host owns its inline toolbar, scrolling viewport and external Done, with immediate saving and no blue window outline. Settings remains normal behind it. Same-launcher invocation focuses the editor or its owned dialog, and host teardown closes its secondary windows and unregisters the view.
 
+Native `ExitEditMode` restores flyout activation after hiding the non-activating toolbar. Editing can survive deactivation, and clicking floating Done does not activate its owner; without restoration, the already-inactive popup cannot receive the next deactivation and remains stuck open. Keep this in the native host. Regular Done closes its editor and must not acquire native activation or dismissal behavior. The guarded native regression suite covers direct Done after a foreign-window switch and the body-return control.
+
+The regular editor stretches the shared toolbar presenter across its padded body. The view uses that finite viewport width for a wrapping add-action column and a separate settings icon pinned at the top right. Its existing footer Done shares the same visible right edge. Native toolbar sizing and intrinsic item geometry remain independent of this regular-window layout.
+
 Read this before touching drag/drop, edit mode, column logic, or flyout sizing. It covers the geometry contract (edit mode may grow height, never width or item size), the `_launcher.Items` vs `_columnLists` source-of-truth rule, and why height is computed arithmetically rather than measured:
 
 Read and follow [drag-drop.md](../../.codex/docs/drag-drop.md) before changing the code described above.

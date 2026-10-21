@@ -91,10 +91,10 @@ Little Launcher lives in the Windows system tray and/or taskbar. Clicking its ic
 - **Identify apps before adding them**: same-named apps show their executable filenames. Hover to see the full target, or right-click to open the app or its containing folder.
 - **Manual icon picker**: choose launcher and item icons from Fluent glyphs, full-color emoji, bundled app icons, custom images, or the selfh.st catalog. Large emoji and Fluent catalogs create tiles as you scroll. Browse is in the first options tab, confirmation stays visible, and reopening reveals the saved choice. Web launchers can preview their saved automatic page icon, retry it from the page or directly from its site, and return to it from the same chooser. If the site requires sign-in, the chooser explains how to retry with the launcher open.
 - **View modes**: choose between list view, icon grid view, or a compact tray-sized small-icon grid with no labels. Hover an item to see its full name when the label is hidden or cut off.
-- **Edit launcher items in their own window**: click **Items** in Settings to open a matching editor window. Wide or tall launchers keep their layout and scroll as needed. Changes save as you edit; **Done** closes the editor. The separate **…** button keeps import, export and bookmark import close at hand.
+- **Edit launcher items in their own window**: click **Items** in Settings to open a matching editor window. Wide or tall launchers keep their layout and scroll as needed. Add actions wrap when needed, with a compact settings icon at the top right. Changes save as you edit; **Done** closes the editor. The separate **…** button keeps import, export and bookmark import close at hand.
 - **Keep setup in view**: a new shortcut launcher’s item editor opens where you just configured it, on the same monitor. Click **Done** to finish; normal tray or taskbar openings keep their usual placement.
 - **Groups & columns**; organise items into groups and multi-column layouts.
-- **Direct flyout reordering**; drag items in the live flyout to reorder them, with the same insertion-indicator style used in the editor.
+- **Direct flyout reordering**; drag items or whole groups in the live flyout or regular editor. Hover marks the whole group, and a compact drag card fits the current view mode with the destination hint above it. Drop inside a tinted group to add a child, or use its outer edge to place an item before or after the whole group; the last item fading toward an overlapping inset marker distinguishes the end of a group from the full-width marker after it. Click a group's hover pencil to rename it; finishing tray editing after switching apps restores normal click-away dismissal.
 - **Drag in from anywhere**; while editing a launcher, drag files, folders, shortcuts or browser links straight from File Explorer or the desktop into the flyout to add them, complete with names and icons. (Windows' own Start Menu can't act as a drag source, but its shortcuts can be dragged from `Start Menu\Programs` in Explorer.)
 - **Direct flyout item actions**; right-click items in the live flyout to move, edit, or remove them without opening the settings editor.
 - **System-tray icons**; a tray icon that opens a flyout popup for shortcuts.
@@ -119,6 +119,8 @@ Little Launcher used to ship an MSI installer as well. It has been retired in fa
 ## Building from source
 
 Little Launcher is a .NET 10 WinUI 3 app. See **[DEVELOPMENT.md](DEVELOPMENT.md)** for build prerequisites, the architecture overview, and the project layout.
+
+Launcher editing has a [cross-platform policy regression suite](tests/LauncherItemReorder.Tests/README.md) and a guarded [native Windows drag suite](tests/native-drag/README.md) for a dedicated test desktop.
 
 ## License
 

@@ -45,14 +45,6 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
     private int _listColumnWidth = MaxListColumnWidth;
     private LauncherItem? _dragItem;
     private ObservableCollection<LauncherItem>? _dragSourceCollection;
-    private Control? _lastIndicatorContainer;
-    private ListViewBase? _lastIndicatorListView;
-    private Brush? _lastIndicatorContainerBorderBrush;
-    private Thickness _lastIndicatorContainerBorderThickness;
-    private Thickness _lastIndicatorContainerPadding;
-    private Thickness _lastIndicatorContainerMargin;
-    private Brush? _lastIndicatorListBorderBrush;
-    private Thickness _lastIndicatorListBorderThickness;
     private ResizeGrip _leftResizeGrip = null!;
     private ResizeGrip _rightResizeGrip = null!;
     private bool _isResizingIconWidth;

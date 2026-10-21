@@ -210,9 +210,34 @@ public sealed partial class LauncherItemsView
         toolbar.Children.Add(EditButton("", EditActionLabel("LauncherItemsAddItem", "Add item"), () => _ = AddItemAsync()));
         toolbar.Children.Add(EditButton("", EditActionLabel("LauncherItemsAddGroup", "Add group"), () => _ = AddGroupAsync()));
         toolbar.Children.Add(EditButtonDrawn(BuildAddColumnIcon(), EditActionLabel("LauncherItemsAddColumn", "Add column"), AddColumn));
-        toolbar.Children.Add(EditButton("", EditActionLabel("LauncherItemsSettingsAction", "Launcher settings"), () => _ = OpenLauncherSettingsAsync()));
+        var settings = EditButtonCore(
+            new FontIcon { Glyph = "", FontSize = _host.IsRegularWindow ? 16 : 12 },
+            EditActionLabel("LauncherItemsSettingsAction", "Launcher settings"),
+            () => _ = OpenLauncherSettingsAsync());
+        if (_host.IsRegularWindow)
+            return BuildRegularEditToolbar(toolbar, settings);
+
+        toolbar.Children.Add(settings);
         if (!_host.IsRegularWindow)
             toolbar.Children.Add(EditButton("", "Done", ExitEditMode));
+        return toolbar;
+    }
+
+    /// <summary>Wraps primary actions independently while pinning the settings icon at top right.</summary>
+    private static Grid BuildRegularEditToolbar(Panel actions, Button settings)
+    {
+        var toolbar = new Grid { ColumnSpacing = 8 };
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        settings.Width = EditButtonSlot;
+        settings.Height = EditButtonSlot;
+        settings.MinHeight = 0;
+        settings.Margin = new Thickness(0);
+        settings.VerticalAlignment = VerticalAlignment.Top;
+        Grid.SetColumn(settings, 1);
+        toolbar.Children.Add(actions);
+        toolbar.Children.Add(settings);
         return toolbar;
     }
 
@@ -223,9 +248,11 @@ public sealed partial class LauncherItemsView
     private void UpdateEditToolbarColumns()
     {
         double usable = _toolbarAvailableWidth ?? (GetFlyoutWidth() - (FlyoutOuterPadding * 2));
-        if (_editToolbar is WrappingPanel regularToolbar)
+        if (_editToolbar is Grid regularToolbar)
         {
-            regularToolbar.MaxWidth = Math.Max(1, usable);
+            // The host stretches this row across its viewport. A finite star column lets
+            // the left actions wrap without moving the independent settings column.
+            regularToolbar.Width = Math.Max(1, usable);
             return;
         }
 

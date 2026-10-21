@@ -12,6 +12,17 @@
     <x:String x:Key="HomeDashboardTitle">Dashboard</x:String>
 
     <!-- Launcher Items -->
+    <x:String x:Key="LauncherDragItem">Move item</x:String>
+    <x:String x:Key="LauncherDragBeforeGroup">Move before {0}</x:String>
+    <x:String x:Key="LauncherDragAfterGroup">Move after {0}</x:String>
+    <x:String x:Key="LauncherDragIntoGroupBefore">Into {0}: before {1}</x:String>
+    <x:String x:Key="LauncherDragIntoGroupEnd">Into {0}: at end</x:String>
+    <x:String x:Key="LauncherDropBeforeGroup">Add before {0}</x:String>
+    <x:String x:Key="LauncherDropAfterGroup">Add after {0}</x:String>
+    <x:String x:Key="LauncherDropIntoGroup">Add into {0}</x:String>
+    <x:String x:Key="LauncherDragCannotMove">Cannot move here</x:String>
+    <x:String x:Key="LauncherDragGroupOne">Group, 1 item</x:String>
+    <x:String x:Key="LauncherDragGroup">Group, {0} items</x:String>
     <x:String x:Key="LauncherItemsTitle">Launcher Items</x:String>
     <x:String x:Key="LauncherItemsDone">Done</x:String>
     <x:String x:Key="LauncherItemsAddItem">Add item</x:String>

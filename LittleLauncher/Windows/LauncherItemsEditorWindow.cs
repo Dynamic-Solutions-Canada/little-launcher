@@ -92,7 +92,7 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
             SetTitleBar(titleBar);
 
             _itemsView = new LauncherItemsView(launcher, this);
-            var toolbar = new ContentPresenter { Content = _itemsView.Toolbar, HorizontalAlignment = HorizontalAlignment.Left };
+            var toolbar = new ContentPresenter { Content = _itemsView.Toolbar, HorizontalAlignment = HorizontalAlignment.Stretch };
 
             _launcherPreview = CreateLauncherPreview(_itemsView);
             var viewport = new ScrollViewer

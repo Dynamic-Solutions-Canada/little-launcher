@@ -115,13 +115,14 @@ public sealed partial class LauncherItemsView
             return;
 
         // Reordering is an edit-mode-only affordance.
-        if (!_isEditMode)
+        if (!_isEditMode || IsReadOnlyLauncher)
         {
             e.Cancel = true;
             return;
         }
 
-        if (_syntheticGroups.Contains(item))
+        if (item.IsColumnBreak || _syntheticGroups.Contains(item)
+            || columnIndex < 0 || columnIndex >= _columnLists.Count)
         {
             e.Cancel = true;
             return;
@@ -130,6 +131,8 @@ public sealed partial class LauncherItemsView
         HideHoverAffordance();
         _dragItem = item;
         _dragSourceCollection = _columnLists[columnIndex];
+        e.Data.Properties[InternalItemDragFormat] = _dragToken = Guid.NewGuid().ToString();
+        BeginDragPreview(item);
         e.Data.RequestedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
     }
 
@@ -140,36 +143,22 @@ public sealed partial class LauncherItemsView
 
         // No _dragItem means the drag didn't start in this flyout , it came from Explorer,
         // the desktop, the Start Menu or a browser.
+        if (RejectStaleInternalDrag(e))
+            return;
+
         if (_dragItem == null || _dragSourceCollection == null)
         {
-            ExternalDragOver(listView, e, null);
+            ExternalDragOver(listView, e);
             return;
         }
 
-        e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
-
-        int dropIndex = GetDropIndex(listView, e);
-        ShowInsertionIndicator(listView, dropIndex);
-
-        e.DragUIOverride.IsCaptionVisible = true;
-        e.DragUIOverride.IsGlyphVisible = true;
-
-        if (dropIndex < listView.Items.Count && listView.Items[dropIndex] is LauncherItem targetItem)
-        {
-            bool isGrid = IsGridItemsPanel(listView.ItemsPanelRoot);
-            e.DragUIOverride.Caption = isGrid
-                ? $"Move before {GetItemDisplayName(targetItem)}"
-                : $"Move above {GetItemDisplayName(targetItem)}";
-        }
-        else
-            e.DragUIOverride.Caption = "Move to end";
-
-        e.Handled = true;
+        ShowInternalDropFeedback(ResolveItemDropTarget(listView, e), e);
     }
 
     private void ColumnListView_DragLeave(object sender, DragEventArgs e)
     {
         ClearInsertionIndicator();
+        InvalidateDragPreviewFeedback();
     }
 
     private void ColumnListView_Drop(object sender, DragEventArgs e)
@@ -179,26 +168,20 @@ public sealed partial class LauncherItemsView
             || columnIndex < 0 || columnIndex >= _columnLists.Count)
             return;
 
-        var targetColumn = _columnLists[columnIndex];
+        if (RejectStaleInternalDrag(e))
+            return;
 
         if (_dragItem == null || _dragSourceCollection == null)
         {
-            ExternalDrop(listView, e, targetColumn);
+            ExternalDrop(listView, e);
             return;
         }
 
-        int dropIndex = GetDropIndex(listView, e);
-
-        int originalIndex = _dragSourceCollection == targetColumn ? _dragSourceCollection.IndexOf(_dragItem) : -1;
-        _dragSourceCollection.Remove(_dragItem);
-        if (originalIndex >= 0 && originalIndex < dropIndex)
-            dropIndex--;
-
-        dropIndex = Math.Clamp(dropIndex, 0, targetColumn.Count);
-        targetColumn.Insert(dropIndex, _dragItem);
-
-        PersistFlyoutReorder();
-        ClearDragState();
+        var target = ResolveItemDropTarget(listView, e);
+        if (target.List.ItemsSource is ObservableCollection<LauncherItem> collection)
+            CompleteInternalDrop(collection, target.Index);
+        else
+            RejectInternalDrag(e);
         e.Handled = true;
     }
 
@@ -217,7 +200,7 @@ public sealed partial class LauncherItemsView
             return;
 
         // Reordering is an edit-mode-only affordance.
-        if (!_isEditMode)
+        if (!_isEditMode || IsReadOnlyLauncher)
         {
             e.Cancel = true;
             return;
@@ -226,6 +209,8 @@ public sealed partial class LauncherItemsView
         HideHoverAffordance();
         _dragItem = item;
         _dragSourceCollection = group.Children;
+        e.Data.Properties[InternalItemDragFormat] = _dragToken = Guid.NewGuid().ToString();
+        BeginDragPreview(item);
         e.Data.RequestedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
     }
 
@@ -234,49 +219,26 @@ public sealed partial class LauncherItemsView
         if (sender is not ListView listView || listView.Tag is not LauncherItem group)
             return;
 
+        if (RejectStaleInternalDrag(e))
+            return;
+
         if (_dragItem == null || _dragSourceCollection == null)
         {
-            ExternalDragOver(listView, e, group);
+            ExternalDragOver(listView, e);
             return;
         }
 
-        if (_dragItem.IsGroup || _dragItem.IsColumnBreak)
-        {
-            e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
-            e.Handled = true;
-            return;
-        }
-
-        e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
-
-        int dropIndex = GetDropIndex(listView, e);
-        ShowInsertionIndicator(listView, dropIndex);
-
-        e.DragUIOverride.IsCaptionVisible = true;
-        e.DragUIOverride.IsGlyphVisible = true;
-
-        if (dropIndex < group.Children.Count)
-        {
-            bool isGrid = listView.ItemsPanelRoot is ItemsWrapGrid;
-            e.DragUIOverride.Caption = isGrid
-                ? $"Move before {GetItemDisplayName(group.Children[dropIndex])}"
-                : $"Move above {GetItemDisplayName(group.Children[dropIndex])}";
-        }
-        else if (group.Children.Count == 0)
-        {
-            e.DragUIOverride.Caption = $"Move into {GetItemDisplayName(group)}";
-        }
-        else
-        {
-            e.DragUIOverride.Caption = $"Move to end of {GetItemDisplayName(group)}";
-        }
-
-        e.Handled = true;
+        ShowInternalDropFeedback(ResolveItemDropTarget(listView, e), e);
     }
+
+    /// <summary>Finds the top-level surface owning a real or synthetic group's child list.</summary>
+    private ListViewBase? FindGroupColumn(LauncherItem group) =>
+        ColumnListViews().FirstOrDefault(column => column.Items.Contains(group));
 
     private void GroupChildList_DragLeave(object sender, DragEventArgs e)
     {
         ClearInsertionIndicator();
+        InvalidateDragPreviewFeedback();
     }
 
     private void GroupChildList_Drop(object sender, DragEventArgs e)
@@ -285,26 +247,20 @@ public sealed partial class LauncherItemsView
         if (sender is not ListView listView || listView.Tag is not LauncherItem group)
             return;
 
+        if (RejectStaleInternalDrag(e))
+            return;
+
         if (_dragItem == null || _dragSourceCollection == null)
         {
-            ExternalDrop(listView, e, group.Children);
+            ExternalDrop(listView, e);
             return;
         }
 
-        if (_dragItem.IsGroup || _dragItem.IsColumnBreak)
-            return;
-
-        int dropIndex = GetDropIndex(listView, e);
-        int originalIndex = _dragSourceCollection == group.Children ? _dragSourceCollection.IndexOf(_dragItem) : -1;
-        _dragSourceCollection.Remove(_dragItem);
-        if (originalIndex >= 0 && originalIndex < dropIndex)
-            dropIndex--;
-
-        dropIndex = Math.Clamp(dropIndex, 0, group.Children.Count);
-        group.Children.Insert(dropIndex, _dragItem);
-
-        PersistFlyoutReorder();
-        ClearDragState();
+        var target = ResolveItemDropTarget(listView, e);
+        if (target.List.ItemsSource is ObservableCollection<LauncherItem> collection)
+            CompleteInternalDrop(collection, target.Index);
+        else
+            RejectInternalDrag(e);
         e.Handled = true;
     }
 
@@ -338,10 +294,58 @@ public sealed partial class LauncherItemsView
         }
     }
 
+    private const string InternalItemDragFormat = "LittleLauncher.InternalItemDrag";
+    private string? _dragToken;
+
+    /// <summary>Rejects a cancelled/rebuilt drag rather than interpreting it as an external import.</summary>
+    private bool RejectStaleInternalDrag(DragEventArgs e)
+    {
+        if (!e.DataView.Properties.TryGetValue(InternalItemDragFormat, out var token))
+            return false;
+
+        if (_isEditMode && !IsReadOnlyLauncher && _dragToken != null && Equals(token, _dragToken)
+            && _dragItem != null && _dragSourceCollection != null)
+            return false;
+
+        RejectInternalDrag(e);
+        return true;
+    }
+
+    /// <summary>Clears the old insertion cue whenever the current surface cannot accept this move.</summary>
+    private void RejectInternalDrag(DragEventArgs e)
+    {
+        ClearInsertionIndicator();
+        e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
+        e.Handled = true;
+        ApplyDragPreview(e, DragPreviewText("LauncherDragCannotMove", "Cannot move here"));
+    }
+
+    private bool CanMoveTo(ListViewBase listView)
+    {
+        var target = listView.ItemsSource as ObservableCollection<LauncherItem>;
+        return _isEditMode && !IsReadOnlyLauncher && _dragItem != null
+            && _dragSourceCollection != null && target != null
+            && LauncherItemReorder.CanMove(_dragItem, _dragSourceCollection, target, _columnLists, _syntheticGroups);
+    }
+
+    /// <summary>Commits only a valid change; stale sources and no-op drops never save or rebuild.</summary>
+    private void CompleteInternalDrop(ObservableCollection<LauncherItem> target, int dropIndex)
+    {
+        if (_isEditMode && !IsReadOnlyLauncher && _dragItem != null && _dragSourceCollection != null
+            && LauncherItemReorder.TryMove(_dragItem, _dragSourceCollection, target, dropIndex,
+                _columnLists, _syntheticGroups))
+            PersistFlyoutReorder();
+
+        ClearDragState();
+    }
+
     private void ClearDragState()
     {
+        ClearInsertionIndicator();
         _dragItem = null;
         _dragSourceCollection = null;
+        _dragToken = null;
+        ClearDragPreview();
     }
 
     private static string GetItemDisplayName(LauncherItem item)
@@ -350,241 +354,6 @@ public sealed partial class LauncherItemsView
             return "section";
 
         return string.IsNullOrWhiteSpace(item.Name) ? "item" : item.Name;
-    }
-
-    /// <summary>
-    /// True when an icon-grid drop position lands at the start of a row rather than beside
-    /// the item the indicator is drawn on.
-    /// </summary>
-    /// <remarks>
-    /// Two cases: inserting before an item that is first in its row, and appending when the
-    /// final row is already full so the new item wraps below it.
-    /// </remarks>
-    private bool GridDropWrapsToNewRow(ListViewBase listView, int dropIndex, Control container, bool appending)
-    {
-        try
-        {
-            if (appending)
-            {
-                // Does another cell fit to the right of the last item?
-                //
-                // Measured against the widest a row may become, not the list's current width:
-                // a group's child list is only as wide as the children it already has, but it
-                // grows up to the icons-per-row limit. Using ActualWidth reported "wraps" for
-                // any group that still had room to expand.
-                double maxRowWidth = GetIconModeIconsPerRow() * GetActiveIconCellWidth();
-                double available = Math.Max(listView.ActualWidth, maxRowWidth);
-
-                var origin = container.TransformToVisual(listView)
-                    .TransformPoint(new global::Windows.Foundation.Point(0, 0));
-                return origin.X + (container.ActualWidth * 2) > available + 1;
-            }
-
-            if (dropIndex <= 0) return false;
-
-            // Starts a row if the preceding item sits on an earlier row.
-            if (listView.ContainerFromIndex(dropIndex - 1) is not Control previous) return false;
-
-            double targetY = container.TransformToVisual(listView)
-                .TransformPoint(new global::Windows.Foundation.Point(0, 0)).Y;
-            double previousY = previous.TransformToVisual(listView)
-                .TransformPoint(new global::Windows.Foundation.Point(0, 0)).Y;
-
-            return targetY > previousY + 1;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private void ShowInsertionIndicator(ListViewBase listView, int dropIndex)
-    {
-        ClearInsertionIndicator();
-
-        if (listView.Items.Count == 0)
-        {
-            _lastIndicatorListView = listView;
-            _lastIndicatorListBorderBrush = listView.BorderBrush;
-            _lastIndicatorListBorderThickness = listView.BorderThickness;
-            listView.BorderBrush = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
-            listView.BorderThickness = new Thickness(2);
-            return;
-        }
-
-        bool isGrid = IsGridItemsPanel(listView.ItemsPanelRoot);
-        int targetIndex = dropIndex < listView.Items.Count ? dropIndex : listView.Items.Count - 1;
-        if (targetIndex < 0)
-            return;
-
-        if (listView.ContainerFromIndex(targetIndex) is not Control container)
-            return;
-
-        _lastIndicatorContainer = container;
-        _lastIndicatorContainerBorderBrush = container.BorderBrush;
-        _lastIndicatorContainerBorderThickness = container.BorderThickness;
-        _lastIndicatorContainerPadding = container.Padding;
-        _lastIndicatorContainerMargin = container.Margin;
-        container.BorderBrush = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
-
-        if (isGrid)
-        {
-            bool appending = dropIndex >= listView.Items.Count;
-
-            // The border's width is given back out of the container's own padding so the grid
-            // doesn't reflow , but only as much as it actually has. The icon-mode container
-            // style has no padding to give, and WinUI throws on a negative Padding rather than
-            // clamping it, which killed the whole drag. The list branch below already clamps.
-            var padding = _lastIndicatorContainerPadding;
-
-            // A vertical line reads as "goes beside this item", which is wrong when the drop
-            // position actually wraps onto the next row. In that case draw a horizontal line
-            // on the row boundary instead, so the landing spot matches what is shown.
-            if (GridDropWrapsToNewRow(listView, dropIndex, container, appending))
-            {
-                container.BorderThickness = appending
-                    ? new Thickness(0, 0, 0, 3)
-                    : new Thickness(0, 3, 0, 0);
-                container.Padding = appending
-                    ? new Thickness(padding.Left, padding.Top, padding.Right, Math.Max(0, padding.Bottom - 3))
-                    : new Thickness(padding.Left, Math.Max(0, padding.Top - 3), padding.Right, padding.Bottom);
-            }
-            else if (!appending)
-            {
-                container.BorderThickness = new Thickness(3, 0, 0, 0);
-                container.Padding = new Thickness(Math.Max(0, padding.Left - 3), padding.Top, padding.Right, padding.Bottom);
-            }
-            else
-            {
-                container.BorderThickness = new Thickness(0, 0, 3, 0);
-                container.Padding = new Thickness(padding.Left, padding.Top, Math.Max(0, padding.Right - 3), padding.Bottom);
-            }
-        }
-        else
-        {
-            bool insertBefore = dropIndex < listView.Items.Count;
-            var padding = _lastIndicatorContainerPadding;
-
-            if (insertBefore)
-            {
-                container.BorderThickness = new Thickness(0, 2, 0, 0);
-                container.Padding = new Thickness(
-                    padding.Left,
-                    Math.Max(0, padding.Top - 2),
-                    padding.Right,
-                    padding.Bottom);
-            }
-            else
-            {
-                container.BorderThickness = new Thickness(0, 0, 0, 2);
-                container.Padding = new Thickness(
-                    padding.Left,
-                    padding.Top,
-                    padding.Right,
-                    Math.Max(0, padding.Bottom - 2));
-            }
-
-            container.Margin = _lastIndicatorContainerMargin;
-        }
-    }
-
-    private void ClearInsertionIndicator()
-    {
-        if (_lastIndicatorContainer != null)
-        {
-            _lastIndicatorContainer.BorderBrush = _lastIndicatorContainerBorderBrush;
-            _lastIndicatorContainer.BorderThickness = _lastIndicatorContainerBorderThickness;
-            _lastIndicatorContainer.Padding = _lastIndicatorContainerPadding;
-            _lastIndicatorContainer.Margin = _lastIndicatorContainerMargin;
-            _lastIndicatorContainer = null;
-            _lastIndicatorContainerBorderBrush = null;
-            _lastIndicatorContainerBorderThickness = new Thickness(0);
-            _lastIndicatorContainerPadding = new Thickness(0);
-            _lastIndicatorContainerMargin = new Thickness(0);
-        }
-
-        if (_lastIndicatorListView != null)
-        {
-            _lastIndicatorListView.BorderBrush = _lastIndicatorListBorderBrush;
-            _lastIndicatorListView.BorderThickness = _lastIndicatorListBorderThickness;
-            _lastIndicatorListView = null;
-            _lastIndicatorListBorderBrush = null;
-            _lastIndicatorListBorderThickness = new Thickness(0);
-        }
-    }
-
-    private static int GetDropIndex(ListViewBase listView, DragEventArgs e)
-    {
-        if (IsGridItemsPanel(listView.ItemsPanelRoot))
-            return GetDropIndexGrid(listView, e);
-
-        var position = e.GetPosition(listView);
-        for (int index = 0; index < listView.Items.Count; index++)
-        {
-            if (listView.ContainerFromIndex(index) is not Control container)
-                continue;
-
-            var transform = container.TransformToVisual(listView);
-            var point = transform.TransformPoint(new global::Windows.Foundation.Point(0, 0));
-            if (position.Y < point.Y + (container.ActualHeight / 2))
-                return index;
-        }
-
-        return listView.Items.Count;
-    }
-
-    private static int GetDropIndexGrid(ListViewBase listView, DragEventArgs e)
-    {
-        var position = e.GetPosition(listView);
-        int count = listView.Items.Count;
-        if (count == 0)
-            return 0;
-
-        int bestIndex = count;
-        double bestDistance = double.MaxValue;
-        double contentBottom = 0;
-
-        for (int index = 0; index < count; index++)
-        {
-            if (listView.ContainerFromIndex(index) is not Control container)
-                continue;
-
-            var transform = container.TransformToVisual(listView);
-            var point = transform.TransformPoint(new global::Windows.Foundation.Point(0, 0));
-
-            double top = point.Y;
-            double bottom = top + container.ActualHeight;
-            double left = point.X;
-            double midX = left + (container.ActualWidth / 2);
-            contentBottom = Math.Max(contentBottom, bottom);
-
-            if (position.Y >= top && position.Y < bottom)
-            {
-                if (position.X < midX)
-                    return index;
-
-                bestIndex = index + 1;
-                bestDistance = 0;
-            }
-            else if (bestDistance > 0)
-            {
-                double verticalDistance = position.Y < top ? top - position.Y : position.Y - bottom;
-                if (verticalDistance < bestDistance)
-                {
-                    bestDistance = verticalDistance;
-                    bestIndex = position.X < midX ? index : index + 1;
-                }
-            }
-        }
-
-        // Anywhere in the empty space below the last row means "put it at the end". Without
-        // this the nearest-band fallback above could return an index *before* the last item
-        // whenever the pointer happened to sit left of its midpoint, so appending required
-        // landing precisely beside the final item.
-        if (position.Y >= contentBottom)
-            return count;
-
-        return Math.Min(bestIndex, count);
     }
 
     private sealed class ResizeGrip : Grid
