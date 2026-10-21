@@ -302,8 +302,7 @@ state. `Windows/WebFlyoutWindow.IconPreview.cs` tries an already loaded, awake m
 then the actual site through `Services/FaviconService.IconPreview.cs`, without adopting an icon
 or starting a browser. Direct preview reads reuse HTML/manifest/favicon selection with fresh,
 bounded, cancellable requests and no cache writes or Google fallback. Failed reads explain that
-opening/signing in may be needed. Pending URL-bound PNG bytes remain in memory until Confirm
-atomically stores them; Cancel, failure and stale completions leave the custom choice intact.
+opening/signing in may be needed. `Classes/PageIconPreview.cs` keeps pending URL-bound PNG bytes in memory and atomically stores the exact confirmed preview, including a smaller explicit choice. Cancel, failure and stale completions leave the custom choice intact. Background adoption still keeps its size safeguard. Confirmation explicitly refreshes derived icons even when the managed path and Custom mode are unchanged, and launcher cards bypass the URI image cache when reloading that path.
 
 `MainWindow.RenderGlyphBitmap` preserves the existing Fluent icon tint renderer. Complete emoji
 strings instead go through `Classes/GlyphIconRenderer.cs`, which shapes with DirectWrite and draws

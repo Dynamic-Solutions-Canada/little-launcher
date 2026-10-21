@@ -222,26 +222,9 @@ public sealed partial class WebFlyoutWindow
     }
 
     /// <summary>
-    /// Writes pending bytes only after Confirm, preserving the existing larger automatic icon.
+    /// Writes the exact pending bytes only after Confirm, including a smaller explicit choice.
     /// This synchronous atomic swap keeps the caller's URL check adjacent to model adoption.
     /// </summary>
-    internal static string StorePageIconPreview(string launcherId, PageIconPreview preview)
-    {
-        string path = GetPageIconPath(launcherId);
-        if (preview.Png is { Length: > 0 } bytes && !WouldShrinkIcon(bytes, path))
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            string temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-            try
-            {
-                File.WriteAllBytes(temp, bytes);
-                File.Move(temp, path, overwrite: true);
-            }
-            finally
-            {
-                if (File.Exists(temp)) File.Delete(temp);
-            }
-        }
-        return File.Exists(path) ? path : "";
-    }
+    internal static string StorePageIconPreview(string launcherId, PageIconPreview preview) =>
+        preview.Store(GetPageIconPath(launcherId));
 }

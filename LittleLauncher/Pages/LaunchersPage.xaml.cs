@@ -438,7 +438,13 @@ public sealed partial class LaunchersPage : Page
 
         if (mode == TrayIconModes.Custom && !string.IsNullOrEmpty(launcher.CustomTrayIconPath) && File.Exists(launcher.CustomTrayIconPath))
         {
-            return new Image { Source = new BitmapImage(new Uri(launcher.CustomTrayIconPath)), Width = 16, Height = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+            // Managed page icons can change bytes without changing their persisted path.
+            var bitmap = new BitmapImage
+            {
+                CreateOptions = BitmapCreateOptions.IgnoreImageCache,
+                UriSource = new Uri(launcher.CustomTrayIconPath)
+            };
+            return new Image { Source = bitmap, Width = 16, Height = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
         }
 
         string iconsDir = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcons");

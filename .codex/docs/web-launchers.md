@@ -2643,6 +2643,8 @@ Sizes are measured, not inferred from which path produced them: a page is free t
 refused. Anything unreadable answers "no opinion" rather than blocking, so a launcher can never be
 stranded on an icon nothing may replace.
 
+This safeguard governs background adoption. Confirming Use page icon in the gallery saves the exact preview, including a smaller image, to the same managed path. It explicitly refreshes derived icons even when that path and the Custom mode are unchanged. Opening the chooser reads saved bytes; Retry uses a fresh loaded-page or direct-site fetch, so the preview can differ before confirmation. See [icons.md](icons.md#automatic-page-icon-choice).
+
 ### Three things had to be true before any of it worked
 
 The high-resolution path existed long before it ever ran. Each of these failed silently, and the only

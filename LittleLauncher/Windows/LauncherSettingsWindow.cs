@@ -1073,6 +1073,9 @@ public sealed partial class LauncherSettingsWindow : Window
                     launcher.TrayIconMode = string.IsNullOrEmpty(launcher.CustomTrayIconPath)
                         ? TrayIconModes.Composite
                         : TrayIconModes.Custom;
+                    // Replacing bytes at the same managed path changes neither observable
+                    // property. Refresh derived icons even when the page option was already set.
+                    MainWindow.Current?.UpdateTrayIcon(launcher);
                 }
                 else if (result.Glyph != null)
                 {

@@ -30,11 +30,7 @@ chooser, automatic page-icon adoption, and pin snapshot/lifetime behavior are un
 | **Windows notifications (per launcher)** | `toast-icon-{id}.png` written by `SaveToastIconToAppData(Launcher)` | Yes (per launcher `TrayIconMode`) |
 | **Taskbar jump list task (per entry)** | The item's own `.exe` where it has one, else `JumpListIcons\task-{hash}.ico` rasterised from the item's icon or glyph | Follows the item's own icon |
 
-**A web launcher's icon may never shrink.** `web-favicon-{id}.png` is written both by the browser-tab
-favicon (16-32px, and on some sites it carries unread badges) and by the page's manifest or
-apple-touch-icon (512px+). The favicon path measures both and declines to replace a larger image with
-a smaller one, which is what keeps a pinned launcher sharp and stops its identity changing with an
-unread count. See the web-launchers guide.
+**Background page-icon adoption may never shrink a web launcher's icon.** `web-favicon-{id}.png` is written both by the browser-tab favicon (16-32px, and on some sites it carries unread badges) and by the page's manifest or apple-touch-icon (512px+). The favicon path measures both and declines to replace a larger image with a smaller one, which is what keeps a pinned launcher sharp and stops its identity changing with an unread count. An explicit gallery Confirm instead saves the exact preview, even if it is smaller. See the web-launchers guide.
 
 ## Key Files
 
@@ -591,13 +587,13 @@ last good preview and saved custom icon, with text asking the user to open the l
 in if needed, then retry. No browser is initialized or resumed automatically. The captured
 launcher address/type and open/request generation still gate every result before use.
 
-Confirm first validates the preview's exact launcher address/type, atomically writes pending PNG
-bytes, and restores `web-favicon-{id}.png` directly. The existing larger-icon safeguard still
-applies. Without a saved or fetched raster it restores the empty Composite adoption state so
-the next page load can provide an icon. Never copy that managed file
-into `custom-tray-icon-*`, which would disable subsequent automatic adoption. The settings preview
-refreshes immediately after confirmation. Cancel leaves the chosen custom icon untouched, and
-shortcut/item pickers never show the page option.
+Confirm first validates the preview's exact launcher address/type, then `Classes/PageIconPreview.cs` atomically writes the exact decoded pending bytes to `web-favicon-{id}.png`. Explicit confirmation accepts a smaller image; the larger-icon safeguard applies only to background page adoption. Without a saved or fetched raster it restores the empty Composite adoption state so the next page load can provide an icon. Never copy that managed file into `custom-tray-icon-*`, which would disable subsequent automatic adoption.
+
+The settings preview refreshes immediately after confirmation. The caller explicitly refreshes tray/window/derived icons even when the managed path and Custom mode are unchanged, since those assignments raise no property notifications. The launcher card bypasses the URI image cache when reloading a managed file. Cancel leaves the chosen custom icon untouched, and shortcut/item pickers never show the page option.
+
+`dotnet run --project tests/PageIconChoiceRegression` checks the production choice lifecycle and atomic writer with synthetic smaller transparent and larger opaque PNGs, including Confirm/reload, Cancel, failed Retry, source changes and disposal. Its UI adapters allow Linux execution; actual WinUI decoding and native icon surfaces still require Windows acceptance. See the test README for that checklist.
+
+Native validation on the dedicated WINDOWS-DEV VM passed with the combined clean 1.41.0.4 Developer MSIX and a synthetic localhost fixture: Retry left the opaque 512px saved file unchanged, Confirm persisted the exact transparent 32px PNG, the settings preview and reopened chooser displayed it, and Retry followed by Cancel retained its hash. The coordinator supplied results and screenshots, retained locally in the ignored `.artifacts/native-icon-retry` directory. This validates native settings/chooser decoding and managed-file persistence, not private Outline discovery, app restart, other native icon surfaces, high contrast, accessibility, or native URL/type-change behavior. See `tests/PageIconChoiceRegression/README.md` for the remaining acceptance scope.
 
 ## Restoring and revealing the saved selection
 

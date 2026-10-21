@@ -6,9 +6,6 @@ using global::Windows.Storage.Streams;
 
 namespace LittleLauncher.Classes;
 
-/// <summary>A pending automatic-icon preview, tied to the exact address it was obtained for.</summary>
-internal sealed record PageIconPreview(string Url, byte[]? Png);
-
 /// <summary>Non-mutating preview inputs. IsCurrent rejects an address/type change without starting a browser.</summary>
 internal sealed record PageIconPreviewSource(
     string Url, string CachedPath, Func<CancellationToken, Task<byte[]?>> RetryAsync, Func<bool> IsCurrent);
