@@ -5,7 +5,9 @@ Little Launcher has separate native Windows and Linux hosts. The Windows workflo
 ## Windows prerequisites
 
 - Windows 10/11 (build 22000+)
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [.NET SDK 10.0.403 or a later 10.0.4xx patch](https://dotnet.microsoft.com/download/dotnet/10.0), selected by `global.json` (stable SDKs only).
+
+Builds select the SDK's latest .NET runtime patch, at least 10.0.14, including the NativeAOT shortcut helper and self-contained Store output. Portable builds require that patched shared runtime or later. Explicit runtime overrides below 10.0.14 fail before runtime-pack resolution. See [the build security floor](windows-development.md#net-build-security-floor).
 
 ## Windows build
 

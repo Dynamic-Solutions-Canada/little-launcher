@@ -24,6 +24,16 @@ The policy and implementation are shared, not copied per project. Read the
 
 Use the repository [desktop skill](../.agents/skills/desktop/SKILL.md) for build, verification and installation requests. Build-only requests do not authorize installation. Use `--skip-build` only when explicitly asked to reuse the last package. Report the resulting version, output location, build result and available runtime checks; distinguish checks needing human interaction. Follow [the release workflow](versioning.md) for publishing, leave changes uncommitted unless requested, and never change tracked release versions or package identity for a local build.
 
+## .NET build security floor
+
+`global.json` requires stable SDK 10.0.403 or a later patch in the 10.0.4xx feature band. Both release workflows install that SDK from the same file. The shared Windows bridge copies these root build files into disposable staging, so local builds and the nested NativeAOT publish use the same policy. Install the required SDK on the build machine through its normal maintenance process if it is missing; the build does not install one.
+
+`Directory.Build.props` sets `TargetLatestRuntimePatch=true`. With the selected SDK, this selects runtime 10.0.14 or later for self-contained output and raises the shared runtime requirement in framework-dependent output. `Directory.Build.targets` rejects explicit .NET 10 runtime versions below 10.0.14 and rejects disabling latest-patch selection without an explicit patched runtime. SDK feature-band upgrades should update `global.json` and recheck runtime and NativeAOT compiler-pack versions together.
+
+This floor follows [Microsoft's CVE-2026-111497 advisory](https://github.com/dotnet/runtime/security/advisories/GHSA-p3jp-9v83-76w9). The [v1.41.1 release build](https://github.com/Dynamic-Solutions-Canada/little-launcher/actions/runs/39680937971) used SDK 10.0.402/runtime 10.0.13 for both architectures. Its published x64 NativeAOT helper also contains the 10.0.13 runtime marker. No direct Brotli decompression or automatic HTTP decompression was found in the application source; decoder reachability through shipped binaries and transitive dependencies remains unconfirmed. A patched build floor is not evidence of an exploitable application path or a remediated installed copy.
+
+Rebuild and inspect both x64 and ARM64 portable and Store outputs before distribution. Check shared runtime requirements, embedded runtime packs, and the NativeAOT helper independently. Updating a machine's shared runtime cannot replace code embedded in an existing helper or self-contained package. WebView2's Evergreen runtime is serviced separately from .NET.
+
 ## Existing Fedora build VM
 
 The host now has an existing libvirt qemu:///system domain named windows-dev, with reserved address 192.168.122.77 and key-only SSH alias windows-dev (user ryan). Its administrator key file contains this host's public key, retains restrictive SYSTEM/Administrators ACLs and its original read-only attribute. SSH and its automatic service startup are configured; no password access or new public forwarding was enabled. The VM remains stopped between build jobs to release its 8 GiB RAM. Start it with virsh when needed.

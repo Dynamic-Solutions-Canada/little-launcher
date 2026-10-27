@@ -554,6 +554,8 @@ flattened as the flyout flattens them, or its bookmarks for a web launcher.
 
 ## Distribution
 
+Root `global.json`, `Directory.Build.props`, and `Directory.Build.targets` share the .NET SDK/runtime security floor across the main app, the NativeAOT companion, both release workflows, and disposable Windows build staging. See [the build security floor](windows-development.md#net-build-security-floor) for versions and artifact verification requirements.
+
 The Windows app ships through exactly two channels: the **portable zip** attached to each GitHub release, and the **Microsoft Store MSIX**. A per-user WiX MSI was a third until v1.35.1 and was retired — it re-implemented, less well, what the Store already does (managed install, silent update, clean uninstall), and the portable zip covers everyone who wants to stay off the Store. On Windows, only the Store build installs its own updates; the portable one checks GitHub and links to the release page. The Linux app uses only AppImage, with explicit in-app download, install and restart controls. See [docs/installer.md](installer.md).
 
 ## MSIX packaging

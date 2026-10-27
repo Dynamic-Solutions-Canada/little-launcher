@@ -13,6 +13,11 @@
     <Version>1.42.0</Version>
   </PropertyGroup>
 
+  <!-- CVE-2026-111497: use the patched SDK's runtime for shared and embedded builds. -->
+  <PropertyGroup>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+  </PropertyGroup>
+
   <!--
     Auto-detect the build platform from the OS architecture when no explicit
     Platform is provided (i.e. plain "dotnet build" without -p:Platform=...).

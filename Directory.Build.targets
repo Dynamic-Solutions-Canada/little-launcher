@@ -1,0 +1,11 @@
+<Project>
+  <!-- Keep explicit build overrides from restoring a pre-fix .NET 10 runtime. -->
+  <Target Name="ValidatePatchedRuntime"
+          BeforeTargets="ProcessFrameworkReferences"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' And '$(TargetFrameworkVersion)' == 'v10.0'">
+    <Error Condition="'$(RuntimeFrameworkVersion)' != '' And $([MSBuild]::VersionLessThan('$(RuntimeFrameworkVersion)', '10.0.14'))"
+           Text="CVE-2026-111497 requires .NET runtime 10.0.14 or later. Remove or update RuntimeFrameworkVersion=$(RuntimeFrameworkVersion)." />
+    <Error Condition="'$(RuntimeFrameworkVersion)' == '' And '$(TargetLatestRuntimePatch)' != 'true'"
+           Text="CVE-2026-111497 requires TargetLatestRuntimePatch=true or an explicit patched RuntimeFrameworkVersion (10.0.14 or later)." />
+  </Target>
+</Project>
