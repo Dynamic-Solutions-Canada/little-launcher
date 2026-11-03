@@ -39,7 +39,11 @@ jobs:
         run: |
           image=$(find .artifacts/linux-appimage -maxdepth 1 -name '*.AppImage' -print -quit)
           "$image" --appimage-extract
-          QT_QPA_PLATFORM=offscreen squashfs-root/usr/bin/python3.11 -I -c "import sys;sys.path.insert(0,'squashfs-root/usr/lib/python3.11/site-packages');from PySide6 import QtWidgets,QtNetwork,QtDBus;import dbus_next"
+          # The desktop supplies EGL/GL; the hosted headless runner need not have them.
+          docker run --rm --network none --memory 512m --memory-swap 512m --cpus 1 --pids-limit 128 \
+            --user "$(id -u):$(id -g)" -e QT_QPA_PLATFORM=offscreen \
+            -v "$PWD/squashfs-root:/app:ro" little-launcher-appimage-builder:local \
+            /app/usr/bin/python3.11 -I -c "import sys;sys.path.insert(0,'/app/usr/lib/python3.11/site-packages');from PySide6 import QtWidgets,QtNetwork,QtDBus;import dbus_next"
       - uses: actions/upload-artifact@v4
         with:
           name: Linux-AppImage

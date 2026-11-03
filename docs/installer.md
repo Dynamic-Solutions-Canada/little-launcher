@@ -325,7 +325,7 @@ local development entry point. Never uninstall to bypass a same-version error.
 
 Release discovery and exact asset validation use the canonical `Dynamic-Solutions-Canada/little-launcher` repository after its GitHub transfer. API redirects from the old owner must not leave asset validation expecting the old path. Existing desktop identities, profiles and installed data paths remain stable.
 
-AppImage is the only offered Linux format. `linux/packaging/build.py` builds x64 on Debian 12 (glibc 2.36); the minimum target is Debian 12 / Ubuntu 24.04 LTS or newer. The image bundles private Python 3.11, PySide6-Essentials/Qt 6.11.2, dbus-next, Electron 45, Secret Service and Qt D-Bus client tools, and redistribution notices. Host graphics drivers, glibc and C++ runtime remain external. Source development continues to use distro Qt. A desktop Secret Service wallet is required for OneDrive; tokens never enter the image or settings.
+AppImage is the only offered Linux format. `linux/packaging/build.py` builds x64 on Debian 12 (glibc 2.36); the minimum target is Debian 12 / Ubuntu 24.04 LTS or newer. The image bundles private Python 3.11, PySide6-Essentials/Qt 6.11.2, dbus-next, Electron 45, Secret Service and Qt D-Bus client tools, and redistribution notices. Host graphics drivers, glibc and C++ runtime remain external. CI checks extracted runtime imports in the Debian baseline container, which supplies desktop EGL/GL libraries; the headless GitHub runner itself need not have desktop drivers. Source development continues to use distro Qt. A desktop Secret Service wallet is required for OneDrive; tokens never enter the image or settings.
 
 ```bash
 npm ci --prefix linux/browser
