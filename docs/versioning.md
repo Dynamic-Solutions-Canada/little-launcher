@@ -46,6 +46,8 @@ packaged as portable ZIPs and published against the existing tag without rewriti
 
 Release v1.42.0 publishes Windows portable and Linux AppImage downloads without a Store submission. Its tag is explicitly excluded from `store-publish.yml`; manual Store publication remains available when requested. Other version tags retain their existing Store behavior.
 
+For a clean Electron 45 install, download the engine explicitly with `node linux/browser/node_modules/electron/install.js`; `npm ci` alone installs the lazy-download package. The Linux workflow does this before packaging. To rebuild an existing immutable source tag with repaired CI, manually dispatch `linux-appimage.yml` from the repaired workflow and set `source_ref` to the tag. Verify that source revision and combine its AppImage/checksum with Windows portable outputs built from the same tag before publishing; do not move the release tag.
+
 ## How to release
 
 1. Edit `Directory.Build.props` — change `<Version>X.Y.Z</Version>`

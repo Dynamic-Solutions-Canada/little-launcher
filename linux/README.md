@@ -16,6 +16,7 @@ The isolated development desktop is preferred. It never mounts the host display,
 
 ```bash
 npm ci --prefix linux/browser
+node linux/browser/node_modules/electron/install.js
 linux/dev/launch.sh
 ```
 
@@ -47,6 +48,7 @@ AppImage is the only offered Linux format. `linux/packaging/build.py` builds x64
 
 ```bash
 npm ci --prefix linux/browser
+node linux/browser/node_modules/electron/install.js
 npm run package:linux -- --engine-dir linux/browser/node_modules/electron/dist --output .artifacts/linux-appimage
 chmod +x LittleLauncher-<version>-linux-x64.AppImage
 ./LittleLauncher-<version>-linux-x64.AppImage

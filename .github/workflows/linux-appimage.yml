@@ -2,7 +2,16 @@ name: Linux AppImage
 
 on:
   workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Source tag or commit to build (defaults to the selected ref)'
+        type: string
+        required: false
   workflow_call:
+    inputs:
+      source_ref:
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -12,6 +21,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -19,6 +30,9 @@ jobs:
           cache-dependency-path: linux/browser/package-lock.json
       - name: Fetch the locked Electron engine
         run: npm ci --prefix linux/browser
+      # Electron 45 downloads lazily; packaging reads dist without starting the CLI.
+      - name: Download the locked Electron binary
+        run: node linux/browser/node_modules/electron/install.js
       - name: Build AppImage in the Debian 12 runtime container
         run: npm run package:linux -- --engine-dir linux/browser/node_modules/electron/dist --output .artifacts/linux-appimage
       - name: Verify AppImage extraction and bundled imports
