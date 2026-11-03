@@ -2,6 +2,13 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     >
 
+    <!-- Cross-platform shortcut visibility -->
+    <x:String x:Key="LauncherHiddenOnOperatingSystem">Disabled on Windows: shortcut launcher belongs to another operating system</x:String>
+    <x:String x:Key="LauncherItemsShowOtherOperatingSystems">Show other operating systems</x:String>
+    <x:String x:Key="ShortcutOperatingSystemsLabel">Show on operating systems</x:String>
+    <x:String x:Key="ShortcutOperatingSystemsAutomatic">Automatic</x:String>
+    <x:String x:Key="ShortcutOperatingSystemsAll">All operating systems</x:String>
+
     <!-- General -->
     <x:String x:Key="TitleText">Little Launcher Settings</x:String>
     <x:String x:Key="Enabled">Enabled</x:String>
@@ -141,4 +148,6 @@
     <x:String x:Key="PageIconReady">Page icon ready. Confirm to use it.</x:String>
     <x:String x:Key="PageIconSavedPreview">Saved page icon</x:String>
     <x:String x:Key="PageIconAddressChanged">The launcher address or type changed. Reopen the icon chooser to select its current page icon.</x:String>
+    <x:String x:Key="LauncherEnabledOnDevice">Enabled on this device</x:String>
+    <x:String x:Key="LauncherEnabledOnDeviceDescription">Turn off to close its pages and stop background activity here. Configuration stays in sync.</x:String>
 </ResourceDictionary>

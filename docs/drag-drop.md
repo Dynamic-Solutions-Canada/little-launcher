@@ -1,0 +1,370 @@
+> **Scope:** Use when modifying shared launcher drag-and-drop, edit mode or its window hosts. Covers the custom drag-drop system, cross-list moves, insertion indicators, the edit-mode geometry contract, and known WinUI 3 limitations.
+> **Governs:** `Controls/LauncherItemsView.xaml*`, `Controls/LauncherItemsView.*.cs`, `Controls/ILauncherItemsHost.cs`, `Windows/FlyoutWindow.xaml*`, `Windows/FlyoutWindow.EditMode.cs`, `Windows/FlyoutWindow.ItemsHost.cs`, `Windows/FlyoutWindow.SetupPlacement.cs`, `Windows/LauncherItemsEditorWindow.cs`, `SettingsWindow.ItemEditing.cs`, `Windows/EditToolbarWindow.cs`.
+
+# Launcher Drag-and-Drop & Edit Mode Conventions
+
+All launcher item editing uses `LauncherItemsView`. The former `LauncherItemsPage` remains deleted; add behavior to the shared view rather than building another implementation.
+
+## Why custom drag-drop (not CanReorderItems)
+
+WinUI 3's `CanReorderItems` takes full internal control of `DragOver` and `Drop` events. Its
+built-in handlers evaluate the drag source at a low level and **cannot be reliably overridden**
+— even `AddHandler` with `handledEventsToo` doesn't work consistently. This makes cross-list
+drag-drop (between column lists and group child lists) impossible with `CanReorderItems`.
+
+**Solution:** All ListViews use `CanDragItems="True"` (not `CanReorderItems`) with fully custom
+`DragOver`, `DragLeave`, `Drop`, `DragItemsStarting`, and `DragItemsCompleted` handlers.
+
+**The same rule reaches a second surface.** A web launcher's bookmark bar and its folder lists
+(`WebFlyoutWindow.Bookmarks.cs`, `WebFlyoutWindow.FolderPopup.cs`) move bookmarks between the bar,
+a folder, and a folder inside a folder - which is the cross-collection case above, one type over.
+They reuse this file's shapes rather than inventing others: a Y-midpoint drop index, a drawn caret
+instead of shuffled children, and a tint for "into this one" rather than a caption. Two findings
+from building it are worth knowing before touching either:
+
+- **A `Button` is not a drag source on its own.** It captures the pointer on press for its own click
+  handling, so `CanDrag` never fires - `ListViewBase` is what makes it work for list items.
+  `WireStripDragSource` starts the drag by hand past a threshold, which is also what keeps the click.
+- **A drop target must be in the window's own visual tree.** A `MenuFlyout` cannot host a drag source
+  at all, and a `Popup` renders and clicks perfectly while never receiving a drag - measured, with
+  `DragOver` not firing once. XAML registers the *window* as the drop target. That is why the folder
+  lists are an overlay in the flyout's root grid rather than a popup, at the cost of being clamped to
+  the window. See web-launchers.md.
+
+## Edit mode
+
+Dragging is an **edit-mode-only** affordance. Both `DragItemsStarting` handlers cancel when `_isEditMode` is false. Entry is the hover-revealed pencil overlay; exit is the toolbar's Done button, Escape (first press exits edit mode, second dismisses), or hiding the flyout. Settings-origin editing starts in edit mode in a regular window; its external Done/Escape/close finishes that window, retaining the same immediate-save behavior.
+
+### Geometry contract
+
+Tray placement recognizes reserved left/right taskbar strips before checking top/bottom
+proximity. Side taskbars place the flyout beside the taskbar and vertically centered on the
+invocation point, clamped to the monitor work area. Top/bottom taskbars and interior overflow
+popup clicks retain their existing below/above placement. Web flyouts follow the same rule.
+
+Edit mode may grow the flyout's **height**. It must never change its **width**, or the size of
+any item or group.
+
+- In the native popup, the **toolbar floats in its own window** (`EditToolbarWindow`) above the flyout, so it contributes no height at all and cannot crowd the launcher's content. It is `WS_EX_NOACTIVATE` so clicking it does not steal focus, and the flyout drops its always-on-top flag while an owned editor is open; ownership alone does not beat a topmost owner. Keep its right edge aligned with the launcher, subject to the existing monitor work-area clamp. Reposition it **after** the flyout settles: `ResizeWindowToCurrentContent` moves the window with `SWP_ASYNCWINDOWPOS`, so reading its rect immediately returns the *old* bounds.
+- The native popup **edit-mode border tint** uses the DWM border colour (`DWMWA_BORDER_COLOR`), not a XAML border; a `BorderThickness` on `RootGrid` would inset the content.
+- `GetFlyoutWidth()` sums column widths arithmetically and never measures laid-out content, so anything wider than it is **clipped**. In list mode the column width itself comes from `ComputeListColumnWidth()`, which measures label *strings* (see "Sizing a list column" below). That is a different thing from measuring the tree, and the only input to the arithmetic that is not known up front.
+- Per-column headers and the empty-launcher placeholder *do* add height, and both are counted in the arithmetic (`CurrentColumnHeaderHeight`, `CurrentEmptyPlaceholderHeight`). Anything that reserves space must be added there, or the content overflows the window; an empty column's drop-target `MinHeight` is skipped when the whole launcher is empty precisely because only the placeholder is accounted for.
+- Per-item/group affordances must be **non-reflowing**: keep container styling background-only and draw outlines/carets in the independent RootGrid overlay plane. A border on the item container changes layout; compensating with negative padding works only when that container already has padding to give back, which the icon-mode style does not.
+- Empty groups get a `MinHeight` drop target in edit mode. This grows height only. In icon mode it costs nothing extra: `MeasureIconModeHeight` already reserves one row for an empty group via `Math.Max(1, …)`.
+
+### Shared view and window hosts
+
+`Controls/LauncherItemsView.xaml` owns the item templates and exact launcher layout for both `FlyoutWindow` and `LauncherItemsEditorWindow`. Its rendering, editing, drag/drop and external-drop partials share the same item/column/group state and immediate persistence. `ILauncherItemsHost` keeps native placement, modal ownership, completion and resize policy outside that view. Each host has its own view instance; do not transfer live visuals across XamlRoots or duplicate the renderer.
+
+Native Done calls RestoreFlyoutActivation after ending edit mode and hiding the non-activating floating toolbar. An editor can survive switching to another application, and a Done click on WS_EX_NOACTIVATE does not reactivate its owner. Without restoration, the already-inactive popup cannot emit another deactivation when the user clicks away and remains stuck open. This native-host policy does not apply to regular Done, which closes the editor. Regression coverage includes direct toolbar return and body return before Done, followed by a physical foreign-window click.
+
+Settings cards open `LauncherItemsEditorWindow`, a normal owned Mica window matching `LauncherSettingsWindow`: shared title bar, application icon/theme, 24-DIP body padding and an external accent Done button. The shared toolbar is inside that window, above a two-axis viewport. Its three regular add buttons show icons and labels and wrap naturally in a finite Star column. A separate Auto column pins the compact settings icon at the top right with the existing localized tooltip and accessible name. The regular presenter stretches across the padded body and supplies the whole viewport width; the native popup keeps its five compact fixed slots and Done. The launcher retains its intrinsic item/column geometry and scrolls when larger than the viewport. The regular host wraps only the intrinsic preview in a subdued themed fill/neutral 1-DIP outline. That Border sits outside the view dimensions and adds only its stroke to the scroll extent; it must never become a border on RootGrid, stretch across the viewport, change item dimensions or alter local drop coordinates. There is no blue outer edit outline in this host. Changes save immediately; Done, Escape and close finish editing. Minimize and app switching retain the editor. Main Settings navigation/cards remain normal behind it, without a quiet surface or scrim.
+
+One regular editor may be open per launcher, with independent windows allowed for different launchers. Reopening the same launcher from Settings, tray or taskbar focuses its editor or active owned dialog. A native edit session is ended and parked before a regular editor opens. Native tray editing otherwise retains its popup, blue DWM border, separate floating toolbar and animation. Item, group-name and launcher-settings dialogs keep their existing owned-window implementations; the regular editor's HWND owns them and its disabled Control scope covers keyboard and pointer input until the dialog closes. Closing the editor or its Settings owner closes its owned dialog, invalidates pending session work and releases shared-view registrations before native destruction.
+
+New shortcut launchers use this same regular editor after launcher settings close. Its initial centre and monitor come from the actual captured setup-window rectangle, clamped to the work area with that monitor's DPI; the surviving Main Settings window owns it. This placement is transient. Web launchers still skip item editing.
+
+The primary **Items** row opens that regular editor directly. Its independent sibling **…** button contains only export, import and bookmark import. Read-only subscribers cannot edit/import, but the secondary button stays enabled for export.
+
+`ThemeManager` updates all open regular item editors. `FlyoutWindow.InvalidateItems` remains the compatibility entry point for icon/import/sync changes and refreshes every registered shared view plus the composite tray icons. Dispose removes the view registration and hover/container state.
+
+External payload reads capture the edit-session generation and resolve their insertion position before awaiting. They always complete the drag deferral, and reject a closed session or a derived target discarded during rebuilding. Once insertion has saved, enrichment remains valid after Done: persist and invalidate only live item launchers still holding those item objects, including a new destination after a move. Removed/replaced items and deleted/web launchers trigger no stale save. Keep structural edits flushing from `_launcher.Items`, and reorder edits flushing from derived columns. Late item-dialog results cannot act on an ended session; a closed item dialog also checks its lifetime before committing an awaited website title.
+
+The native popup still supports an optional transient setup anchor through `FlyoutWindow.SetupPlacement.cs`; current Settings-origin setup uses the regular editor instead. Its normal openings clear native setup state. Floating-toolbar repositioning remains dispatched after asynchronous native resizing and uses the popup owner's DPI.
+
+### Height measurement
+
+`LauncherItemsView.MeasureContentHeight` / `MeasureIconModeHeight` compute intrinsic height **arithmetically**. The regular editor sets that exact extent inside its viewport; only the native host clamps height to the monitor. This separation must not change item geometry. Arithmetic is also required because forcing a layout pass on a window hidden via `ShowWindow(SW_HIDE)` while another WinUI 3 window is active causes a fatal `ExecutionEngineException`. Do not "fix" this by calling `UpdateLayout()`.
+
+> The flyout is no longer hidden at all — dismissing it now parks it off the virtual screen
+> (`ParkOffScreen`, see `docs/architecture.md`) so its composition surfaces survive. That removes the
+> crash *hazard*, but the arithmetic stays: the reasons below are about correctness, not the
+> crash, and a dismissed window is still the wrong thing to measure.
+
+**Compute, don't measure.** Three separate height bugs came from measuring: a "learned" chrome
+constant that fed its own output back into the arithmetic and grew without bound; a
+`ContentStack` measure taken straight after a rebuild, before the new containers were laid out;
+and a double-counted margin (`DesiredSize` already includes the element's own margin). Edit
+chrome heights are now derived from geometry that is known up front — toolbar rows × slot,
+header height × 1.
+
+### Sizing a list column
+
+List columns used to be a flat 175px each, which a column of one-word shortcuts spent mostly on
+nothing. `ComputeListColumnWidth()` now sizes them to the longest label the launcher holds, capped
+at `MaxListColumnWidth` (that same 175, so nothing is ever wider than it used to be) and floored at
+`MinListColumnWidth`.
+
+- **One width for all of them.** Columns of differing widths read as a broken table, and the flyout
+  has no column rules to make ragged edges look deliberate.
+- **This measures a string, not a tree.** `MeasureLabelWidth` sets text on `LabelMeasure` (a
+  `TextBlock` parked in a zero-sized `Canvas` in the flyout's own tree, so it resolves the same
+  font, theme and scale the real rows do) and reads its `DesiredSize`. Nothing reads a
+  *container's* size, so no result can feed back into the geometry that produced it, which is the
+  failure the rule above is about.
+- **The chrome around a label is a constant, not a measurement.** `ListItemChromeWidth`,
+  `ListGroupHeaderChromeWidth` and `LauncherTitleChromeWidth` mirror padding and margins that live
+  in the XAML; each of those three places carries a comment pointing back at its constant.
+- **The answer is cached in `_listColumnWidth`, decided once per rebuild.** Two things have to
+  agree on it: the columns (`CreateColumnListView`) and the window sized around them
+  (`GetFlyoutWidth`), the second of which is read before the flyout has ever been laid out.
+- **A measurement of zero means "no answer", never "no width".** The first rebuild runs from the
+  constructor, where a `TextBlock` has nothing to lay text out against; that pass keeps the full
+  width, and `RootGrid_Loaded` retakes it once and unhooks itself. The parked window's own size
+  does not matter, because every `Toggle` resizes from `GetFlyoutWidth()`.
+- **An empty launcher keeps the full width** for the same reason: nothing to measure is not a
+  reason to shrink, and the empty-state placeholder is sized against the flyout it sits in.
+
+Where a real measurement genuinely is needed, take it **after layout**, never during
+construction or mid-animation. `LauncherSettingsWindow` sizes itself on `Loaded` for this
+reason; sizing during the constructor read a `DesiredSize` of zero and produced a full-height
+window. Likewise, entering edit mode from the settings app waits out the open animation:
+`ShowAnimated` drives geometry on a rendering loop, and a resize partway through is overwritten
+by the animation's next frame.
+
+## Source of truth
+
+`_launcher.Items` is authoritative. `_columnLists` is a **derived view**, rebuilt from the flat
+list by `BuildColumnLists()`.
+
+| Operation | Mutates | Persists via |
+|---|---|---|
+| Add / remove / rename | `_launcher.Items` (or `group.Children`) | `PersistStructuralChange()` |
+| Drag reorder | `_columnLists` | `PersistFlyoutReorder()` |
+
+**Critical:** `PersistStructuralChange()` must **not** call `SyncColumnsToFlatList()`. That
+method clears `_launcher.Items` and regenerates it from `_columnLists`, so calling it after a
+structural edit resurrects anything just removed — this is exactly how remove was once broken.
+Drag-drop is the opposite case and must flush the other way.
+
+Cross-launcher Move to actions accept only live, writable item launchers, excluding web launchers and read-only subscribers. Check that policy when constructing the menu and again before removing the source item. Resolve the current source collection by item identity; an invalid destination or missing source aborts without mutation or persistence.
+
+**Identity matters as much as content.** Every operation in the table finds a row's item **by
+reference** (`FindParentCollection`), and `_columnLists` holds the very objects that were in
+`_launcher.Items` when the panel was last built. Anything that swaps those objects for
+equal-valued copies breaks all of them at once: remove, move up/down, move to and edit find no
+parent and return silently, and a drag reorder flushes the stale set back over whatever replaced
+it. A sync download used to do exactly that on every tick, which disabled item editing in every
+flyout until the app was restarted; see [sync.md](sync.md) for the guard that stops it.
+`FindParentCollection` logs a warning when a row's item is missing, because the only other
+symptom is a menu entry that does nothing.
+
+## Architecture
+
+### Multi-column layout
+
+The flat `Items` collection is split at `IsColumnBreak` sentinel items into per-column
+`ObservableCollection<LauncherItem>` lists. Each column gets its own `ListView` (list mode) or
+`GridView` (icon mode) created in `CreateColumnListView()`.
+
+`BuildColumnContainer` binds its wrapper Width one way to the list/grid Width, keeping captions within the arithmetic item-column width while following density changes and initial list-label sizing. Keep the Auto header/Star content rows and stretched list so empty column space remains a drop target. Column captions and real group names stay visible with native ellipsis; `ConditionalNameToolTip` targets each caption itself and offers the full text only when actually trimmed.
+
+### Synthetic groups
+
+In icon mode, consecutive ungrouped items are wrapped into **ephemeral** groups
+(`WrapUngroupedItemsIntoSyntheticGroups`) so loose icons pack into a wrapping grid. These are
+tracked in `_syntheticGroups`, unwrapped again by `SyncColumnsToFlatList()`, and must **never**
+be renamed, removed, reordered, or persisted. Guard with `IsEditableGroup(item)`.
+
+### Drag surfaces
+
+| Surface | Tag | Source collection | Notes |
+|---|---|---|---|
+| Column items | column index (`int`) | `_columnLists[idx]` | Cross-column drag-drop |
+| Group children | the group `LauncherItem` | `group.Children` or owning column | Real-group interior inserts into children; outer bands insert siblings; whole groups use column midpoint reordering (no nesting) |
+
+### Shared state fields
+
+- `_dragItem` — the `LauncherItem` being dragged
+- `_dragSourceCollection` — the collection it came from
+- `_dragToken` identifies the current internal DataPackage; rebuilt/cancelled packages stay distinguishable from external imports.
+- `_insertionIndicator` is a passive RootGrid overlay with no retained target-container state.
+
+### Drop index calculation
+
+`LauncherItemsView.DropTargets.cs` resolves nested-list and header events against the same full-group container bounds on DragOver and Drop. `LauncherDropGeometry` classifies up to eight DIPs at the outer top/bottom as before/after siblings, capped to one quarter of a short group's height so an interior remains available. The real-group interior targets its child list and retains precise child insertion; a header drop appends inside. Synthetic wrappers keep their ordinary child-grid targets and do not gain visible group zones. Whole-group drags retain their existing column midpoint policy and cannot nest. Both internal moves and external payloads use this resolver; external insertion resolves before awaiting payload reads.
+
+`GetDropIndex(ListViewBase, DragEventArgs)` dispatches to `GetDropIndexGrid` when the panel is
+an `ItemsWrapGrid` or `PackedIconPanel` (row-band hit test, then X-midpoint); otherwise it scans
+Y-midpoints.
+
+**Critical:** When reordering within the same collection, removing the dragged item shifts
+subsequent items up by one. The drop handlers must adjust: if the original index was before the
+drop index, decrement `dropIndex` by 1 after removal. This applies to both
+`ColumnListView_Drop` and `GroupChildList_Drop`.
+
+## External drops (Explorer, desktop, Start Menu, browsers)
+
+`LauncherItemsView.ExternalDrop.cs` accepts drags that did **not** start inside the flyout, turning files, shortcuts and links into new items. `Services/DroppedItemFactory.cs` does the payload → `LauncherItem` mapping.
+
+**Routing:** every per-list `DragOver`/`Drop` handler treats `_dragItem == null` as "this drag
+came from outside" and forwards to `ExternalDragOver` / `ExternalDrop`. There is no separate
+event wiring for the lists — the same `AllowDrop` surfaces serve both.
+
+`RootGrid` has its own `AllowDrop` + `RootGrid_DragOver` / `RootGrid_Drop`. It is not redundant:
+an **empty launcher has no list big enough to hit**, since the empty-column `MinHeight` drop
+target is skipped when the whole launcher is empty. Root handlers reject stale internal tokens, clear old group/caret feedback and reject internal moves that missed every list. Only external payloads may append there; lists mark their accepted events handled.
+
+**Edit-mode-only, for a load-bearing reason.** The flyout dismisses on `Deactivated`, so outside
+edit mode it is already gone by the time the user has switched to Explorer to pick something up.
+`SuppressDismiss` is what makes it a drop target at all.
+
+**Persist direction matters** — the same trap as everywhere else in this file:
+
+| Drop lands on | Target collection | Persist via |
+|---|---|---|
+| A column or group list | `_columnLists[i]` / `group.Children` (derived) | `PersistFlyoutReorder()` |
+| Flyout empty space | `_launcher.Items` (source of truth) | `PersistStructuralChange()` |
+
+Using `PersistFlyoutReorder` for the root case would regenerate the flat list from column lists
+built *before* the drop and silently discard the new items.
+
+**Deferral and ordering.** `Drop` is synchronous but reading the payload is not, so it takes an
+`e.GetDeferral()`. Two rules: resolve `GetDropIndex` **before** going async (`e.GetPosition` is
+only meaningful while the event is on the stack), and complete the deferral as soon as the
+payload is read — Explorer spins its drag loop until then. Website titles and icons are fetched
+*after* the deferral completes and after the items are already visible, then persisted again;
+`LauncherItem` is observable, so they fill in live.
+
+**Payload mapping** (`DroppedItemFactory`):
+
+| Dropped | Becomes |
+|---|---|
+| `.lnk` | The resolved target + its arguments, so it matches the same app picked from the item editor and survives the shortcut being deleted. Unresolvable shortcuts (Store apps, control-panel targets) keep the `.lnk`, which still shell-executes. |
+| `.url` | A website item; the filename wins over the page `<title>`, since the user named it. |
+| `.exe` / `.com` / `.bat` / `.cmd` | An application item, named from the exe's product name. |
+| Folder | An application item launched through `explorer.exe`. |
+| Any other file | An application item launched via `ShellExecute`. |
+| Browser link or tab | A website item named from the page title (host until the fetch lands). |
+
+**The Windows 11 Start Menu cannot be a drag source here — confirmed, not assumed.** Its data
+package carries no `StorageItems` at all (not even for plain Win32 apps): the shell item lives in
+the `Shell IDList Array` clipboard format, which WinUI 3's `DataPackageView` does not surface.
+All that reaches `DataPackageView` is the app's *name* as text.
+
+This is why `CanAccept` refuses text-only payloads. An earlier version accepted them, and the
+result was the worst possible behaviour: Start Menu drags showed a confident "Add to launcher"
+drop cursor and then silently added nothing. **A drop cursor is a promise — do not accept a
+format you cannot turn into an item.** `CreateItemsAsync` still reads text as a *fallback* for a
+source that advertises a web link but fails to produce it; text alone never triggers acceptance.
+
+Dragging from `%AppData%\Microsoft\Windows\Start Menu\Programs` in an Explorer window works
+fine — those are real `.lnk` files. Supporting the Start Menu itself needs the raw OLE
+`IDataObject`, below the XAML layer.
+
+Icon fetching goes through `FaviconService.FetchMissingItemIconsAsync` like every other import
+path — see [icons.md](icons.md). Do not add a parallel fetch here.
+
+## Visual feedback
+
+`ShowInsertionIndicator(ListViewBase, int)` draws a themed accent caret in the RootGrid overlay plane. List boundaries use a horizontal line; icon-grid boundaries use a vertical line unless the position starts or wraps onto a new row. Empty columns use an outline over their existing bounds; empty real groups use an inset child caret. None changes list/container BorderThickness, Padding or Margin. The old compensated border could reflow zero-padding icon cells by 3 DIPs, moving hit-test midpoints while dragging. Clear the overlay on leave, rejection, completion, rebuild and close.
+
+Receiving a child tints the full real group with a low-opacity themed accent fill and draws its child caret inset from the group edges. High contrast uses a transparent fill and explicit system highlight outline. A sibling drop has no group tint and uses a full-width caret at the exact outer top/bottom boundary, even when its event came through a child list. The live hint explicitly names before/after the group or inside the group. At the end of a nonempty real group, the receiving overlay adds a vertical theme gradient over only the final child. Most of the child stays clear, then progressively fades toward an inset horizontal marker overlapping its lower area. Paint the receiving fill first, the gradient second and the transparent full-group outline last, so the fade never covers the group boundary. The inset marker remains in the higher caret plane. Child Opacity, native drag-source visuals and local layout/input values are untouched; clearing the overlay restores the exact child presentation. High contrast makes the scrim transparent while retaining the inset marker, system outline and caption. After-group feedback has no receiving tint or fade and places its full-width line outside the normal group bottom. Empty groups retain their inset marker without fading a nonexistent child. Tint, fade and caret share cleanup on leave, rejection, drop, cancellation, rebuild and disposal. They remain non-hit-testable overlays and never mutate child/template geometry. No expansion slot or model placeholder is used.
+
+`LauncherItemsView.DragPreview.cs` renders a mode-sized identity body: small icons use 128x28 DIPs for an item or 136x36 for a group, list uses 156x32 or 156x40, and large icons use 176x44. The group retains its name and count. A separate 20-DIP destination-hint row sits above a 4-DIP gap in the same bitmap, because DragUIOverride exposes no native caption-position property. Normal feedback hides the native caption and glyph. Render failure restores the current native caption/glyph only when the same token and feedback version are still live; rejection uses Cannot move here, never an old allowed hint. That failure fallback has OS-controlled placement.
+
+Normal in-tree layout in a zero-size, off-content Canvas preserves the launcher extent; never snapshot a tall group or force UpdateLayout. Cache by caption and mode, rerendering only when that key changes. Async DragOver feedback uses a one-second cancellation/wait bound and completes every deferral. Departures, newer feedback, rebuild, close and cancellation invalidate application and fallback through token/version guards. Only one current bitmap is retained; cancelled render results are disposed when they finish. ListView's CanDragItems gesture remains native and exposes no source DragUI, so this override applies over the shared view's targets; elsewhere the native image remains.
+
+`LauncherItemReorder` owns move validation and column flattening without window dependencies. Validate exact source membership and current derived source/target collections before mutation. Reject sentinels, synthetic wrappers themselves, duplicate destination membership and nested groups. Same-list moves adjust the pre-removal insertion index once and use Collection.Move; a no-op does not save or rebuild. The caller rechecks edit/read-only state. Rebuilding clears the active token and drag state before replacing columns; the old DataPackage is rejected rather than reclassified as an external drop.
+
+Whole-group drags over a group's child body route to its owning column's reorder handler, using the existing whole-container midpoint policy and before/after caret. This broadens the usable target beyond the header while still forbidding nesting. Item drags over the interior insert into the group's children; its outer bands instead insert a sibling. Keep DragOver and Drop routing identical.
+
+## Container item lookup
+
+These lists are populated via `ItemsSource`, which puts the item in each container's
+**`Content`** and leaves `DataContext` **null**. Use `GetContainerItem(container)` (Content
+first, DataContext as fallback) — checking `DataContext` silently rejects every item. Always
+re-read on each event rather than capturing, since containers are recycled.
+
+## Pointer events
+
+`LauncherItemsView.Hover.cs` owns the passive drag/edit cues shared by both hosts. A six-dot grip leads each row/header and the pencil trails it; large-icon tiles use top corners and 40-DIP tiles use compact opposite corners. Cues have rounded translucent theme scrims and accent glyphs without per-cue strokes; high contrast uses opaque system window/text colors. Hovering a real group's header/empty space outlines the whole group in a separate non-hit-testable overlay, while its cues remain inside the header. Hovering a child replaces the group outline with that child's cues.
+
+The three real-group headers use shared GroupHeaderStyle. Transparent Background plus 8,4,8,4 Padding preserve the old outer-margin/text geometry and make the entire drawn header a native hit target, including the passive pencil area. An unpainted Grid and trimmed label leave that area without ink, so the visual pencil can otherwise miss ItemClick. Keep the overlay passive and route through the existing group rename command, without adding a button or changing pointer Handled.
+
+List/header labels temporarily reserve cue space through margins, retaining native ellipsis and actual-trimming tooltips; restore their original local Margin on pointer exit, recycling, unload, rebuild and close. The overlay is not hit-testable or an accessibility control: the entire item retains its click-to-edit and drag behavior, conditional name tooltip and native drag threshold. Read-only items, synthetic groups and column breaks do not gain a cue. Keep decoration outside item templates and layout arithmetic; do not introduce handle-only dragging or a competing tooltip.
+
+Entry and movement share the same innermost-wired-container resolver, so moving from a child back to its header restores group scope without letting the parent steal child hover. Never change Handled in any hover handler. WinUI can reuse native pointer arguments across an enter and the following press; handling the enter can cause ListViewItem to skip pointer capture and never arm its drag gesture. A native VM A/B test reproduced the failure and restored capture, drag start and saved reordering by removing only that handled mutation. Root PointerExited hides only when the pointer actually leaves RootGrid, not on every bubbled child exit. Detach recovery handlers with existing container wiring on rebuild/dispose.
+
+
+`ListViewItem` marks `PointerMoved` as **handled** for its own hover visuals, so a handler
+attached to `RootGrid` never fires over an actual item — only over empty space. Attach hover
+handlers to the **containers** (via `ContainerContentChanging`, plus an immediate pass over
+`ContainerFromIndex` for already-realised ones). In nested lists, resolve the innermost wired container from OriginalSource and let only that container claim hover. Never set `e.Handled` for hover priority, because native enter state can affect the following press and prevent drag capture.
+
+## Common pitfalls
+
+1. **Never use `CanReorderItems`** for ListViews that need cross-list drag-drop.
+2. **Always adjust drop index** when removing from the same collection before inserting.
+3. **`RebuildColumnsPanel()` re-creates all containers** — any visual state must be model-backed
+   or re-applied in `Loaded` / `ContainerContentChanging`.
+4. **Groups cannot be dropped into other groups**; whole-group drags over a child list route to the enclosing column for before/after reorder.
+5. **Never persist synthetic groups.**
+6. **Never call `SettingsManager.SaveSettings()` alone** for an item change — always pair it with
+   `AutoSyncService.NotifyItemsChanged()` (use `PersistFlyoutItemChanges` / `PersistFlyoutReorder`),
+   or a periodic sync download will silently revert the edit.
+7. **Column breaks are invisible** — they exist only as sentinel items in the flat list.
+8. **`_dragItem == null` without an internal DataPackage marker means an external drag**, not a bug; don't "fix" a drag handler by
+   early-returning on it without routing to the external-drop path.
+9. **Anything that tracks realised containers in a field must be cleared on rebuild.** The
+   `FlyoutWindow` instances are **permanent** (one per launcher in the static `_instances`
+   map), so a per-container collection that only ever grows pins every container — and its
+   native composition surface — for the life of the app. `_hoverWiredContainers` did exactly
+   this and leaked gigabytes over a day (the periodic auto-sync rebuilds the flyout every few
+   minutes). `RebuildColumnsPanel` now calls `ClearHoverWiring()` alongside
+   `_editStyledContainers.Clear()` / `_loadedIconChildLists.Clear()`; detach the pointer
+   handlers too, not just clear the set, so the WinRT event registrations release as well.
+
+## Regression checks
+
+Run `dotnet run --project tests/LauncherItemReorder.Tests` with .NET 10, or use the Docker command in that directory's README. The console runner links the real LauncherItem model and production move/flatten policy. Cases cover same/cross-column moves, group membership and identity, exact outer-band thresholds and invalid group geometry, distinct inside-versus-sibling persistence, end-marker containment and invalid last-child dimensions, invalid nesting, synthetic wrappers, stale sources/targets, mutation-free validation, no-ops, clamped indices and save/reload ordering. Native pointer routing, drag cancellation, preview rendering, layout stability and themes require the actual Windows hosts; policy checks are not native acceptance.
+
+The repeatable native suite is `tests/native-drag/native-drag-suite.ps1`, launched by its consoleless `run-hidden.py` executor. Read [the native suite README](../tests/native-drag/README.md) before running it. Defaults are the regular host, dark theme and all three modes. Both hosts use the verified physical companion deployed by the app: regular setup explicitly opens App Settings before navigation, while HostMode=native invokes edit-items directly. Theme=1 selects light. Cancellation holds Escape before and through mouse release, records both held keys and releases Escape in finally. The suite verifies ordering/inventory/no nesting, saved column boundaries and unchanged target UIA bounds during the held insertion cue. Each run requires the named disposable computer and explicit desktop-interaction opt-in, preserves/restores prior settings, and records package/runtime versions and screenshots. Native pointer movement is injected rather than relocating only the cursor, and the executor must not create an activating console. Screenshot review, high contrast, accessibility and lifetime/sync cases remain separate acceptance work.
+
+The optional follow-up native cases in interaction-cases.ps1 cover actual group-pencil taps, changing preview targets and cancellation, and foreign-window return/Done/dismissal for both hosts. Group-boundary cases additionally cross inside/after/inside targets, compare receiver/last-child/following-group bounds at each waypoint and two held samples, and assert saved items remain unchanged before Drop. Their leave/cancel checks review fade cleanup and retain exact geometry restoration. The default eight drag cases remain stable. Follow the native README for expected geometry, isolated Notepad ownership, historical and current qualification, and manual screenshot limits.
+
+
+## OS visibility and authoritative editor collections
+
+Operating-system ownership now belongs to the whole shortcut launcher through `Launcher.Platform`. Per-item eligibility, foreign-row container collapse, editor toggles and `LauncherItemVisibility.Project` were removed. Supported launchers always render/edit their complete original item/group/column collections; source paths and drag ownership remain unchanged. Foreign launchers are disabled in the launcher list and do not enter item editing. Legacy per-item metadata remains untouched in saved documents, with no runtime meaning.
+
+## Linux shortcut layout and editing
+
+The Qt host follows the same geometry contract: list rows 32 pixels with 48 pixels of label chrome, large cells 80 × 84 with a 48-pixel icon row and two-line 72-pixel label, small cells 40 × 40, plain group headers 24/30 pixels, intrinsic column widths and outer 8-pixel padding. `linux/little_launcher/item_geometry.py` owns those calculations independently of Qt; both hosts consume the same placements. Native palette/style drawing supplies the surface and hover treatment. Normal and editing cells keep identical sizes. Only edit-only column headers add height.
+
+`ItemEditingSession` owns immediate full-source saves, source-path identity, stale-dialog checks and moves. `ItemDrag` rejects foreign or pre-rebuild tokens. `ItemDropArea` lets empty columns, group bodies and blank column tails receive moves without adding visible or reflowing chrome. Group header interiors accept children; header edges reorder beside the group. The regular editor retains a compact intrinsic preview inside its viewport, native labelled actions at natural widths, a separate settings control and an external Done. The flyout enters edit mode in place, with a five-action owned compact toolbar. KWin positions that toolbar against its owner and preserves owner focus; size changes retain the original tray edge. Done restores normal mode, Escape first exits editing, and a Settings-origin editor parks the corresponding flyout. Existing regular editors are reused. Add/rename group uses the 400 × 168 single-name prompt shape from TextPromptWindow, with native dialog controls and ownership.
+
+`linux/dev/preview_shortcut_layout.py` provides isolated KDE scenarios for each mode and host. Retained evidence includes actual group and empty-column drags with hidden metadata preserved, native group creation, compositor toolbar/focus geometry, and Done returning to the same flyout. These are Linux runtime checks against Windows source contracts; they do not replace Windows native verification or physical-user visual acceptance.
+
+Linux item context menus now include Move to for top level, real groups and other writable shortcut launchers. Cross-launcher moves use a single full-document transaction and recheck destination kind/read-only policy. View-bound command guards reject pre-rebuild menu paths, and hidden rows/unknown metadata remain authoritative throughout. External drops and the full Windows drag preview/resize interaction remain listed gaps in [the UI parity review](linux-ui-parity.md).
+
+The native Linux shortcut host marks editing and owned interactions with the protocol's `:owned` suffix. KWin uses that to exempt edit sessions, menus and owned settings from compositor fallback dismissal. Initial native shortcut mapping receives focus once, while subsequent geometry/focus transitions never reposition it. Ordinary foreign activation can dismiss through either Qt deactivation or KWin; the private separate-process fixture covers normal dismissal and edit persistence, with physical-session acceptance still pending.
+
+Linux groups now use real `ItemGroup` widget parenting and full bounds from `GroupPlacement`, rather than independently laid-out heading/child cells. `group_drop_zone` matches Windows' up-to8px top/bottom sibling bands; interior points resolve children or append. Whole-group drags use the receiving group's full midpoint, preserving no-nesting. Every header/child/blank-area drop goes through that same resolver. Passive overlays outline whole hovered/dragged groups, tint membership targets and show distinct sibling/inset-end cues without changing layout. Header/blank-space handles carry the entire saved group. The bounded identity card names it and its saved child count; dynamic native-caption replacement remains unsupported in the verified Wayland runtime and is explicitly tracked.
+
+The native Done path also publishes a one-shot focus request, preserving owned state until activation is acknowledged, so a non-activating toolbar can restore an editor that survived an app switch. The compositor applies it without repositioning. A private real-input test verifies Done leaves the same flyout visible/active, followed by an outside click hiding it. Group drag verification runs all three modes in both hosts with full hidden metadata preserved and compositor-derived input coordinates.
+
+
+## Linux web strip moves
+
+Trusted local chrome owns one internal drag session for a tab or root bookmark. Only its dragstart establishes ownership; an external matching MIME marker is insufficient. Toolbar state is deferred during the drag so DOM rebuilds cannot detach the source mid-operation. Root bookmarks resolve through full source paths and tree revisions in `browser/strip_drag.cjs`; `BookmarkActions` rechecks the saved preimage/read-only policy before `BookmarkTree.reorder`. Both collection references are resolved before removing the source, preserving hidden rows and destinations whose root index changes. Folder/self/descendant moves are rejected. Root edge drops reorder and folder-interior drops append; native folder/overflow overlays and cross-window drags remain unfinished.
+
+Tab reorder resolves live IDs and retains the active page/view, then publishes device-local session order. Renderer drag-event checks exercise tab moves, correct source paths after an undisplayed bookmark, folder drops and foreign-marker rejection. These are isolated-engine checks and do not claim physical pointer or cross-window acceptance. Native external shortcut drops are described below.
+
+## Linux external shortcut drops
+
+`external_drop.py` accepts bounded standard URI lists or one HTTP(S) text URL only on existing native drop surfaces. Internal MIME ownership stays with `ItemDrag`; a foreign/stale internal marker cannot become an external import. The shared source-path/group geometry chooses siblings, children or column ends. Feedback reuses passive overlays without enabling them as new drop targets. `ItemEditingSession.add_external` rechecks the full source/read-only preimage, preserves hidden/unknown metadata and performs one transaction. Local files are Linux-only references; URLs remain portable. Accept only Copy or Link, never Move; nothing is executed or deleted at drop.
+
+`dev/verify_external_drop.py` uses an actual native source window and compositor pointer drag proposing Move, asserts Copy is returned, and checks source bytes and hidden metadata. The existing six group-drag modes/hosts run afterward to ensure external handling did not disturb internal routing.
+
+## Linux bookmark folder and overflow overlays
+
+`browser/bookmark_overlay.cjs` adds a separate trusted local native view above the page so drag targets are in the launcher, rather than desktop menus. Both local renderers load `bookmark_drag.js`; a host-established token/version/source path allows a drag across their native boundary. A native source dragend can race the target renderer's drop IPC;250ms deferred teardown retains that session long enough for the measured crossing, while new start/close cancels it. Never infer ownership from external MIME data alone. `strip_drag.cjs` accepts full nested source paths and still resolves the complete saved collection, including hidden rows. Native mutation guards remain authoritative. Folder/overflow lists support before/after/inside/empty destinations. Cross-window dragging is not implemented.
+
+`dev/verify_bookmark_overlay.cjs` checks actual KDE pointer movement from the bar into a nested folder, exact path preservation, empty/nested/overflow rendering, folder-to-bar dispatch, foreign-token rejection, read-only disabling, stale-tree close and unchanged remote page identity. The compositor screenshot includes the page behind the overlay; BrowserWindow.capturePage alone does not capture native child views.
+
+### Native Linux icon-grid edge resizing
+
+`item_resize.py` adds editing-only8px left/right grips to the shared native view for large/compact icon modes. Native horizontal resize cursors and tooltips identify them. The gesture uses Windows' cell-width-times-column-count step, rounding half away from zero and clamping1–12 icons per row. A detached, pointer-transparent preview reflows the grid without writing the source or replacing the captured grip. Release alone commits through the same full-source/preimage/ownership guard as other commands; Escape/capture loss cancels. List/normal views have no grips. On Wayland flyouts, the outer window stays stable while previewing inside its viewport, then the committed rebuild changes its geometry; allowing KWin to reanchor on each pointer move was measured to add spurious steps because Wayland lacks stable global pointer coordinates. The regular editor resizes only its intrinsic preview frame. `dev/verify_icon_resize.py` qualifies real private-compositor gestures in both modes/hosts and the reverse left edge. Native tests cover source retention, transient previews, stale/foreign rejection and list/normal suppression.
+
+The old OS-menu action no longer exists; regular-editor background context events use Qt's default handling. No per-item OS command or classification remains.

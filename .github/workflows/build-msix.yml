@@ -106,9 +106,13 @@ jobs:
           name: Build-${{ matrix.platform }}
           path: LittleLauncher/bin/${{ matrix.platform }}/Release/net10.0-windows10.0.22000.0/
 
+  linux:
+    uses: ./.github/workflows/linux-appimage.yml
+
+
   release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -119,7 +123,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate release notes from commits
+      - name: Prepare release notes
         id: notes
         run: |
           CURRENT_TAG="${GITHUB_REF#refs/tags/}"
@@ -131,8 +135,13 @@ jobs:
             RANGE="${CURRENT_TAG}"
           fi
 
-          BODY=$(git log "$RANGE" --pretty=format:"- %s" --no-merges \
-            | awk 'tolower($0) !~ /^- (bump version|merge branch)/')
+          NOTES_FILE="docs/releases/${CURRENT_TAG}.md"
+          if [ -f "$NOTES_FILE" ]; then
+            BODY=$(cat "$NOTES_FILE")
+          else
+            BODY=$(git log "$RANGE" --pretty=format:"- %s" --no-merges \
+              | awk 'tolower($0) !~ /^- (bump version|merge branch)/')
+          fi
 
           if [ -z "$BODY" ]; then
             BODY="- Maintenance release (no notable changes)"
@@ -140,8 +149,6 @@ jobs:
 
           {
             echo "RELEASE_BODY<<RELEASE_EOF"
-            echo "## What's Changed"
-            echo ""
             echo "$BODY"
             echo ""
             echo "*AI disclosure: this release and the related code were written with the assistance of AI.*"
@@ -162,9 +169,15 @@ jobs:
             (cd "$dir" && zip -r "../../../release/LittleLauncher-${arch}-portable.zip" .)
           done
 
+      - name: Download Linux AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: Linux-AppImage
+          path: release
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: release/*
           body: ${{ steps.notes.outputs.RELEASE_BODY }}
-          generate_release_notes: true
+          generate_release_notes: false

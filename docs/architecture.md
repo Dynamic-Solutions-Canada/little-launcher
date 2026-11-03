@@ -1,0 +1,633 @@
+# Architecture — Little Launcher
+
+Little Launcher has native Windows and Linux hosts with compatible portable launcher data. Windows uses WinUI 3 and WebView2; Linux uses Qt/PySide6 and a separate sandboxed Electron browser. The Windows flow is described first; see [the Linux architecture guide](linux.md) for the native Linux host and [Linux development](../linux/README.md) for its AppImage-only packaging. KDE is the primary Linux desktop target.
+
+## Windows high-level flow
+
+Messaging presets in `Models/WebLauncherPresets.cs` feed the existing launcher creation and
+browser paths. They create normal editable launchers, with no new persisted preset identity.
+
+Web fullscreen retains its presentation across dismissal while the page remains loaded.
+`WebFlyoutWindow.FullscreenTitleBar.cs` reuses the existing header as a hover-revealed overlay
+with window controls and dragging, without changing the fullscreen browser viewport.
+Contained fullscreen can use the existing temporary maximize state without exiting page fullscreen.
+`WebFlyoutWindow.ContentFullscreen.cs` detects visible videos for the header's fullscreen action;
+the explicit click requests browser fullscreen with user activation, and normal fullscreen events
+apply the launcher's contained/display policy.
+
+Tray and notification activation share `MainWindow.TryResolveTrayAnchorPoint`, using the registered
+icon's shell rectangle. Notifications fall back to a taskbar button before the cursor when needed.
+
+```
+App.xaml  →  MainWindow (invisible, owns tray icon)
+                ├── LauncherPanels (routes a tray click by Launcher.Kind)
+                │     ├── FlyoutWindow (launcher popup — items)
+                │     └── WebFlyoutWindow (WebView2 popup — a web page)
+                └── SettingsWindow (WinUI 3 + NavigationView)
+                      ├── HomePage
+                      ├── LaunchersPage
+                      ├── SyncPage
+                      ├── SystemPage
+                      └── AboutPage
+```
+
+## Item-name tooltips
+
+`Controls/ConditionalNameToolTip.cs` provides full-name tooltips for all three launcher item templates. Small icons always offer the hidden name; list and large-icon labels offer it only when WinUI reports actual trimming. Item templates target the containing list/grid item; real group-header and column captions use the same behavior directly on the TextBlock, targeting only the trimmed label. The behavior follows bound name changes, detaches label events and closes tooltips on unload without measuring or changing item geometry, click handling, dragging or keyboard focus.
+
+## Shared launcher editor
+
+The primary **Items** row opens `LauncherItemsEditorWindow`, using the same `Controls/LauncherItemsView` as the native flyout. A separate sibling ellipsis contains bulk export/import/bookmark import; read-only subscribers retain export. Web launcher cards show only Settings, with their web address or No web address set as the subtitle.
+
+Settings-origin item editing uses a regular owned Mica window matching Launcher Settings, with the application title bar/icon/theme, inline shared toolbar, two-axis viewport and external accent Done. The regular toolbar stretches across the padded body, wrapping its three add actions in a finite Star column while keeping a tooltip-named settings icon in a separate top-right Auto column. Wide/tall launchers scroll without reflowing or changing item dimensions. Main Settings stays normal behind it. Edits save immediately; Done, Escape and close finish the window, while minimize/app switching retain it.
+
+One regular editor per launcher is reused on repeated entry, including tray/taskbar invocation; different launchers can edit independently. Item/group/launcher-settings dialogs remain owned secondary windows. New shortcut setup opens this same editor at the captured setup-window centre/monitor, owned by Main Settings. Web launchers skip this step. Native tray editing retains its popup, floating toolbar, DWM outline and placement.
+
+The shared view owns templates, rendering, hover/group affordances, custom reorder/external-drop handlers and toolbar commands. `LauncherItemsView.Hover.cs` provides passive grip/pencil cues with translucent theme scrims, opaque high-contrast backing and a separate whole-group outline in both hosts. `LauncherItemsView.DragPreview.cs` provides a mode-sized name/group-count card with its live target hint above it over this view's drag targets, while retaining native source gestures. Render work is cached by caption and mode and guarded against departed targets and ended sessions. Real group headers share a transparent padded hit surface so passive pencil clicks reach the existing group command. `LauncherItemReorder` validates current collection/item identity before moves and flattens synthetic display wrappers for persistence. `LauncherItemsView.DropTargets.cs` shares destination resolution between feedback and commit, with numeric real-group outer-band classification in `LauncherDropGeometry`. Interior/header drops target children and show a full-group tint plus inset caret. At the end, a passive theme gradient keeps most of the final child clear and fades toward an internal marker overlapping its lower area, without changing its opacity, input or dimensions. The tint, gradient and transparent group outline paint as separate layers, with the outline above the fade and the inset marker in the higher caret plane. High contrast keeps that scrim transparent. Top/bottom edge drops target exact column sibling indices; after-group feedback has no fade or receiving tint and places the full-width marker outside the group. Synthetic wrappers and whole-group midpoint reordering retain their policies. Insertion carets and receiving-group tint are passive overlays, so this feedback does not change item geometry. Native Done restores activation after app switching so subsequent deactivation dismisses the popup. Native lifecycle and placement remain in `FlyoutWindow`, with the floating toolbar following the launcher's right edge through the existing work-area clamp and deferred repositioning; the regular editor owns its viewport, normal chrome, focus and secondary-dialog lifetime.
+
+**Geometry contract:** entering edit mode may add column headers/empty targets to height but must not change column width or item size. The toolbar stays outside the item body in both hosts. Height uses arithmetic throughout; label width measures only strings with the in-tree measurer. The regular host scrolls the natural extent, while the popup applies monitor clamping. Never add `UpdateLayout` or feed measured container sizes back into the layout arithmetic.
+
+**Source of truth:** `_launcher.Items` is authoritative and `_columnLists` is a derived view.
+Structural edits (add/remove/rename) mutate the flat list and let the rebuild regenerate
+columns — they must *not* call `SyncColumnsToFlatList()`, which clears `_launcher.Items` and
+would resurrect anything just removed. Drag-and-drop is the opposite: it mutates `_columnLists`
+and flushes back via `PersistFlyoutReorder()`.
+
+Drag-and-drop supports cross-column and cross-group moves. All ListViews use
+`CanDragItems="True"` with custom `DragOver`/`Drop` handlers — WinUI 3''s `CanReorderItems` is
+intentionally avoided because it takes full internal control of drag events and cannot support
+cross-collection moves. See [docs/drag-drop.md](drag-drop.md).
+
+The same handlers also accept drags from **outside** the app (`LauncherItemsView.ExternalDrop.cs`): a drag arriving with no `_dragItem` set came from File Explorer, the desktop, the Start Menu or a browser, and `DroppedItemFactory` maps its payload to launcher items. This is edit-mode-only out of necessity rather than symmetry; the flyout dismisses on `Deactivated`, so only a pinned flyout survives the user switching to Explorer to pick something up. The Windows 11 Start Menu is *not* a usable drag source: its data package exposes only the app name as text, with the shell item hidden in a clipboard format WinUI 3''s `DataPackageView` does not surface. Dragging the same apps from their `.lnk` files under `Start Menu\Programs` in Explorer works.
+
+
+## Web launchers
+
+`Launcher.Kind` decides which window a tray click opens. `Windows/LauncherPanels.cs` is the only
+place that resolves it — tray clicks, the companion exe's `PostMessage`, launcher deletion and
+sync-driven removal all route through `Toggle` / `Dispose` / `SyncKind` / `WarmUp` rather than
+naming a window class.
+
+`WebFlyoutWindow` presents exactly like `FlyoutWindow` — borderless, always on top,
+`WS_EX_TOOLWINDOW`, anchored above the taskbar, the same slide-and-fade, dismissed on focus loss —
+but its **resource model is the inverse**, and that is the feature rather than an implementation
+detail:
+
+| | FlyoutWindow | WebFlyoutWindow |
+|---|---|---|
+| At startup | Warmed up and pre-rendered | Nothing exists |
+| Dismissed | Parked off screen, fully resident | Parked, browser collapsed + suspended, memory target `Low` |
+| Idle | Stays resident forever | Browser closed after `WebIdleUnloadMinutes` (default policy) |
+
+The flyout keeps everything because its content is cheap to hold and expensive to re-rasterise. A
+browser is the opposite: a dashboard of camera cards keeps decoding video and polling for as long as
+its renderer lives, so it is built late and torn down early. Suspension (`TrySuspendAsync`) is
+best-effort — it declines during media capture or downloads — so the idle unload, not the suspend,
+is what makes "costs nothing while hidden" true.
+
+Measured end to end: opening the flyout started six `msedgewebview2` processes, dismissing left them
+suspended, and the idle timer returned the process count to exactly its pre-open baseline. Reopening
+after that rebuilds from nothing and lands at the same anchored position.
+
+A web launcher holds a list of bookmarks; the first is the page it opens and the rest show as a
+browser-style bar along the bottom — several web launchers in one tray icon. See
+[docs/web-launchers.md](web-launchers.md) for the single-source rule that keeps
+"which URL is showing" answerable in one place.
+
+The flyout is resized by dragging its edges — invisible XAML grips, since a window with no
+non-client area has no system sizing border to grab — and the dragged size is persisted onto the
+launcher. Its header gear opens `LauncherSettingsWindow` under the same modal contract the item
+flyout uses (pin open, drop always-on-top, restore activation on close).
+
+The header also **maximizes the flyout to the monitor's work area, temporarily**: unlike a drag, it
+writes nothing to the launcher and is dropped when the flyout is dismissed, so the next open is at
+the configured size again. That is a different thing from page fullscreen, which the page enters,
+which hides the chrome for the duration. It takes the whole monitor by default, or stays inside
+the resizable launcher under **Fullscreen fills launcher**. **Fit fullscreen to video** optionally
+fits that viewport to the video's intrinsic aspect ratio (`Windows/WebFlyoutWindow.VideoFit.cs`).
+The automatic size is temporary; a manual resize takes over and follows the normal persistence policy.
+
+**Double-clicking the caption does the same thing**, in both directions, because that is what a
+double-click on a title bar means on every other window. The caption is the three strips that
+already drag the window: the header, the empty part of the tab strip and the empty part of the
+bookmark bar. It is recognised inside `BeginWindowMove` against the system's own double-click time
+and slop box rather than by handling `DoubleTapped`: those strips mark their own `PointerPressed`
+handled to start the drag, and XAML raises no tap gestures for a pointer whose press was taken.
+
+**Resting on that same button drops a position picker** (`Windows/WebFlyoutWindow.PositionPicker.cs`),
+a 3x3 grid of little screens, the way Windows 11 hangs snap layouts off the maximize button. It moves
+the window and writes nothing, borrowing nine of the presets the "Opens at" setting offers without
+touching the setting itself — that menu says where a launcher *opens*, this says where it should be
+right now.
+
+The header's **"…" menu** groups launcher settings into General, Appearance, Size and position,
+Behavior, and Privacy and sign-ins. A shared ordered definition list supplies the same labels and
+order to the settings window's expanders. Each menu group links to its settings section, while
+bar visibility, zoom, anchor, size memory, window mode, pin, and fullscreen controls remain immediate
+quick controls. Address, icon, dimensions, and profile edits use their existing owned settings
+window. Page actions, keyboard shortcuts, app settings, and Advanced troubleshooting remain
+accessible; opening a section runs no maintenance or privacy action.
+
+In launcher settings, General, Appearance, and Size and position start expanded; Behavior and
+Privacy and sign-ins start collapsed. All Sync destination sections still start expanded. Users
+may collapse and reopen sections without an automatic scroll request. Explicit launcher section
+links expand their target if needed and use one ordinary framework `StartBringIntoView` request
+after the form loads.
+Advanced remains the existing troubleshooting submenu, closed until opened.
+
+An **address bar** can sit under the header (`Launcher.WebShowAddressBar`, off by default). It is
+switched on from that menu; there is no separate reveal-for-this-visit button, because one
+affordance beats two that differ only in how long they last.
+
+**A web launcher is a list of bookmarks whose first entry is the address it opens.** "A single web
+address" is simply a launcher with one bookmark; add a second — in settings, or with the star in the
+flyout — and they appear as a bar along the bottom. There is no mode switch between the two and no
+setting for the bar: one page has nothing to pick between, two does. A launcher written before
+the two merged is brought forward by `Launcher.MigrateWebModel`, which runs on load *and* on every
+sync merge — the older build goes on sending the legacy fields for as long as another machine has
+not been upgraded.
+
+The bar behaves like a browser's and holds no state of its own
+(`Windows/WebFlyoutWindow.Bookmarks.cs`): clicking a bookmark loads it in the tab in front, a
+middle-click or a Shift/Ctrl-click opens it in a new one, clicking the bookmark for the page already
+showing loads it again, and nothing in the bar is highlighted — what is showing is the tab's
+business. Extra browsers are only ever made by a gesture that asks for one.
+
+That bar is also **edited from itself**, not only from settings: a star at the end of the address
+bar adds or removes whatever the address box shows — the page you are on, or an address you have
+typed but not yet visited — and the "…" menu carries the same action, since the address bar is off
+by default. Right-clicking a bookmark opens it here or in a new tab, renames it, points it somewhere
+else, copies or opens its address, makes it the one that opens by default, moves it or removes it;
+and dragging one along the bar reorders it, with an accent caret marking where it will land. Neither
+editing nor deleting a bookmark disturbs the page on screen. Launcher settings still holds the full
+list, which is the right shape for a launcher being set up rather than one being used. See
+[docs/web-launchers.md](web-launchers.md).
+
+**Every browser a web launcher owns is a tab** (`Windows/WebFlyoutWindow.Tabs.cs`), and a link
+asking for a new window becomes one instead of leaving for the real browser — using the browser's
+own `NewWindowRequested.NewWindow`, so an OAuth popup keeps its opener and can hand its result back.
+A strip between the header and the address bar switches between them, appearing on its own once
+there are two. The load-bearing distinction is **who chose the address**: tabs the launcher owns
+(its own page) may write its icon and be re-navigated when its settings change; a tab opened from a
+link — or from a middle-clicked bookmark — is the user's own place and nothing configured may move
+it. See [docs/web-launchers.md](web-launchers.md).
+
+Web launchers also get a **Start Menu shortcut each**, in a `Programs\Little Launcher\` group kept
+in sync by `Services/StartMenuShortcutService`, so they can be opened from Start search, PowerToys
+Command Palette or anything else that indexes the Start Menu. The shortcuts run the same command a
+taskbar pin does, and deliberately carry **no AUMID** — an earlier version of them did, competed
+with the companion's relaunch properties for pin identity, and produced duplicate pins.
+
+A web launcher can also stop being a flyout altogether: `Launcher.WebRegularWindow` (Behavior) drops
+always-on-top and dismiss-on-focus-loss and puts it in the taskbar and the task switcher, so its
+pinned button shows the running indicator and closes it when clicked. **The switcher entry cannot be
+declined** — taskbar eligibility is `WS_EX_TOOLWINDOW`, which governs both, and four ways round it
+were measured and failed; see [docs/web-launchers.md](web-launchers.md). That
+is why the setting names a window kind rather than offering a taskbar-only toggle. In that mode the
+header also carries a **minimize** button, and the window stamps the three
+`PKEY_AppUserModel_Relaunch*` properties alongside its AUMID so its taskbar button can be **pinned**
+from its own right-click menu: an AUMID names a group but does not say how to start it again, so
+without them there was nothing for a pin to record.
+
+**Always-on-top is a band, not a place.** Several launchers can sit in it at once, so the one that
+takes focus re-asserts its position at the head of it (`RaiseWithinTopmostBand`), and `SetTopmost`
+refuses to re-apply a value the window already has. Without the second half, `ApplyLauncherChanges`
+firing on a background favicon fetch pushed an idle launcher in front of the one being read.
+
+Per-launcher WebView2 profiles live in `%AppData%\LittleLauncher\WebProfiles\{launcherId}`, which is
+what keeps a dashboard signed in across app restarts.
+
+**Site permissions and notifications** are the host's job, not the browser's: WebView2 raises
+`PermissionRequested` and `NotificationReceived` and does nothing further, so an unhandled
+notification is dropped and an unhandled permission falls back to a prompt sized for a browser
+window. `Windows/WebFlyoutWindow.Permissions.cs` answers both — camera, microphone, location and the
+rest are asked for in a bar above the page and remembered per launcher profile, and page
+notifications become Windows toasts that reopen the launcher they came from. Notifications need a
+running page, which is exactly what the resource model above takes away, so granting them **offers**
+to move the launcher to `KeepRunning` rather than changing it silently.
+
+WebView2 reports only *non-persistent* notifications (`new Notification(...)`); one raised through
+`ServiceWorkerRegistration.showNotification()` is created inside Chromium and never reaches the
+host, so it is shown nowhere and dropped in silence. Since that persistent API is the one every
+messaging site actually uses, a document-created script rewrites it in the page to the flavour the
+host can see — tag replacement and `getNotifications()` included.
+
+**Every toast has to be taken back off again**, and nothing here used to. Clicking one withdraws it,
+which Windows does itself, and that was the only route — so opening a launcher any other way left
+its toasts sitting there, including toasts for messages already read on a phone. A full Action
+Center queue does *not* block new notifications (it is per app, FIFO, and a toast expires after
+three days), but the queue being per *app* means every launcher splits one budget of twenty evicted
+oldest-first, and Windows scores the whole app on how often its notifications get acted on before
+offering to switch them off — all of them, since the launchers share one identity. So a toast is taken back off when the page closes its
+notification (relayed out of the service worker as well as the page), when the launcher is next
+brought to the front, when the launcher is deleted, and by Windows itself on the next reboot. Each
+launcher's toasts are filed under a group of their own, so clearing one leaves the others and the
+app's own notices alone, and each carries a header with its launcher's name so Notification Center
+files them under the launcher rather than under the app. Windows does not clear a header's
+notifications when it is clicked — its documentation says so outright — so the app does that itself.
+A launcher is also held to five toasts at a time, since twenty is the whole app's budget and every
+launcher spends from it.
+
+A notification object is owned by the browser that raised it, and calling into one after that
+browser has closed is a fail-fast that kills the app rather than throwing. The handler therefore
+finishes with the notification before it builds the toast — `AppNotificationManager.Show()` pumps
+the message loop, and the idle unload can run inside it — and tracked notifications are dropped when
+the browser unloads.
+
+See [docs/web-launchers.md](web-launchers.md) for the WinUI WebView2 limits
+worked around (no controller access, so zoom is CSS; focus-loss must be re-verified against
+`GetForegroundWindow` because the browser's HWNDs are children of the window).
+
+## Owned editor windows
+
+Editing UI opened from the flyout uses standalone windows, not `ContentDialog`: a dialog
+renders inside its host window''s content area and cannot overflow the HWND, and the flyout is
+frequently narrower and shorter than the form.
+
+| Window | Purpose |
+|---|---|
+| `ItemEditorWindow` | Add/edit a launcher item; returns `ItemEditorResult` (Cancelled/Saved/Deleted) |
+| `TextPromptWindow` | Single-field prompt (group name) |
+| `LauncherSettingsWindow` | Per-launcher settings in shared ordered sections; owned section links from the flyout and normal entry from the Launchers page |
+
+The item editor's app picker labels duplicate catalog names with executable filenames,
+without changing the name or target saved on selection. Duplicate detection runs before search
+filtering. `AppPickerRowActions` gives each recycled list container a full-target tooltip and
+a keyboard-accessible menu: Open uses the shared item launch path immediately, including for
+uninstallers, and Open containing folder is disabled for virtual targets or missing parents.
+
+All three share `WindowChrome` for the app icon and a themed custom title bar (a default WinUI
+title bar does not follow `RequestedTheme`). The flyout **drops its always-on-top flag** while
+one is open — owner relationship alone does not beat a topmost owner — and closes any open
+editor when edit mode ends, so an orphaned window cannot commit into a launcher the user has
+navigated away from.
+## Launch modes
+
+By default, launching the app opens the Settings window. Silent mode (tray icon only, no Settings window) is used for Windows startup and companion exe cold-starts:
+
+| Scenario | How it launches | Settings window? |
+|---|---|---|
+| Install / update / Start Menu / double-click exe | No special args | Yes |
+| Windows startup (unpackaged) | Registry Run key with `--silent` | No |
+| Windows startup (MSIX) | StartupTask → `ExtendedActivationKind.StartupTask` | No |
+| Companion exe cold-start | `LittleLauncher.exe --silent` | No |
+| Second instance (app already running) | Signals first instance via `PostMessage` → shows Settings | Yes |
+
+`SystemPage` manages startup through the install-type-specific mechanism: unpackaged builds write the HKCU Run key, packaged builds use the manifest `StartupTask`, and packaged startup cleanup removes any stale unpackaged Run entry so the Store app wins after install-type switches.
+
+## Settings persistence
+
+- `UserSettings` (the ViewModel) is an `ObservableObject` with `[ObservableProperty]` attributes.
+- `SettingsManager` (fully static) serialises it to JSON at `%AppData%\LittleLauncher\settings.json`.
+- On first load, migrates from legacy `settings.xml` (XmlSerializer) to `settings.json` (System.Text.Json), renaming the old file to `.bak`.
+- On startup, `RestoreSettings()` deserialises and calls `CompleteInitialization()` to enable change handlers.
+- `SaveSettings()` is called on settings window close and after SFTP download.
+
+## Icon selection and rendering
+
+`Classes/IconGallery.cs` owns one shared picker core for items and launchers. The wrappers retain
+item app icons/reset versus launcher presets. Browse is an image option in the first tab;
+Confirm/Cancel stay visible outside the scrolling icon list. The picker uses the owning monitor's work area and DPI instead of the size
+of its settings window, and it reads the current selection again on each opening. Every Browse
+entry point initializes the same image picker with its actual owner HWND.
+
+`Classes/IconCatalogView.cs` virtualizes the grouped Fluent and emoji catalogs in a native
+`GridView` with `ItemsWrapGrid` and a modest viewport cache. It owns scrolling inside the finite
+content row; the small preset/image scroller is a sibling. Only nearby tiles are created, and
+recycling refreshes their accessible names, tint and selection borders. Sources are released
+on tab changes and close. `Classes/SelectionReveal.cs` restores saved choices into view only after
+layout, with source/query/open-state guards. Small image lists wrap inside their constrained width;
+large symbol catalogs keep their native virtualization. Use page icon is a web-only pending preset in the shared chooser;
+confirmation restores managed favicon adoption rather than copying the favicon to a custom file.
+`Classes/AutomaticPageIconChoice.cs` decodes the actual saved preview and owns cancellable Retry
+state. `Windows/WebFlyoutWindow.IconPreview.cs` tries an already loaded, awake matching page,
+then the actual site through `Services/FaviconService.IconPreview.cs`, without adopting an icon
+or starting a browser. Direct preview reads reuse HTML/manifest/favicon selection with fresh,
+bounded, cancellable requests and no cache writes or Google fallback. Failed reads explain that
+opening/signing in may be needed. `Classes/PageIconPreview.cs` keeps pending URL-bound PNG bytes in memory and atomically stores the exact confirmed preview, including a smaller explicit choice. Cancel, failure and stale completions leave the custom choice intact. Background adoption still keeps its size safeguard. Confirmation explicitly refreshes derived icons even when the managed path and Custom mode are unchanged, and launcher cards bypass the URI image cache when reloading that path.
+
+`MainWindow.RenderGlyphBitmap` preserves the existing Fluent icon tint renderer. Complete emoji
+strings instead go through `Classes/GlyphIconRenderer.cs`, which shapes with DirectWrite and draws
+Direct2D color glyphs on a software device. It fits visible ink bounds before drawing and preserves
+premultiplied alpha through bitmap readback. Tray, pin, composite-item and jump-list exports share
+that path, including sequences with surrogate pairs, variation selectors and ZWJ ligatures.
+Native declarations remain in `Classes/NativeMethods.cs`. See [docs/icons.md](icons.md).
+
+## Launcher item icons
+
+`FaviconService.FetchMissingItemIconsAsync(items)` is the **single pipeline** for fetching launcher item icons. It iterates the items and, for each one missing a valid local icon, fetches a favicon (websites), extracts a shell icon (PWAs via `IShellItemImageFactory`), or extracts an exe icon (apps). All entry points use this one method:
+
+| Trigger | Caller |
+|---|---|
+| App startup (missing icons on disk) | `MainWindow.FetchMissingIconsOnStartupAsync()` |
+| SFTP sync download | `SftpSyncService.DownloadLaunchersAsync()` |
+| File import (Launchers page card menu) | `LauncherBulkOps.ImportItemsAsync()` |
+| Manual add/edit | `DoFetch()` in add/edit dialog (calls `FaviconService` directly for the single item) |
+| PWA add | PWA combo selection handler (`FaviconService.GetBestPwaIconAsync()`: prefers a real site/manifest icon, rejects off-origin login redirects, then falls back to the installed shell icon) |
+
+After bulk icon changes, callers invoke `FlyoutWindow.InvalidateItems()` so the flyout rebuilds its containers on the next toggle.
+
+`FaviconService.RefreshStaleItemIconsAsync(items)` complements the missing-icon pipeline by **re-fetching auto-fetched icons** whose cached file is older than 7 days (`FaviconService.IconMaxAge`), so favicons, app icons, and PWA icons track upstream changes. Custom user-chosen icons are never touched (auto-fetched icons are identified by living in the `favicons` cache folder), and a failed fetch keeps the existing file. It runs at startup (inside `FetchMissingIconsOnStartupAsync`) and on a daily timer in `MainWindow` while the app stays resident in the tray. Because refreshed files keep the same path, item-icon `BitmapImage` loads use `BitmapCreateOptions.IgnoreImageCache` to bypass WinUI's per-URI decoded-image cache.
+
+## Global launcher sync
+
+All launchers sync between machines as one `launchers.json`. The transport is selected by
+`UserSettings.SyncProvider` (`Models/SyncProviders.cs`):
+
+| Value | Provider | Implementation | Auth |
+|---|---|---|---|
+| 0 | SSH / SFTP server (default) | `SftpSyncService` (SSH.NET) | key or password |
+| 1 | OneDrive | `CloudSyncService` -> `OneDriveFileStore` (Microsoft Graph) | OAuth, system browser |
+| 2 | Google Drive | `CloudSyncService` -> `GoogleDriveFileStore` (Drive v3) | OAuth, system browser |
+| 3 | Network file share (UNC) | `FolderSyncService` | Windows |
+| 4 | Any other folder | `FolderSyncService` | none |
+| 5 | WebDAV (Nextcloud, ownCloud, NAS) | `CloudSyncService` -> `WebDavFileStore` | Basic auth, typed in |
+
+`LauncherSyncService` is the single entry point and dispatches on the provider; nothing outside
+`Services/` names a transport. It exposes `TestAsync()`, `UploadLaunchersAsync()`,
+`DownloadLaunchersAsync(force:)`, `IsConfigured`, and `UsesCredentials`.
+
+**OneDrive and Google Drive use their vendor APIs, not synced folders.** They implement the
+narrow `ICloudFileStore` (download / upload / remote-modified-time) over the app-private folder
+each vendor offers: Graph's app folder under `Files.ReadWrite.AppFolder`, and Drive's hidden
+app-data folder under `drive.appdata`. Neither can see anything else in the user's storage. That
+buys what a folder cannot — the service confirms the upload, no sync client need be installed,
+there is no placeholder to hydrate, and the remote's modified time is readable. OneDrive is
+**personal accounts only**; Microsoft has never extended app-folder permission to OneDrive for
+Business.
+
+**WebDAV** rides the same `ICloudFileStore` path, but its credentials are typed into the app
+rather than obtained in a browser, so `SignInAsync` verifies a URL/username/password instead of
+opening one. One implementation reaches every WebDAV server, and it costs no app registration,
+consent screen, verification review or client secret — nothing a vendor can revoke. It uses
+`PROPFIND` Depth 0 to verify, `HEAD` for the modified time, and pre-emptive Basic auth (some
+servers answer an unauthenticated `PROPFIND` with 404 rather than 401, which would otherwise look
+like a wrong path).
+
+`OAuthPkceClient` implements Authorization Code + PKCE with a loopback redirect, shared by the two
+OAuth providers — hand-rolled rather than pulling in MSAL and the Google SDK for one small file each.
+Sign-in happens in the system browser, so the app never sees credentials. `ProtectedStore`
+persists every sync credential — OAuth tokens and the WebDAV password — DPAPI-encrypted per
+Windows user in `%AppData%\LittleLauncher\cloud-*.dat`, never in settings.json, which this very
+feature uploads. `CloudSyncCredentials` holds the client
+IDs; until they are filled in the two providers report themselves unconfigured.
+
+Folder providers (3 and 4) cover everything else — Dropbox, Seafile, Syncthing, a USB stick, and
+OneDrive for Business. There the sync client, not this app, moves the bytes, so a successful
+upload means the file reached disk. `FolderSyncService` writes via `LauncherPayload.WriteAtomic`
+(a temp file and a move — clients upload the instant a file changes, so a plain write can be
+uploaded half-written), reads whole files on a background thread (they may be online-only
+placeholders that block while hydrating), and probes write access with a throwaway file rather
+than trusting `Directory.CreateDirectory`.
+
+`CloudFolderService` locates OneDrive and Google Drive *folders* on the machine — now used only
+by the shared-launcher dialog, since global sync reaches those two through their APIs.
+
+`LauncherPayload` holds what the transports must not duplicate: the timestamped envelope format
+(with a legacy plain-array fallback), the guard that stops an automatic download overwriting
+newer local work, and the in-place merge into the live launcher collection. Only an explicit
+user-initiated download passes `force: true`.
+
+Full conventions, including how to add a transport: [docs/sync.md](sync.md).
+
+### Shared launcher sync
+
+Individual launchers can be shared via files or per-launcher SFTP connections, **independently of `SyncProvider`** — `Launcher.SharedSyncMode` controls the transport: 0 = File, 1 = SFTP. File mode accepts any path, so a OneDrive, Google Drive or UNC folder works: both participants point at their own local copy of the same shared folder. The share dialog offers detected cloud roots as quick-fill buttons (buttons rather than a picker — a `FileSavePicker` raised from inside a `ContentDialog` is a modal-on-modal). File writes go through `LauncherPayload.WriteAtomic` for the same reason global folder sync does.
+- **Owner** (`IsSharedOwner = true`): `ShareLauncherAsync()` pushes the launcher's items as `List<LauncherItem>` JSON.
+- **Subscriber** (`IsSharedOwner = false`): `SyncSharedLauncherAsync()` pulls items (read-only).
+- `VerifySharedLauncherAsync()` — validates the file/remote exists and is parseable (used before subscribing).
+- `SyncAllSharedLaunchersAsync()` — batch syncs all shared launchers (owners push, subscribers pull). File-mode always syncs; SFTP-mode skips launchers without an auto-detectable SSH key.
+
+The sharing UI lives in `LaunchersPage.xaml.cs`: "Share" button on unshared launcher cards, "Sync" and "Settings" buttons on shared cards, "Shared"/"Subscribed" badges, "Add Shared Launcher" subscribe dialog (with File/SFTP mode picker), and "Stop Sharing" via the share dialog's secondary button.
+
+`AutoSyncService` manages automatic sync triggers, and is transport-agnostic — everything goes
+through `LauncherSyncService`:
+- Downloads launchers on startup, then syncs shared launchers.
+- Debounced upload (3 s) when items change.
+- Periodic download on a configurable interval, followed by shared launcher sync.
+- Automatic downloads are skipped while local launcher item edits are pending upload, so a periodic pull cannot overwrite newer flyout/editor changes before the debounced upload completes.
+- Every trigger is gated on the auto-sync toggle **and** `LauncherSyncService.IsConfigured`, never on `SftpHost` — which is meaningless under a folder provider.
+
+The SFTP transport supports both private-key (`PrivateKeyFile`) and password-based
+authentication. Folder providers need no credentials from the app: OneDrive, Google Drive and
+Windows have already authenticated the folder before it is visible.
+
+## Theme system
+
+`ThemeManager` controls the app theme via WinUI 3's `ElementTheme` system:
+- Sets `RequestedTheme` on the root `FrameworkElement` of each window.
+- `IsDarkTheme()` reads the system foreground colour from a cached `UISettings` instance to detect light/dark mode.
+- Theme 0 = system default, 1 = Light, 2 = Dark.
+
+## Backdrop
+
+- **SettingsWindow** uses `MicaBackdrop` (WinUI 3 built-in).
+- **FlyoutWindow** uses a transparent backdrop for seamless integration.
+
+## FlyoutWindow
+
+The flyout popup dismisses when focus is lost via the WinUI `Activated` event (`Deactivated` state). It also toggles closed when the user clicks the same tray icon or pinned taskbar shortcut while that launcher's flyout is already open. It uses `WS_EX_TOOLWINDOW` to stay out of Alt-Tab and `OverlappedPresenter.CreateForContextMenu()` for borderless always-on-top presentation. When the `UserSettings.FlyoutAnimationsEnabled` setting is on, the fully rendered flyout window is moved a short distance from its anchored edge with eased `SetWindowPos` steps, so the whole popup slides as one surface instead of revealing its frame and contents in stages.
+
+**Easing must be checked in pixels, not curve shape.** The slide covers only `SlideDistanceDip` (~54px at 150% scale), which is short enough that an aggressive curve quantises to zero movement. The exit used a pure cubic ease-in and its first five frames (~30ms) all rounded to the same pixel, so the close sat still and then lurched away at ~7px/frame before cutting out — choppy, even though the animation loop was ticking cleanly at ~8ms. `EaseOutExit` adds a linear floor (`0.35t + 0.65t²`) so every frame advances at least a pixel while still accelerating away. Anything that changes the easing, duration, or slide distance here should be verified against the **per-frame pixel deltas**.
+
+**The hide also fades** (`SetFadeAlpha` / `ClearFade`). Sliding alone still ended with a fully opaque window that simply stopped existing, which reads as a snap however smooth the travel is. The fade uses per-window alpha (`WS_EX_LAYERED` + `LWA_ALPHA`) rather than XAML opacity, because the acrylic comes from a `SystemBackdrop` that sits behind the XAML tree — `RootGrid.Opacity` would fade the content and leave the backdrop pane as a solid rectangle. It completes at `FadeOutCompleteAt` (0.8) of the hide duration rather than at the very end, so the flyout is **fully transparent before it is parked** and never winks out mid-fade.
+
+Alpha is window-level state that survives parking, so every path back on screen calls `ClearFade` first (`ParkOffScreen`, `ShowAnimated`, `ShowWithoutAnimation`) — otherwise a re-opened flyout comes back invisible.
+
+**Warm-up**: `FlyoutWindow.WarmUp()` creates one window per launcher at startup (and again whenever launchers change) so no flyout is built on the click that opens it. Creating a window is not enough on its own — WinUI only draws a window that has actually been visible, so each warmed-up flyout is parked outside the virtual screen with `SWP_SHOWWINDOW` and given `PreRenderDurationMs` to compose its first frame. Without that first frame the DWM has nothing to present and the flyout's opening frames are a black rectangle. Every path that shows or hides a flyout calls `EndPreRender()` first, so a window that is still warming up is never mistaken for one that is open on screen.
+
+**Dismissal parks, it does not hide** (`ParkOffScreen`). The flyout used to be dismissed with `ShowWindow(SW_HIDE)`, which lets WinUI release the window's composition surfaces. The next open then had to re-rasterise the entire visual tree — every text run and every item icon — before anything could be presented. Measured with timed screen captures, that took ~100ms on a *cold* open, during which the window was already on screen and sliding: the flyout slid in as an empty rectangle and all the items appeared at once near the end of the slide. Re-opening within a second or so looked fine because the surfaces were still resident, which is why this only ever showed up in normal use, where opens are seconds or minutes apart. Keeping the window visible but parked off the virtual screen keeps those surfaces alive, so showing it is a pure move and the first on-screen frame is already fully painted — verified at ~99ms after a 35s idle, painted for the whole slide, with no added latency.
+
+Because the window stays visible in the Win32 sense whenever it is dismissed, **`_isOpen` is what "the flyout is open" means** — every former `WS_VISIBLE` check (in `Toggle`, `HideFlyout`, `ShowAnimated`, `ResizeIfVisible`, `ShowInEditMode`, `RestoreFlyoutActivation`) now tests that flag instead. `WS_EX_TOOLWINDOW` keeps the parked windows out of Alt-Tab and the taskbar.
+
+For pinned taskbar launches, `MainWindow` now tries to resolve the actual taskbar button bounds via UI Automation before showing the flyout. When that succeeds, the flyout anchors to the center of the launcher button instead of the companion exe's fallback cursor coordinates, keeping both mouse and touch launches centered directly over the icon.
+
+**Direct reordering** (edit mode only): FlyoutWindow uses a custom drag-drop implementation instead of WinUI `CanReorderItems`. Each column is rendered as a drag-enabled `ListView`, and grouped sections render nested child `ListView`s. In icon mode, consecutive ungrouped items are wrapped into synthetic groups for display so icon tiles can still be reordered in a wrapping `ItemsWrapGrid`. Drops use custom insertion indicators (horizontal for list sections, vertical for icon grids), then sync the per-column view back into the launcher's flat `Items` collection, save settings, notify auto-sync, and invalidate tray/flyout surfaces.
+
+**Multi-column & multi-view layout**: The flyout renders items into a horizontal `ColumnsPanel` (a `StackPanel`). Each `LauncherItem` with `IsColumnBreak = true` starts a new column. The display mode is controlled by `Launcher.ViewMode`:
+- **Icon view** (ViewMode = 0, default): Each column is a `GridView` of grouped sections whose top-level layout is handled by the custom `PackedIconPanel`. Real groups render a heading plus a nested icon-grid child `ListView`, while consecutive ungrouped items are wrapped into synthetic groups so they render in the same wrapping grid surface. `Launcher.IconModeIconsPerRow` controls the maximum icons shown across each row (default 3, configurable from 1 to 12). Top-level groups use their visible child count as a width span so narrower groups can share a row beside wider groups, while the packed panel keeps row heights based on the measured group cards instead of fixed slot heights. Dragging near the flyout's left or right edge snaps the layout wider or narrower by whole icon columns without opening settings.
+- **List view** (ViewMode = 1): Each column is a drag-enabled `ListView` of top-level items and groups. Real groups render a heading plus a nested child `ListView`, so items can be dragged within groups, out to the top level, or between columns while keeping the flyout visuals close to the editor.
+
+`RebuildColumnsPanel()` rebuilds all columns (icon grid or ListView) from scratch whenever items change. Window width scales per column: a dynamic icon-mode width derived from the configured icons-per-row value, or for list view the width of the longest label the launcher holds, capped at 175 px and floored at 80. Every list column gets the same width (ragged columns read as a broken table), and the cap means a launcher with one long name is exactly as wide as it always was, while a launcher of one-word shortcuts stops paying for space it never used. `ComputeListColumnWidth()` decides it once per rebuild and both the columns and the window read the cached answer, so the two cannot disagree.
+
+**Right-click context menu**: Right-clicking empty space in the flyout shows a `ContextFlyout` with launcher/settings shortcuts. Right-clicking an item opens an item menu with Move up/down, Move to…, Edit, and Remove actions, while in edit mode. Outside edit mode the item menu shows only launcher-level entries.
+
+## Companion exe (`LauncherShortcut`)
+
+`LittleLauncherFlyout.exe` is a tiny companion binary pinned to the taskbar. Clicking it sends a `PostMessage` to the main app to show the flyout, then exits. Run with `--item {index} --token {n}` it posts "launch this entry" instead, which is what every taskbar jump list task does (see below). Because it launches on every click, startup latency is critical:
+
+- **Release builds** use Native AOT (`dotnet publish`) producing a single ~1.6 MB native binary with no .NET runtime dependency.
+- **Debug builds** copy the framework-dependent output for fast iteration (startup is slower but build is faster).
+- **Never add heavy dependencies** (NuGet packages, large frameworks) to the `LauncherShortcut` project — it must remain a minimal P/Invoke-only program.
+- **Never run expensive work** (icon regeneration, shell notifications, file I/O) synchronously in the main app's `_wmShowFlyout` WndProc handler — it blocks the flyout from appearing.
+
+### Native launcher pinning
+
+Explicit pinning requests Windows confirmation from the companion using one physical Start menu
+snapshot per launcher. It preserves the stable companion target, launcher argument, name, icon and
+fresh AUMID. Actual process package identity, desktop API support and LAF checks gate native
+pinning; unsupported systems retain manual pinning. A snapshot shortcut and window relaunch
+metadata are mutually exclusive, including on a regular web window created before re-pinning.
+
+Re-pinning requires manual old-pin removal only when a live query confirms it is still pinned.
+Unknown old state proceeds without that warning or acknowledgement; users may remove duplicates. Windows has no supported normal-app unpin API. A completed false result or explicit dialog Cancel restores
+the old shortcut bytes and leaves saved `PinAumid` unchanged. Only native success or explicit
+manual-pin confirmation saves the new identity. All immutable pin icons remain available for older
+pins. See [docs/icons.md](icons.md) for exit codes and diagnostics.
+
+An unresponsive native request is bounded by 45 seconds plus five seconds for advisory cancellation.
+An unknown outcome retains its shortcut/icon and a local `pin-pending-{id}.txt` marker; it does not
+replace `PinAumid`. The next attempt may request native confirmation again; the earlier marker alone
+does not force manual mode or old-pin acknowledgement. Current unknown outcomes still retain their
+resources for any late pin. A completed false/dialog cancel restores the earlier snapshot/marker;
+confirmation clears the current marker. This local record never enters the sync payload.
+
+Pin replacement checks the saved old identity live in an isolated read-only helper process before
+touching its Start snapshot. The pinning process sets its new AUMID once during startup, before any
+UI or WinRT, and never adopts the old identity. The query child must exit before snapshot replacement;
+a ten-second outer bound stops only that owned read-only child. This avoids relying on a process-wide
+TaskbarManager identity reset after releasing a COM object. A known
+unpinned launcher proceeds directly; an unchanged known pin is retained and reported inline. Failed
+resolution stays Unknown diagnostically and permits a fresh attempt without old-pin instructions. Confirmed local snapshot metadata compares
+rendered icon bytes as well as the displayed name and launch command, so automatic favicon and
+composite-icon changes use the same effective-detail comparison as a manual icon change.
+
+Launcher settings also queries current state on open and return to the window, using the same
+isolated unshown `--check-only` path through `TaskbarPinStatusService`. It caches that per-identity
+result while name/icon/save events recompute details locally. Known absence hides removal warnings;
+a known unchanged pin shows Pinned with no redundant action; changed pins offer Pin Again.
+Unknown uses the standard pin row/action, including missing/mismatched caller registration. The row uses one
+ordinary subtitle rather than an indented third line. Cancellation/generation guards reject stale
+results, close stops the read-only child, and replacement waits for it to exit. Native confirmation
+seeds the cache directly; manual/unconfirmed outcomes are rechecked without altering resources.
+
+The native request uses a compact rounded foreground card with the launcher icon/name and a short
+reminder to look for the Windows pinning prompt,
+without a classic caption, progress bar or buttons. Unsupported systems retain the instructional manual fallback.
+Its high-contrast scheme pointer is borrowed, following Microsoft's implementation rather than the
+conflicting Learn free instruction. It is never freed. Narrow card/ready/timer milestones distinguish
+setup from a submitted pin request; a failed ready queue exits Unknown instead of waiting forever.
+Read-only `--pin --check-only` uses the same old-identity path unshown and never submits a pin.
+
+### Companion exe deployment
+
+At startup, `EnsureFlyoutShortcut()` copies the companion exe to the external helper directory returned by `GetPhysicalAppDataDir()` and writes a `main-exe-path.txt` breadcrumb alongside it so the helper can launch the main app with `--silent` if `FindWindow` fails. Explicit pinning creates a snapshot Start shortcut when supported; startup deployment does not.
+
+**There is exactly one destination, and a second one cannot be added.** This used to write another copy into the real shared `%AppData%\LittleLauncher\`, so that pins made by an unpackaged build would stop cold-starting the exe they were pinned against. Under MSIX that copy never happened: a write to `C:\Users\{user}\AppData\Roaming\LittleLauncher\` from a process with package identity is redirected into the package's `LocalCache\Roaming\LittleLauncher\`, and reads from inside the package see it at the path that was asked for, so every call reported success while the file stayed invisible to everything outside. Measured directly, and visible on any machine that ran an unpackaged build first: that folder still holds a frozen snapshot of it, its own `settings.json` and all. The destination that survives is genuinely unredirected: `GetPhysicalAppDataDir()` resolves through `ApplicationData.Current.RoamingFolder.Path` to the package's `RoamingState`, which is not filtered, and is why shortcuts and jump list tasks can be pointed at it at all.
+
+Start Menu shortcuts are not a counter-example. They do land in the real profile, because MSIX exempts the shell's own folders from redirection so that desktop apps can still create shortcuts; ordinary application folders under AppData get no such exemption. An old unpackaged pin is therefore beyond reach (writing, deleting and replacing that file all redirect identically), and re-pinning the launcher is the fix. Any pin made by a current build already names the one directory above.
+
+## Taskbar jump lists
+
+Right-clicking a pinned launcher's taskbar button shows that launcher's own contents: its items,
+flattened as the flyout flattens them, or its bookmarks for a web launcher.
+`Services/JumpListService.cs` publishes them.
+
+- **A jump list belongs to an AppUserModelID, not to a process.** That is what allows one list per
+  launcher from a single app: `Launcher.PinAumid` records the identity minted when the launcher was
+  pinned, and the shell is told which one is being published for, one launcher at a time. For
+  launchers pinned before the app recorded it, the taskbar's own pin store
+  (`HKCU\...\Explorer\Taskband`) is read as a fallback. **That fallback is for publishing only** -
+  it is deliberately never written back to `PinAumid`, because that value is also read as *window*
+  identity, and a window carrying an AUMID that does not match its pin raises a second taskbar
+  button beside it.
+- **Nothing published can be a live menu.** The shell never tells an app its jump list was opened,
+  so the list sits in the user's profile until republished. `SettingsManager.Saved` triggers a
+  debounced rebuild, skipped entirely when the resulting list is identical to the one already out
+  there - which is most saves.
+- **A task can only be a command line**, because it is a shell link. Each runs the companion exe
+  with the entry's position **and a token hashed from what the entry launches**. A published list is
+  a snapshot that can outlive an edit, so the token decides and the position only saves a search;
+  when neither finds the entry, the launcher is opened instead. Nothing ever launches whatever
+  happens to have taken that position.
+- **Publishing runs on a private STA thread**, from a snapshot taken on the UI thread. Rasterising
+  icons and talking to the shell is slow enough to be visible, and the launcher objects are
+  observable collections the UI thread is free to be editing.
+- **Below a separator, the launcher's own commands.** `Models/LauncherActions.cs` numbers them, because a task can only be a command line and the number travels through the companion exe, which forwards it without knowing what it means. Never renumber one: a published list outlives the version that wrote it. The commands are reserved out of the slot budget first and the entries take what is left, since the entries are a sample of something the button already shows in full.
+- **The menu is headed "Tasks", and that is forced.** Naming it needs a custom category, a category
+  needs destinations the app is registered to open, and a per-launcher AUMID is registered for
+  nothing (it is re-minted on every pin). `AppendCategory` returns `E_ACCESSDENIED`; the publish
+  attempts it, falls back to user tasks, and remembers the refusal. The same constraint is why no
+  entry offers "Remove from this list".
+- Web launchers add two rules of their own - a single-address launcher publishes nothing, and a
+  bookmark opens in a new foreground tab. See [docs/web-launchers.md](web-launchers.md).
+
+## Distribution
+
+The Windows app ships through exactly two channels: the **portable zip** attached to each GitHub release, and the **Microsoft Store MSIX**. A per-user WiX MSI was a third until v1.35.1 and was retired — it re-implemented, less well, what the Store already does (managed install, silent update, clean uninstall), and the portable zip covers everyone who wants to stay off the Store. On Windows, only the Store build installs its own updates; the portable one checks GitHub and links to the release page. The Linux app uses only AppImage, with explicit in-app download, install and restart controls. See [docs/installer.md](installer.md).
+
+## MSIX packaging
+
+`LittleLauncherMSIX/build-msix.ps1` produces an MSIX package for Microsoft Store distribution or sideloading. Key details:
+
+- **Publishes with `-p:WindowsPackageType=MSIX`** to suppress the unpackaged-only auto-bootstrapper (`MICROSOFT_WINDOWSAPPSDK_BOOTSTRAP_AUTO_INITIALIZE`), which fails in a packaged context.
+- **Declares `<PackageDependency>`** on `Microsoft.WindowsAppRuntime.1.8` so the framework package provides WinRT activation factories.
+- **Copies compiled XAML (.xbf)** files manually from the RID build directory to the layout — `dotnet publish` omits them.
+- **Version and architecture** are stamped from `Directory.Build.props` into the manifest at build time (`VERSION_PLACEHOLDER`, `ARCH_PLACEHOLDER`).
+- **Image assets** in `LittleLauncherMSIX/Images/` use standard MRT naming qualifiers (e.g. `.scale-200.`, `.targetsize-48.`) and are indexed into `resources.pri` by `makepri`.
+- **Companion exe** is deployed at startup to the external helper directory, and packaged builds also mirror it into the shared raw `%AppData%\\LittleLauncher\\` path for backward compatibility with old launcher pins. See "Companion exe" section above.
+- **`-NoSign` flag** skips all signing for Store uploads (Microsoft re-signs during ingestion). Without `-NoSign`, the script signs with a self-signed dev cert or a trusted PFX.
+- **Update checks run in MSIX builds too**, against the Store rather than GitHub Releases, and this is the only build that can update *itself*: Home/About offer **Download & Install** and apply a Store update in place, where a portable copy gets **View Release** and a link. About also offers a restart when no update is pending, since a staged one cannot apply while the tray process is alive. The **startup update toast** stays unpackaged-only — Store updates otherwise install silently, so there is nothing to interrupt anyone about. The manifest declares a `windows.toastNotificationActivation` COM activator regardless, so `AppNotificationManager` registers for both install types and packaged builds can still raise one-time upgrade notices. See [docs/installer.md](installer.md) for the Store update flow and the version-reporting trap it works around.
+
+## Native Linux host
+
+`linux/` develops the Linux application alongside the WinUI host. Native Qt Widgets own Settings, shortcut flyouts, editing, and dialogs; a separate Electron process owns sandboxed web content. The inherited pipe boundary exposes no remote-page control bridge. Desktop theme values come from Qt, while native window decoration remains desktop-owned. One StatusNotifierItem connection per launcher retains the host's activation coordinates, passed to an optional app-scoped KWin helper before mapping. GNOME currently uses a labelled regular window. Read [the Linux architecture guide](linux.md) and [current verification/gates](../linux/README.md).
+
+`Launcher.Platform` and Linux launcher_supported implement whole shortcut-launcher OS ownership. Foreign launchers stay in Settings as disabled; supported launchers render all of their items without per-item OS handling. Web launchers remain shared. The native selfh.st catalog picker uses bounded cached PNGs; selected custom bytes and matching glyph previews travel through sync. Windows UI qualification and live cross-platform sync remain gates.
+
+Linux bookmark editing is owned by `little_launcher/bookmark_tree.py` (Qt-independent full-source mutations), `bookmarks.py` (native forms and transactional saves), and `browser/bookmarks.cjs` (display paths, render revisions and native context menus). Presentation rows never replace saved collections. Native prompts preserve unknown fields and independent home state, compare their source snapshot at save time, and return focus without recreating the web host.
+
+Linux shortcut hosts now share `LauncherGeometry`, `LauncherItemsView` and `ItemEditingSession`. The regular editor wraps only the intrinsic preview; the tray flyout edits in place with an owned floating toolbar. Native style/palette supplies drawing while Windows-reference cell slots, column arithmetic, group packing and body padding determine layout. The KWin helper positions toolbar windows independently, preserves body focus and re-anchors only explicit content-size changes. Full source paths and per-renderer drag identities protect hidden data during moves, including empty collection targets.
+
+Linux web hosts now own a tab collection with a lifecycle per remote view. Permission/transfer callbacks bind to their originating tab, and quit/removal checks aggregate all tabs. `browser/web_actions.cjs` owns trusted quick menus and keyboard actions; known visibility/pin choices round-trip through the native full-document controller. Shared launcher settings use collapsible section destinations. `ApplicationList` supplies the embedded installed-application source tab and standalone picker. See [the UI parity review](linux-ui-parity.md) for source references and explicitly unfinished surfaces.
+
+Linux `launcher_card.py` owns passive native card framing, the preferred450-pixel column and Windows-reference two-line action rows with trailing chevrons. `settings.py` assembles the header actions, Settings/Items order and independent item bulk menu, and owns guarded per-launcher JSON import/export and launcher ordering. The whole Launchers page scrolls as one surface.
+
+Linux `launcher_settings.py` owns launcher-only sections, label/subtitle/control rows and the Done boundary, re-exported by `forms.py` for existing callers. It preserves unknown fields, hides kind-specific rows and uses the controller's existing guarded final save. `ShortcutFlyout` publishes native edit/owned-interaction state through the same protocol ownership flag as the browser, allowing KWin to provide focus/dismissal fallback without closing editing sessions or owned dialogs.
+
+Linux shortcut groups use `GroupPlacement` bounds from `LauncherGeometry` and real `ItemGroup` widgets in the shared view. Headers/children delegate group targeting to one resolver, with `GroupOverlay` drawing non-reflowing scope/membership/sibling cues. `group_drop_zone` holds the Qt-independent full-container boundary policy; `ItemDrag` renders bounded identity cards. The native flyout's one-shot focus protocol restores activation after non-activating Done and protects owned/edit states until activation is acknowledged. Private QA gets input coordinates from the owned-window-only `CompositorProbe`.
+
+## Cross-device images and device-local launcher lifetime
+
+Global payloads now carry bounded custom launcher image bytes through Windows `PortableLauncherIcon` and Linux `portable_icons.py`. Downloads restore hash-named local files; a missing foreign path no longer resets the chosen icon. Local window/session/pin state is stripped from exports and ignored on incoming new launchers as well as existing ones.
+
+Linux `onedrive.py` implements the Windows personal-account app-folder registration and PKCE flow with tokens in desktop Secret Service. `sync.py` runs network work off the Qt thread and applies downloads with local backups/revision guards. Uploads require a compatible writer baseline and use conditional Graph upload sessions; automatic sync is optional and pauses on conflict/error. Live account acceptance remains pending. Other providers/shared sync remain gates.
+
+Device-local disabled launcher IDs are outside the synced launcher objects on both platforms. Central routing, tray entries, panel/browser lifetime and background preload honor the setting; the full launcher/profile remains available to re-enable. The native General control explains that disabling closes active pages. Linux removes queued browser commands and sends already-confirmed disable removals through the trusted pipe, while ordinary protected-work deletion retains its prompt.
+
+## Imported Linux launcher parity follow-up
+
+`CloudSyncPage`/`Destination` now mirror the Windows sync page's provider/account and shared-action structure. Account labels/status remain nonsecret local metadata; tokens stay in Secret Service. `web_preferences.py` validates native/browser quick mutations and atomic remembered dimensions. `browser_identity.cjs` exposes the actual Chrome/Chromium identity; `web_menu.cjs` supplies the Windows section/control ordering. Profile maintenance is explicit, scoped and serialized around other browser commands; replies bypass that queue. Navigation remains active until loading finishes before hidden lifecycle controls apply.
+
+Qt/Electron explicitly use Wayland. Temporary previews have distinct native/browser app IDs and dynamically scoped launcher IDs, including downloads. A web host preloaded without an anchor remaps its first visible native surface while retaining its WebContents. Fixed anchors are compositor-owned; ordinary position/stacking restrictions remain with KDE. Imported Windows path display and shrinkable form labels keep the settings body within its native viewport. [The audit](linux-parity-audit.md) separates implemented behavior, controlled evidence, real-service acceptance and remaining parity work.
+
+
+`browser/bookmark_icons.cjs` owns bounded, credential-free same-site favicon retrieval and an in-memory profile-scoped presentation cache. Only raster data URLs reach trusted chrome; synced bookmark paths/metadata are never used as file access. `WebBookmarkIconsOnly || bookmark.IconsOnly` controls captions while keeping accessible names and tooltips. Regular web windows use KDE decorations; a one-shot `LittleLauncherWindow` caption lets the app-owned helper apply the saved opening anchor before activation without assigning flyout taskbar/dismissal/stacking behavior. Electron restores the regular title on native focus; flyouts retain their existing ownership protocol.
+
+
+Linux `browser/tab_menu.cjs` builds Windows-reference tab commands. `web_actions.cjs` applies callbacks to the captured live tab, background duplication, guarded sequential bulk closes and bounded in-memory closed-URL history. Trusted chrome emits tab IDs and versioned bookmark targets, including modifier/middle-click. Native `BookmarkAddressDialog` validates a single address before closing; `BookmarkActions` owns field-specific rename/address and home-only transactions with stale tree/home guards. Read-only bookmark navigation remains distinct from content mutation.
+
+
+## Second Linux parity pass
+
+`icons.py` renders bounded presentation PNGs for `BrowserHost`; `browser/window_icon.cjs` validates their raster dimensions before Electron uses them as native window icons. Qt launcher hosts share that icon resolver. `web_sessions.py` owns atomic device-local saved addresses, separate from portable state; `BrowserHost` binds events to current launcher identities and forwards saved sessions as presentation data. `window.cjs` restores active/lazy/Keep running pages, publishes deduplicated sessions and preserves them during unload. Explicit final-tab close clears the session and hides the host.
+
+`browser_bookmarks.py` owns bounded read-only source discovery/projection. `bookmark_picker.py` owns the native browser/profile/search/confirm surface; `BookmarkActions` retains full-source stale/read-only guards around importing a selected entry. `LauncherDialog` immediately commits completed controls through its original full-launcher preimage, updating that preimage only after a successful save.
+
+`browser/strip_drag.cjs` translates displayed bookmark indexes to full saved paths. Trusted chrome retains an internal drag identity and defers state rebuilds during a drag; foreign payloads cannot manufacture one. Native `BookmarkTree.reorder` resolves both collections before mutation. Tab moves retain live view/active identity and update device-local session order. See [the current audit](linux-parity-audit.md#second-audit-historical-snapshot) for open implementation and qualification work.
+
+The second audit also adds standard native external file/URL drops (Copy/Link, Linux-only file references), desktop file-type icons, and a pending native preset/emoji/text/color/custom-image chooser. Legacy numeric icon modes render without rewriting portable metadata; unsupported private-use glyphs remain saved. Independent per-WebContents zoom keeps shared sign-ins without shared page scale, and navigation reapplies the selected percentage. Current verification is 103 native/data tests, 26 Node cases, all 12 actual-engine lifecycle checks, expanded renderer/session/context checks, native picker screenshots, six native group-drag modes/hosts and a real native external file drop. Physical Ctrl+wheel remains unqualified and is omitted from the help sheet. Complete catalog, overlay, fullscreen, positioning and release gaps remain explicitly listed in [the parity audit](linux-parity-audit.md).
+
+The third parity pass implements nested draggable bookmark folder/overflow overlays above the isolated page, KDE device-local last-dragged positions through a scoped QtDBus bridge, a native opening-position grid, and contained/display page fullscreen with trusted exit/maximize controls and intrinsic video fitting. Actual private compositor pointer drag and titlebar move/reopen checks pass; fullscreen uses synthetic local media. Current source verification is107 native/data tests and29 Node cases plus real-engine regression drivers. QtDBus is now a runtime module requirement; Debian packaging declares `python3-pyside6.qtdbus`. Existing installed KWin helpers require explicit update; the real preview reloads only its own temporary helper. Cross-window drags and broader catalogs, services and release gates remain open in [the audit](linux-parity-audit.md).
+
+## Linux AppImage and fourth parity pass
+
+Linux offers only x64 AppImage, with a private Debian12-compatible Python/Qt runtime and sandboxed Electron. `updates.py` validates stable matching GitHub assets and stages verified bytes; UpdateController owns native worker/UI state and normal-shutdown restart intent. The app releases instance ownership before atomic replacement/restart, retains a previous image and preserves the data directory. User menu/startup entries point at the stable image; startup and automatic check choices remain local. Windows delivery channels above are unchanged.
+
+Native item icons now support staged glyph/color/image selection and explicit public favicon preview; browser bookmarks can be bulk-selected/imported through full-source guards, and the app picker offers source filters and row context commands. Custom item image byte sync and broader catalog/service parity remain open. See [the current audit](linux-parity-audit.md) and [Linux delivery](../linux/README.md#linux-appimage-delivery).
+
+### Linux extensions and durable notifications
+
+System → Browser Extensions manages Bitwarden and unpacked extensions. Extension popups are also available in each web launcher’s More → Extensions menu. Code is app-wide; vault/settings data stays private to each local sign-in profile, or shared only when launchers use the shared profile. The app verifies the official Bitwarden package and shows requested permissions before enabling it. Notification choices now survive app updates; one new approval may be needed because earlier versions kept them only in memory. See [the Linux architecture](linux.md#linux-site-permissions-and-extensions) and [the current audit](linux-parity-audit.md). Real vault/passkey and Google sign-in acceptance remain separate from the account-free extension fixture.
+
+Linux notification presentation and native activation are separate from the Windows bridge. `linux/browser/page_notifications.cjs` restores default/prompt semantics through standard Web APIs and a bounded native-context-authenticated CDP transport. `WebLauncher` restores the correct tab without reload; worker focus/open operations require a live native notification-click task. Existing profile/origin decisions survive updates. See [the Linux correction](linux.md#linux-notification-permission-and-activation-correction) for boundaries and qualification.

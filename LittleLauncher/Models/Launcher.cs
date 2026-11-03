@@ -199,7 +199,7 @@ public class TrayIconModeJsonConverter : JsonConverter<string>
 /// Represents a named launcher: a set of launcher items with their own tray icon
 /// appearance and a stable GUID-based identity for cross-process routing.
 /// </summary>
-public partial class Launcher : ObservableObject
+public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnDeserialized
 {
     public const int MinIconModeIconsPerRow = 1;
     public const int DefaultIconModeIconsPerRow = 3;
@@ -303,6 +303,25 @@ public partial class Launcher : ObservableObject
     [ObservableProperty]
     public partial string CustomTrayIconPath { get; set; } = "";
 
+    /// <summary>Base64 raster content for a custom icon, independent of device paths.</summary>
+    [ObservableProperty]
+    public partial string CustomTrayIconData { get; set; } = "";
+
+    /// <summary>Portable raster fallback for font-dependent glyph/emoji modes.</summary>
+    [ObservableProperty]
+    public partial string TrayIconPreviewData { get; set; } = "";
+    [ObservableProperty]
+    public partial string TrayIconPreviewMode { get; set; } = "";
+
+
+    private bool _deserializing;
+    void IJsonOnDeserializing.OnDeserializing() => _deserializing = true;
+    void IJsonOnDeserialized.OnDeserialized() => _deserializing = false;
+    partial void OnCustomTrayIconPathChanged(string value)
+    {
+        if (!_deserializing) CustomTrayIconData = "";
+    }
+
     /// <summary>When true, this launcher's tray icon is hidden from the system tray.</summary>
     [ObservableProperty]
     public partial bool NIconHide { get; set; }
@@ -335,6 +354,19 @@ public partial class Launcher : ObservableObject
     /// </summary>
     [ObservableProperty]
     public partial int Kind { get; set; }
+
+    /// <summary>Owning OS for shortcut launchers; web launchers are cross-platform.</summary>
+    [ObservableProperty]
+    public partial string Platform { get; set; } = "windows";
+
+    [JsonIgnore]
+    public bool IsSupportedOnThisOperatingSystem => IsWebLauncher || Platform == "windows";
+
+    partial void OnKindChanged(int value)
+    {
+        if (!_deserializing && !LauncherKinds.IsWeb(value)) Platform = "windows";
+    }
+
 
     /// <summary>
     /// Legacy: the single page a web launcher used to show, before one address and a bar of them
@@ -555,7 +587,7 @@ public partial class Launcher : ObservableObject
     /// its inverse, and off means locked. A bool that defaults to <c>true</c> cannot be turned off
     /// in this settings file: <c>WhenWritingDefault</c> drops <c>false</c> on save and the field
     /// initialiser puts <c>true</c> back on load. See
-    /// <c>.codex/docs/user-settings.md</c>.</para>
+    /// <c>docs/user-settings.md</c>.</para>
     /// <para>Locking is how a size is pinned down: set the width and height you want, turn Remember
     /// Size off, and dragging the edges then only lasts as long as the flyout is open. It is the
     /// same bargain the header's maximize makes, one step less drastic — and unlike maximize it is

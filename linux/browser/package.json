@@ -1,0 +1,19 @@
+{
+  "name": "little-launcher-web",
+  "private": true,
+  "main": "main.cjs",
+  "desktopName": "io.github.RyanEwen.LittleLauncher.Web.desktop",
+  "description": "Isolated web engine for the native Linux Little Launcher host",
+  "devDependencies": {
+    "electron": "45.2.1",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "electron-log": "5.4.3",
+    "zod": "4.6.7"
+  },
+  "scripts": {
+    "build:extensions": "node build-vendor.cjs",
+    "prepare": "node build-vendor.cjs"
+  }
+}

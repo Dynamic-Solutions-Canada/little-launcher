@@ -1,0 +1,43 @@
+{
+  "repository": "https://github.com/RyanEwen/paseo-plus-plus",
+  "branch": "feat/bundled-chromium-browser",
+  "commit": "e5b51f7a308e8812aac51498be92456066b9cd37",
+  "source": "packages/desktop/src/features/browser-extensions",
+  "upstreamSha256": {
+    "atomic-json.ts": "197985979f9dc8355b1b228ba111ebc182f6ced32042e66e55233665e83fdce8",
+    "tab-observation.ts": "406f2f49e204327ec533c370de1e2c0b7846863245c0c0a97eca81d671984978",
+    "compatibility-preload.ts": "dbd7b8914c1bfc42eb29a547cf1538f2abd4321db8222d0539e4e012b4b51b97",
+    "action-badges.ts": "38b87f06df993b0667d44658912e193e1ad412d9b18d114dc844bfc88eee4fa6",
+    "events.ts": "26765813a793bcc4b446ac238700d19bb7f3e86f4dfe9f372d01286b3d784a18",
+    "navigation.ts": "2bd17074e38d22666068253ecd323c53dec2a4f9378e25e9dedb2c88601a0117",
+    "catalog.ts": "1757f5937194a305ed9c2d04e0353cddf3e3d06444947695502ec4d59a447d41",
+    "worker-activity-preload.ts": "29d981cfe99c7388188c13d66e09fbfeb31b2894da202e252ca5125b7d5758c6",
+    "context-menus.ts": "a879e16c6cfcb0c00761ba5563e1f77d2ee01d105ddf2cbec1ab52c7ac731a82",
+    "navigation-metadata.ts": "d7feda027004dd1b7fc3b16ae5a49c41a23f6b9cb24245b4039bed1902db3c96",
+    "runtime-failure.ts": "cf16c4c3a229fd93a5c242f2097f3848907b295af78d84047c03bbaefd7b5102",
+    "storage-observers.ts": "475daea37b960d77c1526ed1dd25b7ba0c44a6c6026279aba37726a67d2a7a4d",
+    "navigation-delivery.ts": "b3a85353be8db1a3be16073cf0f00c2a643d84deabb36d684c98fa176964d65b",
+    "windows.ts": "31558069dc8e6fa9fd259dbbf46005e89d70d0f43b4ba368f8dfa79a61464bab",
+    "manifest.ts": "9918e9bbec8f150521ac9277c2f71b73df411150464e9bb2a909e748eb729b79",
+    "tabs.ts": "1440dee38c354cdf6f9c85a97d9401eef5e4635a9372713fb07f15c177e5401c",
+    "notifications.ts": "ca4d822fb4770e9fd2ec9671380f7574f70bb15564b7622c830b354800c5d77d",
+    "alarms.ts": "986a3ba6b3ee70e2549a5823d5a0db69d79622cd4ae1344ce3e23458f9e90564",
+    "document-window.ts": "f7069434cbd3fc485da3054d95cf152eda348ab7f058a719b52b1a15f7c05b49",
+    "host-patterns.ts": "e280a890406bd71f0e2e258de99ca8458a1bef53f9df6074f711a4a3cbd5f269",
+    "frames.ts": "e0bd02ea7262cea34eb6a1b6f030b257d33dd72afe5ba8294a6c3868d3328924",
+    "tab-access.ts": "47f83bac512b490667df2c7981436a67f0cfaa4369668a16bfe8006a0a062795",
+    "compatibility.ts": "203b22b939050c95adb5d70865516f3559ffd8460fd8e1aa2c39e29ce3214e18",
+    "worker-activity.ts": "da0fb48df490e8983467e67428fb716ace38648d94f77d4e4d7cb1d9507ee627",
+    "tab-projection.ts": "be4c471d50d7fcdda962de6c82213eff7e00c7efeb02835ac63eb4dcf8586150"
+  },
+  "adaptations": [
+    "Session-keyed renderer IPC dispatch",
+    "Per-session alarm/context-menu storage",
+    "Little Launcher browser-view registry adapter"
+  ],
+  "upstreamAutomationSha256": {
+    "cdp-transport.ts": "868ae193f9e6fc49aff0de3b36da359015708ee6ff85cc776aca23a0d2c88c3d",
+    "cdp-session-queue.ts": "fef7935610327cbe8fc4d25cd69d0ac8712debb7c2ac8a7aac651e25cec8bae9",
+    "input-lifetime.ts": "0567a11c87ce52baf88ebe12648f0579ee272bc09d1fc1428e641af26aeb5f27"
+  }
+}

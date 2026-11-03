@@ -51,7 +51,7 @@
         <desktop:Extension Category="windows.startupTask">
           <desktop:StartupTask
             TaskId="LittleLauncherStartup"
-            Enabled="false"
+            Enabled="true"
             DisplayName="Little Launcher" />
         </desktop:Extension>
 

@@ -1,6 +1,6 @@
 # Launcher editing regressions
 
-Read [drag-drop.md](../.codex/docs/drag-drop.md) before changing drag policy or these suites.
+Read [drag-drop.md](../docs/drag-drop.md) before changing drag policy or these suites.
 
 `LauncherItemReorder.Tests` links the production observable model, window-free move/flatten policy and numeric group-boundary hit policy. Use synthetic items and reference assertions; do not replace the real model with test stand-ins or require user settings. Test exact zone thresholds and distinct child-versus-sibling persistence, while leaving actual nested routing and tint/caret review to the native suite.
 
@@ -10,4 +10,6 @@ Read [drag-drop.md](../.codex/docs/drag-drop.md) before changing drag policy or 
 
 Group-boundary cases must keep their exact receiver/last-child/following-group geometry assertions and prove saved items remain unchanged before Drop. Inside/after/inside screenshots support human review of the faded last child and internal marker versus an unchanged child and outside marker. Held-pointer checks compare geometry twice before release; group-end-leave tests cue cleanup before held-Escape cancellation. These checks do not claim automated pixel or opacity acceptance.
 
-`PageIconChoiceRegression` links the production automatic-icon choice and exact preview writer. Read [icons.md](../.codex/docs/icons.md) and its [README](PageIconChoiceRegression/README.md) before changes. Keep synthetic byte fixtures and cancellation/source-identity assertions; its UI adapters do not establish native decoding or icon-surface acceptance.
+`PageIconChoiceRegression` links the production automatic-icon choice and exact preview writer. Read [icons.md](../docs/icons.md) and its [README](PageIconChoiceRegression/README.md) before changes. Keep synthetic byte fixtures and cancellation/source-identity assertions; its UI adapters do not establish native decoding or icon-surface acceptance.
+
+`LauncherSync.Tests` links production launcher models, global payload and portable custom-icon IO. Read [sync.md](../docs/sync.md) and [icons.md](../docs/icons.md); its [README](LauncherSync.Tests/README.md) documents adapted native boundaries and qualification limits. Use only disposable files and fake dispatch/service adapters; never real credentials or launcher settings.

@@ -1,0 +1,7 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:"><link rel="stylesheet" href="chrome.css"></head>
+<body>
+<header><div class="actions"><button id="back" title="Back"></button><button id="forward" title="Forward"></button><button id="reload" title="Reload"></button><button id="home" title="Home"></button></div><span id="title">Little Launcher</span><div class="actions"><button id="more" title="More"></button><button id="extensions" title="Extensions" hidden></button><div id="pinned-extensions" class="actions"></div><button id="address" title="Show address bar"></button><button id="pin" title="Keep flyout open"></button><button id="minimize" title="Minimize"></button><button id="maximize" title="Maximize"></button><button id="hide" title="Close"></button></div></header>
+<nav id="tabs" aria-label="Tabs"><div id="tab-list" role="tablist"></div><button id="new-tab" title="New tab"></button></nav>
+<form id="address-form"><input id="url" type="text" aria-label="Address" spellcheck="false" placeholder="Address"><button id="bookmark-add" type="button" title="Add current page to bookmarks"></button></form>
+<footer id="bookmarks"></footer><script src="bookmark_drag.js"></script><script src="chrome.js"></script></body></html>

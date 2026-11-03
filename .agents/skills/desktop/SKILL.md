@@ -5,7 +5,7 @@ description: Build, verify, or install this repository's Windows desktop app fro
 
 # Windows desktop development
 
-Read [.codex/docs/windows-development.md](../../../.codex/docs/windows-development.md)
+Read [docs/windows-development.md](../../../docs/windows-development.md)
 and the shared helper guide it links. Select the root npm command matching the
 request: `build:desktop`, `verify:desktop`, `install:desktop`, or `package:desktop`.
 When asked to rebuild and try a change, use `npm run install:desktop`.

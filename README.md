@@ -5,13 +5,17 @@
 <h1 align="center">Little Launcher</h1>
 
 <p align="center">
-  A Windows launcher with system-tray and taskbar icon support, settings-sync capability, built with WinUI 3, Windows App SDK, WebView2, and SSH.NET.
+  A tray launcher for apps and websites, with settings sync. Available for Windows and Linux.
 </p>
 
 <p align="center">
   <a href="https://apps.microsoft.com/detail/9p3zzbdq6pjf">
     <img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Download Little Launcher from the Microsoft Store" height="56">
   </a>
+</p>
+
+<p align="center">
+  <a href="#install">Windows downloads</a> &middot; <a href="#linux">Linux AppImage</a>
 </p>
 
 <p align="center">
@@ -22,6 +26,8 @@
   <img src="LittleLauncher/Resources/AppIcons/Orange.png" width="48">&nbsp;
   <img src="LittleLauncher/Resources/AppIcons/Purple.png" width="48">
 </p>
+
+<p align="center">Screenshots below show the Windows version.</p>
 
 <p align="center">
   <img src="docs/icon-launcher.png" alt="Flyout — icon view" width="300">
@@ -63,9 +69,11 @@
 
 ## Overview
 
-Little Launcher lives in the Windows system tray and/or taskbar. Clicking its icon opens a flyout — either a grid of app and website shortcuts, or a web page in its own right. It also synchronises your settings — through OneDrive, Google Drive, WebDAV, a network file share, another folder, or your own SSH/SFTP server — so you can keep your launcher configuration in sync across machines.
+Little Launcher puts named launchers in your system tray. Clicking an icon opens a flyout with app and website shortcuts, or a web page of its own. Windows also supports per-launcher taskbar pins. The Linux app uses the desktop's controls, colors and window decorations, with KDE as its primary target and GNOME also in scope.
 
-**Key features:**
+Web launchers and their selected icons can sync between Windows and Linux. Shortcut launchers belong to their creating operating system and remain listed but disabled on the other; **Enabled on this device** can also stop any launcher's local activity without removing its synced configuration. Windows supports OneDrive, Google Drive, WebDAV, shared folders and SSH/SFTP; Linux currently supports OneDrive personal accounts. See [Linux desktop support](#linux-desktop-support) for desktop requirements and platform differences.
+
+**Key features:** Both apps follow the same launcher layouts and workflows. Windows-specific features are identified below; platform differences are tracked in the [parity audit](docs/linux-parity-audit.md).
 
 - **Multiple launchers**; define multiple named launchers, each with its own icon and items.
 - **Web launchers**; point a launcher at a web page instead of a list of shortcuts, and its tray icon opens that page itself: a Home Assistant dashboard, webmail, Teams, WhatsApp, a status board, one click away. Each keeps its own sign-in between restarts, so two launchers can be signed in to the same site as different people; or share one profile if you would rather sign in once.
@@ -104,26 +112,51 @@ Little Launcher lives in the Windows system tray and/or taskbar. Clicking its ic
 - **Export & import**; back up and restore items locally via JSON.
 - **Bookmark import**; import bookmarks directly from Chrome, Edge, Firefox, or any browser's exported HTML bookmarks file into a launcher.
 - **Pick a web address from your bookmarks**; a web launcher's address, and the bookmarks in its bar, can be chosen from a searchable list of what you have already bookmarked in Chrome, Edge or Firefox, rather than typed from memory.
-- **Update paths per install type**; Microsoft Store installs check for and apply updates through the Store from inside the app; the portable build checks GitHub Releases and takes you to the new release to download it.
+- **Updates and startup**; Windows Store installs update through the Store, and Windows portable builds link to GitHub releases. The Linux AppImage includes update checks and explicit download, install and restart controls for compatible published releases. Start at login defaults on for new installations on both platforms and can be turned off in Settings.
 
 ## Install
 
+### Windows
+
 **Microsoft Store (recommended):** [Get Little Launcher from the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf) — installs and updates automatically through the Store.
 
-**Portable:** Grab the portable ZIP for your architecture (x64 or ARM64) from the [Releases page](https://github.com/RyanEwen/LittleLauncher/releases/latest) and unzip it wherever you like — nothing is installed and no admin rights are needed. It tells you when a new version is out and links you to it; you replace the folder yourself. To remove it, run `cleanup-uninstall.ps1` from the folder with the app closed (it clears settings, the startup entry and any shortcuts), then delete the folder.
+**Portable:** Grab the portable ZIP for your architecture (x64 or ARM64) from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest) and unzip it wherever you like — nothing is installed and no admin rights are needed. It tells you when a new version is out and links you to it; you replace the folder yourself. To remove it, run `cleanup-uninstall.ps1` from the folder with the app closed (it clears settings, the startup entry and any shortcuts), then delete the folder.
 
 Little Launcher used to ship an MSI installer as well. It has been retired in favour of these two: the Store handles installing, updating and uninstalling properly, and the portable build is for anyone who would rather not use the Store. Older releases keep their `.msi` files, and an existing MSI install keeps working — it will simply point you here when a new version appears.
 
-**Requirements:** Windows 10 or 11 (build 22000 or later).
+**Requirements:** Windows build 22000 or later.
+
+### Linux
+
+Download the **x64 AppImage** from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest), make it executable, and run it. AppImage is the only Linux package format, targeting **Debian 12 / Ubuntu 24.04 LTS or newer**.
+
+```bash
+chmod +x LittleLauncher-VERSION-linux-x64.AppImage
+./LittleLauncher-VERSION-linux-x64.AppImage
+```
+
+Replace `VERSION` with the downloaded release number. Keep the AppImage in a writable location where you want it to stay. First launch adds application-menu entries and enables login startup; Settings can turn startup off. About offers update checks and download, install and restart controls. KDE is the primary desktop target; GNOME needs tray support. See [Linux delivery and desktop integration](linux/README.md#linux-appimage-delivery) for requirements and troubleshooting.
 
 ## Building from source
 
-Little Launcher is a .NET 10 WinUI 3 app. See **[DEVELOPMENT.md](DEVELOPMENT.md)** for build prerequisites, the architecture overview, and the project layout.
+**Windows:** .NET 10, WinUI 3 and WebView2. See [the development guide](docs/development.md) for prerequisites, build commands and architecture.
+
+**Linux:** native Qt/PySide6 desktop controls and a separate sandboxed Electron web engine. See [linux/README.md](linux/README.md) for development dependencies, isolated KDE verification and AppImage builds.
 
 Launcher editing has a [cross-platform policy regression suite](tests/LauncherItemReorder.Tests/README.md) and a guarded [native Windows drag suite](tests/native-drag/README.md) for a dedicated test desktop.
+
+Browse the [documentation index](docs/README.md) for architecture, implementation guides and design decisions.
 
 ## License
 
 Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md): free for any
 **personal and other noncommercial use**, including modifying and redistributing it.
 **Commercial use is not permitted.** Copyright © 2024-2026 Ryan Ewen.
+
+## Linux desktop support
+
+The Linux app includes native shortcut flyouts and editing, web launchers with tabs and bookmarks, profile-scoped browser extensions, selfh.st and custom icon selection, OneDrive personal-account sign-in, manual and optional automatic sync, device-local launcher enablement, and login startup. Selected custom images and glyph previews travel with the synced launcher configuration.
+
+AppImage update checks and explicit install-and-restart preserve settings and browser profiles. Notification permissions are remembered locally; notification activation restores the owning launcher. Desktop integration depends on the desktop environment: KDE has an optional KWin helper for placement, and GNOME may need tray support. Google sign-in and some passkey flows have known compatibility limitations; notification behavior also varies by site. Other sync destinations and shared-launcher transports are not enabled on Linux yet.
+
+See the [Linux guide](linux/README.md), [UI parity review](docs/linux-ui-parity.md) and [current parity audit](docs/linux-parity-audit.md) for supported behavior, verification and remaining platform differences.

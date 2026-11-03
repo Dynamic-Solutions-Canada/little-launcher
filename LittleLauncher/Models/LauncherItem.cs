@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
@@ -105,6 +105,14 @@ public partial class LauncherItem : ObservableObject
     /// Child items belonging to this group. Only used when <see cref="IsGroup"/> is true.
     /// </summary>
     public ObservableCollection<LauncherItem> Children { get; set; } = [];
+
+    /// <summary>
+    /// Null infers legacy path syntax; an empty list is portable. Explicit OS assignments
+    /// survive sync even when the target is hidden on this machine.
+    /// </summary>
+    [ObservableProperty]
+    // Dormant legacy metadata only; whole-launcher Platform now owns OS eligibility.
+    public partial string[]? SupportedOperatingSystems { get; set; }
 
     public LauncherItem()
     {

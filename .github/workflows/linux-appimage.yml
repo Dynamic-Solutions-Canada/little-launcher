@@ -1,0 +1,34 @@
+name: Linux AppImage
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  appimage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: linux/browser/package-lock.json
+      - name: Fetch the locked Electron engine
+        run: npm ci --prefix linux/browser
+      - name: Build AppImage in the Debian 12 runtime container
+        run: npm run package:linux -- --engine-dir linux/browser/node_modules/electron/dist --output .artifacts/linux-appimage
+      - name: Verify AppImage extraction and bundled imports
+        run: |
+          image=$(find .artifacts/linux-appimage -maxdepth 1 -name '*.AppImage' -print -quit)
+          "$image" --appimage-extract
+          QT_QPA_PLATFORM=offscreen squashfs-root/usr/bin/python3.11 -I -c "import sys;sys.path.insert(0,'squashfs-root/usr/lib/python3.11/site-packages');from PySide6 import QtWidgets,QtNetwork,QtDBus;import dbus_next"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Linux-AppImage
+          path: |
+            .artifacts/linux-appimage/*.AppImage
+            .artifacts/linux-appimage/*.AppImage.sha256

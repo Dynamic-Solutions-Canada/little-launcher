@@ -1,0 +1,73 @@
+'use strict';
+// Restore uses disposable localhost pages, local storage adapters and the private compositor only.
+const assert=require('node:assert/strict');
+const {app}=require('electron');
+const fs=require('node:fs');
+const http=require('node:http');
+const {WebLauncher}=require('../browser/window.cjs');
+const {Profiles}=require('../browser/profiles.cjs');
+assert.equal(process.env.XDG_RUNTIME_DIR,'/tmp/ll-runtime');
+app.on('window-all-closed',()=>{});
+app.setPath('userData',fs.mkdtempSync('/work/session-restore-'));
+const server=http.createServer((_req,res)=>{res.setHeader('Content-Type','text/html');res.end('<title>Restored page</title>Disposable session fixture');});
+server.listen(0,'127.0.0.1');
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function until(check){for(let i=0;i<150;i++){if(await check())return;await delay(40);}throw Error('Session fixture timed out');}
+const owners=[];
+function destroy(owner){for(const tab of owner.tabs){tab.closing=true;tab.view?.webContents.close({waitForBeforeUnload:false});}owner.window.destroy();}
+app.whenReady().then(async()=>{
+ const base=`http://127.0.0.1:${server.address().port}/`,records=[],requests=[];
+ const services={isQuitting:()=>true,emit:message=>records.push(message),request:async message=>{requests.push(message);return true;}};
+ services.profiles=new Profiles(services.request,()=>null);
+ const config={Id:'session-fixture',Name:'Saved tabs',WebRegularWindow:true,WebShowAddressBar:false};
+ const theme={window:'#eff0f1',text:'#232629',button:'#d9dada',highlight:'#3daee9',font:'Noto Sans'};
+ const create=(saved,policy=0)=>{const owner=new WebLauncher({...config,WebHiddenPolicy:policy},theme,null,{homeUrl:base,showBookmarkBar:false,session:saved},services);owners.push(owner);owner.show();return owner;};
+ const first=create();await until(()=>!first.activeTab.initializing && !first.view.webContents.isLoading() && first.view.webContents.getURL()===base);assert.equal(first.view.webContents.navigationHistory.canGoBack(),false,'Bootstrap must not create a blank history entry');
+ first.createView(base+'second');await until(()=>!first.activeTab.initializing && !first.view.webContents.isLoading());
+ first.createView(base+'third');await until(()=>!first.activeTab.initializing && !first.view.webContents.isLoading());
+ first.shortcut({key:'2',control:true});
+ assert.equal(first.view.webContents.getURL(),base+'second');
+ await first.view.webContents.executeJavaScript('history.pushState({},"","/second#local")');
+ await until(()=>records.filter(row=>row.type==='session').at(-1).session.tabs.includes(base+'second#local'));
+ const saved=structuredClone(records.filter(row=>row.type==='session').at(-1).session);
+ assert.deepEqual(saved,{tabs:[base,base+'second#local',base+'third'],active:1});
+ destroy(first);
+ const second=create(saved);
+ assert.equal(second.tabs.length,3);
+ assert.equal(second.tabs.filter(tab=>tab.view).length,1,'Restored background tabs stay unloaded until selected');
+ await until(()=>!second.activeTab.initializing && !second.view.webContents.isLoading());
+ assert.equal(second.view.webContents.getURL(),base+'second#local');
+ second.shortcut({key:'9',control:true});await until(()=>!second.activeTab.initializing && !second.view.webContents.isLoading());
+ assert.equal(second.view.webContents.getURL(),base+'third');
+ second.action('new-tab');await until(()=>second.view.webContents.getURL()==='about:blank');
+ assert.equal(second.addressBarVisible,true);
+ assert.equal(second.config.WebShowAddressBar,false);
+ assert.equal(requests.some(row=>row.key==='WebShowAddressBar'),false,'Blank tab must not persist address-bar visibility');
+ second.selectTab(second.tabs[0].id);await until(()=>!second.activeTab.initializing && !second.view.webContents.isLoading());
+ assert.equal(second.addressBarVisible,false);
+ const bookmarkCount=requests.length;
+ second.window.focus();second.view.webContents.focus();await until(()=>second.window.isFocused());
+ second.view.webContents.sendInputEvent({type:'keyDown',keyCode:'D',modifiers:['control']});
+ second.view.webContents.sendInputEvent({type:'keyUp',keyCode:'D',modifiers:['control']});
+ await until(()=>requests.length>bookmarkCount);
+ assert.equal(requests.at(-1).type,'bookmark-add');assert.equal(requests.at(-1).url,base);
+ const persisted=records.filter(row=>row.type==='session').at(-1).session;
+ assert.equal(persisted.tabs.includes('about:blank'),false);
+ assert.equal(persisted.active,0);
+ second.hide();
+ for(const tab of second.tabs) if(tab.lifecycle)tab.lifecycle.lastHidden=Date.now()-600000;
+ second.tick();
+ second.publishSession();
+ assert.deepEqual(records.filter(row=>row.type==='session').at(-1).session,persisted,'Idle unload must not erase saved addresses');
+ const background=create(saved,2);
+ assert.equal(background.tabs.filter(tab=>tab.view).length,3,'Keep running restores all saved pages for background activity');
+ await until(()=>background.tabs.every(tab=>!tab.initializing && !tab.view.webContents.isLoading()));
+ await services.profiles.clearData(background.config,[background]);
+ assert.equal(background.tabs.filter(tab=>tab.view).length,3,'Confirmed profile clear restores every Keep running page');
+ await until(()=>background.tabs.every(tab=>!tab.initializing && !tab.view.webContents.isLoading()));
+ console.log(JSON.stringify({passed:true,keepRunningRestoresAllTabs:true,profileClearRestoresKeepRunningTabs:true,controlWheelInputQualification:false,activeTabRestored:true,backgroundTabsLazy:true,spaAddressSaved:true,
+  tabNumberShortcuts:true,blankTabAddressBarTemporary:true,bookmarkShortcut:true,blankTabsExcluded:true,idleUnloadPreservesSession:true},null,2));
+}).catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{
+ for(const owner of owners)if(!owner.window.isDestroyed())destroy(owner);
+ server.close();app.exit(process.exitCode||0);
+});

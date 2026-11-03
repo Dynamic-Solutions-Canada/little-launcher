@@ -1,0 +1,22 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {app,BrowserWindow}=require('electron');
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const {Profiles}=require('../browser/profiles.cjs');
+assert.equal(process.env.XDG_RUNTIME_DIR,'/tmp/ll-runtime');
+const root=process.argv.find(value=>value.startsWith('--profile='))?.slice(10);assert.ok(root?.startsWith('/work/'));app.setPath('userData',root);
+const second=process.argv.includes('--second');let window,server;
+app.whenReady().then(async()=>{
+ let prompts=0;const owner={id:'notification-fixture',beginDialog:()=>({}),endDialog:()=>{},lifecycle:{capturePermission:false,update:async()=>{}}};
+ const profiles=new Profiles(async()=>{prompts++;return true;},()=>owner);
+ const profile=profiles.get({Id:'notification-fixture'});
+ const state=path.join(root,'port.json');const port=second?JSON.parse(fs.readFileSync(state,'utf8')).port:0;
+ server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end('<title>Permission fixture</title>Notification fixture');});
+ await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));if(!second)fs.writeFileSync(state,JSON.stringify({port:server.address().port}));
+ window=new BrowserWindow({show:false,webPreferences:{session:profile,sandbox:true,contextIsolation:true,nodeIntegration:false}});
+ await window.loadURL(`http://127.0.0.1:${server.address().port}/`);
+ const allowed=await window.webContents.executeJavaScript('Notification.requestPermission()',true);
+ assert.equal(allowed,'granted');assert.equal(prompts,second?0:1);
+ const result={passed:true,secondProcess:second,permissionGranted:true,prompts};
+ fs.writeFileSync(path.join(root,second?'second.json':'first.json'),JSON.stringify(result));console.log(JSON.stringify(result));
+}).catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{window?.destroy();server?.close();app.exit(process.exitCode||0);});

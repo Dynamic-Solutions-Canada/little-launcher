@@ -709,10 +709,29 @@ public sealed partial class LauncherSettingsWindow : Window
 
         var typeRow = BuildRow("Type", "What the tray icon opens", typeCombo);
 
+        var enabledToggle = new ToggleSwitch
+        {
+            IsOn = SettingsManager.Current.IsLauncherEnabled(launcher.Id),
+            IsEnabled = launcher.IsSupportedOnThisOperatingSystem,
+            OnContent = "", OffContent = "", MinWidth = 0,
+        };
+        enabledToggle.Toggled += (_, _) =>
+        {
+            var disabled = new HashSet<string>(SettingsManager.Current.DisabledLauncherIds ?? []);
+            if (enabledToggle.IsOn) disabled.Remove(launcher.Id);
+            else disabled.Add(launcher.Id);
+            SettingsManager.Current.DisabledLauncherIds = System.Linq.Enumerable.ToArray(disabled);
+            SettingsManager.SaveSettings();
+            // Device state never marks the portable launcher as changed or uploads it.
+        };
+        var enabledRow = BuildRow(
+            (string)Application.Current.Resources["LauncherEnabledOnDevice"],
+            (string)Application.Current.Resources["LauncherEnabledOnDeviceDescription"], enabledToggle);
+
         // Shared definitions determine both this form and the flyout menu's section order.
         var sectionRows = new Dictionary<LauncherSettingsSection, IReadOnlyList<FrameworkElement>>
         {
-            [LauncherSettingsSection.General] = [nameRow, typeRow, webAddressRow],
+            [LauncherSettingsSection.General] = [nameRow, enabledRow, typeRow, webAddressRow],
             [LauncherSettingsSection.Appearance] = [iconRow, customIconRow, hideRow, taskbarRow,
                 viewModeRow, iconsPerRowRow, showTitleRow, .. webAppearanceRows],
             [LauncherSettingsSection.SizeAndPosition] = webSizeRows,
@@ -905,11 +924,10 @@ public sealed partial class LauncherSettingsWindow : Window
         buttonContent.Children.Add(chevron);
 
         // ── Custom icon path row ──
-        // Browse is invoked only after construction; initialize its captured preview state
-        // before wiring the callback so definite assignment also covers that call chain.
+        // Keep the saved filename informational; image browsing belongs to the chooser.
         Grid customIconRow = null!;
         Action refreshCustomPath = static () => { };
-        (customIconRow, refreshCustomPath) = BuildCustomIconRow(launcher, BrowseAsync);
+        (customIconRow, refreshCustomPath) = BuildCustomIconRow(launcher);
         customIconRow.Visibility = launcher.TrayIconMode == TrayIconModes.Custom ? Visibility.Visible : Visibility.Collapsed;
 
         void UpdatePreview()
@@ -1054,7 +1072,7 @@ public sealed partial class LauncherSettingsWindow : Window
 
         var button = new Button { Content = buttonContent, Padding = new Thickness(10, 6, 10, 6) };
 
-        // Both Browse entry points and gallery selections use the same commit path.
+        // Gallery image browsing and other selections use the same commit path.
         async Task ApplySelectionAsync(IconGallery.IconResult result)
         {
             try
@@ -1150,8 +1168,8 @@ public sealed partial class LauncherSettingsWindow : Window
         return (button, customIconRow, UpdatePreview);
     }
 
-    /// <summary>Shows the current custom file and reuses the gallery's Browse action.</summary>
-    private (Grid Row, Action Refresh) BuildCustomIconRow(Launcher launcher, Func<Task> browseAsync)
+    /// <summary>Shows the current custom file without a second selection entry point.</summary>
+    private (Grid Row, Action Refresh) BuildCustomIconRow(Launcher launcher)
     {
         var pathText = new TextBlock
         {
@@ -1164,9 +1182,6 @@ public sealed partial class LauncherSettingsWindow : Window
             MaxWidth = 300,
         };
 
-        var browseBtn = new Button { Content = "Browse..." };
-        browseBtn.Click += async (_, _) => await browseAsync();
-
         void RefreshPath()
         {
             pathText.Text = string.IsNullOrEmpty(launcher.CustomTrayIconPath)
@@ -1176,15 +1191,12 @@ public sealed partial class LauncherSettingsWindow : Window
 
         var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var label = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         label.Children.Add(new TextBlock { Text = "Custom Icon", FontSize = 14 });
         label.Children.Add(pathText);
         Grid.SetColumn(label, 0);
-        Grid.SetColumn(browseBtn, 1);
         row.Children.Add(label);
-        row.Children.Add(browseBtn);
         return (row, RefreshPath);
     }
 

@@ -2,7 +2,7 @@
 
 Settings pages are WinUI 3 `Page` objects navigated via `NavigationView`. Follow the XAML conventions for all `.xaml` here.
 
-Read and follow [xaml.md](../../.codex/docs/xaml.md) before changing the code described above.
+Read and follow [xaml.md](../../docs/xaml.md) before changing the code described above.
 
 **There is no item renderer here.** `Controls/LauncherItemsView` shares rendering/edit behavior between the native flyout and regular `Windows/LauncherItemsEditorWindow`; the former `LauncherItemsPage` remains removed. Settings Items and new-launcher Next open that regular owned editor, preserving captured setup placement for the latter. `LaunchersPage` keeps only launcher-level concerns; cards, sharing, and the per-launcher bulk operations in `LauncherBulkOps` (export, import, bookmark import). Per-launcher settings open in `LauncherSettingsWindow`, shared with the flyout.
 
@@ -13,11 +13,11 @@ remains available, while editing and imports remain disabled. Do not nest intera
 Web launcher cards have one **Settings** row, showing their web address or **No web address set**
 as its subtitle. It opens the existing launcher settings window; do not add a second address row.
 
-`LaunchersPage` drives per-launcher tray/pin icons. When editing it, follow the icon system conventions: [.codex/docs/icons.md](../../.codex/docs/icons.md).
+`LaunchersPage` drives per-launcher tray/pin icons. When editing it, follow the icon system conventions: [docs/icons.md](../../docs/icons.md).
 
-Its messaging preset creation flow also follows [web-launchers.md](../../.codex/docs/web-launchers.md).
+Its messaging preset creation flow also follows [web-launchers.md](../../docs/web-launchers.md).
 
-`SyncPage` is the UI for global sync and swaps panels per sync provider. When editing it, follow the sync conventions: [.codex/docs/sync.md](../../.codex/docs/sync.md).
+`SyncPage` is the UI for global sync and swaps panels per sync provider. When editing it, follow the sync conventions: [docs/sync.md](../../docs/sync.md).
 
 ## Bookmark UI
 

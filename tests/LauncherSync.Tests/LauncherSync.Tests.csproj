@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><LangVersion>preview</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <Compile Include="../../LittleLauncher/ViewModels/UserSettings.cs" Link="UserSettings.cs" />
+    <Compile Include="../../LittleLauncher/Models/SyncProviders.cs" Link="SyncProviders.cs" />
+    <Compile Include="../../LittleLauncher/Models/SharedSyncModes.cs" Link="SharedSyncModes.cs" />
+    <Compile Include="../../LittleLauncher/Models/Launcher.cs" Link="Launcher.cs" />
+    <Compile Include="../../LittleLauncher/Models/LauncherItem.cs" Link="LauncherItem.cs" />
+    <Compile Include="../../LittleLauncher/Models/WebBookmark.cs" Link="WebBookmark.cs" />
+    <Compile Include="../../LittleLauncher/Models/BrowserExtension.cs" Link="BrowserExtension.cs" />
+    <Compile Include="../../LittleLauncher/Services/LauncherPayload.cs" Link="LauncherPayload.cs" />
+    <Compile Include="../../LittleLauncher/Services/PortableLauncherIcon.cs" Link="PortableLauncherIcon.cs" />
+  </ItemGroup>
+</Project>

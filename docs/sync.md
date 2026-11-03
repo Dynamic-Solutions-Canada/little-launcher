@@ -1,0 +1,648 @@
+> **Scope:** Use when changing global launcher sync — its transports, its triggers, the
+> `launchers.json` format, or the Cloud Sync page. Covers the provider model, what each transport
+> may and may not assume, and how to add a new one.
+> **Governs:** `**/Services/LauncherSyncService.cs`, `**/Services/SftpSyncService.cs`,
+> `**/Services/FolderSyncService.cs`, `**/Services/LauncherPayload.cs`,
+> `**/Services/PortableLauncherIcon.cs`, `**/Services/CloudSyncService.cs`, `**/Services/*FileStore.cs`, `**/Services/OAuthPkceClient.cs`,
+> `**/Services/ProtectedStore.cs`, `**/Services/CloudFolderService.cs`,
+> `**/Services/AutoSyncService.cs`, `**/Pages/SyncPage.xaml*`.
+
+# Global launcher sync
+
+Global sync moves **every** launcher between machines as a single `launchers.json`. It is
+separate from **shared launchers**, which publish one launcher's items and have their own
+per-launcher transport setting (`Launcher.SharedSyncMode`). The two features share a file
+(`SftpSyncService.cs`) and nothing else; a change to `SyncProvider` must not alter sharing.
+
+## The layers
+
+```
+AutoSyncService ─┐                        (triggers: startup, debounce, periodic)
+SyncPage ────────┴─▶ LauncherSyncService  (fans out over every ENABLED destination)
+                             │
+                             ▼
+                      SyncDestinations     (one ISyncDestination per transport)
+                             ├──▶ SftpSyncService    (SSH.NET)
+                             ├──▶ FolderSyncService  (a directory on this machine)
+                             └──▶ CloudSyncService   (a signed-in account)
+                                        └──▶ ICloudFileStore
+                                               ├── OneDriveFileStore     (Microsoft Graph)
+                                               ├── GoogleDriveFileStore  (Drive v3)
+                                               └── WebDavFileStore       (any WebDAV server)
+
+shared by all of the above:
+    LauncherPayload   format, download guard, merge, atomic write
+    OAuthPkceClient   browser sign-in + refresh
+    ProtectedStore    DPAPI-encrypted credentials
+```
+
+**`LauncherSyncService` is the only entry point.** Callers outside `Services/` must not name a
+transport. Adding one otherwise means auditing every trigger for a case that was missed, which is
+how the newer-local guard came to be applied unevenly in the first place (see below).
+
+## Providers
+
+`Models/SyncProviders.cs`. **Which ones are switched on lives in
+`UserSettings.EnabledSyncProviders`** (a set); `SyncProvider` now records only which expander was
+last open and the value migration reads.
+
+| Value | Provider | Transport | Auth |
+|---|---|---|---|
+| 0 | SSH / SFTP server | `SftpSyncService` | key or password, typed into the app |
+| 1 | OneDrive | `CloudSyncService` → `OneDriveFileStore` | OAuth in the system browser |
+| 2 | Google Drive | `CloudSyncService` → `GoogleDriveFileStore` | OAuth in the system browser |
+| 3 | Network file share *(folded into 4)* | `FolderSyncService` | Windows |
+| 4 | Folder or network share | `FolderSyncService` | none / the folder's own sync client |
+| 5 | WebDAV | `CloudSyncService` → `WebDavFileStore` | Basic auth, typed into the app |
+
+Predicates classify them, and code should branch on these rather than on constants:
+`SyncProviders.IsCloudAccount` (1, 2, 5), `IsFolderBased` (3, 4), `UsesTypedCredentials` (5), and
+none-of-those meaning SFTP.
+
+## Several destinations at once
+
+`UserSettings.EnabledSyncProviders` is the set that actually syncs. `SyncProvider` survives only
+as the *migration* source and is no longer consulted at sync time.
+
+- **Upload fans out to every enabled destination.** One failing must not stop the others — that is
+  the entire point of enabling several — so it succeeds if any destination took the copy and names
+  the ones that did not.
+- **Download takes whichever holds the newest copy.** They are replicas of one thing, so the
+  question is not "which is authoritative" but "which was written last". Each destination is asked
+  for a timestamp first, so only one full download happens.
+- **A destination that cannot report a timestamp is skipped**, never assumed empty and never
+  assumed newest. Either assumption would let an unreachable server decide the outcome.
+
+That rule is only implementable because *every* transport can report a remote modified time —
+`GetRemoteModifiedAsync` exists on the cloud stores, on `FolderSyncService` and on
+`SftpSyncService`. **A new transport must provide one**, and it must not throw: returning null
+takes it out of the running rather than failing the whole download. The SFTP one deliberately
+connects only with a passphrase-free key, because it runs unattended on the sync timer and must
+never block on a prompt.
+
+**Migration.** `EnabledSyncProviders` is `null` — not empty — in files written before this
+existed, and `CompleteInitialization` seeds it from the old exclusive `SyncProvider`. Null and
+empty must stay distinguishable: empty is a real state, meaning the user switched everything off,
+and treating it as "migrate me again" would switch a destination back on every launch.
+
+**`NetworkShare` (3) is no longer selectable.** It and `Folder` (4) are the same transport reading
+the same `SyncFolderPath`, so once several can be enabled at once, offering both would let a user
+switch on two that silently fight over one path. `SyncProviders.Normalize` folds 3 into 4;
+`Selectable` lists what the UI offers.
+
+**WebDAV is an account provider with typed credentials.** It goes through `CloudSyncService` like
+the OAuth providers — same payload, same guard, same `ICloudFileStore` — but `SignInAsync` verifies
+a URL/username/password the user entered instead of opening a browser, so `SyncPage` gives it a
+form rather than a Sign in button.
+
+**SFTP is 0 deliberately.** `SettingsManager.JsonOptions` uses `WhenWritingDefault`, so the CLR
+default is what every settings file written before this setting existed resolves to — it has to be
+the behaviour those files were configured for. See
+[user-settings.md](user-settings.md#defaults-vs-whenwritingdefault--the-trap-that-eats-settings).
+
+**Switching a destination off does not clear its settings.** SFTP fields, `SyncFolderPath`,
+WebDAV details and the stored cloud tokens all coexist and survive being switched off, so turning
+one back on is never a re-entry exercise.
+
+## Cloud accounts use the vendor APIs, not synced folders
+
+OneDrive and Google Drive sign in and talk to Microsoft Graph and Drive v3 directly. They do not
+touch the filesystem, and they do not require the vendor's sync client to be installed.
+
+That is the whole reason they are not folder providers:
+
+| | Synced folder | Vendor API |
+|---|---|---|
+| "Upload succeeded" means | written to disk, handed to a background client | the service accepted it |
+| Needs the sync client installed | yes | no |
+| Can read the remote's modified time | no | yes (`GetRemoteModifiedAsync`) |
+| Online-only placeholder files | must be hydrated, blocks | not applicable |
+| Half-written file can be uploaded | yes — hence `WriteAtomic` | no |
+
+**Scopes are deliberately the smallest that work**, because the consent prompt is the product.
+Each provider has two: a `PrivateScope` everyone consents to, and a `SharingScope` requested
+**only when the user first shares a launcher** to that provider.
+
+| | Private (sync only) | Sharing (incremental) |
+|---|---|---|
+| OneDrive | `Files.ReadWrite.AppFolder` | `Files.ReadWrite` — the whole drive |
+| Google Drive | `drive.appdata` | `drive.appdata` **+** `drive.file` |
+
+**Private launchers never leave private storage.** Broadening the grant does not move them: the
+user's own `launchers.json` stays in the app folder / app-data folder either way, and only the
+file they explicitly shared becomes a visible object. Do not "simplify" this by moving sync into
+the shared area once the wider scope exists.
+
+Google is the cheap case — both its scopes are **non-sensitive**, so sharing adds no verification
+burden at all, and holding both keeps private config invisible. OneDrive has no per-file
+equivalent of `drive.file`, so sharing there genuinely costs full drive access; that is why it is
+asked for late rather than up front.
+
+**Incremental consent is not a nicety.** Demanding "this app wants your entire OneDrive" at first
+sign-in, to enable a feature most people never use, is the single biggest reason an OAuth flow
+gets abandoned. `HasSharingConsent` / `RequestSharingConsentAsync` exist so the wide prompt
+appears at the moment it is justified.
+
+`CloudTokens.GrantedScope` records what a grant actually covers, because a stored refresh token is
+only good for the scopes it was issued for. Without it, needing a wider scope surfaces as an
+opaque 403 *when the user tries to share* rather than as a prompt. Refresh deliberately re-requests
+`GrantedScope`, never the endpoint default — otherwise a token widened for sharing would be
+quietly narrowed back on its next refresh. Tokens saved before this field existed have it empty,
+which is read as "assume private only": the safe direction, since it triggers a consent that was
+needed anyway.
+
+- **OneDrive is personal Microsoft accounts only** — this app registration targets the `consumers` authority. Microsoft now documents app-folder support for business drives too, but changing this registration/account flow has not been qualified; Windows work/school accounts therefore use provider 4 pointed at their synced folder.
+- **Google Drive — `drive.appdata`.** A hidden per-app folder. Google classifies it as
+  **non-sensitive**, so it needs only basic OAuth verification — no security assessment, no
+  restricted-scope review. The trade-off is that the file cannot be seen or recovered from the
+  Drive web UI, and revoking the app's access deletes it. Acceptable only because it is a replica;
+  never put anything there that is not also stored locally.
+
+### Auth
+
+`OAuthPkceClient` implements Authorization Code + PKCE with a **loopback redirect**, shared by
+both providers. Points that are load-bearing:
+
+- **Loopback, not a custom URI scheme.** A registered scheme is global to the machine, so any
+  other app can claim it and receive the authorization code. A loopback listener can only be
+  reached locally, and the port is picked per attempt because a fixed one may be taken. PKCE then
+  makes an intercepted code useless without the verifier.
+- **System browser, not a WebView.** Required by both vendors for native apps, and it lets the
+  user see a real address bar and reuse sessions and password managers. This app never sees the
+  credentials.
+- **Hand-rolled rather than MSAL + the Google SDK.** Both flows are plain OAuth 2.0 and the app
+  needs one small file from each; two large SDKs with two token-cache and threading idioms would
+  be more surface, not less, and this project keeps its dependency list short on purpose.
+- **Correlate the browser callback.** Each attempt has its own random `state` and PKCE verifier.
+  Only a GET to the registered root path with matching state and exactly one nonblank `code` or
+  `error` completes the wait. Missing state, duplicate parameters, favicons, other paths and other
+  methods get a fixed rejection response and leave the attempt running.
+- **One callback deadline per attempt.** Unrelated requests cannot restart the five-minute wait.
+  Caller cancellation, browser timeout, authorization denial, token HTTP failure and network failure
+  produce separate safe messages in `SignInResult`; both providers and sharing-consent callers
+  pass these to the UI. Failed authorization never saves or clears the existing account's tokens.
+- **Browser authorization is not a saved sign-in.** The local page waits for the token exchange.
+  A successful exchange says "Authorization received. Return to Little Launcher to confirm sign-in."
+  Account-label lookup and encrypted persistence still belong to the provider caller.
+- **Keep OAuth diagnostics safe.** Token failure logs and messages include only HTTP status and
+  fixed, allowlisted OAuth error names. Never log or surface a raw token body, `error_description`,
+  callback URL, code, verifier, state, client secret, access token or refresh token. This differs
+  from ordinary Drive/Graph API errors, whose service messages follow `CloudErrors`.
+- **Carry the refresh token forward on refresh.** Google returns one only on the first consent, so
+  a refresh response that overwrote it with empty would sign the user out an hour later.
+- **A rejected refresh token is terminal** — revoked, expired, password changed. `GetAccessToken`
+  clears the stored tokens so later calls report a clean "signed out" instead of retrying an
+  endpoint that will keep saying no.
+
+### Troubleshooting browser completion followed by app failure
+
+Check which page finished. Google's consent screen completing only proves consent was reached.
+The former local "Signed in" page proved a callback contained a code, but was displayed before
+code exchange and could appear even when the token request failed. It did not prove tokens were
+received or saved. The current local page asks the user to confirm in the app instead.
+
+Collect the installed app version, the final page's text, and only the sanitized failure stage,
+HTTP status and known OAuth error name. Do not request a full callback URL or raw OAuth response.
+`invalid_grant` identifies a rejected code or grant; `invalid_client` identifies a provider rejection
+of the app credentials. Neither should be guessed from the old combined cancellation message.
+Drive API enablement is a later issue: the account-label lookup is optional and cannot produce
+that former combined cancellation message.
+
+Google continues to support Desktop loopback redirects, including `localhost`; the mobile
+loopback deprecation does not apply. Keep this project's deployed redirect host and Google secret
+behavior unless evidence justifies a configuration change. See Google's
+[Desktop OAuth flow](https://developers.google.com/identity/protocols/oauth2/native-app),
+[loopback migration scope](https://developers.google.com/identity/protocols/oauth2/resources/loopback-migration)
+and Microsoft's [localhost redirect rules](https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#localhost-exceptions).
+
+`ProtectedStore` keeps every sync credential — OAuth tokens and the WebDAV password — in
+`%AppData%\LittleLauncher\cloud-{name}.dat`, encrypted with DPAPI to the current Windows user.
+`CloudTokenStore` is a thin typed wrapper over it. **They must never go in settings.json** — that file is
+exported, imported, backed up, and *uploaded by this very feature*, so a refresh token in it would
+be copied to every machine and into whatever server or folder is configured.
+
+Signing out is **local only**: it forgets the tokens on this PC and does not revoke the app's
+access in the account. The UI says so rather than implying more than happened.
+
+## Folder providers
+
+Provider 3 and 4 remain a plain directory, and are the transport for everything without a
+first-class integration — Dropbox, Seafile, iCloud, Syncthing, a USB stick, and OneDrive for
+Business. Where a sync client is involved it, not this app, moves the bytes, so:
+
+- **Writes must be atomic.** Cloud clients watch their folders and upload the moment a file
+  changes, so a plain write gives them a window in which to upload a half-written file — and the
+  other machine then parses truncated JSON over a working configuration. `LauncherPayload.WriteAtomic`
+  writes a `.tmp` in the same directory and moves it into place, falling back to a direct write
+  if a virtual drive refuses the move.
+- **Reads may block.** A file in a cloud folder may be an online-only placeholder; touching it
+  makes the client hydrate it. `FolderSyncService` reads the whole file on a background thread
+  before parsing, and never parses straight off the filesystem.
+- **`Directory.CreateDirectory` succeeding is not write access.** A share can grant traversal and
+  refuse writes, so `TestAsync` writes and deletes a probe file rather than trusting the create.
+
+`CloudFolderService` still detects OneDrive and Google Drive *folders*, but only for the
+**shared-launcher** dialog now — global sync reaches those two through their APIs.
+
+## `LauncherPayload` — the part both transports must share
+
+`LauncherPayload` owns the wire format (a timestamped envelope, with a legacy plain-array
+fallback), the newer-local download guard, and the merge into the live launcher collection.
+
+**Do not reimplement any of it per transport.** Two reasons, both load-bearing:
+
+1. The format has to stay identical, or a user syncing one machine over SFTP and another over
+   OneDrive cannot move between them.
+2. The guard has a **data-loss history**. It originally ran on the startup download only, so
+   periodic syncs overwrote local launchers every few minutes however recently they had been
+   edited. Only an explicit user-initiated download passes `force: true`. Duplicating that logic
+   is how the bug comes back.
+
+`ShouldSkipDownload` returns true when the caller must abandon the download; the reason it fills
+in is user-facing.
+
+`WriteAtomic` lives here too, and **every** folder write goes through it — global sync and shared
+launchers both. See "Writes must be atomic" above.
+
+### The envelope carries extensions as well as launchers
+
+`LauncherPayload.Deserialize` returns `(launchers, timestamp, extensions)` and `ApplyAsync` takes
+both, because the installed browser extensions are app-wide state a second machine should match.
+**Identity travels; the copy does not** — what crosses is the Chrome Web Store id and the name, which
+is all another machine needs to fetch its own copy. `BrowserExtensionService.Portable()` does that
+projection, and is also what keeps the local-only `Folder` out of the payload; an extension added
+from a folder or a zip has no id, so nothing elsewhere can reproduce it and it stays on the machine
+it was added to.
+
+The downloaded list is authoritative, the same rule the bookmark collection follows: an extension
+missing from it was uninstalled somewhere, so the machine reading it uninstalls too.
+
+### `CopyInto` must list every property that should travel
+
+The merge updates an existing launcher **in place** so `PropertyChanged` subscriptions and the
+launcher's open `FlyoutWindow` / `WebFlyoutWindow` survive the download. That means every synced
+property is named explicitly in `LauncherPayload.CopyInto`, and **anything not named there never
+propagates**.
+
+That failure is unusually quiet, so it is worth knowing the shape: a launcher the other machine
+has never seen is added wholesale and therefore carries everything. Only launchers that *already
+exist on both sides* lose the missing fields — so it looks like it works when you first set sync
+up, and silently stops for exactly the launchers you have had longest. `ViewMode`,
+`IconModeIconsPerRow`, `ShowTitle` and the entire bookmark bar were missing on that basis until
+they were added.
+
+**When you add a property to `Launcher`, add it to `CopyInto`.**
+
+One property is excluded on purpose, and says so in a comment: `WebFlyoutPosition`. It is a
+remembered pixel position on one machine's monitor layout rather than a preference, so copying it
+lands the flyout somewhere arbitrary — or off-screen — on a different display arrangement.
+`WebAnchor`, the part the user actually chose, does travel. Apply the same test to anything else
+that records *where a window ended up* rather than *what the user asked for*.
+
+## Triggers
+
+`AutoSyncService` is transport-agnostic and must stay that way. Every trigger is gated on its
+private `IsSyncEnabled`, which is the auto-sync toggle **and** `LauncherSyncService.IsConfigured`.
+
+**Never gate on `SftpHost`.** It is meaningless under a folder provider, and testing it was what
+the gates did before providers existed — a machine on a folder provider would have been inert, or
+(had only the toggle been checked) would fire failing uploads on every keystroke while the folder
+was still unset.
+
+`RestartPeriodicTimer` is reached from `Start()` at launch **and** from the
+`OnSftpAutoSyncChanged` / `OnSftpAutoSyncIntervalChanged` handlers in `UserSettings`. Without
+those handlers the settings did nothing until the next launch — switching auto-sync on left no
+timer running, switching it off left the old one ticking, and a new interval was ignored. Any
+future setting that changes the timer's shape needs the same wiring.
+
+## Shared launchers and cloud folders
+
+Shared launchers are **not** affected by `SyncProvider` — each launcher carries its own
+`SharedSyncMode` (0 = file path, 1 = SFTP). File mode has always accepted any path, so a OneDrive,
+Google Drive or UNC path works and always did; sharing through a cloud folder means both people
+point at their own local copy of the same shared folder and let their client do the rest.
+
+Two things were brought in line with the global folder transport:
+
+- **The write is atomic** (`LauncherPayload.WriteAtomic`). It was a plain `FileMode.Create`
+  stream, which on a watched cloud folder can be uploaded half-finished and reach a subscriber as
+  truncated JSON. The likelihood went up considerably once a cloud folder became the obvious
+  place to put a shared launcher.
+- **The share dialog offers detected cloud roots** as quick-fill buttons beside the path box.
+  They set the text box directly rather than raising a picker: a `FileSavePicker` opened from
+  inside a `ContentDialog` is a modal-on-modal, which WinUI handles badly.
+
+### Direction travels with the share
+
+The shared file is an **envelope** (`SharedLauncherPayload`), not the bare `List<LauncherItem>` it
+used to be, so it can carry `TwoWay` and the owner's launcher name alongside the items.
+
+**Whether a share is 1-way or 2-way is the owner's decision about their launcher, so the owner
+writes it and the subscriber reads it.** The subscribe dialog used to ask — a question the
+subscriber has no way to answer and every reason to get wrong, where guessing means either losing
+their own edits or pushing into a share meant to be read-only. `ApplyAsync` adopts the published
+value on the first pull, and only for non-owners, so an owner's own file never overrides them.
+
+**Bare arrays must keep parsing.** Files published by earlier versions are already on servers and
+in shared folders, and a subscriber upgrading must not lose the launcher they subscribed to.
+`Deserialize` tries the envelope, then falls back; a JSON array cannot deserialize into the
+envelope object, so the fallback is unambiguous. A legacy file reports `TwoWay = null` — "cannot
+say" — rather than guessing, and callers leave the launcher's existing setting alone.
+
+Every transport routes through `SharedLauncherPayload` now, including the file and SFTP paths that
+previously had their own inline `JsonSerializer` calls. That was the drift the shared payload
+exists to prevent.
+
+Shared sync still carries **items only**, not launcher-level presentation — a subscriber names
+and styles their own copy. That is by design, not an oversight like `CopyInto` was.
+`SharedLauncherPayload` owns that format, the apply, and the feedback-loop suppression, so the
+transports cannot drift apart — the same rule as `LauncherPayload` for global sync.
+
+### Sharing transports
+
+`Models/SharedSyncModes.cs`, in `Launcher.SharedSyncMode`. **Independent of `SyncProviders`** — a
+shared launcher must keep working when the owner and the subscriber sync their own settings to
+completely different places.
+
+| Value | Mode | 2-way | Notes |
+|---|---|---|---|
+| 0 | File (local, UNC, or a synced cloud folder) | yes | the existing default |
+| 1 | SFTP | yes | per-launcher connection settings |
+| 2 | WebDAV | yes | per-launcher URL + account; password in `ProtectedStore` |
+
+**The requirement here is stricter than for global sync: the location must be reachable by someone
+else.** That is what rules out the private per-app cloud storage global sync uses — OneDrive's app
+folder and Google's app-data folder are per-user with no way to grant anyone access, so a launcher
+shared from one would be invisible to the person it was shared with.
+
+**WebDAV is the cleanest sharing transport**, and worth reaching for first: the URL is already a
+real shared address, each participant authenticates as themselves, and both can write — so 2-way
+works with no link to mint, no permission to grant and no subscriber-side resolution.
+
+Details that matter:
+
+- **Per-launcher URL and account, not the global WebDAV settings.** The server a colleague shares
+  from is routinely not the one you sync your own launchers to.
+- **The password is keyed by launcher id** in `ProtectedStore`, so two shared launchers can use
+  different servers, and it never reaches settings.json.
+- **An empty password box means "keep what is stored."** Re-opening the dialog to change the
+  direction must not silently wipe a working password.
+- **Stop Sharing clears the stored password**, and a failed subscribe clears it too — otherwise a
+  live credential is orphaned on disk for a launcher that does not exist.
+- `HasAutoKeyForShared` now gates every mode, not just SFTP: unattended timer syncs must skip
+  anything that would prompt, and for WebDAV that means "is the password actually stored".
+
+**Still to do: OneDrive and Google Drive sharing.** The scope plumbing is in place
+(`SharingScope`, `HasSharingConsent`, `RequestSharingConsentAsync`), but the link machinery is
+not — Graph `createLink` plus `/shares/{url}/driveItem` resolution, and Drive `permissions.create`.
+Note a real constraint on the Google side: `drive.file` only reaches files the app created or the
+user opened *through the app*, so a subscriber pasting a file id cannot read it. Google sharing is
+therefore 1-way (owner publishes, subscribers fetch the public link) unless the Picker is
+adopted.
+
+## The Cloud Sync page
+
+`SyncPage` is one `Expander` per destination: chevron, icon, name, live status, and a toggle in
+the header; that destination's settings as the content. All five destination sections start
+expanded through their shared style. Manual collapse and expansion do not request scrolling.
+This initial presentation does not enable providers, sign in, or change connection data.
+Points to keep:
+
+- **Enabled and expanded are separate, and both are visible.** The toggle answers "is this
+  syncing?", the chevron answers "do I want to see its settings?". An earlier version used a
+  selected-card highlight for the second question and it was not discoverable — a border colour
+  reads as state, not as "click me, there is more". Do not reintroduce a hidden selection.
+- **Setting `ToggleSwitch.IsOn` from code raises `Toggled` exactly as a click does.** The
+  `_initializing` guard therefore wraps `RefreshDestinations`, not just the constructor; without
+  it the initial refresh writes the settings back over themselves.
+- **Switching on an unconfigured destination auto-expands it**, and **signing in switches the
+  destination on**. Both exist because a control that appears to do nothing is worse than no
+  control — signing in to OneDrive and having nothing sync was a real trap.
+- The password prompt is SFTP-only (`LauncherSyncService.UsesCredentials`).
+
+## WebDAV
+
+The one provider with no vendor relationship at all. A single implementation reaches Nextcloud,
+ownCloud, Fastmail Files, Koofr, NAS boxes and anything else speaking the protocol — no app
+registration, no consent screen, no verification review, no client secret, no SDK, and nothing a
+vendor can revoke or deprecate. For self-hosted users, who are the same audience SFTP already
+serves, it is also the case where a synced folder most often is not an option: the server is
+reachable but no sync client is installed.
+
+Protocol choices worth keeping:
+
+- **`PROPFIND` with `Depth: 0`** to verify the base URL — asks about the collection itself rather
+  than enumerating a folder that may be large.
+- **`HEAD` for the modified time**, not `PROPFIND`. Every server serves `Last-Modified` on it, and
+  it avoids parsing a multi-status XML body for one timestamp.
+- **Basic auth sent pre-emptively**, not after a 401 challenge. It halves the round trips, and some
+  servers answer an unauthenticated `PROPFIND` with 404 rather than 401 — which would surface as
+  "wrong path" when the real problem is the credential.
+- **A failed connect clears the stored password.** Leaving one that was just proven wrong lets
+  every later background sync replay it at the server.
+- **`http://` is allowed but warned about** on connect, since Basic auth sends the password in the
+  clear.
+
+The password goes in `ProtectedStore`, never settings.json — same rule, same reason, as the OAuth
+tokens. The URL and username are ordinary settings and stay, so "Forget" is cheap to undo.
+
+## Runbook: registering the OAuth clients
+
+`CloudSyncCredentials.cs` contains the public client IDs. `HasOneDrive` and `HasGoogleDrive` check only whether their client ID is nonblank; a missing ID disables that provider's Sign in button. A missing Google secret alone does not make the provider unconfigured, and these checks do not validate the registration or prove authorization will succeed. Registering is a one-time manual step.
+
+**Desktop apps are public OAuth clients.** Values distributed in the binary cannot remain
+confidential. Google's current Desktop guide labels `client_secret` optional, while this app
+continues sending the configured secret for its deployed registration. Preserve that compatibility
+until a change is separately verified; an unexplained sign-in failure is not evidence to remove or
+rotate it. Client IDs live in source; the Google secret follows the private build-input policy
+below. PKCE and callback correlation protect the authorization flow.
+
+### OneDrive — Microsoft Entra
+
+1. [entra.microsoft.com](https://entra.microsoft.com) → **App registrations** → **New registration**
+2. Name: anything the consent screen should show (e.g. `Little Launcher`)
+3. **Supported account types: "Personal Microsoft accounts only"** — the app-folder permission
+   does not exist for work/school accounts, and `common` would let a work account reach a consent
+   screen it cannot satisfy
+4. **Redirect URI:** platform **"Mobile and desktop applications"**, value `http://localhost`.
+   Any port is then accepted, which is what lets the loopback listener pick a free one
+5. **API permissions** → Microsoft Graph → **Delegated** → `Files.ReadWrite.AppFolder`
+6. **No client secret.** A public client must not have one
+7. Copy **Application (client) ID** → `CloudSyncCredentials.OneDriveClientIdDefault`
+
+### Google Drive — Google Cloud
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → create a project. **Use a
+   project of its own**, not a shared one: the consent screen is *per project*, so a shared
+   project shows the wrong app name at sign-in, and its scope list is reviewed as a whole — one
+   app needing a sensitive scope would drag Little Launcher's cheap `drive.appdata` review along
+   with it.
+2. **APIs & Services → Library** → enable **Google Drive API**. **This is a separate step from
+   creating the OAuth client and is the easiest one to skip** — miss it and sign-in succeeds while
+   every request comes back 403 *"Google Drive API has not been used in project N before or it is
+   disabled"*. (`CloudErrors` now surfaces that message verbatim, including the activation URL.)
+3. **OAuth consent screen** → External. App name, support email and developer email must match
+   the real, public-facing app — reviewers compare the sign-in screen against what was submitted
+4. **Scopes** → add `https://www.googleapis.com/auth/drive.appdata`. It is **non-sensitive**, so
+   this needs only basic verification; do not add a broader Drive scope or the app lands in
+   sensitive or restricted review for no gain
+5. **Credentials → Create credentials → OAuth client ID** → application type **Desktop app**.
+   Loopback redirects are permitted automatically for this type
+6. Set the public client ID in `CloudSyncCredentials.GoogleClientIdDefault`. Supply this registration's configured secret through the private `GoogleClientSecret` build property below; keep `GoogleClientSecretDefault` empty in source.
+7. Publish the consent screen. While it is in *Testing*, only accounts added as test users can
+   sign in and refresh tokens expire after 7 days
+
+### Where the credentials live
+
+Client **IDs** are in `CloudSyncCredentials.cs` and committed. They appear in every auth request
+URL and are not secrets.
+
+The Google **client secret is not in the repository**, because this repo is public and git history cannot be unpublished. Local builds can supply it through an untracked `local.secrets.props` at the repo root:
+
+```xml
+<Project>
+  <PropertyGroup>
+    <GoogleClientSecret>GOCSPX-...</GoogleClientSecret>
+  </PropertyGroup>
+</Project>
+```
+
+`Directory.Build.props` imports the file when present. Shipping workflows instead expose the existing GitHub Actions secret `GOOGLE_CLIENT_SECRET` as the build process's `GoogleClientSecret` environment variable on the portable build and Store package build steps. Each step checks that the value is present before building. MSBuild imports that variable as a property; `LittleLauncher.csproj` writes it to the `GoogleClientSecret` assembly metadata entry, which `CloudSyncCredentials.BuildValue` reads at runtime. This applies to both x64 and ARM64. An explicit property in a private props file can override an environment-derived property, so keep that file absent in hosted CI.
+
+**Build-time and runtime environment variables have different roles.** `GoogleClientSecret` is consumed by MSBuild and embedded for end users. `LITTLELAUNCHER_GOOGLE_CLIENT_SECRET` is a runtime override for a developer's machine; setting only that variable on a CI runner does not embed a credential. See Microsoft's [environment-property rules](https://learn.microsoft.com/en-us/visualstudio/msbuild/how-to-use-environment-variables-in-a-build) and [assembly-attribute generation](https://learn.microsoft.com/en-us/dotnet/standard/assembly/set-attributes-project-file).
+
+A fresh clone and hosted CI have no private props file. Preserve the configured secret in private credential storage outside the repository and supply it to shipping builds through the protected CI secret. Missing build metadata does not disable Google sign-in because availability checks only the client ID; it also does not establish the cause of any particular authorization failure. Never print the property, generated AssemblyInfo contents or secret-bearing build diagnostics.
+
+```
+LITTLELAUNCHER_ONEDRIVE_CLIENT_ID
+LITTLELAUNCHER_GOOGLE_CLIENT_ID
+LITTLELAUNCHER_GOOGLE_CLIENT_SECRET
+```
+
+## Adding a transport
+
+1. Add a constant to `SyncProviders` (never renumber existing ones — they are serialized) and a
+   case to `DisplayName`. Add it to `IsFolderBased` or `IsCloudAccount` if it belongs to one.
+2. **If it is another cloud account, implement `ICloudFileStore` only** — a store, plus a line in
+   `CloudSyncService.StoreFor`. Everything else (payload, guard, merge, sign-in, refresh, token
+   storage) is already shared. Reuse `OAuthPkceClient`; do not add a vendor SDK for one small file.
+3. Otherwise write the service, using `LauncherPayload` for serialize / deserialize /
+   `ShouldSkipDownload` / `ApplyAsync` / `WriteAtomic` — do not hand-roll them.
+4. Add an `ISyncDestination` adapter in `SyncDestinations` and list the constant in
+   `SyncProviders.Selectable`. **`LauncherSyncService` needs no change** — it only ever talks to
+   the adapters. If you find yourself editing it, the abstraction is in the wrong place.
+   The adapter must supply a `GetRemoteModifiedAsync` that returns null rather than throwing, or
+   an unreachable destination will break every download instead of just its own.
+5. Add settings to `UserSettings` under **Sync destination**, minding the `WhenWritingDefault`
+   trap. Tokens are the exception: they go in `CloudTokenStore`, never in settings.json.
+6. Add the panel and the `ComboBoxItem` to `SyncPage` — the combo binds `SelectedIndex` directly
+   to the provider int, so **item order is the constant order**.
+7. `AutoSyncService` should need no change. If it does, the abstraction is in the wrong place.
+
+## A download replaces objects, not just values
+
+`LauncherPayload.Merge` writes into the launcher that is already in settings, but its collections
+are emptied and refilled: `Items` and `WebBookmarks` come back as **new objects**. Anything holding
+one of those objects from before the sync is holding something the launcher no longer contains, and
+the usual way that shows up is a lookup by identity quietly failing rather than an exception. A
+flyout's rows hold the item objects themselves, so this is not a corner case: it is every flyout,
+on every download.
+
+Items are therefore replaced **only when the download actually carries something different**
+(`LauncherPayload.ItemsMatch`, which compares the serialized form, so it cannot fall behind a
+property added to `LauncherItem` later), and whatever replaces them rebuilds that launcher's
+flyout. Both halves are needed, and each one covers a way this has already broken:
+
+- Without the guard, a sync that changed nothing still rebound every flyout to orphaned items, and
+  remove, move to, move up/down and edit all did nothing at all until the app was restarted. The
+  shared-launcher pull did it every five minutes, since it applies whatever it downloaded without
+  comparing it first.
+- Without the rebuild, a change the flyout does not draw (an item's `Arguments`, say) replaces the
+  objects while leaving the content hash unmoved, so nothing re-binds and the same failure returns
+  for the one launcher that did change.
+
+So a download has to tell the windows that are already built:
+
+| Call | Refreshes |
+|---|---|
+| `FlyoutWindow.InvalidateItems(force: false)` | every item flyout whose content hash moved |
+| `FlyoutWindow.InvalidateItems(id, force: true)` | one launcher, whose item objects were replaced |
+| `WebFlyoutWindow.InvalidateBookmarks()` | the web flyouts' bookmark bars |
+
+The first and third are called from all three download paths (startup, the periodic tick, and the
+Sync page's manual download) and are cheap when nothing changed, which is what lets them run on a
+timer. The second is raised by the merge itself, in both `LauncherPayload` and
+`SharedLauncherPayload`, because only the code that replaced the objects knows it did:
+`force: false` is keyed on a hash of what the flyout draws and cannot see an identity change on its
+own. The bookmark bar's own guard is described in [web-launchers.md](web-launchers.md); it went
+missing once, and every context menu on every bookmark bar silently did nothing until the app was
+restarted.
+
+If a lookup by identity does fail, the flyout says so: `FindParentCollection` logs a warning naming
+the item and launcher, because the only other symptom is a menu entry that does nothing.
+
+
+## OS-aware writers
+
+The envelope writes `PlatformVisibilityVersion: 2`. Shortcut launchers carry a whole-launcher `Platform`; untagged legacy launchers belong to Windows, and web launchers remain shared. Foreign launchers are retained disabled, without item-level filtering. All item collections and dormant legacy metadata survive serialization. Upload and automatic sync require both a version2-or-newer remote writer and a locally versioned compatibility proof; an old unversioned Compatible boolean cannot qualify. Manual download can inspect older envelopes without rewriting their cloud copy. Full Windows x64/ARM64 Release compilation and signed test packaging now pass; native runtime and live cross-device sync acceptance remain separate.
+
+## OneDrive Linux implementation and portable launcher icons
+
+`linux/little_launcher/onedrive.py` implements the same personal-account registration, `consumers` authority, `Files.ReadWrite.AppFolder offline_access` scope and app-folder `launchers.json` as Windows. PKCE uses a fresh verifier/state and an IPv4 loopback listener with the registered localhost redirect. Only an unambiguous matching root callback completes an attempt; unrelated requests do not extend the five-minute deadline. Token exchange, refresh and credential-save must succeed before the app reports signed in. Failed/cancelled sign-in keeps the previous account; a revoked refresh is cleared. HTTP/OAuth errors never expose response bodies, callback URLs or tokens. Cross-origin HTTPS content redirects remove bearer authorization; preauthenticated upload-session URLs never receive it.
+
+`SecretStore` runs distro `secret-tool` with credentials on stdin and a data-directory-specific application/provider namespace. KWallet or GNOME Keyring owns persistence. There is no plaintext fallback. `libsecret-tools` is a Debian package dependency and `libsecret` a Fedora dependency. Account tokens never enter settings, backups, JSON export or sync.
+
+`sync.py` owns Qt-thread application and one background `SyncJob` for auth/network. Manual Download can read an older envelope for testing. It backs up the full current local document before replacing the launcher list, preserves hidden rows and unknown launcher/item fields, and retains local session/monitor/pin state. Concurrent local edits reject an in-flight result. Upload requires a previously downloaded OS-preserving writer (`PlatformVisibilityVersion >= 2`), preflights that saved cloud ETag, and uses an exact-item upload session with replace naming behavior and a frozen If-Match revision. The source protocol is tested with synthetic transports; Ryan has confirmed real sign-in/download. The later HTTP409 correction below qualifies a real approved upload plus disposable-file stale/concurrent-edit rejection. Automatic sync is off by default, requires the qualified baseline, debounces edits, polls at the configured interval (five minutes by default), and pauses after a failure/conflict/older writer. It never silently chooses the local side of a conflict. Other Linux account/folder/SFTP/shared-launcher providers remain unimplemented. Windows native Release compilation now passes on x64/ARM64; live sync acceptance remains separate.
+
+`Launcher.CustomTrayIconData` is bounded base64 raster image content (1 MiB decoded; PNG/ICO/JPEG/GIF/BMP). Windows `PortableLauncherIcon` and Linux `portable_icons.py` capture readable custom files on detached payloads, retain available embedded data, and materialize downloads under hash-derived local filenames. Remote filesystem paths are never write destinations. Windows uses physical AppData. The original mode/path selection is not cleared merely because its file is missing on another device. Windows in-place merge retains an available local custom copy when an older peer supplies only an unavailable path. Local custom-path changes clear obsolete embedded data; deserialization suppresses that invalidation so JSON property order is irrelevant. Malformed image content is rejected before the live merge. The Windows payload and Linux exports now strip local pin identity, window position and restart tabs for new as well as existing launchers.
+
+Existing cloud files contain paths rather than image bytes: they cannot recover a lost original image. Upload once from an updated Windows device that still has the custom files (or reselect them there). Linux can then materialize those images. Exact-mode `TrayIconPreviewData`/`TrayIconPreviewMode` PNGs now carry glyph/emoji appearance across systems without bundling proprietary fonts. Both clients retain a valid received preview. Linux captures a native preview only when the glyph is available. Missing icon content from an older peer does not erase usable matching local image/preview bytes.
+
+`tests/LauncherSync.Tests` links the actual Windows observable models, payload and portable-icon implementation with narrow native/service adapters. It verifies path-independent icon round trips, in-place merge, older-peer retention, malformed input, JSON property order and local session exclusion. It does not qualify WinUI. `linux/tests/test_sync.py` covers data/credential boundaries, download/backup/conflict behavior and device disable. The isolated real-browser driver additionally verifies confirmed disable releases protected media work.
+
+API references: [Microsoft app folder](https://learn.microsoft.com/en-us/graph/onedrive-sharepoint-appfolder), [PKCE code flow](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow), [conditional upload sessions](https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0), [Secret Service](https://specifications.freedesktop.org/secret-service/latest/).
+
+### Cloud Sync layout and account-state follow-up
+
+The Linux page now follows Windows' scrolling destination cards, inline account state and sign-in/out actions, shared automatic controls/interval and Test All/Upload/Download row. `sync_page.py` owns that UI. Additional provider headers explicitly report unavailable functionality. Account status is checked from the wallet and cached as nonsecret local metadata; failures while reauthorizing do not erase or misrepresent the existing connected account. Revoked/missing credentials update the card to signed out. Account display names survive refresh. Ryan reported successful real OneDrive sign-in and download; agent-owned tests still use synthetic accounts, and live uploads/conflicts remain unqualified.
+
+
+OneDrive browser handoff is tied to the current uncancelled SyncJob. If Qt rejects it, the attempt is cancelled and the UI retains a specific default-browser error; an existing account is preserved. The KDE preview also restores a missing session-version variable so xdg-open selects current kde-open rather than legacy kfmclient. Qt accepting a dispatch cannot establish that a separately spawned external opener succeeded; live desktop acceptance remains separate.
+
+### AppImage credential helper and item icon boundary
+
+Source development uses distro `secret-tool`; AppImage prefers an available native client and otherwise uses its bundled helper. A running desktop Secret Service wallet remains required. No account tokens are embedded in the image, launcher document, exports or updater metadata. Launcher custom-image bytes retain the portable boundary described above. Newly selected custom shortcut item images currently store only a local IconPath; their cross-device byte transport remains an explicit parity gap.
+
+### Persistent automatic-sync prerequisites
+
+`LauncherSync.automatic_unavailable_reason()` returns a specific sign-in, destination-disabled, missing-download or older-writer explanation. CloudSyncPage displays it persistently beside Auto Sync, disables the unavailable toggle and Upload, and leaves manual download available for connected/enabled destinations. An existing on choice can still be turned off. Compatible baseline/ETag plus connected destination allows enabling; saving failures preserve the prior setting and UI. The real preview's cloud file lacks the compatibility marker, so no upload or automated writer guard is bypassed.
+
+### Portable ownership/icon qualification
+
+The isolated .NET10 harness compiles production observable models and payload/icon code; eight sync cases and forty reorder cases pass. The native Python suite covers same-mode older-peer retention and selfh.st Confirm-only selection; the live private KDE driver fetches a public selfh.st icon and verifies two-machine bytes plus disabled foreign cards. The synthetic wire fixture also supports a production C# deserialize/apply/serialize roundtrip. These portable checks do not establish WinUI rendering or live OneDrive cross-device acceptance.
+
+
+## Manual icon upload, cloud revisions and collapsed destinations
+
+A real read-only inspection identified the reported Linux-to-Windows Side browser mismatch: the chosen Linux custom image had not reached OneDrive, whose icon remained a green globe. Both the stored revision and the complete launcher content had changed since the last successful sync. Existing manual Upload asked for replacement confirmation before checking that revision, then refused the upload. This was a blocked upload, not lost image bytes in the Windows renderer. No personal cloud data was uploaded during diagnosis.
+
+Linux `LauncherSync.prepare_upload` now reads the current cloud copy first and prepares one native review; `SettingsWindow._review_upload` owns the confirmation. `confirm_upload` is bound to that snapshot, exact icon bytes, local revision, a five-minute single-use token and the observed cloud revision/content. Cancel preserves both sides. Changes during review or commit fail visibly. A confirmed replacement backs up the previous cloud document locally, then uses the existing conditional OneDrive upload session. Manual failures appear in a native warning, rather than only a low-page status line. Old-writer compatibility checks remain mandatory.
+
+Sync compares complete portable document fingerprints with the last successful baseline. A revision-only re-upload of unchanged content is not a conflict: the newer local content can upload against the fresh revision. Identical copies simply refresh the baseline. When only the cloud content changed, manual Upload offers Download instead of replacing it with an older local copy; automatic sync already downloads when the local baseline is unchanged. When both complete documents changed differently, automatic sync pauses and the native review offers Upload this device, Download OneDrive or Cancel. Conflict detection is at the complete launcher-document level, not a per-field merge. A stale revision alone can no longer create a false conflict.
+
+Windows `SyncPage` and Linux `Destination` start every destination collapsed. Enabled/account state stays visible in the header, independent of expansion; closing a card does not disable sync. Windows can still open an unconfigured destination after the user enables it.
+
+Qualification:158 Linux native/data cases and9 production C# model/payload cases pass. Tests include an actually different web-icon raster surviving Windows materialization/in-place merge/return upload, revision-only updates, latest-cloud handling, changed/replayed review tokens, cancellation, backups, and local/cloud races. `linux/dev/verify_sync_review.py` verifies a real KDE native dialog with one confirmation per attempt and exact new icon bytes using an in-memory cloud. Live retry of the personal Side browser upload and subsequent Windows download remain user acceptance.
+
+
+### Existing OneDrive file update correction
+
+The later HTTP409 was a separate transport defect: `conflictBehavior=fail` rejects an existing filename even with the current revision. A live disposable app-folder fixture reproduced409 with fail, succeeded with replace, rejected a stale session-creation revision with412, and rejected the final range after a concurrent edit with404 while preserving the concurrent bytes. The fixture was deleted. This is current-service evidence, not a claim that every future provider race has been exhaustively qualified.
+
+`OneDrive.upload` now resolves the reviewed app-folder file to its immutable item ID, verifies its current eTag, and creates the documented existing-item upload session using replace plus exact If-Match. Stale metadata fails before session creation. Preauthenticated range URLs receive no bearer token; failed sessions are cancelled and never retried as unconditional writes. See [Microsoft's upload-session contract](https://learn.microsoft.com/en-us/graph/api/driveitem-createuploadsession?view=graph-rest-1.0).
+
+Ryan's already-approved real upload was retried only after verifying that both the local source/icon files and the backed-up reviewed cloud content were unchanged. Reading OneDrive back confirmed the exact selected Side browser custom-image bytes and the complete approved portable document. Evidence is `approved-upload-result.json` and `graph-existing-item-probe.json` under `.artifacts/linux-native/sync-startup-followup/`.160 native/data tests and9 production C# model/payload cases pass. The Windows laptop still needs its ordinary Download to receive the uploaded icon.
+
+Current qualification: the real previously approved Side browser upload succeeded through the corrected transport, and exact selected icon bytes were read back from OneDrive. The final AppImage build passes160 native/data checks. Its last transport update is ready for installation during an approved Little Launcher restart window; existing installed sync review and collapsed-card behavior are already verified. Windows1.41.1.2 is installed and verified as Developer in the test VM, with five collapsed destinations and the prior startup-off state preserved despite the fresh-install default being on.
+
+Final installed status: Ryan approved the current Little Launcher restart window. The final existing-item upload transport is installed at the same AppImage path; one native KDE instance, mounted sources/image digest and unchanged launcher settings, account/startup choices, notification permissions and extension catalog were verified. The approved successful upload baseline/revision bookkeeping was applied only after the prior process stopped, preserving other local preferences. Side browser’s exact selected image was already verified in OneDrive. Windows Download remains user acceptance. Evidence: `.artifacts/linux-native/sync-startup-followup/installed-update.json`.

@@ -5,6 +5,9 @@
     "build:desktop": "scripts/windows-build --dev",
     "verify:desktop": "scripts/windows-build --build-only --configuration Debug",
     "install:desktop": "scripts/windows-build --install",
-    "package:desktop": "scripts/windows-build --no-sign"
+    "package:desktop": "scripts/windows-build --no-sign",
+    "verify:linux": "PYTHONPATH=linux python3 -m unittest discover -s linux/tests -v && node --test linux/tests/*.test.cjs",
+    "start:linux": "linux/bin/little-launcher",
+    "package:linux": "python3 linux/packaging/build.py"
   }
 }

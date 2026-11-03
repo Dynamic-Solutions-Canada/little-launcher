@@ -146,6 +146,9 @@ public sealed partial class LauncherItemsView
 
     private void SyncColumnsToFlatList()
     {
+        // Reordering can persist columns only during an active editing session.
+        if (!_isEditMode)
+            throw new InvalidOperationException("Launcher items can only be reordered while editing.");
         _launcher.Items.Clear();
 
         foreach (var item in LauncherItemReorder.Flatten(_columnLists, _syntheticGroups))
@@ -838,6 +841,7 @@ public sealed partial class LauncherItemsView
         listView.Unloaded += IconGroupChildList_Unloaded;
         TrackGroupChildList(listView);
 
+
         DisableListViewTransitions(listView);
         ScrollViewer.SetVerticalScrollBarVisibility(listView, ScrollBarVisibility.Disabled);
         ScrollViewer.SetHorizontalScrollBarVisibility(listView, ScrollBarVisibility.Disabled);
@@ -909,6 +913,7 @@ public sealed partial class LauncherItemsView
         {
             DisableListViewTransitions(listView);
             TrackGroupChildList(listView);
+
         }
     }
 

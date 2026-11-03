@@ -23,12 +23,13 @@ public partial class UserSettings : ObservableObject
 
     /// <summary>Start minimized to tray when Windows starts.</summary>
     [ObservableProperty]
+    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public partial bool Startup { get; set; }
 
     /// <summary>Animate launcher flyouts when they open and close.</summary>
     /// <remarks>
-    /// <para><c>JsonIgnoreCondition.Never</c> is load-bearing, not decoration. This is the one
-    /// setting here that defaults to <c>true</c>, and <see cref="SettingsManager.JsonOptions"/>
+    /// <para><c>JsonIgnoreCondition.Never</c> is load-bearing, not decoration. This setting
+    /// defaults to <c>true</c>, and <see cref="SettingsManager.JsonOptions"/>
     /// serialises with <c>DefaultIgnoreCondition = WhenWritingDefault</c> — which drops any
     /// property holding the *CLR* default. Turning animations off therefore wrote <c>false</c>…
     /// by omitting the key entirely, and the constructor put <c>true</c> back on the next load.
@@ -37,7 +38,7 @@ public partial class UserSettings : ObservableObject
     /// <para>Any future setting whose default is <c>true</c> (or any non-zero number) needs this
     /// attribute, or the phrasing inverted so <c>false</c> is the default behaviour — the approach
     /// the launcher's <c>Web*</c> properties take. See
-    /// <see href="../../.codex/docs/user-settings.md">user-settings.md</see>.</para>
+    /// <see href="../../docs/user-settings.md">user-settings.md</see>.</para>
     /// </remarks>
     [ObservableProperty]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
@@ -160,6 +161,19 @@ public partial class UserSettings : ObservableObject
     /// </summary>
     public ObservableCollection<Launcher> Launchers { get; set; } = [];
 
+    /// <summary>Device-only disabled identities. Never included in the launcher sync envelope.</summary>
+    [ObservableProperty]
+    public partial string[] DisabledLauncherIds { get; set; } = [];
+
+    public bool IsLauncherEnabled(string id) => Launchers.FirstOrDefault(launcher => launcher.Id == id)?.IsSupportedOnThisOperatingSystem == true
+        && !Array.Exists(DisabledLauncherIds ?? [], value => value == id);
+
+    partial void OnDisabledLauncherIdsChanged(string[] value)
+    {
+        if (_initializing) return;
+        MainWindow.Current?.RefreshTrayIcons();
+    }
+
     /// <summary>
     /// [Migration] Legacy flat launcher items list. Present in old settings files.
     /// On load, migrated into the first Launcher's Items and cleared. Not used in new code.
@@ -197,7 +211,7 @@ public partial class UserSettings : ObservableObject
     /// <see cref="SyncProviders.Sftp"/> is 0 on purpose: <c>WhenWritingDefault</c> drops the key
     /// when the value is the CLR default, so 0 has to mean the behaviour every settings file
     /// written before this setting existed was configured for. See
-    /// <see href="../../.codex/docs/user-settings.md">user-settings.md</see>.
+    /// <see href="../../docs/user-settings.md">user-settings.md</see>.
     /// </remarks>
     /// <summary>
     /// Which destination the Cloud Sync page is currently *editing*. UI state only — it does
@@ -384,7 +398,7 @@ public partial class UserSettings : ObservableObject
     public UserSettings()
     {
         AppTheme = 0;
-        Startup = false;
+        Startup = true;
         FlyoutAnimationsEnabled = true;
         NIconHide = false;
         TrayIconMode = 0;

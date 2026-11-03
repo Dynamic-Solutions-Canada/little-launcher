@@ -61,7 +61,7 @@ internal static class StartMenuShortcutService
             // empty, since an empty group is still a visible entry in All apps.
             var wanted = SettingsManager.Current.DisableWebLauncherShortcuts
                 ? []
-                : launchers.Where(l => LauncherKinds.IsWeb(l.Kind)).ToList();
+                : launchers.Where(l => LauncherKinds.IsWeb(l.Kind) && SettingsManager.Current.IsLauncherEnabled(l.Id)).ToList();
 
             if (wanted.Count == 0)
             {

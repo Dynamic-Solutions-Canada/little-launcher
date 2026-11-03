@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Little Launcher Web
+Exec=little-launcher
+Icon=io.github.RyanEwen.LittleLauncher
+NoDisplay=true
+Terminal=false
+StartupWMClass=io.github.RyanEwen.LittleLauncher.Web

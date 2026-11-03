@@ -3,14 +3,14 @@
     Local build secrets, untracked. Holds the OAuth client secret that cannot live in a public
     repository but is compiled into shipped builds. Fresh clones and CI have no private file;
     shipping CI supplies the GoogleClientSecret build environment variable instead. Availability
-    checks only the client ID, not the presence of a secret. See .codex/docs/sync.md.
+    checks only the client ID, not the presence of a secret. See docs/sync.md.
   -->
   <Import Project="$(MSBuildThisFileDirectory)local.secrets.props"
           Condition="Exists('$(MSBuildThisFileDirectory)local.secrets.props')" />
 
   <!-- Single source of truth for the app version -->
   <PropertyGroup>
-    <Version>1.41.1</Version>
+    <Version>1.42.0</Version>
   </PropertyGroup>
 
   <!--

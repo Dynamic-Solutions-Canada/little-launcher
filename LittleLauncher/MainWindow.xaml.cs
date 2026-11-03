@@ -394,6 +394,33 @@ public sealed partial class MainWindow : Window
 
         // Ensure existing Windows startup registry entry includes --silent
         MigrateStartupRegistryEntry();
+        _ = ApplyFirstRunStartupAsync();
+    }
+
+    /// <summary>Register the default once, preserving later app and OS opt-outs.</summary>
+    private static async Task ApplyFirstRunStartupAsync()
+    {
+        if (!SettingsManager.IsFirstRun || !SettingsManager.Current.Startup) return;
+        try
+        {
+            if (IsPackaged)
+            {
+                var task = await global::Windows.ApplicationModel.StartupTask.GetAsync("LittleLauncherStartup");
+                // Never override DisabledByUser or policy. The manifest supplies the fresh default.
+                if (task.State == global::Windows.ApplicationModel.StartupTaskState.Disabled)
+                    await task.RequestEnableAsync();
+            }
+            else
+            {
+                string? executable = Environment.ProcessPath;
+                if (string.IsNullOrEmpty(executable) || !File.Exists(executable)) return;
+                using var run = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
+                    @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
+                if (run.GetValue("Little Launcher") is null)
+                    run.SetValue("Little Launcher", $"\"{executable}\" --silent");
+            }
+        }
+        catch (Exception error) { Logger.Warn(error, "Default login startup could not be registered"); }
     }
 
     private void SetupTrayIcons()
@@ -425,7 +452,7 @@ public sealed partial class MainWindow : Window
         var entry = new TrayIconEntry { Uid = uid, Guid = trayGuid, Icon = icon };
         _trayIcons[launcher.Id] = entry;
 
-        if (!launcher.NIconHide)
+        if (SettingsManager.Current.IsLauncherEnabled(launcher.Id) && !launcher.NIconHide && !IsHiddenOnThisOperatingSystem(launcher))
             AddNativeIcon(entry, launcher.Name);
 
         // Subscribe to launcher property changes to live-update the icon
@@ -435,7 +462,18 @@ public sealed partial class MainWindow : Window
             {
                 case nameof(Launcher.TrayIconMode):
                 case nameof(Launcher.CustomTrayIconPath):
+                case nameof(Launcher.CustomTrayIconData):
+                case nameof(Launcher.TrayIconPreviewData):
+                case nameof(Launcher.TrayIconPreviewMode):
                     DispatcherQueue.TryEnqueue(() => UpdateTrayIcon(launcher));
+                    break;
+                case nameof(Launcher.Platform):
+                case nameof(Launcher.Kind):
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (!launcher.IsSupportedOnThisOperatingSystem) FlyoutWindow.DisposeLauncher(launcher.Id);
+                        UpdateTrayIconVisibility(launcher);
+                    });
                     break;
                 case nameof(Launcher.NIconHide):
                     DispatcherQueue.TryEnqueue(() => UpdateTrayIconVisibility(launcher));
@@ -635,6 +673,16 @@ public sealed partial class MainWindow : Window
     /// Single source of truth for rendering a launcher's icon as a 256×256 bitmap.
     /// All icon surfaces (tray, shortcuts, settings window) derive from this.
     /// </summary>
+    internal static byte[]? ExportLauncherGlyphPng(Launcher launcher)
+    {
+        if (!TrayIconModes.IsGlyphMode(launcher.TrayIconMode)) return null;
+        using var bitmap = ResolveBaseIconBitmap(launcher);
+        if (bitmap is null) return null;
+        using var stream = new MemoryStream();
+        bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+        return stream.ToArray();
+    }
+
     private static System.Drawing.Bitmap? ResolveBaseIconBitmap(Launcher launcher)
     {
         string mode = launcher.TrayIconMode;
@@ -659,6 +707,17 @@ public sealed partial class MainWindow : Window
                     using var original = new System.Drawing.Bitmap(path);
                     return TrimAndResizeTo256(original);
                 }
+            }
+
+            if (TrayIconModes.IsGlyphMode(mode) && launcher.TrayIconPreviewMode == mode && !string.IsNullOrEmpty(launcher.TrayIconPreviewData))
+            {
+                try
+                {
+                    using var stream = new MemoryStream(PortableLauncherIcon.DecodePreview(launcher.TrayIconPreviewData));
+                    using var preview = new System.Drawing.Bitmap(stream);
+                    return TrimAndResizeTo256(preview);
+                }
+                catch { /* Preserve the source choice and use native rendering if the preview is unreadable. */ }
             }
 
             // Glyph presets
@@ -1204,6 +1263,7 @@ public sealed partial class MainWindow : Window
         SaveToastIconToAppData(launcher);
 
         if (!_trayIcons.TryGetValue(launcher.Id, out var entry)) return;
+        UpdateTrayIconVisibility(launcher);
         entry.Icon?.Dispose();
         entry.Icon = ResolveTrayIcon(launcher);
         if (entry.IsAdded)
@@ -1263,12 +1323,17 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>Hide shortcut launchers belonging to another operating system.</summary>
+    private static bool IsHiddenOnThisOperatingSystem(Launcher launcher) =>
+        !launcher.IsSupportedOnThisOperatingSystem;
+
     internal void UpdateTrayIconVisibility(Launcher launcher)
     {
         if (!_trayIcons.TryGetValue(launcher.Id, out var entry)) return;
-        if (launcher.NIconHide && entry.IsAdded)
+        bool hidden = !SettingsManager.Current.IsLauncherEnabled(launcher.Id) || launcher.NIconHide || IsHiddenOnThisOperatingSystem(launcher);
+        if (hidden && entry.IsAdded)
             RemoveNativeIcon(entry);
-        else if (!launcher.NIconHide && !entry.IsAdded)
+        else if (!hidden && !entry.IsAdded)
             AddNativeIcon(entry, launcher.Name);
     }
 
@@ -1494,12 +1559,10 @@ public sealed partial class MainWindow : Window
         bool changed = false;
         foreach (var launcher in SettingsManager.Current.Launchers)
         {
-            // Custom tray icon path
-            if (!string.IsNullOrEmpty(launcher.CustomTrayIconPath) && !File.Exists(launcher.CustomTrayIconPath))
-            {
-                launcher.CustomTrayIconPath = "";
-                changed = true;
-            }
+            // A missing local path is not a change to the user's icon selection. Restore
+            // portable content if present; never upload a cleared selection from this device.
+            try { Services.PortableLauncherIcon.Materialize(launcher); }
+            catch (Exception ex) { Logger.Warn(ex, "Could not restore a portable launcher icon"); }
 
             // Item icon paths (recursive into groups)
             changed |= ClearStaleItemIconPaths(launcher.Items);

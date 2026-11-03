@@ -1446,7 +1446,7 @@ public sealed partial class WebFlyoutWindow : Window
             // Re-read the launcher rather than trusting the snapshot: sync or the settings window
             // may have changed the policy in the seconds since this was scheduled.
             var current = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcher.Id);
-            if (current != null && NeedsPreload(current))
+            if (current != null && SettingsManager.Current.IsLauncherEnabled(current.Id) && NeedsPreload(current))
             {
                 if (!Instances.TryGetValue(current.Id, out var panel))
                 {
@@ -4027,7 +4027,7 @@ public sealed partial class WebFlyoutWindow : Window
     // ── Animation ───────────────────────────────────────────────────
     // Mirrors FlyoutWindow's slide-and-fade so both kinds of panel move the same way. The
     // easing rationale (and why it must be verified in pixels, not curve shape) is in
-    // ARCHITECTURE.md.
+    // docs/architecture.md.
 
     private void AnimateWindowPosition(int animationVersion, int left, int startTop, int endTop,
         int width, int height, uint durationMs, bool parkAtEnd)

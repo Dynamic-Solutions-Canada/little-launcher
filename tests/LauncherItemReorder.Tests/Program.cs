@@ -8,6 +8,15 @@ using LittleLauncher.Models;
 var cases = new List<(string Name, Action Run)>();
 void Case(string name, Action action) => cases.Add((name, action));
 
+Case("legacy item OS metadata is retained without assigning new item eligibility", () =>
+{
+    var item = new LauncherItem { Path = @"C:\portable.exe", SupportedOperatingSystems = ["future-os"] };
+    var saved = JsonSerializer.Deserialize<LauncherItem>(JsonSerializer.Serialize(item))!;
+    Check(saved.SupportedOperatingSystems!.Single() == "future-os");
+    Check(new LauncherItem("App", "command", "").SupportedOperatingSystems is null);
+    Check(new LauncherItem("Site", "https://example.com", "", true).SupportedOperatingSystems is null);
+});
+
 Case("same-column downward move adjusts pre-removal index", () =>
 {
     var f = new Fixture();

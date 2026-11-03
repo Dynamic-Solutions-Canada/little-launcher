@@ -47,6 +47,9 @@ public static class SettingsManager
 
     private static UserSettings _current = new();
 
+    /// <summary>Only an absent settings file qualifies for first-run OS registration.</summary>
+    internal static bool IsFirstRun { get; private set; }
+
     /// <summary>
     /// The current user settings stored in the app.
     /// </summary>
@@ -139,6 +142,7 @@ public static class SettingsManager
     public static UserSettings RestoreSettings(string? filePath = null)
     {
         filePath ??= SettingsFilePath;
+        IsFirstRun = !File.Exists(filePath) && !File.Exists(LegacyXmlPath);
 
         try
         {
@@ -149,6 +153,11 @@ public static class SettingsManager
                 var deserialized = JsonSerializer.Deserialize<UserSettings>(json, JsonOptions);
                 if (deserialized != null)
                 {
+                    // Older false defaults were omitted from JSON. Preserve those existing
+                    // opt-outs; new files always write Startup, including an explicit false.
+                    using var saved = JsonDocument.Parse(json);
+                    if (!saved.RootElement.TryGetProperty(nameof(UserSettings.Startup), out _))
+                        deserialized.Startup = false;
                     _current = deserialized;
                     _current.CompleteInitialization();
                     NormalizeAllGlyphs();

@@ -13,8 +13,8 @@ public static class UpdateService
     private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
     private const string StoreUpdatesUri = "ms-windows-store://downloadsandupdates";
 
-    private const string Owner = "RyanEwen";
-    private const string Repo = "LittleLauncher";
+    private const string Owner = "Dynamic-Solutions-Canada";
+    private const string Repo = "little-launcher";
     private static readonly Uri LatestReleaseUri = new($"https://api.github.com/repos/{Owner}/{Repo}/releases/latest");
 
     private static readonly HttpClient Http = CreateHttpClient();

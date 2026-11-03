@@ -165,6 +165,7 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
         hash.Add(item.IsGroup);
         hash.Add(item.IsPwa);
         hash.Add(item.IsColumnBreak);
+
     }
 
     /// <summary>

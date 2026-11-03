@@ -10,7 +10,7 @@ namespace LittleLauncher.Services;
 /// this app continues sending it when configured. PKCE and callback correlation protect the flow.</para>
 /// <para>The env-var overrides exist so a second registration can be pointed at for testing
 /// without editing source. They win when set.</para>
-/// <para>See <see href="../../.codex/docs/sync.md">sync.md</see> for the registration runbook.
+/// <para>See <see href="../../docs/sync.md">sync.md</see> for the registration runbook.
 /// Availability checks only the client ID. It does not validate the secret or the provider's
 /// configuration, and a missing Google secret alone does not disable sign-in.</para>
 /// </remarks>
@@ -77,5 +77,5 @@ public static class CloudSyncCredentials
     /// </summary>
     public static string NotConfiguredMessage(string providerName) =>
         $"This build has no {providerName} app registration, so sign-in is unavailable. " +
-        $"See .codex/docs/sync.md for how to create one.";
+        $"See docs/sync.md for how to create one.";
 }

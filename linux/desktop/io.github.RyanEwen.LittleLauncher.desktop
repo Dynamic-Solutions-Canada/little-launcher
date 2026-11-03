@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Little Launcher
+Comment=Your shortcuts and web launchers in the desktop tray
+Exec=little-launcher
+Icon=io.github.RyanEwen.LittleLauncher
+Terminal=false
+Categories=Utility;
+StartupWMClass=io.github.RyanEwen.LittleLauncher

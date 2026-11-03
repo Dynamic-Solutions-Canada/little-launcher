@@ -24,6 +24,12 @@ internal static class LauncherPanels
     /// <summary>Shows the launcher's panel, or dismisses it if it is already open.</summary>
     public static void Toggle(MainWindow owner, int screenX, int screenY, string launcherId)
     {
+        if (!SettingsManager.Current.IsLauncherEnabled(launcherId))
+        {
+            var disabled = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
+            if (disabled != null) _ = LauncherSettingsWindow.ShowAsync(disabled);
+            return;
+        }
         if (IsWebLauncher(launcherId))
             WebFlyoutWindow.Toggle(owner, screenX, screenY, launcherId);
         else
@@ -51,6 +57,11 @@ internal static class LauncherPanels
         var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
         if (launcher == null) return;
 
+        if (!SettingsManager.Current.IsLauncherEnabled(launcherId))
+        {
+            _ = LauncherSettingsWindow.ShowAsync(launcher);
+            return;
+        }
         bool handled = launcher.IsWebLauncher
             ? WebFlyoutWindow.OpenBookmarkFromJumpList(owner, launcher, index, token, screenX, screenY)
             : FlyoutWindow.LaunchItemFromJumpList(launcher, index, token);
@@ -74,6 +85,12 @@ internal static class LauncherPanels
         var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
         if (launcher == null) return;
 
+        if (!SettingsManager.Current.IsLauncherEnabled(launcherId)
+            && action is not LauncherActions.LauncherSettings and not LauncherActions.AppSettings)
+        {
+            _ = LauncherSettingsWindow.ShowAsync(launcher);
+            return;
+        }
         switch (action)
         {
             case LauncherActions.LauncherSettings:
@@ -107,6 +124,11 @@ internal static class LauncherPanels
     /// </summary>
     public static void SyncKind(Launcher launcher)
     {
+        if (!SettingsManager.Current.IsLauncherEnabled(launcher.Id))
+        {
+            Dispose(launcher.Id);
+            return;
+        }
         if (launcher.IsWebLauncher)
             FlyoutWindow.DisposeLauncher(launcher.Id);
         else
@@ -119,7 +141,7 @@ internal static class LauncherPanels
     /// </summary>
     public static void WarmUp(MainWindow owner, IEnumerable<Launcher> launchers)
     {
-        var all = launchers as IReadOnlyCollection<Launcher> ?? launchers.ToList();
+        var all = launchers.Where(l => SettingsManager.Current.IsLauncherEnabled(l.Id)).ToList();
 
         FlyoutWindow.WarmUp(owner, all.Where(l => !l.IsWebLauncher));
 

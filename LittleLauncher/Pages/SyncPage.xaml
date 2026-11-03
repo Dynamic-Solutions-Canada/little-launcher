@@ -8,7 +8,7 @@
         <Style x:Key="DestinationExpander" TargetType="Expander">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="IsExpanded" Value="False"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
     </Page.Resources>

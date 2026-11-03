@@ -8,6 +8,8 @@ on:
   push:
     tags:
       - 'v*'
+      # This GitHub download release is intentionally held from Store submission.
+      - '!v1.42.0'
   workflow_dispatch:
     inputs:
       no_commit:

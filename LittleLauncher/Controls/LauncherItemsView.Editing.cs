@@ -1004,6 +1004,7 @@ public sealed partial class LauncherItemsView
     private bool CanMoveToLauncher(Launcher target) =>
         !ReferenceEquals(target, _launcher)
         && !target.IsWebLauncher
+        && target.IsSupportedOnThisOperatingSystem
         && target is not { IsShared: true, IsSharedOwner: false }
         && SettingsManager.Current.Launchers.Contains(target);
 
@@ -1046,6 +1047,7 @@ public sealed partial class LauncherItemsView
                 continue;
 
             FlyoutWindow.InvalidateItems(launcher.Id);
+            MainWindow.Current?.UpdateTrayIconVisibility(launcher);
 
         }
     }
@@ -1125,6 +1127,7 @@ public sealed partial class LauncherItemsView
         if (_disposed || _isEditMode == editing || (editing && IsReadOnlyLauncher)) return;
         _isEditMode = editing;
         _sessionVersion++;
+        RebuildColumnsPanel();
         if (_editPencil != null)
         {
             _editPencil.Opacity = 0;

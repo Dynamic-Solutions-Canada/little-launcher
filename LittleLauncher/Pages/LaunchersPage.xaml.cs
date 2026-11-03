@@ -137,11 +137,13 @@ public sealed partial class LaunchersPage : Page
         {
             int itemCount = CountLauncherItems(launcher.Items);
             string subtitle = $"{itemCount} item{(itemCount == 1 ? "" : "s")}";
+            if (!launcher.IsSupportedOnThisOperatingSystem)
+                subtitle += " · " + (string)Application.Current.Resources["LauncherHiddenOnOperatingSystem"];
             string editActionName = string.Format(
                 (string)Application.Current.Resources["LauncherEditItemsAction"], launcher.Name);
             var itemsRow = CreateLauncherActionButton("Items", subtitle, editActionName);
             itemsRow.Tag = launcher;
-            itemsRow.IsEnabled = launcher is not { IsShared: true, IsSharedOwner: false };
+            itemsRow.IsEnabled = launcher.IsSupportedOnThisOperatingSystem && launcher is not { IsShared: true, IsSharedOwner: false };
             itemsRow.Click += EditLauncherItems_Click;
 
             // Sibling buttons keep bulk actions independently keyboard-accessible, including
@@ -157,6 +159,7 @@ public sealed partial class LaunchersPage : Page
             {
                 Content = new FontIcon { Glyph = "\uE712", FontSize = 12, Opacity = 0.6 },
                 Tag = launcher,
+                IsEnabled = launcher.IsSupportedOnThisOperatingSystem,
                 MinWidth = 40,
                 VerticalAlignment = VerticalAlignment.Stretch,
                 Padding = new Thickness(12, 10, 12, 10),
@@ -189,7 +192,8 @@ public sealed partial class LaunchersPage : Page
         string settingsSubtitle = isWeb
             ? (string.IsNullOrWhiteSpace(launcher.WebAddress) ? "No web address set" : launcher.WebAddress)
             : "Name, icon, view mode, and more";
-        var settingsRow = CreateLauncherActionButton("Settings", settingsSubtitle);
+        var settingsRow = CreateLauncherActionButton("Settings", launcher.IsSupportedOnThisOperatingSystem ? settingsSubtitle : (string)Application.Current.Resources["LauncherHiddenOnOperatingSystem"]);
+        settingsRow.IsEnabled = launcher.IsSupportedOnThisOperatingSystem;
         settingsRow.Click += async (s, e) =>
         {
             await ShowLauncherSettingsDialog(launcher);

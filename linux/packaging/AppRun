@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+app_dir=${APPDIR:-$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)}
+# RPATH and Python's relocated prefix keep bundled libraries out of child-process environments.
+if [ -f /etc/ssl/certs/ca-certificates.crt ]; then
+    export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+elif [ -f /etc/pki/tls/certs/ca-bundle.crt ]; then
+    export SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt
+else
+    export SSL_CERT_FILE="$app_dir/usr/share/little-launcher/ca-certificates.crt"
+fi
+# KDE platform/style plugins use Qt private APIs. A complete compatible distro stack
+# gives native decoration/palette/style without loading host plugins into bundled Qt.
+case ":${XDG_CURRENT_DESKTOP:-}:" in
+    *:KDE:*)
+        if [ "${LITTLE_LAUNCHER_BUNDLED_RUNTIME:-0}" != 1 ] && [ -x /usr/bin/python3 ] &&
+           /usr/bin/python3 -I "$app_dir/usr/lib/little-launcher/host_bootstrap.py" --probe >/dev/null 2>&1; then
+            exec /usr/bin/python3 -I "$app_dir/usr/lib/little-launcher/host_bootstrap.py" "$@"
+        fi
+        ;;
+esac
+exec "$app_dir/usr/bin/python3.11" -I "$app_dir/usr/lib/little-launcher/appimage_bootstrap.py" "$@"

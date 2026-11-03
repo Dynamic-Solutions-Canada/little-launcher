@@ -1,4 +1,4 @@
-using LittleLauncher.Classes;
+﻿using LittleLauncher.Classes;
 using LittleLauncher.Models;
 using LittleLauncher.Services;
 using LittleLauncher.ViewModels;
@@ -141,6 +141,8 @@ public sealed class ItemEditorWindow : Window
 
     /// <summary>File/icon pickers are COM objects that need an owning HWND in a desktop app.</summary>
     private void InitializePicker(object picker) => InitializeWithWindow.Initialize(picker, _hwnd);
+
+
 
     private static TextBlock Label(string text) => new()
     {
@@ -1052,6 +1054,7 @@ public sealed class ItemEditorWindow : Window
         form.Children.Add(nameBox);
         form.Children.Add(Label("Icon"));
         form.Children.Add(iconRow);
+
         form.Children.Add(validationHint);
 
         ShowTabPanel(currentTab);
@@ -1103,7 +1106,7 @@ public sealed class ItemEditorWindow : Window
 
             if (isEdit)
             {
-                existingItem!.Name = name;
+                existingItem.Name = name;
                 existingItem.Path = finalPath;
                 existingItem.Arguments = args;
                 existingItem.IconGlyph = glyph;

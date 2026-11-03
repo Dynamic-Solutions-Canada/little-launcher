@@ -7,8 +7,8 @@ plus an unshown read-only query pump), `PinShortcut.cs`
 (one physical Start snapshot per launcher with cancellation rollback), and `ShellInterop.cs`
 (raw COM helpers). New pinning imports live in `NativeMethods.cs`.
 
-Read and follow [icons.md](../.codex/docs/icons.md) and
-[pinvoke.md](../.codex/docs/pinvoke.md) before changing identity, icons, shortcuts or native code.
+Read and follow [icons.md](../docs/icons.md) and
+[pinvoke.md](../docs/pinvoke.md) before changing identity, icons, shortcuts or native code.
 Keep the companion Native AOT compatible and normal launches free of pin-only work.
 Never set window relaunch metadata alongside a matching AUMID-stamped Start shortcut.
 
@@ -30,5 +30,5 @@ unchanged icon over the card background with alpha. Manual fallback retains pin 
 
 `SPI_GETHIGHCONTRAST` returns a borrowed `DefaultScheme` pointer. Never free it, despite the
 conflicting Learn ownership note; follow the pinned Microsoft implementation in
-[pinvoke.md](../.codex/docs/pinvoke.md). Keep card milestone diagnostics narrow and distinguish
+[pinvoke.md](../docs/pinvoke.md). Keep card milestone diagnostics narrow and distinguish
 preparation from an actual native request. A failed ready queue must not enter an unarmed wait.

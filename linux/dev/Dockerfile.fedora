@@ -1,0 +1,16 @@
+# Fedora matches the primary physical KDE target; all desktop dependencies stay isolated.
+FROM registry.fedoraproject.org/fedora@sha256:a329903517f5dbd709721cba0cb1b6d0cc05f01b9e5feb59c2b6bbe9eb083ade
+RUN dnf install -y --setopt=install_weak_deps=False \
+    kwin plasma-workspace plasma-integration qt6-qttools \
+    dbus-daemon python3 python3-pyside6 python3-dbus-next python3-pillow python3-pywayland \
+    pipewire wireplumber xdg-desktop-portal xdg-desktop-portal-kde \
+    gtk3 nss alsa-lib mesa-libgbm mesa-libEGL mesa-dri-drivers libXScrnSaver \
+    glib2 google-noto-sans-fonts procps-ng \
+    && rpm -qa | sort > /package-versions.txt && dnf clean all
+# KWin scheduling capabilities are incompatible with a cap-drop ALL test container.
+RUN setcap -r /usr/bin/kwin_wayland
+RUN useradd --uid 1000 --create-home --shell /bin/bash probe
+COPY desktop/*.desktop /usr/share/applications/
+COPY resources/little-launcher.png /usr/share/icons/hicolor/256x256/apps/io.github.RyanEwen.LittleLauncher.png
+USER probe
+WORKDIR /source/linux

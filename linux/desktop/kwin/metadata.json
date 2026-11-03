@@ -1,0 +1,1 @@
+{"KPackageStructure":"KWin/Script","KPlugin":{"Id":"little-launcher","Name":"Little Launcher flyouts","Description":"Position Little Launcher windows at host-supplied tray activation coordinates","Version":"1.0"},"X-Plasma-API":"javascript","X-Plasma-MainScript":"code/main.js"}

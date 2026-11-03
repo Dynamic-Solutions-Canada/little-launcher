@@ -39,6 +39,9 @@ internal static class LauncherPayload
     private sealed class LaunchersEnvelope
     {
         public DateTimeOffset LastModified { get; set; }
+
+        /// <summary>Writer understands explicit OS assignments and preserves hidden items.</summary>
+        public int PlatformVisibilityVersion { get; set; }
         public List<Launcher> Launchers { get; set; } = [];
 
         /// <summary>
@@ -57,10 +60,18 @@ internal static class LauncherPayload
     /// </summary>
     public static MemoryStream Serialize(ObservableCollection<Launcher> launchers)
     {
+        // Work on detached models: gathering image bytes must not trigger live icon updates.
+        var portable = JsonSerializer.Deserialize<List<Launcher>>(JsonSerializer.Serialize(launchers, JsonOptions), JsonOptions)!;
+        foreach (var launcher in portable)
+        {
+            ClearDeviceState(launcher);
+            PortableLauncherIcon.Capture(launcher);
+        }
         var envelope = new LaunchersEnvelope
         {
             LastModified = DateTimeOffset.UtcNow,
-            Launchers = new List<Launcher>(launchers),
+            PlatformVisibilityVersion = 2,
+            Launchers = portable,
 
             // Identity only — BrowserExtension.Folder is [JsonIgnore] because it names a path that
             // exists on exactly one machine.
@@ -156,12 +167,18 @@ internal static class LauncherPayload
     /// </param>
     public static async Task ApplyAsync(List<Launcher> launchers, List<BrowserExtension>? extensions = null)
     {
+        foreach (var launcher in launchers)
+        {
+            ClearDeviceState(launcher);
+            PortableLauncherIcon.Materialize(launcher);
+        }
         var rebound = await MergeAsync(launchers);
 
         if (extensions != null) await BrowserExtensionService.ReconcileAsync(extensions);
 
         foreach (var launcher in SettingsManager.Current.Launchers)
         {
+            if (!launcher.IsSupportedOnThisOperatingSystem) continue;
             foreach (var item in launcher.Items)
             {
                 item.NormalizeGlyph();
@@ -259,7 +276,14 @@ internal static class LauncherPayload
         // ── Identity and tray presence ──────────────────────────────
         existing.Name = downloaded.Name;
         existing.TrayIconMode = downloaded.TrayIconMode;
-        existing.CustomTrayIconPath = downloaded.CustomTrayIconPath;
+        // An older peer cannot supply image bytes. Preserve an available local copy when its
+        // unresolved path would otherwise erase the selected custom image on the next upload.
+        if (!string.IsNullOrEmpty(downloaded.CustomTrayIconData) || File.Exists(downloaded.CustomTrayIconPath)
+            || downloaded.TrayIconMode != TrayIconModes.Custom || !File.Exists(existing.CustomTrayIconPath))
+        {
+            existing.CustomTrayIconPath = downloaded.CustomTrayIconPath;
+            existing.CustomTrayIconData = downloaded.CustomTrayIconData;
+        }
         existing.NIconHide = downloaded.NIconHide;
 
         // ── Flyout presentation ─────────────────────────────────────
@@ -271,6 +295,12 @@ internal static class LauncherPayload
         // A web launcher carries no items, so without these it would arrive on the
         // other machine as an empty shortcut launcher.
         existing.Kind = downloaded.Kind;
+        existing.Platform = downloaded.Platform;
+        if (!string.IsNullOrEmpty(downloaded.TrayIconPreviewData) || existing.TrayIconPreviewMode != downloaded.TrayIconMode)
+        {
+            existing.TrayIconPreviewData = downloaded.TrayIconPreviewData;
+            existing.TrayIconPreviewMode = downloaded.TrayIconPreviewMode;
+        }
 
         // Legacy, and synced for exactly one reason: a launcher edited on a machine still running
         // a build from before one address and a bar of them merged arrives carrying its address
@@ -359,6 +389,14 @@ internal static class LauncherPayload
         existing.MigrateWebModel();
 
         return itemsChanged;
+    }
+
+    private static void ClearDeviceState(Launcher launcher)
+    {
+        launcher.PinAumid = "";
+        launcher.WebFlyoutPosition = "";
+        launcher.WebSessionTabs = null;
+        launcher.WebSessionActiveTab = 0;
     }
 
     /// <summary>

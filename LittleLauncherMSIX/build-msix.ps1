@@ -145,7 +145,7 @@ function Remove-OldMsixArtifacts {
 # ── Signing certificate (auto-generate if missing) ─────────────────────────────
 if ($NoSign) {
     Write-Host "Skipping signing (Store upload mode)" -ForegroundColor Yellow
-} elseif (-not (Test-Path $pfxFile)) {
+} elseif ([string]::IsNullOrEmpty($TrustedPfxPath) -and -not (Test-Path $pfxFile)) {
     Write-Host "Signing certificate not found — generating self-signed cert..." -ForegroundColor Yellow
     $cert = New-SelfSignedCertificate -Type Custom -Subject "CN=RyanEwen" `
         -KeyUsage DigitalSignature -FriendlyName "Little Launcher Dev" `
@@ -335,8 +335,21 @@ Write-Host "`n=== SUCCESS ===" -ForegroundColor Green
 Write-Host "  MSIX:     $msixFile ($size MB)"
 Write-Host "  Version:  $msixVersion"
 Write-Host "  Platform: $Platform"
-Write-Host "  To install:"
-Write-Host "    Add-AppxPackage -Path '$msixFile' -ForceUpdateFromAnyVersion"
-Write-Host "  NOTE: The signing certificate must be trusted on the target machine."
-Write-Host "        Import LittleLauncherMSIX\LittleLauncher.cer into"
-Write-Host "        'Trusted Root Certification Authorities' (Local Machine) first."
+if ($NoSign) {
+    Write-Host "  Unsigned package for Store ingestion; it is not a sideloadable test package."
+} else {
+    $signerPath = if ($TrustedPfxPath) { $TrustedPfxPath } else { $pfxFile }
+    $signerPassword = if ($TrustedPfxPath) { $TrustedPfxPassword } else { "LittleLauncher" }
+    $publicCert = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
+        $signerPath, $signerPassword,
+        [Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet)
+    $publicCertPath = Join-Path $outputDir "signing.cer"
+    try {
+        [IO.File]::WriteAllBytes($publicCertPath,
+            $publicCert.Export([Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+    } finally { $publicCert.Dispose() }
+    Write-Host "  Public certificate: $publicCertPath"
+    Write-Host "  First trust that public certificate in Local Computer / Trusted People."
+    Write-Host "  To install:"
+    Write-Host "    Add-AppxPackage -Path '$msixFile'"
+}

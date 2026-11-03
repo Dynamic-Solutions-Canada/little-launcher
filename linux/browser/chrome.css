@@ -1,0 +1,46 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--window); color: var(--text); font-family: var(--font); font-size: 12px; }
+header, footer, nav, form { display: flex; align-items: center; gap: 2px; padding: 2px 8px; height: 34px; }
+header { -webkit-app-region: drag; }
+.actions { display: flex; align-items: center; gap: 2px; }
+button { -webkit-app-region: no-drag; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 3px; min-width: 28px; height: 28px; padding: 4px 6px; font: inherit; cursor: default; }
+button:hover { background: var(--button); }
+button:disabled { opacity: .4; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--highlight); }
+button svg { display: block; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; }
+button[aria-pressed="true"], button[aria-selected="true"] { background: var(--button); border-bottom-color: var(--highlight); }
+#hide:hover { color: #e74747; }
+#title { flex: 1; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; }
+footer { position: absolute; bottom: 0; width: 100%; overflow: hidden; justify-content: center; }
+footer.overflowing { justify-content: flex-start; }
+footer button { white-space: nowrap; flex-shrink: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+#tab-list { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tab { display: flex; min-width: 48px; max-width: 180px; flex: 1; align-items: center; }
+.tab > [role="tab"] { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left; }
+.tab .tab-close { min-width: 22px; padding: 2px; }
+input { flex: 1; min-width: 0; font: inherit; color: var(--text); background: var(--button); border: 1px solid transparent; border-radius: 3px; padding: 4px 8px; height: 28px; }
+[hidden] { display: none !important; }
+
+header.native-frame { -webkit-app-region: no-drag; justify-content: space-between; }
+
+footer .bookmark { display: inline-flex; align-items: center; gap: 6px; }
+.bookmark > svg, .bookmark > img { width: 16px; height: 16px; flex: 0 0 16px; }
+.bookmark > span { overflow: hidden; text-overflow: ellipsis; }
+footer .bookmark.icons-only { width: 30px; padding: 6px; }
+
+.tab:not(:hover):not(:focus-within) .tab-close { opacity: 0; pointer-events: none; }
+
+.tab > [role=tab] { display: flex; align-items: center; gap: 6px; }
+.tab-icon { display: inline-flex; flex: 0 0 16px; }
+.tab-icon img, .tab-icon svg { width: 16px; height: 16px; }
+
+.tab-caption { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.drop-before { box-shadow: inset 2px 0 var(--highlight); }
+.drop-after { box-shadow: inset -2px 0 var(--highlight); }
+.drop-inside { outline: 2px solid var(--highlight); outline-offset: -2px; }
+
+.extension-action { position: relative; }
+.extension-action img { display:block; width:16px; height:16px; }
+.extension-badge { position:absolute; bottom:0; right:0; max-width:26px; overflow:hidden; font-size:9px; background:var(--highlight); color:var(--text); border-radius:2px; padding:0 2px; }

@@ -1,0 +1,9 @@
+#!/usr/bin/python3
+"""Source and packaged native Linux entry point."""
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from little_launcher.app import main
+
+raise SystemExit(main())
