@@ -38,6 +38,26 @@
     <x:String x:Key="LauncherItemsSettingsAction">Launcher settings</x:String>
     <x:String x:Key="LauncherItemsDescription">Add applications or websites that appear in your taskbar widget for quick access.</x:String>
 
+    <!-- Shared launcher guidance -->
+    <x:String x:Key="SharingDirectionTwoWay">2-way (all participants can edit in Little Launcher)</x:String>
+    <x:String x:Key="SharingDirectionOneWay">1-way (owner publishes, others receive updates)</x:String>
+    <x:String x:Key="SharingTwoWayGuidance">In Little Launcher, all participants can edit and send changes. Everyone receives updates; the last save wins. Each participant needs write access to the shared file.</x:String>
+    <x:String x:Key="SharingOneWayGuidance">In Little Launcher, only the owner can edit and publish changes. Recipients receive updates and cannot edit the launcher in the app. This does not change access permissions on the shared file.</x:String>
+    <x:String x:Key="SharingSubscriberDirection">The published launcher determines whether you can edit in Little Launcher or only receive updates. Its direction applies automatically when the launcher is downloaded.</x:String>
+    <x:String x:Key="SharingFilePublisher">Use a file in a folder participants can reach, such as a network share or a cloud folder already shared through its service.</x:String>
+    <x:String x:Key="SharingFileSubscriber">Enter the path to your copy of the launcher file shared with you, in a network share or a synced cloud folder.</x:String>
+    <x:String x:Key="SharingFilePublisherPath">Participants use their own path to the same shared file. The owner needs write access; recipients need read access, or write access for 2-way sharing.</x:String>
+    <x:String x:Key="SharingFileSubscriberPath">Use your local path to the same shared file, which may differ from the sender’s path. You need read access, plus write access if the published launcher allows 2-way editing.</x:String>
+    <x:String x:Key="SharingSftpPublisher">Use a file on an SSH server participants can access. Give recipients the host and file path; each participant uses their own SSH credentials.</x:String>
+    <x:String x:Key="SharingSftpSubscriber">Enter the SSH host and file path supplied by the sender, with your own SSH credentials. You need read access, plus write access if the published launcher allows 2-way editing.</x:String>
+    <x:String x:Key="SharingWebDavPublisher">Use a shared WebDAV file URL. Give recipients the same URL; each participant uses their own account. The owner needs write access; recipients need read access, or write access for 2-way sharing.</x:String>
+    <x:String x:Key="SharingWebDavSubscriber">Enter the WebDAV file URL supplied by the sender and your own account credentials. You need read access, plus write access if the published launcher allows 2-way editing.</x:String>
+    <x:String x:Key="SharingOneDrivePublisher">Sign in to OneDrive on the Cloud Sync page first. When you confirm, Little Launcher publishes a file in your OneDrive and shows a link to send to recipients.</x:String>
+    <x:String x:Key="SharingOneDriveSubscriber">Sign in to OneDrive on the Cloud Sync page, then paste the share link you received. Little Launcher downloads the launcher from that link.</x:String>
+    <x:String x:Key="SharingOneDriveExisting">Sign in to OneDrive on the Cloud Sync page. This launcher uses its existing OneDrive file and share link for updates.</x:String>
+    <x:String x:Key="SharingOneDriveFileWarning">Treat this link like a password: anyone with it can read and edit the underlying OneDrive file, even when 1-way sharing disables editing in Little Launcher.</x:String>
+    <x:String x:Key="SharingLinkSend">Send this link to recipients. They can choose Add Shared Launcher, select OneDrive, and paste the link after signing in on the Cloud Sync page.</x:String>
+
     <!-- Cloud Sync -->
     <x:String x:Key="CloudSyncTitle">Cloud Sync</x:String>
     <x:String x:Key="CloudSyncDescription">Synchronise your settings through OneDrive, Google Drive, a network file share, another folder, or SSH/SFTP.</x:String>

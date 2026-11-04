@@ -926,8 +926,9 @@ public sealed partial class LaunchersPage : Page
         var panel = new StackPanel { Spacing = 4, MinWidth = 420 };
         panel.Children.Add(new TextBlock
         {
-            Text = "Send this to whoever should get the launcher. Anyone with the link can open "
-                 + "and edit it, so treat it like a password.",
+            Text = SharingText("SharingLinkSend") + "\n\n"
+                 + SharingDirectionText(launcher.SharedTwoWay) + "\n\n"
+                 + SharingText("SharingOneDriveFileWarning"),
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.75,
             Margin = new Thickness(0, 0, 0, 8),
@@ -1076,10 +1077,19 @@ public sealed partial class LaunchersPage : Page
 
     // ── Shared dialog helpers ───────────────────────────────────────
 
+    /// <summary>Looks up sharing dialog copy in the application's merged localization dictionary.</summary>
+    private static string SharingText(string key) =>
+        Application.Current.Resources.TryGetValue(key, out var value) && value is string text ? text : key;
+
+    /// <summary>Describes app editing policy without implying provider-level access restrictions.</summary>
+    private static string SharingDirectionText(bool twoWay) =>
+        SharingText(twoWay ? "SharingTwoWayGuidance" : "SharingOneWayGuidance");
+
     /// <summary>Example path shown for File mode, kept in one place so the two uses agree.</summary>
     private const string FilePathPlaceholder =
         @"C:\shared\launcher.json or \\server\share\launcher.json";
 
+    /// <summary>Builds transport fields and live guidance; new subscribers adopt direction from the published file.</summary>
     private static (StackPanel Panel, ComboBox ModeCombo, TextBox PathBox,
         TextBox HostBox, TextBox PortBox, TextBox UserBox, TextBox KeyBox,
         ComboBox DirectionCombo, TextBox DavUrlBox, TextBox DavUserBox, PasswordBox DavPasswordBox,
@@ -1088,8 +1098,8 @@ public sealed partial class LaunchersPage : Page
     {
         // ── Direction ───────────────────────────────────────────────
         var directionCombo = new ComboBox { MinWidth = 160 };
-        directionCombo.Items.Add("2-way (all participants can edit)");
-        directionCombo.Items.Add("1-way (owner publishes, others subscribe)");
+        directionCombo.Items.Add(SharingText("SharingDirectionTwoWay"));
+        directionCombo.Items.Add(SharingText("SharingDirectionOneWay"));
         directionCombo.SelectedIndex = launcher.SharedTwoWay ? 0 : 1;
 
         // "How do you want to share this?" comes first and decides everything below it. The
@@ -1120,8 +1130,7 @@ public sealed partial class LaunchersPage : Page
 
         var pathCaption = new TextBlock
         {
-            Text = "Any folder works, including a OneDrive, Google Drive or network share folder. "
-                 + "Whoever you are sharing with points at their own copy of the same folder.",
+            Text = SharingText(isSubscribing ? "SharingFileSubscriberPath" : "SharingFilePublisherPath"),
             FontSize = 12,
             Opacity = 0.6,
             TextWrapping = TextWrapping.Wrap,
@@ -1181,15 +1190,6 @@ public sealed partial class LaunchersPage : Page
         AddField(davPanel, "File URL", davUrlBox);
         AddField(davPanel, "Username", davUserBox);
         AddField(davPanel, "Password", davPasswordBox);
-        davPanel.Children.Add(new TextBlock
-        {
-            Text = "Everyone sharing this launcher points at the same URL with their own account. "
-                 + "Both sides can write, so 2-way sharing works.",
-            FontSize = 12,
-            Opacity = 0.6,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 4, 0, 0),
-        });
 
         AddField(sftpPanel, "SFTP Host", hostBox);
         AddField(sftpPanel, "Port", portBox);
@@ -1203,6 +1203,14 @@ public sealed partial class LaunchersPage : Page
         // Update visibility and placeholder when mode changes
         var pathRow = new StackPanel { Spacing = 4 };
         AddField(pathRow, "Path", pathBox);
+
+        var directionCaption = new TextBlock
+        {
+            FontSize = 12,
+            Opacity = 0.6,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 4, 0, 0),
+        };
 
         // One place decides what a mode shows, so the initial state and the change handler
         // cannot drift apart — they did before, which is how a stale panel could linger.
@@ -1225,29 +1233,30 @@ public sealed partial class LaunchersPage : Page
 
             pathBox.PlaceholderText = isSftp ? "~/shared/launcher.json" : FilePathPlaceholder;
 
-            modeCaption.Text = mode switch
+            string captionKey = mode switch
             {
-                SharedSyncModes.Sftp =>
-                    "Everyone sharing this needs an account on the same SSH server.",
-                SharedSyncModes.WebDav =>
-                    "Everyone points at the same URL with their own account. Both sides can edit.",
-                SharedSyncModes.OneDrive =>
-                    "Little Launcher puts the file in your OneDrive and gives you a link to send. "
-                    + "Anyone with the link can open and edit it, so treat it like a password.",
-                _ => "Any folder both of you can reach: a network share, or a cloud folder you "
-                     + "have already shared with them through that service.",
+                SharedSyncModes.Sftp => isSubscribing ? "SharingSftpSubscriber" : "SharingSftpPublisher",
+                SharedSyncModes.WebDav => isSubscribing ? "SharingWebDavSubscriber" : "SharingWebDavPublisher",
+                SharedSyncModes.OneDrive when isSubscribing => "SharingOneDriveSubscriber",
+                SharedSyncModes.OneDrive when launcher.IsOneDriveSync
+                    && launcher.SharedLinkUrl.Length > 0 => "SharingOneDriveExisting",
+                SharedSyncModes.OneDrive => "SharingOneDrivePublisher",
+                _ => isSubscribing ? "SharingFileSubscriber" : "SharingFilePublisher",
             };
+            modeCaption.Text = SharingText(captionKey);
 
-            oneDriveNote.Text = isOneDrive && !isSubscribing
-                ? "A link is created in your OneDrive when you press Share, and shown so you can "
-                  + "send it. Anyone with it can edit this launcher."
-                : "";
-            oneDriveNote.Visibility = oneDriveNote.Text.Length > 0
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            // Direction controls editing in Little Launcher, not the provider's file permissions.
+            // Do not infer a new subscriber's direction before the published payload is fetched.
+            directionCaption.Text = isSubscribing
+                ? SharingText("SharingSubscriberDirection")
+                : SharingDirectionText(directionCombo.SelectedIndex == 0);
+
+            oneDriveNote.Text = SharingText("SharingOneDriveFileWarning");
+            oneDriveNote.Visibility = isOneDrive ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        modeCombo.SelectionChanged += (s, e) => ApplyMode(modeCombo.SelectedIndex);
+        modeCombo.SelectionChanged += (_, _) => ApplyMode(modeCombo.SelectedIndex);
+        directionCombo.SelectionChanged += (_, _) => ApplyMode(modeCombo.SelectedIndex);
 
         var panel = new StackPanel { Spacing = 4 };
 
@@ -1266,16 +1275,7 @@ public sealed partial class LaunchersPage : Page
         // published in the file and adopted on the first pull.
         if (!isSubscribing)
             AddField(panel, "Direction", directionCombo);
-        else
-            panel.Children.Add(new TextBlock
-            {
-                Text = "Whether you can edit this launcher or only receive it is set by whoever "
-                     + "shared it, and applies automatically.",
-                FontSize = 12,
-                Opacity = 0.6,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 8, 0, 0),
-            });
+        panel.Children.Add(directionCaption);
 
         ApplyMode(modeCombo.SelectedIndex);
 

@@ -392,13 +392,11 @@ Full conventions, including how to add a transport: [docs/sync.md](sync.md).
 
 ### Shared launcher sync
 
-Individual launchers can be shared via files or per-launcher SFTP connections, **independently of `SyncProvider`** — `Launcher.SharedSyncMode` controls the transport: 0 = File, 1 = SFTP. File mode accepts any path, so a OneDrive, Google Drive or UNC folder works: both participants point at their own local copy of the same shared folder. The share dialog offers detected cloud roots as quick-fill buttons (buttons rather than a picker — a `FileSavePicker` raised from inside a `ContentDialog` is a modal-on-modal). File writes go through `LauncherPayload.WriteAtomic` for the same reason global folder sync does.
-- **Owner** (`IsSharedOwner = true`): `ShareLauncherAsync()` pushes the launcher's items as `List<LauncherItem>` JSON.
-- **Subscriber** (`IsSharedOwner = false`): `SyncSharedLauncherAsync()` pulls items (read-only).
-- `VerifySharedLauncherAsync()` — validates the file/remote exists and is parseable (used before subscribing).
-- `SyncAllSharedLaunchersAsync()` — batch syncs all shared launchers (owners push, subscribers pull). File-mode always syncs; SFTP-mode skips launchers without an auto-detectable SSH key.
+Individual launchers share independently of global sync. `Launcher.SharedSyncMode` selects File (0), SFTP (1), WebDAV (2) or OneDrive link (3). File mode accepts a local or UNC path, including a synced cloud folder, and uses atomic writes. SFTP and WebDAV use per-launcher connection details; WebDAV passwords remain in `ProtectedStore`. OneDrive publishes an ordinary shared file through `OneDriveSharedStore`, with incremental sharing consent and an anonymous editable link, separate from private global sync storage.
 
-The sharing UI lives in `LaunchersPage.xaml.cs`: "Share" button on unshared launcher cards, "Sync" and "Settings" buttons on shared cards, "Shared"/"Subscribed" badges, "Add Shared Launcher" subscribe dialog (with File/SFTP mode picker), and "Stop Sharing" via the share dialog's secondary button.
+`SharedLauncherPayload` carries items and the published direction. In 1-way mode the owner publishes and recipients receive updates without editing in Little Launcher. In 2-way mode all participants can push and pull, with the last save winning. Direction does not change provider file permissions: the OneDrive link remains editable even for 1-way sharing. Verification checks the remote file before adding a subscriber; the subsequent pull adopts its published direction.
+
+The sharing UI lives in `LaunchersPage.xaml.cs`. Transport and direction changes update localized guidance immediately. Share describes publishing, Add Shared Launcher describes recipient setup without guessing direction, and the resulting OneDrive link dialog explains both app editing policy and file permissions. Existing shared-launcher Settings retains its current direction/update workflow, including for subscribers.
 
 `AutoSyncService` manages automatic sync triggers, and is transport-agnostic — everything goes
 through `LauncherSyncService`:

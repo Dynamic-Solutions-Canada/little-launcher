@@ -317,20 +317,9 @@ future setting that changes the timer's shape needs the same wiring.
 
 ## Shared launchers and cloud folders
 
-Shared launchers are **not** affected by `SyncProvider` — each launcher carries its own
-`SharedSyncMode` (0 = file path, 1 = SFTP). File mode has always accepted any path, so a OneDrive,
-Google Drive or UNC path works and always did; sharing through a cloud folder means both people
-point at their own local copy of the same shared folder and let their client do the rest.
+Shared launchers are independent of `SyncProvider`: each launcher carries its own `SharedSyncMode` (0 = file path, 1 = SFTP, 2 = WebDAV, 3 = OneDrive link). File mode accepts any path, including a OneDrive, Google Drive or UNC path. Sharing through a cloud folder means participants point at their own local copy of the same shared folder and let their sync client move the file.
 
-Two things were brought in line with the global folder transport:
-
-- **The write is atomic** (`LauncherPayload.WriteAtomic`). It was a plain `FileMode.Create`
-  stream, which on a watched cloud folder can be uploaded half-finished and reach a subscriber as
-  truncated JSON. The likelihood went up considerably once a cloud folder became the obvious
-  place to put a shared launcher.
-- **The share dialog offers detected cloud roots** as quick-fill buttons beside the path box.
-  They set the text box directly rather than raising a picker: a `FileSavePicker` opened from
-  inside a `ContentDialog` is a modal-on-modal, which WinUI handles badly.
+File writes use `LauncherPayload.WriteAtomic` so folder sync clients cannot upload a partially written launcher file. The sharing form accepts a path directly for File and SFTP; WebDAV takes a file URL, and OneDrive takes a link only when adding a shared launcher.
 
 ### Direction travels with the share
 
@@ -369,6 +358,7 @@ completely different places.
 | 0 | File (local, UNC, or a synced cloud folder) | yes | the existing default |
 | 1 | SFTP | yes | per-launcher connection settings |
 | 2 | WebDAV | yes | per-launcher URL + account; password in `ProtectedStore` |
+| 3 | OneDrive link | yes | ordinary shared file; personal Microsoft account; incremental sharing consent |
 
 **The requirement here is stricter than for global sync: the location must be reachable by someone
 else.** That is what rules out the private per-app cloud storage global sync uses — OneDrive's app
@@ -392,13 +382,11 @@ Details that matter:
 - `HasAutoKeyForShared` now gates every mode, not just SFTP: unattended timer syncs must skip
   anything that would prompt, and for WebDAV that means "is the password actually stored".
 
-**Still to do: OneDrive and Google Drive sharing.** The scope plumbing is in place
-(`SharingScope`, `HasSharingConsent`, `RequestSharingConsentAsync`), but the link machinery is
-not — Graph `createLink` plus `/shares/{url}/driveItem` resolution, and Drive `permissions.create`.
-Note a real constraint on the Google side: `drive.file` only reaches files the app created or the
-user opened *through the app*, so a subscriber pasting a file id cannot read it. Google sharing is
-therefore 1-way (owner publishes, subscribers fetch the public link) unless the Picker is
-adopted.
+**OneDrive sharing is implemented by `OneDriveSharedStore`.** It publishes an ordinary file under `Apps/Little Launcher Shared`, requests sharing consent when needed, and creates an anonymous editable link. Recipients sign in to OneDrive and paste that link; Graph resolves it to drive/item IDs. Private global sync storage remains separate. The link permits editing the underlying OneDrive file even for a 1-way launcher: direction restricts editing in Little Launcher, not file access permissions.
+
+**Sharing dialog guidance** lives in `LaunchersPage.xaml.cs`, with copy in `Dictionary-en-US.xaml`. Transport and direction changes update the explanation immediately. New publishers get publishing instructions; Add Shared Launcher gets recipient instructions and never guesses direction before fetching the published payload. OneDrive has a single file-permission warning per dialog, including the resulting link dialog, which also explains the selected app direction. WebDAV, SFTP and File describe read/write access requirements without claiming that every participant can edit a 1-way launcher. Existing shared-launcher Settings retains its current direction controls and update behavior, including when opened by a subscriber; this copy change does not alter ownership policy.
+
+**Google Drive link sharing remains unimplemented.** `drive.file` only reaches files the app created or the user opened through the app, so a subscriber pasting a file ID cannot read it. Supporting it needs a separate decision about public-link downloads or the Picker.
 
 ## The Cloud Sync page
 
