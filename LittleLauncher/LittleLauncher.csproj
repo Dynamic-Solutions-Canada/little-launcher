@@ -23,7 +23,7 @@
 
     <!-- WinUI 3 (Windows App SDK) — Fluent Design, Mica, NavigationView -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260209005" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
 
     <!-- System tray icon for WinUI 3 -->
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
