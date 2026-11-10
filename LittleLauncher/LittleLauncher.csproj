@@ -35,7 +35,7 @@
     <PackageReference Include="SSH.NET" Version="2026.0.0" />
 
     <!-- Structured logging -->
-    <PackageReference Include="NLog" Version="6.1.1" />
+    <PackageReference Include="NLog" Version="6.2.2" />
   </ItemGroup>
 
   <!-- Build the companion flyout exe and copy it to our output directory.
