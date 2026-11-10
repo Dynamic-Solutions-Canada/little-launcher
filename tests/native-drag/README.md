@@ -59,8 +59,8 @@ Cancellation holds Escape for 150 ms before releasing the mouse and retains it t
 Copy this directory to the disposable VM, then register an interactive scheduled task from a setup session. The following example names the designated VM explicitly and runs one regular-editor case first. Adjust the two local paths, preserving the expected machine and opt-in. The task is local to that VM; registering or running it on another person's active desktop is not an acceptable substitute.
 
 ```powershell
-$testDirectory = 'C:\Users\ryan\Development\native-drag'
-$outputDirectory = 'C:\Users\ryan\Development\drag-results\regular-dark-smoke'
+$testDirectory = "$env:USERPROFILE\Development\native-drag"
+$outputDirectory = "$env:USERPROFILE\Development\drag-results\regular-dark-smoke"
 $pythonw = (Get-Command pythonw.exe).Source
 $arguments = @(
     ('"{0}\run-hidden.py"' -f $testDirectory),

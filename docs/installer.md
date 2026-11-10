@@ -115,7 +115,7 @@ checks the installed version, and launches the app. Never uninstall to bypass
 and return to `.artifacts/windows-build/` in WSL.
 
 All four apps select the same local signer in `windows-build.json`. The single
-private key lives beside `~/development/windows-build-tools`, outside the app
+private key lives beside the shared build bridge, outside the app
 repositories. Do not recreate it or switch publisher to fix an install failure.
 Read [the shared desktop workflow](windows-development.md) for the signer,
 certificate trust, cleanup and container transport policy.
