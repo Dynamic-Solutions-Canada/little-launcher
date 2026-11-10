@@ -192,6 +192,11 @@ public sealed partial class LaunchersPage : Page
         string settingsSubtitle = isWeb
             ? (string.IsNullOrWhiteSpace(launcher.WebAddress) ? "No web address set" : launcher.WebAddress)
             : "Name, icon, view mode, and more";
+        if (launcher.IsSupportedOnThisOperatingSystem && !SettingsManager.Current.IsLauncherEnabled(launcher.Id))
+        {
+            settingsSubtitle = string.Format(
+                (string)Application.Current.Resources["LauncherDisabledOnDeviceSubtitle"], settingsSubtitle);
+        }
         var settingsRow = CreateLauncherActionButton("Settings", launcher.IsSupportedOnThisOperatingSystem ? settingsSubtitle : (string)Application.Current.Resources["LauncherHiddenOnOperatingSystem"]);
         settingsRow.IsEnabled = launcher.IsSupportedOnThisOperatingSystem;
         settingsRow.Click += async (s, e) =>
@@ -338,6 +343,16 @@ public sealed partial class LaunchersPage : Page
         headerButtons.Children.Add(moveDownBtn);
 
         headerButtons.Children.Add(deleteBtn);
+
+        // The device switch sits left of the action buttons and stays fully opaque so a dimmed
+        // (disabled) card can still be turned back on.
+        var enabledSwitch = BuildEnabledOnDeviceSwitch(launcher);
+        headerButtons.Children.Insert(0, enabledSwitch);
+        if (!SettingsManager.Current.IsLauncherEnabled(launcher.Id))
+        {
+            headerLeft.Opacity = DisabledCardOpacity;
+            content.Opacity = DisabledCardOpacity;
+        }
 
         var header = new Grid();
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -651,6 +666,72 @@ public sealed partial class LaunchersPage : Page
         RebuildLauncherCards();
     }
 
+
+    /// <summary>Opacity applied to the title and rows of a launcher disabled on this device.</summary>
+    private const double DisabledCardOpacity = 0.5;
+
+    /// <summary>
+    /// Builds the compact "Enabled on this device" switch for a launcher card header. A launcher
+    /// that belongs to another operating system shows it off and greyed out.
+    /// </summary>
+    private ToggleSwitch BuildEnabledOnDeviceSwitch(Launcher launcher)
+    {
+        string name = string.Format(
+            (string)Application.Current.Resources["LauncherEnabledOnDevice"], launcher.Name);
+        var toggle = new ToggleSwitch
+        {
+            IsOn = SettingsManager.Current.IsLauncherEnabled(launcher.Id),
+            IsEnabled = launcher.IsSupportedOnThisOperatingSystem,
+            OnContent = "",
+            OffContent = "",
+            MinWidth = 0,
+            Margin = new Thickness(0, 0, 4, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = launcher,
+        };
+        AutomationProperties.SetName(toggle, name);
+        ToolTipService.SetToolTip(toggle, name);
+        toggle.Toggled += EnabledOnDevice_Toggled;
+        return toggle;
+    }
+
+    /// <summary>
+    /// Applies a card switch change. Disabling asks first; cancelling puts the switch back
+    /// without side effects. Device state never marks the portable launcher as changed.
+    /// </summary>
+    private async void EnabledOnDevice_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleSwitch toggle || toggle.Tag is not Launcher launcher) return;
+
+        bool enable = toggle.IsOn;
+        if (enable == SettingsManager.Current.IsLauncherEnabled(launcher.Id)) return;
+
+        if (!enable)
+        {
+            var dialog = new ContentDialog
+            {
+                XamlRoot = this.XamlRoot,
+                Title = (string)Application.Current.Resources["LauncherDisableOnDeviceTitle"],
+                Content = (string)Application.Current.Resources["LauncherDisableOnDeviceMessage"],
+                PrimaryButtonText = (string)Application.Current.Resources["LauncherDisableOnDeviceConfirm"],
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            {
+                // Handler is a no-op on re-entry: the stored state already equals IsOn.
+                toggle.IsOn = true;
+                return;
+            }
+        }
+
+        var disabled = new HashSet<string>(SettingsManager.Current.DisabledLauncherIds ?? []);
+        if (enable) disabled.Remove(launcher.Id);
+        else disabled.Add(launcher.Id);
+        SettingsManager.Current.DisabledLauncherIds = disabled.ToArray();
+        SettingsManager.SaveSettings();
+        RebuildLauncherCards();
+    }
 
     private async void DeleteLauncher_Click(object sender, RoutedEventArgs e)
     {

@@ -71,7 +71,7 @@
 
 Little Launcher puts named launchers in your system tray. Clicking an icon opens a flyout with app and website shortcuts, or a web page of its own. Windows also supports per-launcher taskbar pins. The Linux app uses the desktop's controls, colors and window decorations, with KDE as its primary target and GNOME also in scope.
 
-Web launchers and their selected icons can sync between Windows and Linux. Shortcut launchers belong to their creating operating system and remain listed but disabled on the other; **Enabled on this device** can also stop any launcher's local activity without removing its synced configuration. Windows supports OneDrive, Google Drive, WebDAV, shared folders and SSH/SFTP; Linux currently supports OneDrive personal accounts. See [Linux desktop support](#linux-desktop-support) for desktop requirements and platform differences.
+Web launchers and their selected icons can sync between Windows and Linux. Shortcut launchers belong to their creating operating system and remain listed but disabled on the other; **Enabled on this device** (a switch on each launcher card) can also stop any launcher's local activity without removing its synced configuration. Windows supports OneDrive, Google Drive, WebDAV, shared folders and SSH/SFTP; Linux currently supports OneDrive personal accounts. See [Linux desktop support](#linux-desktop-support) for desktop requirements and platform differences.
 
 **Key features:** Both apps follow the same launcher layouts and workflows. Windows-specific features are identified below; platform differences are tracked in the [parity audit](docs/linux-parity-audit.md).
 

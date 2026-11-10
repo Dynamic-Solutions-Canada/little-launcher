@@ -134,21 +134,12 @@ class LauncherDialog(QDialog):
         outer.addLayout(footer)
 
         self.controller = controller
-        self.enabled_here = None
         general = self.section('General')
         self.name = QLineEdit(launcher.get('Name', 'Launcher'))
         self.name.setPlaceholderText('Launcher name')
         self.name.setFixedWidth(160)
         self.name.installEventFilter(self)
         self.row(general, 'Name', 'Display name in tray icon tooltip', self.name)
-        if controller is not None:
-            self.enabled_here = QCheckBox()
-            self.enabled_here.setChecked(controller.enabled(launcher['Id']))
-            from .document import launcher_supported
-            self.enabled_here.setEnabled(launcher_supported(launcher))
-            self.enabled_here.toggled.connect(lambda enabled: self._enable_here(launcher['Id'], enabled))
-            self.row(general, 'Enabled on this device', 'Turn off to close its pages and stop background activity here. Configuration stays in sync.', self.enabled_here)
-
         self.kind = QComboBox()
         self.kind.addItem('Shortcuts', 0)
         self.kind.addItem('Web page', 1)
@@ -335,8 +326,7 @@ class LauncherDialog(QDialog):
             for control in self.findChildren(QSpinBox):
                 control.valueChanged.connect(self._commit_live)
             for control in self.findChildren(QCheckBox):
-                if control is not self.enabled_here:
-                    control.toggled.connect(self._commit_live)
+                control.toggled.connect(self._commit_live)
             self.name.editingFinished.connect(self._commit_live)
             self.url.editingFinished.connect(self._commit_live)
 
@@ -486,19 +476,6 @@ class LauncherDialog(QDialog):
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
             return
         self.profile_action_requested.emit(action)
-
-    def _enable_here(self, identifier, enabled):
-        if not enabled and QMessageBox.question(self, 'Disable launcher on this device',
-                'Close this launcher and stop its background page here? Active media or transfers may be interrupted. Configuration stays in sync.',
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
-            self.enabled_here.blockSignals(True)
-            self.enabled_here.setChecked(True)
-            self.enabled_here.blockSignals(False)
-            return
-        if not self.controller.set_enabled(identifier, enabled):
-            self.enabled_here.blockSignals(True)
-            self.enabled_here.setChecked(self.controller.enabled(identifier))
-            self.enabled_here.blockSignals(False)
 
     def value(self):
         launcher = deepcopy(self.original)

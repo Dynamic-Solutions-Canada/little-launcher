@@ -593,7 +593,7 @@ Global payloads now carry bounded custom launcher image bytes through Windows `P
 
 Linux `onedrive.py` implements the Windows personal-account app-folder registration and PKCE flow with tokens in desktop Secret Service. `sync.py` runs network work off the Qt thread and applies downloads with local backups/revision guards. Uploads require a compatible writer baseline and use conditional Graph upload sessions; automatic sync is optional and pauses on conflict/error. Live account acceptance remains pending. Other providers/shared sync remain gates.
 
-Device-local disabled launcher IDs are outside the synced launcher objects on both platforms. Central routing, tray entries, panel/browser lifetime and background preload honor the setting; the full launcher/profile remains available to re-enable. The native General control explains that disabling closes active pages. Linux removes queued browser commands and sends already-confirmed disable removals through the trusted pipe, while ordinary protected-work deletion retains its prompt.
+Device-local disabled launcher IDs are outside the synced launcher objects on both platforms. Central routing, tray entries, panel/browser lifetime and background preload honor the setting; the full launcher/profile remains available to re-enable. The Launchers-list card switch (not Launcher Settings) confirms that disabling closes active pages on both platforms. Linux removes queued browser commands and sends already-confirmed disable removals through the trusted pipe, while ordinary protected-work deletion retains its prompt.
 
 ## Imported Linux launcher parity follow-up
 

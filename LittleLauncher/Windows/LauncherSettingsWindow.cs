@@ -709,29 +709,10 @@ public sealed partial class LauncherSettingsWindow : Window
 
         var typeRow = BuildRow("Type", "What the tray icon opens", typeCombo);
 
-        var enabledToggle = new ToggleSwitch
-        {
-            IsOn = SettingsManager.Current.IsLauncherEnabled(launcher.Id),
-            IsEnabled = launcher.IsSupportedOnThisOperatingSystem,
-            OnContent = "", OffContent = "", MinWidth = 0,
-        };
-        enabledToggle.Toggled += (_, _) =>
-        {
-            var disabled = new HashSet<string>(SettingsManager.Current.DisabledLauncherIds ?? []);
-            if (enabledToggle.IsOn) disabled.Remove(launcher.Id);
-            else disabled.Add(launcher.Id);
-            SettingsManager.Current.DisabledLauncherIds = System.Linq.Enumerable.ToArray(disabled);
-            SettingsManager.SaveSettings();
-            // Device state never marks the portable launcher as changed or uploads it.
-        };
-        var enabledRow = BuildRow(
-            (string)Application.Current.Resources["LauncherEnabledOnDevice"],
-            (string)Application.Current.Resources["LauncherEnabledOnDeviceDescription"], enabledToggle);
-
         // Shared definitions determine both this form and the flyout menu's section order.
         var sectionRows = new Dictionary<LauncherSettingsSection, IReadOnlyList<FrameworkElement>>
         {
-            [LauncherSettingsSection.General] = [nameRow, enabledRow, typeRow, webAddressRow],
+            [LauncherSettingsSection.General] = [nameRow, typeRow, webAddressRow],
             [LauncherSettingsSection.Appearance] = [iconRow, customIconRow, hideRow, taskbarRow,
                 viewModeRow, iconsPerRowRow, showTitleRow, .. webAppearanceRows],
             [LauncherSettingsSection.SizeAndPosition] = webSizeRows,

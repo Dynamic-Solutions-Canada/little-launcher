@@ -182,6 +182,55 @@ class NativeEditorTests(unittest.TestCase):
         bulk = window.findChild(QToolButton, 'launcher-bulk-' + self.launcher['Id'])
         self.assertTrue(bulk.isEnabled())
 
+    def test_card_enabled_switch_confirms_disable_and_restores_on_cancel(self):
+        from unittest.mock import patch
+        from PySide6.QtWidgets import QCheckBox, QMessageBox, QWidget
+        from little_launcher.settings import SettingsWindow
+        class Integration:
+            enabled = False
+            def refresh(self): pass
+        identifier = self.launcher['Id']
+        window = SettingsWindow(self.controller, Integration())
+        self.addCleanup(window.close)
+        box = window.findChild(QCheckBox, 'launcher-enabled-' + identifier)
+        self.assertTrue(box.isChecked())
+        with patch('little_launcher.settings.QMessageBox.question', return_value=QMessageBox.No) as ask:
+            box.click()
+        ask.assert_called_once()
+        self.assertTrue(self.controller.enabled(identifier))
+        self.assertTrue(window.findChild(QCheckBox, 'launcher-enabled-' + identifier).isChecked())
+        with patch('little_launcher.settings.QMessageBox.question', return_value=QMessageBox.Yes):
+            window.findChild(QCheckBox, 'launcher-enabled-' + identifier).click()
+        self.assertFalse(self.controller.enabled(identifier))
+        # The list rebuilds its cards with deleteLater; flush so lookups see only the new card.
+        from PySide6.QtCore import QCoreApplication, QEvent
+        QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+        box = window.findChild(QCheckBox, 'launcher-enabled-' + identifier)
+        self.assertFalse(box.isChecked())
+        for name in ('launcher-settings-', 'launcher-items-', 'launcher-bulk-'):
+            row = window.findChild(QWidget, name + identifier)
+            self.assertTrue(row.isEnabled())
+            self.assertAlmostEqual(row.graphicsEffect().opacity(), 0.5)
+        self.assertIsNone(box.graphicsEffect())
+        with patch('little_launcher.settings.QMessageBox.question') as ask:
+            box.click()
+        ask.assert_not_called()
+        self.assertTrue(self.controller.enabled(identifier))
+
+    def test_card_enabled_switch_is_off_and_disabled_for_unsupported_launchers(self):
+        from PySide6.QtWidgets import QCheckBox
+        from little_launcher.settings import SettingsWindow
+        class Integration:
+            enabled = False
+            def refresh(self): pass
+        self.controller.edit(lambda doc: doc['Launchers'].append(
+            {'Id': 'foreign', 'Platform': 'windows', 'Name': 'Foreign', 'Items': [{'Name': 'App', 'Path': 'C:\\app.exe'}]}))
+        window = SettingsWindow(self.controller, Integration())
+        self.addCleanup(window.close)
+        box = window.findChild(QCheckBox, 'launcher-enabled-foreign')
+        self.assertFalse(box.isChecked())
+        self.assertFalse(box.isEnabled())
+
     def test_card_bulk_append_keeps_source_metadata_and_rejects_stale_replace(self):
         from unittest.mock import patch
         from little_launcher.settings import SettingsWindow

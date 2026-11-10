@@ -8,7 +8,7 @@ from PySide6.QtCore import QUrl, QSize, Qt, Signal, QSignalBlocker
 from PySide6.QtGui import QDesktopServices, QFont, QIcon
 from PySide6.QtWidgets import (
     QCheckBox, QDialog, QFileDialog, QFrame, QGroupBox, QHBoxLayout, QLabel, QListWidget, QMenu, QScrollArea, QToolButton,
-    QMainWindow, QMessageBox, QPushButton, QSizePolicy, QStackedWidget, QStyle, QVBoxLayout, QWidget,
+    QMainWindow, QGraphicsOpacityEffect, QMessageBox, QPushButton, QSizePolicy, QStackedWidget, QStyle, QVBoxLayout, QWidget,
 )
 
 from .desktop import ICON, application_version, set_autostart
@@ -192,7 +192,9 @@ class SettingsWindow(QMainWindow):
         header.addWidget(icon)
         title = QLabel(launcher.get('Name', 'Launcher'))
         title.setTextFormat(Qt.PlainText)
-        title.setEnabled(not launcher_hidden(launcher))
+        enabled_here = self.controller.enabled(identifier)
+        # A launcher disabled on this device is dimmed but its switch stays live.
+        title.setEnabled(enabled_here)
         title.setToolTip(title.text())
         title.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         font = QFont(title.font())
@@ -219,6 +221,7 @@ class SettingsWindow(QMainWindow):
         action('Move up', 'go-up', QStyle.SP_ArrowUp, lambda: self.move_launcher(identifier, -1), position > 0)
         action('Move down', 'go-down', QStyle.SP_ArrowDown, lambda: self.move_launcher(identifier, 1), position < len(self.controller.launchers) - 1)
         action('Delete launcher', 'edit-delete', QStyle.SP_TrashIcon, lambda: self.remove_launcher(identifier))
+        header.addWidget(self._enabled_switch(launcher))
         header.addLayout(controls)
         layout.addLayout(header)
         divider = QFrame()
@@ -226,6 +229,13 @@ class SettingsWindow(QMainWindow):
         divider.setFrameShadow(QFrame.Plain)
         divider.setFixedHeight(1)
         layout.addWidget(divider)
+        # Visual-only dimming (matches Windows' 50% opacity) so a launcher disabled on this
+        # device can still be edited; unsupported launchers keep their existing disabled look.
+        def dim(widget):
+            if launcher_supported(launcher) and not enabled_here:
+                effect = QGraphicsOpacityEffect(widget)
+                effect.setOpacity(0.5)
+                widget.setGraphicsEffect(effect)
         address = web_address(launcher)
         subtitle = (address or 'No web address set') if launcher.get('Kind') == 1 else 'Name, icon, view mode, and more'
         if not self.controller.enabled(identifier):
@@ -233,6 +243,7 @@ class SettingsWindow(QMainWindow):
         settings = LauncherActionRow('Settings', subtitle)
         settings.setObjectName('launcher-settings-' + identifier)
         settings.setEnabled(not launcher_hidden(launcher))
+        dim(settings)
         settings.clicked.connect(lambda: self.configure(identifier))
         layout.addWidget(settings)
         if launcher.get('Kind', 0) != 1:
@@ -244,6 +255,7 @@ class SettingsWindow(QMainWindow):
             items.setObjectName('launcher-items-' + identifier)
             read_only = launcher.get('IsShared') and not launcher.get('IsSharedOwner') and not launcher.get('SharedTwoWay')
             items.setEnabled(not read_only and not launcher_hidden(launcher))
+            dim(items)
             items.setAccessibleName('Edit items in ' + launcher.get('Name', 'Launcher'))
             items.clicked.connect(lambda: self.edit_items(identifier))
             row = QHBoxLayout()
@@ -253,6 +265,7 @@ class SettingsWindow(QMainWindow):
             more = QToolButton()
             more.setObjectName('launcher-bulk-' + identifier)
             more.setEnabled(not launcher_hidden(launcher))
+            dim(more)
             more.setAutoRaise(True)
             more.setText('…')
             more.setFixedSize(40, items.height())
@@ -272,6 +285,37 @@ class SettingsWindow(QMainWindow):
             row.addWidget(more)
             layout.addLayout(row)
         return card
+
+    def _enabled_switch(self, launcher):
+        """Header checkbox for "Enabled on this device"; greyed out and off when unsupported here."""
+        identifier = launcher['Id']
+        name = 'Enabled on this device: ' + launcher.get('Name', 'Launcher')
+        box = QCheckBox()
+        box.setObjectName('launcher-enabled-' + identifier)
+        box.setToolTip(name)
+        box.setAccessibleName(name)
+        box.setChecked(self.controller.enabled(identifier))
+        box.setEnabled(launcher_supported(launcher))
+        box.toggled.connect(lambda enabled: self.set_launcher_enabled(identifier, enabled, box))
+        return box
+
+    def set_launcher_enabled(self, identifier, enabled, box=None):
+        """Apply a device-only enablement change, confirming before anything is closed.
+
+        Cancelling restores the checkbox without touching the controller. The list rebuilds
+        itself from the controller's local_changed signal after a successful change.
+        """
+        def restore():
+            if box is not None:
+                with QSignalBlocker(box):
+                    box.setChecked(self.controller.enabled(identifier))
+        if not enabled and QMessageBox.question(self, 'Disable launcher on this device',
+                'Close this launcher and stop its background page here? Active media or transfers may be interrupted. Configuration stays in sync.',
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            restore()
+            return
+        if not self.controller.set_enabled(identifier, enabled):
+            restore()
 
     def move_launcher(self, identifier, delta):
         def move(document):

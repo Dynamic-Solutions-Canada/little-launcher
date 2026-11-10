@@ -168,6 +168,9 @@
     <x:String x:Key="PageIconReady">Page icon ready. Confirm to use it.</x:String>
     <x:String x:Key="PageIconSavedPreview">Saved page icon</x:String>
     <x:String x:Key="PageIconAddressChanged">The launcher address or type changed. Reopen the icon chooser to select its current page icon.</x:String>
-    <x:String x:Key="LauncherEnabledOnDevice">Enabled on this device</x:String>
-    <x:String x:Key="LauncherEnabledOnDeviceDescription">Turn off to close its pages and stop background activity here. Configuration stays in sync.</x:String>
+    <x:String x:Key="LauncherEnabledOnDevice">Enabled on this device: {0}</x:String>
+    <x:String x:Key="LauncherDisableOnDeviceTitle">Disable launcher on this device</x:String>
+    <x:String x:Key="LauncherDisableOnDeviceMessage">Close this launcher and stop its background page here? Active media or transfers may be interrupted. Configuration stays in sync.</x:String>
+    <x:String x:Key="LauncherDisableOnDeviceConfirm">Disable</x:String>
+    <x:String x:Key="LauncherDisabledOnDeviceSubtitle">Disabled on this device · {0}</x:String>
 </ResourceDictionary>
