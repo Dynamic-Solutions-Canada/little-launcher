@@ -53,6 +53,13 @@ public partial class App : Application
         // Restore settings before any window constructor accesses SettingsManager.Current
         SettingsManager.RestoreSettings();
 
+        // Interface language. The OS list is the user's full ordered preference, not the
+        // package-filtered ApplicationLanguages list, which only ever contains the manifest's
+        // declared languages.
+        Localization.UiText.Configure(
+            () => SettingsManager.Current.LanguageOverride,
+            () => global::Windows.System.UserProfile.GlobalizationPreferences.Languages);
+
         m_window = new MainWindow();
         m_window.Activate();
     }

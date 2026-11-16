@@ -28,6 +28,17 @@ internal static partial class NativeMethods
     [LibraryImport("kernel32.dll")]
     internal static partial int GetCurrentPackageFullName(ref uint length, nint name);
 
+    /// <summary>MUI_LANGUAGE_NAME: report languages as tags such as <c>fr-CA</c>.</summary>
+    internal const uint MUI_LANGUAGE_NAME = 0x8;
+
+    /// <summary>
+    /// The user's ordered Windows display languages as a double-null-terminated list. Call once
+    /// with a null buffer for the required length in characters, then again to fill it.
+    /// </summary>
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static unsafe partial bool GetUserPreferredUILanguages(uint flags, out uint count, char* buffer, ref uint length);
+
     [LibraryImport("user32.dll")]
     internal static partial nint GetForegroundWindow();
 

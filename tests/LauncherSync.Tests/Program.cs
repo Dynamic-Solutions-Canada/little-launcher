@@ -35,6 +35,36 @@ try
         Check(!JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>(saved, options)!.Startup);
         return Task.CompletedTask;
     });
+    await Test("interface language matches Persistent's rules and falls back to English", () =>
+    {
+        using var _ = new LanguageScope();
+        string Resolve(params string[] preferences) => LittleLauncher.Localization.SupportedLanguages.Resolve(preferences);
+        Check(Resolve("fr-CA") == "fr-CA" && Resolve("fr-BE") == "fr-FR" && Resolve("en-GB") == "en-US");
+        Check(Resolve("it-IT", "es-MX") == "es-ES" && Resolve("it-IT") == "en-US");
+        Check(Resolve("zh-TW") == "en-US" && Resolve("zh-SG") == "zh-CN" && Resolve("zh-Hant-CN", "ja") == "ja-JP");
+        Check(Resolve("ja-JP-u-ca-japanese") == "ja-JP" && Resolve("en-Latn-CA") == "en-CA");
+
+        // Override wins; an unknown override means Match device.
+        LittleLauncher.Localization.UiText.Configure(() => "ja-jp", () => ["fr-FR"]);
+        Check(LittleLauncher.Localization.UiText.Locale == "ja-JP");
+        LittleLauncher.Localization.UiText.Configure(() => "it-IT", () => ["fr-CA"]);
+        Check(LittleLauncher.Localization.UiText.Locale == "fr-CA");
+
+        // Embedded English catalog, key fallback and single-pass placeholders.
+        LittleLauncher.Localization.UiText.Configure(() => "en-US");
+        Check(LittleLauncher.Localization.UiText.Get("common.ok") == "OK");
+        Check(LittleLauncher.Localization.UiText.Get("no.such.key") == "no.such.key");
+        Check(LittleLauncher.Localization.UiText.Format("system.language.matchDevice", ("language", "{language}")) == "Match device ({language})");
+
+        // Every other catalog has exactly the English keys once translations exist.
+        var english = LittleLauncher.Localization.UiText.Catalog("en-US");
+        foreach (string catalog in LittleLauncher.Localization.SupportedLanguages.Catalogs.Values.Distinct())
+        {
+            var translated = LittleLauncher.Localization.UiText.Catalog(catalog);
+            Check(translated.Count == english.Count && english.Keys.All(translated.ContainsKey));
+        }
+        return Task.CompletedTask;
+    });
     await Test("no sync destination is switched on until one is set up", () =>
     {
         var options = new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault };
@@ -182,3 +212,9 @@ try
     Console.WriteLine($"{passed} production sync/model cases passed");
 }
 finally { Directory.Delete(root, recursive: true); }
+
+/// <summary>Restores Match device with the process culture after a test changes the language.</summary>
+sealed class LanguageScope : IDisposable
+{
+    public void Dispose() => LittleLauncher.Localization.UiText.Configure(() => null, () => [System.Globalization.CultureInfo.CurrentUICulture.Name]);
+}

@@ -1,0 +1,5 @@
+{
+  "linuxWebSessions.unreadable": "无法读取已保存的浏览器标签页。已保留现有会话文件。",
+  "linuxWebSessions.invalid": "浏览器返回了无效的标签页会话。",
+  "linuxWebSessions.tooLarge": "已保存的浏览器标签页超出本地存储限制。已保留现有会话。"
+}

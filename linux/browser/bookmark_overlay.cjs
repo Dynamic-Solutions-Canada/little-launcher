@@ -2,6 +2,7 @@
 const {WebContentsView}=require('electron');
 const path=require('node:path');
 const {bookmarkVersion,resolveBookmark}=require('./bookmarks.cjs');
+const i18n=require('./i18n.cjs');
 
 /** Local trusted surface above remote content. Page views never receive its preload or drag state. */
 class BookmarkOverlay {
@@ -61,7 +62,9 @@ class BookmarkOverlay {
     const bottom=this.owner.presentation.showBookmarkBar ? 34:0;
     const top=34+(this.owner.addressBarVisible?34:0)+(this.owner.config.WebAlwaysShowTabs || this.owner.tabs.length>1?34:0);
     this.view.setBounds({x:0,y:top,width,height:Math.max(1,height-top-bottom)});
-    this.view.webContents.send('bookmark-overlay-state',{...this.selection,theme:this.owner.theme,bookmarks:this.owner.bookmarks(),editable:this.owner.canEditBookmarks(),height:Math.max(1,height-top-bottom)});
+    this.view.webContents.send('bookmark-overlay-state',{...this.selection,theme:this.owner.theme,bookmarks:this.owner.bookmarks(),editable:this.owner.canEditBookmarks(),height:Math.max(1,height-top-bottom),
+      // Resolved labels only; this trusted local page never reads the catalogs itself.
+      strings:i18n.strings({panels:'webMenu.bookmarksBar',folder:'webBookmarks.defaultFolderName',moreBookmarks:'webBookmarks.moreBookmarks',empty:'webBookmarks.emptyFolder'})});
   }
   close() {
     this.selection=null;

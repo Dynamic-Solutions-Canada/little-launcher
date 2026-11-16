@@ -1,0 +1,8 @@
+{
+  "webFullscreen.enterContentFullscreen": "Vídeo em tela cheia",
+  "webFullscreen.contentFullscreenUnavailable": "Não foi possível exibir este vídeo em tela cheia. Tente o controle de tela cheia do player.",
+  "webFullscreen.maximizeLauncher": "Maximizar inicializador (manter conteúdo em tela cheia)",
+  "webFullscreen.restoreLauncherSize": "Restaurar tamanho do inicializador (manter conteúdo em tela cheia)",
+  "webFullscreen.exitButton": "Sair da tela cheia",
+  "webFullscreen.exitWithEscape": "Sair do conteúdo em tela cheia (Esc)"
+}

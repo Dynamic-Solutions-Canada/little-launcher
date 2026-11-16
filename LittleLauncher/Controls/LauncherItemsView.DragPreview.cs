@@ -1,10 +1,10 @@
 using LittleLauncher.Models;
+using LittleLauncher.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using global::Windows.Graphics.Imaging;
@@ -181,15 +181,9 @@ public sealed partial class LauncherItemsView
     private static string DragPreviewDetail(LauncherItem item)
     {
         if (!item.IsGroup)
-            return DragPreviewText("LauncherDragItem", "Move item");
-        if (item.Children.Count == 1)
-            return DragPreviewText("LauncherDragGroupOne", "Group, 1 item");
-        return string.Format(CultureInfo.CurrentCulture,
-            DragPreviewText("LauncherDragGroup", "Group, {0} items"), item.Children.Count);
+            return UiText.Get("items.dragItem");
+        return UiText.Plural("items.dragGroupCount", item.Children.Count);
     }
-
-    private static string DragPreviewText(string key, string fallback) =>
-        Application.Current.Resources.TryGetValue(key, out object value) && value is string text ? text : fallback;
 
     /// <summary>
     /// Applies feedback only to the latest live target event. Hides old content immediately

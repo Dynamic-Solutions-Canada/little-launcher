@@ -1,0 +1,17 @@
+{
+  "taskbarPin.title": "Afficher dans la barre des tâches",
+  "taskbarPin.description": "Épingler un raccourci à la barre des tâches pour un accès rapide",
+  "taskbarPin.checking": "Vérification de l’épinglage…",
+  "taskbarPin.alreadyPinned": "Épinglé à la barre des tâches.",
+  "taskbarPin.changedHint": "Détachez puis épinglez de nouveau pour appliquer ces modifications.",
+  "taskbarPin.detailsUnknown": "Épinglé à la barre des tâches. Détachez-le avant de l’épingler de nouveau.",
+  "taskbarPin.pin": "Épingler à la barre des tâches",
+  "taskbarPin.pinAgain": "Épingler de nouveau",
+  "taskbarPin.pinned": "Épinglé",
+  "taskbarPin.companionMissing": "L’exécutable du panneau compagnon est introuvable. Générez d’abord le projet.",
+  "taskbarPin.helperNotStarted": "L’assistant d’épinglage n’a pas démarré.",
+  "taskbarPin.statusCheckFailed": "La vérification de l’état de la barre des tâches n’a pas pu se terminer. Fermez ces paramètres et réessayez.",
+  "taskbarPin.unconfirmed": "Windows n’a pas confirmé l’épinglage de ce lanceur. Un épinglage peut encore apparaître.",
+  "taskbarPin.helperFailed": "L’assistant d’épinglage n’a pas pu traiter la demande. Consultez taskbar-pin.log pour plus de détails.",
+  "taskbarPin.failed": "Impossible d’épingler ce lanceur. {reason}"
+}

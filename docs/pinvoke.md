@@ -244,6 +244,8 @@ never move these calls to `Task.Run` or block the STA waiting for completion.
 checked HRESULTs and explicit releases, preserving Native AOT without reflection marshalling.
 The identity guard calls `GetCurrentPackageFullName`, not a WindowsApps path heuristic.
 
+`GetUserPreferredUILanguages(MUI_LANGUAGE_NAME)` gives `CompanionLanguage` the user's ordered display languages for Match device, because the companion builds with invariant globalization and its `CultureInfo` is always invariant. Call it once for the length and again with a buffer of that size; the result is a double-null-terminated list.
+
 `ClearWindowRelaunchProperties` writes `VT_EMPTY` to the three relaunch properties and checks
 every HRESULT before regular-window mode caches success. A matching confirmed Start snapshot
 supplies launch metadata instead; the AUMID stays on the window for grouping.

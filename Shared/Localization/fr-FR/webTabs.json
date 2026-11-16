@@ -1,0 +1,15 @@
+{
+  "webTabs.newTab": "Nouvel onglet",
+  "webTabs.addressBar": "Barre d’adresse",
+  "webTabs.blankTabCaption": "Nouvel onglet",
+  "webTabs.closeTab": "Fermer l’onglet",
+  "webTabs.closeNamedTab": "Fermer {title}",
+  "webTabs.closeBusyTab": "La fermeture de cet onglet peut interrompre des médias ou des transferts.",
+  "webTabs.keepOpen": "Garder ouvert",
+  "webTabs.actionFailed": "Impossible d’effectuer l’action sur l’onglet.",
+  "webTabs.duplicate": "Dupliquer",
+  "webTabs.copyAddress": "Copier l’adresse",
+  "webTabs.closeOtherTabs": "Fermer les autres onglets",
+  "webTabs.reopenClosedTab": "Rouvrir l’onglet fermé",
+  "webTabs.extensionFallbackTitle": "Extension"
+}

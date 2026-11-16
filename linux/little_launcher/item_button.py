@@ -5,6 +5,7 @@ from PySide6.QtCore import QMimeData, QPoint, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QDrag, QFont, QIcon, QPainter, QTextLayout, QTextOption
 from PySide6.QtWidgets import QApplication, QStyle, QStyleOptionToolButton, QToolButton
 
+from . import i18n
 from .desktop import item_icon
 
 from .item_drag import ItemDrag, MIME_TYPE
@@ -42,7 +43,7 @@ class ItemButton(QToolButton):
         self.pencil.setIconSize(QSize(12, 12))
         compact = self.mode == 2 and self.kind == 'item'
         self.pencil.setFixedSize(16 if compact else 20, 16 if compact else 20)
-        self.pencil.setToolTip('Rename group' if self.kind == 'group' else 'Edit item')
+        self.pencil.setToolTip(i18n.t('items.renameGroupTooltip') if self.kind == 'group' else i18n.t('items.editItemTooltip'))
         self.pencil.setAccessibleName(self.pencil.toolTip())
         pencil_y = self.height() - 18 if compact else (self.height() - 20) // 2 if self.mode == 1 or self.kind != 'item' else 2
         self.pencil.move(self.width() - self.pencil.width() - 2, pencil_y)
@@ -181,7 +182,7 @@ class ItemButton(QToolButton):
         mime.setData(MIME_TYPE, json.dumps({'session': self.session, 'path': self.path}).encode())
         drag.setMimeData(mime)
         self.active_drag = drag
-        self.set_drag_caption('Move group' if self.kind == 'group' else 'Move item')
+        self.set_drag_caption(i18n.t('items.dragGroup') if self.kind == 'group' else i18n.t('items.dragItem'))
         drag.setHotSpot(QPoint(8, 32))
         try:
             drag.exec(Qt.MoveAction)
@@ -222,7 +223,9 @@ class ItemButton(QToolButton):
             self.drop_mode = self._drop_feedback(event)
             sender = event.source()
             if hasattr(sender, 'set_drag_caption'):
-                sender.set_drag_caption(f"Move {self.drop_mode} {self.item.get('Name', 'item')}")
+                name = self.item.get('Name', i18n.t('items.unnamedItem'))
+                key = 'items.dragAfterItem' if self.drop_mode == 'after' else 'items.dragBeforeItem'
+                sender.set_drag_caption(i18n.t(key, item=name))
             self.update()
             event.acceptProposedAction()
 

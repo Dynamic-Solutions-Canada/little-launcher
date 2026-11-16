@@ -1,6 +1,7 @@
 ﻿// Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
@@ -311,17 +312,23 @@ internal static class JumpListService
         }
 
         // Segoe Fluent: E713 Settings, E70F Edit, E774 Globe, E115 the app's own settings gear.
-        Add(LauncherActions.LauncherSettings, "Launcher settings",
-            $"Settings for {launcher.Name}", "\uE713");
+        Add(LauncherActions.LauncherSettings, UiText.Get("shell.jumpList.launcherSettings"),
+            UiText.Format("shell.jumpList.launcherSettingsTooltip", ("launcher", launcher.Name)), "\uE713");
 
         if (launcher.IsWebLauncher)
-            Add(LauncherActions.OpenInBrowser, "Open in browser", launcher.WebAddress, "\uE774");
+        {
+            Add(LauncherActions.OpenInBrowser, UiText.Get("shell.jumpList.openInBrowser"), launcher.WebAddress, "\uE774");
+        }
         else
-            Add(LauncherActions.EditItems, "Edit items", $"Edit the items in {launcher.Name}", "\uE70F");
+        {
+            Add(LauncherActions.EditItems, UiText.Get("shell.jumpList.editItems"),
+                UiText.Format("shell.jumpList.editItemsTooltip", ("launcher", launcher.Name)), "\uE70F");
+        }
 
         // "App Settings" is what the tray menu calls it, and one name for one window matters more
         // than a name that reads well in isolation.
-        Add(LauncherActions.AppSettings, "App Settings", "Settings for Little Launcher itself", "\uE115");
+        Add(LauncherActions.AppSettings, UiText.Get("tray.menu.appSettings"),
+            UiText.Get("shell.jumpList.appSettingsTooltip"), "\uE115");
 
         return actions;
     }

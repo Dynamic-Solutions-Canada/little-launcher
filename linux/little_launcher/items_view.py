@@ -6,6 +6,7 @@ from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QFont, QFontMetricsF
 from PySide6.QtWidgets import QLabel, QMenu, QToolButton, QWidget
 
+from . import i18n
 from .item_button import ItemButton, MIME_TYPE
 from .item_geometry import LauncherGeometry
 from .item_drag import ItemDropArea
@@ -53,10 +54,10 @@ class LauncherItemsView(QWidget):
                 remove = QToolButton(self)
                 remove.setAutoRaise(True)
                 remove.setText('×')
-                remove.setToolTip('Remove column and keep its items')
+                remove.setToolTip(i18n.t('items.removeColumnKeepItems'))
                 remove.setGeometry(column.x + 2, top + 2, 20, 20)
                 remove.clicked.connect(lambda checked=False, index=column.index: self.column_removed.emit(index))
-                label = QLabel(f'Column {column.index + 1}', self)
+                label = QLabel(i18n.t('items.columnTitle', number=column.index + 1), self)
                 label.setAlignment(Qt.AlignCenter)
                 font = QFont(label.font())
                 font.setPixelSize(11)
@@ -100,7 +101,7 @@ class LauncherItemsView(QWidget):
             from .external_drop import ExternalDropFilter
             self.external_drop_filter = ExternalDropFilter(self)
         if not self.metrics.entries:
-            text = 'This launcher is empty.\nAdd your first item with + above.' if editing else 'This launcher is empty.\nHover here and click the pencil to add items.'
+            text = i18n.t('items.emptyEditing') if editing else i18n.t('items.emptyBrowsing')
             label = QLabel(text, self)
             label.setWordWrap(True)
             label.setAlignment(Qt.AlignCenter)
@@ -160,11 +161,11 @@ class LauncherItemsView(QWidget):
 
     def _menu(self, button, position):
         menu = QMenu(self)
-        menu.addAction('Rename group' if button.kind == 'group' else 'Edit',
+        menu.addAction(i18n.t('items.renameGroup') if button.kind == 'group' else i18n.t('common.edit'),
                        lambda: self.edit_requested.emit(button.path))
-        menu.addAction('Move up', lambda: self.step_requested.emit(button.path, -1))
-        menu.addAction('Move down', lambda: self.step_requested.emit(button.path, 1))
-        move = menu.addMenu('Move to…')
+        menu.addAction(i18n.t('common.moveUp'), lambda: self.step_requested.emit(button.path, -1))
+        menu.addAction(i18n.t('common.moveDown'), lambda: self.step_requested.emit(button.path, 1))
+        move = menu.addMenu(i18n.t('items.moveTo'))
         destinations = self.move_destinations(button.path)
         move.setEnabled(bool(destinations))
         for label, destination in destinations:
@@ -173,5 +174,5 @@ class LauncherItemsView(QWidget):
             else:
                 move.addAction(label, lambda target=destination: self.append_requested.emit(button.path, target))
         menu.addSeparator()
-        menu.addAction('Remove', lambda: self.remove_requested.emit(button.path))
+        menu.addAction(i18n.t('common.remove'), lambda: self.remove_requested.emit(button.path))
         menu.exec(button.mapToGlobal(position))

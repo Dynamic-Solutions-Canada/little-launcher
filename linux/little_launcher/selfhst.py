@@ -4,6 +4,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject,QTimer,QUrl,Signal,Slot,QBuffer,QIODevice,QByteArray
 from PySide6.QtGui import QImageReader
 from PySide6.QtNetwork import QNetworkAccessManager,QNetworkRequest,QNetworkReply
+from . import i18n
 from .storage import atomic_write
 INDEX='https://raw.githubusercontent.com/selfhst/icons/refs/heads/main/index.json'
 PNG='https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/'
@@ -92,7 +93,7 @@ class SelfhStCatalog(QObject):
                     self.loaded.emit(values)
                 except (ValueError,UnicodeError):
                     if self.cached is not None:self.loaded.emit(self.cached)
-                    else:self.failed.emit('The selfh.st catalog is unavailable. Retry or choose another icon source.')
+                    else:self.failed.emit(i18n.t('icons.selfhStUnavailable'))
             else:
                 self.active-=1;image=raster(raw)if ok else None
                 if image:

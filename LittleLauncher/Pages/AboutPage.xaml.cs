@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using LittleLauncher.Services;
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
@@ -21,27 +22,29 @@ public partial class AboutPage : Page
         if (MainWindow.IsPackaged)
         {
             UpdateStatusText.Text = UpdateService.OpenStoreUpdates()
-                ? GetText("StoreUpdatesOpened")
-                : GetText("StoreUpdatesOpenFailed");
+                ? UiText.Get("about.update.storeOpened")
+                : UiText.Get("about.update.storeOpenFailed");
             return;
         }
 
         CheckUpdateButton.IsEnabled = false;
-        CheckUpdateButton.Content = "Checking...";
-        UpdateStatusText.Text = "Checking for updates...";
+        CheckUpdateButton.Content = UiText.Get("about.update.checkingButton");
+        UpdateStatusText.Text = UiText.Get("about.update.checkingStatus");
 
         try
         {
             var result = await UpdateService.CheckForUpdateAsync();
             if (result == null)
             {
-                UpdateStatusText.Text = "Unable to check for updates. Check your internet connection.";
+                UpdateStatusText.Text = UiText.Get("about.update.unableToCheck");
             }
             else if (result.UpdateAvailable)
             {
                 _updateResult = result;
-                UpdateStatusText.Text = $"Version {result.LatestVersion} is available (you have {result.CurrentVersion})";
-                CheckUpdateButton.Content = "View Release";
+                UpdateStatusText.Text = UiText.Format("about.update.available",
+                    ("latest", result.LatestVersion),
+                    ("current", result.CurrentVersion));
+                CheckUpdateButton.Content = UiText.Get("about.update.viewRelease");
                 CheckUpdateButton.IsEnabled = true;
                 CheckUpdateButton.Click -= CheckForUpdates_Click;
                 CheckUpdateButton.Click += ViewRelease_Click;
@@ -49,16 +52,16 @@ public partial class AboutPage : Page
             }
             else
             {
-                UpdateStatusText.Text = $"You're up to date ({result.CurrentVersion})";
+                UpdateStatusText.Text = UiText.Format("about.update.upToDate", ("current", result.CurrentVersion));
             }
         }
         catch (Exception ex)
         {
             Logger.Warn(ex, "Manual update check failed");
-            UpdateStatusText.Text = "Update check failed. Try again later.";
+            UpdateStatusText.Text = UiText.Get("about.update.failed");
         }
 
-        CheckUpdateButton.Content = "Check for Updates";
+        CheckUpdateButton.Content = UiText.Get("about.update.checkButton");
         CheckUpdateButton.IsEnabled = true;
     }
 
@@ -68,13 +71,6 @@ public partial class AboutPage : Page
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
-    }
-
-    private static string GetText(string key)
-    {
-        return Application.Current.Resources.TryGetValue(key, out object value) && value is string text
-            ? text
-            : key;
     }
 
 }

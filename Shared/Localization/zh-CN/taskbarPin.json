@@ -1,0 +1,17 @@
+{
+  "taskbarPin.title": "在任务栏中显示",
+  "taskbarPin.description": "将快捷方式固定到任务栏，方便快速访问",
+  "taskbarPin.checking": "正在检查任务栏固定状态…",
+  "taskbarPin.alreadyPinned": "已固定到任务栏。",
+  "taskbarPin.changedHint": "取消固定后重新固定以应用这些更改。",
+  "taskbarPin.detailsUnknown": "已固定到任务栏。请先取消固定，再重新固定。",
+  "taskbarPin.pin": "固定到任务栏",
+  "taskbarPin.pinAgain": "重新固定",
+  "taskbarPin.pinned": "已固定",
+  "taskbarPin.companionMissing": "找不到配套的浮出窗口 exe。请先生成项目。",
+  "taskbarPin.helperNotStarted": "固定帮助程序未启动。",
+  "taskbarPin.statusCheckFailed": "无法完成任务栏状态检查。请关闭这些设置后重试。",
+  "taskbarPin.unconfirmed": "Windows 未确认此启动器是否已固定。固定项可能仍会出现。",
+  "taskbarPin.helperFailed": "固定帮助程序无法完成请求。有关详细信息，请参阅 taskbar-pin.log。",
+  "taskbarPin.failed": "无法固定此启动器。{reason}"
+}

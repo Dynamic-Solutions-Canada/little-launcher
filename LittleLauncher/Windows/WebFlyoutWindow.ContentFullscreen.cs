@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using LittleLauncher.Localization;
 
 namespace LittleLauncher.Windows;
 
@@ -39,7 +40,7 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Creates the media fullscreen action, hidden until a suitable video is detected.</summary>
     private Button BuildEnterFullscreenButton()
     {
-        string label = (string)Application.Current.Resources["EnterFullscreenContent"];
+        string label = UiText.Get("webFullscreen.enterContentFullscreen");
         var button = BuildHeaderButton("\uE740", label, async (_, _) => await EnterContentFullscreenAsync());
         button.Visibility = Visibility.Collapsed;
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
@@ -93,13 +94,13 @@ public sealed partial class WebFlyoutWindow
             bool succeeded = response.RootElement.TryGetProperty("result", out var evaluation)
                 && evaluation.TryGetProperty("value", out var value) && value.ValueKind == JsonValueKind.True;
             if (!succeeded && IsActiveCore(core) && _isOpen)
-                ShowNotice((string)Application.Current.Resources["FullscreenContentUnavailable"]);
+                ShowNotice(UiText.Get("webFullscreen.contentFullscreenUnavailable"));
         }
         catch (Exception ex)
         {
             Logger.Debug(ex, "Entering content fullscreen failed for launcher {Name}", _launcher.Name);
             if (IsActiveCore(core) && _isOpen)
-                ShowNotice((string)Application.Current.Resources["FullscreenContentUnavailable"]);
+                ShowNotice(UiText.Get("webFullscreen.contentFullscreenUnavailable"));
         }
 
         await RefreshFullscreenAvailabilityAsync();

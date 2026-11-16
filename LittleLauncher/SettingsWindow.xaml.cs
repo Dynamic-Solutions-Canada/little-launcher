@@ -1,4 +1,5 @@
 ﻿using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Pages;
 using LittleLauncher.Services;
@@ -39,7 +40,18 @@ public sealed partial class SettingsWindow : Window
         _owner = owner;
         InitializeComponent();
         instance = this;
-        Closed += (s, e) => instance = null;
+        // Only clear our own registration: after a language change the replacement registers
+        // itself before this window's Closed event necessarily arrives.
+        Closed += (s, e) =>
+        {
+            if (instance == this) instance = null;
+        };
+
+        RootNavigation.Loaded += (_, _) =>
+        {
+            LabelSettingsItem();
+            RootNavigation.OpenPaneLength = NavigationPaneLength();
+        };
 
         // Mica backdrop
         SystemBackdrop = new MicaBackdrop();
@@ -142,6 +154,28 @@ public sealed partial class SettingsWindow : Window
     }
 
     /// <summary>
+    /// Replace the open Settings window with a new one showing <paramref name="pageType"/>, so
+    /// every label is read again in the newly chosen language.
+    /// </summary>
+    /// <remarks>
+    /// XAML text is resolved when an element is created, and the window's own navigation and
+    /// title are part of it, so a fresh window is the only complete relabel. Closing saves the
+    /// window's size and position first, so the replacement opens where this one was.
+    /// </remarks>
+    internal static void ReopenAfterLanguageChange(Type pageType)
+    {
+        if (instance?._owner is not MainWindow owner) return;
+
+        var current = instance;
+        instance = null;
+        current.Close();
+
+        var replacement = new SettingsWindow(owner);
+        replacement.Activate();
+        replacement.NavigateTo(pageType);
+    }
+
+    /// <summary>
     /// Navigate to a specific page type (used from HomePage dashboard cards).
     /// </summary>
     public void NavigateTo(Type pageType)
@@ -172,6 +206,61 @@ public sealed partial class SettingsWindow : Window
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// Labels NavigationView's built-in Settings entry in the chosen interface language.
+    /// </summary>
+    /// <remarks>
+    /// WinUI words that entry from its own resources, which follow the OS and package languages
+    /// rather than the language chosen on the System page. The entry exists only once the
+    /// control's template has been applied, hence the call from <c>Loaded</c>.
+    /// </remarks>
+    private void LabelSettingsItem()
+    {
+        if (RootNavigation.SettingsItem is NavigationViewItem settingsItem)
+        {
+            string label = UiText.Get("common.settings");
+            settingsItem.Content = label;
+
+            // NavigationView sets its own accessible name on this item in the Windows language,
+            // which would otherwise stay English for screen readers after an in-app change.
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(settingsItem, label);
+        }
+    }
+
+    /// <summary>
+    /// The open navigation pane width that fits the longest label in the current language.
+    /// </summary>
+    /// <remarks>
+    /// The pane is fixed-width and its labels do not wrap, so a width chosen for English cuts
+    /// off longer languages ("Sincronización en la nube"). Each label is measured at the item's
+    /// font, plus the icon column and padding. Never narrower than the original 180, nor so wide
+    /// that it crowds the page.
+    /// </remarks>
+    /// <returns>The pane width in effective pixels.</returns>
+    private double NavigationPaneLength()
+    {
+        const double minimum = 180;
+        const double maximum = 320;
+        const double iconAndPadding = 88;
+
+        var labels = RootNavigation.MenuItems.Concat(RootNavigation.FooterMenuItems)
+            .OfType<NavigationViewItem>()
+            .Append(RootNavigation.SettingsItem as NavigationViewItem)
+            .Select(item => item?.Content as string)
+            .Where(label => !string.IsNullOrEmpty(label));
+
+        var probe = new TextBlock { FontSize = 14 };
+        double widest = 0;
+        foreach (string? label in labels)
+        {
+            probe.Text = label;
+            probe.Measure(new global::Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            widest = Math.Max(widest, probe.DesiredSize.Width);
+        }
+
+        return Math.Clamp(widest + iconAndPadding, minimum, maximum);
     }
 
     internal MainWindow? GetOwner() => _owner;

@@ -1,0 +1,22 @@
+{
+  "about.title": "Sobre",
+  "about.description": "Um inicializador personalizável de aplicativos e sites que fica na barra de tarefas do Windows.",
+  "about.builtWith": "Desenvolvido com",
+  "about.sourceCode.title": "Código-fonte",
+  "about.sourceCode.description": "Ver o projeto no GitHub",
+  "about.sourceCode.link": "Repositório no GitHub",
+  "about.update.title": "Atualizações",
+  "about.update.clickToCheck": "Clique para verificar se há atualizações",
+  "about.update.checkButton": "Verificar atualizações",
+  "about.update.checkingButton": "Verificando…",
+  "about.update.checkingStatus": "Verificando se há atualizações…",
+  "about.update.storeOpened": "A Microsoft Store foi aberta em Atualizações e downloads. Verifique lá se há atualizações disponíveis.",
+  "about.update.storeOpenFailed": "Não foi possível abrir a Microsoft Store.",
+  "about.update.unableToCheck": "Não foi possível verificar se há atualizações. Verifique sua conexão com a internet.",
+  "about.update.availableTitle": "Atualização disponível",
+  "about.update.available": "A versão {latest} está disponível (você tem a versão {current})",
+  "about.update.viewRelease": "Ver versão",
+  "about.update.upToDate": "Você está com a versão mais recente ({current})",
+  "about.update.failed": "Falha ao verificar atualizações. Tente novamente mais tarde.",
+  "about.trayDescription": "Um inicializador personalizável de aplicativos e sites que fica na bandeja do sistema."
+}

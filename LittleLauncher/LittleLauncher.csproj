@@ -110,4 +110,14 @@
   <ItemGroup>
     <Compile Include="..\Shared\PinSnapshot.cs" Link="Shared\PinSnapshot.cs" />
   </ItemGroup>
+
+  <!-- Interface language. The catalogs are shared with the Linux app; see docs/localization.md.
+       Each area file is embedded as LittleLauncher.Localization.<locale>\<area>.json
+       (RecursiveDir keeps the folder separator; UiText normalizes it). -->
+  <ItemGroup>
+    <Compile Include="..\Shared\SupportedLanguages.cs" Link="Localization\SupportedLanguages.cs" />
+    <Compile Include="..\Shared\UiText.cs" Link="Localization\UiText.cs" />
+    <EmbeddedResource Include="..\Shared\Localization\**\*.json"
+                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

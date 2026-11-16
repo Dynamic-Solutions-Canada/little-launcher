@@ -1,0 +1,22 @@
+{
+  "about.title": "Info",
+  "about.description": "Ein anpassbarer Launcher für Anwendungen und Websites, der in deiner Windows-Taskleiste wohnt.",
+  "about.builtWith": "Entwickelt mit",
+  "about.sourceCode.title": "Quellcode",
+  "about.sourceCode.description": "Projekt auf GitHub ansehen",
+  "about.sourceCode.link": "GitHub-Repository",
+  "about.update.title": "Updates",
+  "about.update.clickToCheck": "Klicke, um nach Updates zu suchen",
+  "about.update.checkButton": "Nach Updates suchen",
+  "about.update.checkingButton": "Wird geprüft…",
+  "about.update.checkingStatus": "Es wird nach Updates gesucht…",
+  "about.update.storeOpened": "Der Microsoft Store ist unter „Updates und Downloads“ geöffnet. Suche dort nach verfügbaren Updates.",
+  "about.update.storeOpenFailed": "Der Microsoft Store konnte nicht geöffnet werden.",
+  "about.update.unableToCheck": "Es konnte nicht nach Updates gesucht werden. Prüfe deine Internetverbindung.",
+  "about.update.availableTitle": "Update verfügbar",
+  "about.update.available": "Version {latest} ist verfügbar (installiert: {current})",
+  "about.update.viewRelease": "Release ansehen",
+  "about.update.upToDate": "Du bist auf dem neuesten Stand ({current})",
+  "about.update.failed": "Die Updateprüfung ist fehlgeschlagen. Versuche es später erneut.",
+  "about.trayDescription": "Ein anpassbarer Launcher für Anwendungen und Websites, der im Tray deines Desktops wohnt."
+}

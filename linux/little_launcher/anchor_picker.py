@@ -2,22 +2,34 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QButtonGroup, QDialog, QDialogButtonBox, QGridLayout, QLabel, QPushButton, QVBoxLayout
 
-ANCHORS = [('Near its tray icon', 0), ('Top left', 1), ('Top centre', 2), ('Top right', 3),
-           ('Left', 4), ('Centre', 5), ('Right', 6), ('Bottom left', 7), ('Bottom centre', 8), ('Bottom right', 9),
-           ('Where you last dragged it', 10)]
+from . import i18n
+
+# Saved WebAnchor values with the label keys the Windows launcher settings use.
+ANCHOR_KEYS = [('launcherSettings.opensAt.tray', 0), ('launcherSettings.opensAt.topLeft', 1),
+               ('launcherSettings.opensAt.topCentre', 2), ('launcherSettings.opensAt.topRight', 3),
+               ('launcherSettings.opensAt.left', 4), ('launcherSettings.opensAt.centre', 5),
+               ('launcherSettings.opensAt.right', 6), ('launcherSettings.opensAt.bottomLeft', 7),
+               ('launcherSettings.opensAt.bottomCentre', 8), ('launcherSettings.opensAt.bottomRight', 9),
+               ('launcherSettings.opensAt.lastPosition', 10)]
+
 
 class AnchorPicker(QDialog):
+    @staticmethod
+    def choices():
+        """(label, WebAnchor value) pairs in the current interface language, resolved on each call."""
+        return [(i18n.t(key), value) for key, value in ANCHOR_KEYS]
+
     def __init__(self, selected, parent=None, position_supported=False):
         super().__init__(parent)
         self.selected = selected
-        self.setWindowTitle('Opens At')
+        self.setWindowTitle(i18n.t('launcherSettings.opensAt.title'))
         layout = QVBoxLayout(self)
-        label = QLabel('Choose where this launcher opens on the screen holding its tray icon.')
+        label = QLabel(i18n.t('webPosition.pickerIntro'))
         label.setWordWrap(True)
         layout.addWidget(label)
         grid = QGridLayout()
         self.buttons = QButtonGroup(self)
-        for title, value in ANCHORS:
+        for title, value in self.choices():
             button = QPushButton(title)
             button.setCheckable(True)
             button.setChecked(value == selected)
@@ -31,7 +43,7 @@ class AnchorPicker(QDialog):
             else:
                 grid.addWidget(button, 1 + (value - 1) // 3, (value - 1) % 3)
         layout.addLayout(grid)
-        notice = QLabel('Dragged positions stay on this device. KDE desktop integration is required.')
+        notice = QLabel(i18n.t('webPosition.pickerNotice'))
         notice.setWordWrap(True)
         layout.addWidget(notice)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)

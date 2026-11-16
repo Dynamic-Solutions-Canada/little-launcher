@@ -1,0 +1,8 @@
+{
+  "webFullscreen.enterContentFullscreen": "Fullscreen video",
+  "webFullscreen.contentFullscreenUnavailable": "This video could not enter fullscreen. Try the player's fullscreen control.",
+  "webFullscreen.maximizeLauncher": "Maximize launcher (keep content fullscreen)",
+  "webFullscreen.restoreLauncherSize": "Restore launcher size (keep content fullscreen)",
+  "webFullscreen.exitButton": "Exit fullscreen",
+  "webFullscreen.exitWithEscape": "Exit fullscreen content (Escape)"
+}

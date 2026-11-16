@@ -3,6 +3,7 @@
 
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -393,7 +394,7 @@ public sealed partial class WebFlyoutWindow : Window
         //
         // U+E921 is Segoe Fluent's ChromeMinimize, the twin of the ChromeMaximize below, and
         // escaped rather than pasted for the reason recorded on the back button.
-        _minimizeButton = BuildHeaderButton("\uE921", "Minimize", (_, _) => MinimizeWindow());
+        _minimizeButton = BuildHeaderButton("\uE921", UiText.Get("web.minimize"), (_, _) => MinimizeWindow());
         UpdateMinimizeButton();
 
         // Sized for the moment, not for good. A tray flyout is small because that is what it is
@@ -411,7 +412,7 @@ public sealed partial class WebFlyoutWindow : Window
         //
         // U+E72C is Segoe Fluent's Refresh glyph, escaped rather than pasted for the reason
         // recorded on the back button.
-        var reloadButton = BuildHeaderButton("\uE72C", "Reload", (_, _) => ReloadPage());
+        var reloadButton = BuildHeaderButton("\uE72C", UiText.Get("web.reload"), (_, _) => ReloadPage());
         reloadButton.Margin = new Thickness(0, 0, 4, 0);
 
         // The gear used to open launcher settings directly. It now opens a menu of the per-launcher
@@ -421,7 +422,7 @@ public sealed partial class WebFlyoutWindow : Window
         // new one to learn.
         //
         // U+E712 is Segoe Fluent's More glyph, escaped for the reason on the back button.
-        _moreButton = BuildHeaderButton("\uE712", "More", (_, _) => ShowMoreMenu());
+        _moreButton = BuildHeaderButton("\uE712", UiText.Get("web.more"), (_, _) => ShowMoreMenu());
 
         var headerButtons = _headerButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
         headerButtons.Children.Add(_moreButton);
@@ -440,7 +441,7 @@ public sealed partial class WebFlyoutWindow : Window
         headerButtons.Children.Add(BuildEnterFullscreenButton());
         headerButtons.Children.Add(_maximizeButton);
         headerButtons.Children.Add(BuildFullscreenMaximizeButton());
-        headerButtons.Children.Add(BuildHeaderButton("", "Close", (_, _) => HideFlyout(), redOnHover: true));
+        headerButtons.Children.Add(BuildHeaderButton("", UiText.Get("common.close"), (_, _) => HideFlyout(), redOnHover: true));
 
         // Back sits on the left, where every browser puts it, rather than among the window
         // controls on the right — it acts on the page, not on the flyout.
@@ -449,13 +450,13 @@ public sealed partial class WebFlyoutWindow : Window
         // Symbol.Back, and the one the sibling Persistent app uses. Written as an escape, not
         // as a literal character: a literal private-use glyph does not survive every editing
         // round-trip, and when it was silently dropped this button rendered as a blank square.
-        _backButton = BuildHeaderButton("\uE112", "Back", (_, _) => GoBack());
+        _backButton = BuildHeaderButton("\uE112", UiText.Get("common.back"), (_, _) => GoBack());
         _backButton.IsEnabled = false;
         _backButton.Margin = new Thickness(-6, 0, 0, 0);
 
         // U+E111 is Segoe Fluent's Forward arrow — Symbol.Forward, the mirror of Back's E112.
         // Escaped rather than pasted, for the reason recorded on the back button.
-        _forwardButton = BuildHeaderButton("\uE111", "Forward", (_, _) => GoForward());
+        _forwardButton = BuildHeaderButton("\uE111", UiText.Get("common.forward"), (_, _) => GoForward());
         _forwardButton.IsEnabled = false;
 
         // Home, beside the other page controls and for the same reason a browser has one: the
@@ -464,7 +465,7 @@ public sealed partial class WebFlyoutWindow : Window
         // visible control is a feature only its author knows about.
         //
         // U+E80F is Segoe Fluent's Home, escaped for the reason recorded on the back button.
-        var homeButton = BuildHeaderButton("\uE80F", "Home", (_, _) => GoHome());
+        var homeButton = BuildHeaderButton("\uE80F", UiText.Get("web.home"), (_, _) => GoHome());
         homeButton.Margin = new Thickness(0, 0, 4, 0);
 
         var navButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 0, VerticalAlignment = VerticalAlignment.Center };
@@ -500,7 +501,7 @@ public sealed partial class WebFlyoutWindow : Window
         // than one that costs a little height.
         _addressBox = new TextBox
         {
-            PlaceholderText = "Address",
+            PlaceholderText = UiText.Get("common.address"),
             FontSize = 12,
             MinHeight = 0,
             Padding = new Thickness(8, 3, 8, 3),
@@ -569,7 +570,7 @@ public sealed partial class WebFlyoutWindow : Window
         };
         _statusText = new TextBlock
         {
-            Text = "Loading…",
+            Text = UiText.Get("common.loading"),
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
             MaxWidth = 420,
@@ -577,7 +578,7 @@ public sealed partial class WebFlyoutWindow : Window
         };
         _statusAction = new Button
         {
-            Content = "Retry",
+            Content = UiText.Get("common.retry"),
             HorizontalAlignment = HorizontalAlignment.Center,
             Visibility = Visibility.Collapsed,
         };
@@ -828,9 +829,19 @@ public sealed partial class WebFlyoutWindow : Window
             button.Resources["ButtonForegroundPressed"] = critical;
         }
 
-        ToolTipService.SetToolTip(button, tooltip);
+        SetHeaderLabel(button, tooltip);
         button.Click += onClick;
         return button;
+    }
+
+    /// <summary>
+    /// Label an icon-only header button: its tooltip, and the same text as its accessible name,
+    /// because a glyph alone gives screen readers and UI Automation nothing to announce.
+    /// </summary>
+    private static void SetHeaderLabel(Button button, string label)
+    {
+        ToolTipService.SetToolTip(button, label);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
     }
 
     // ── Manual resize ───────────────────────────────────────────────
@@ -1220,8 +1231,8 @@ public sealed partial class WebFlyoutWindow : Window
     /// a setting that does nothing in whichever mode the launcher is actually in.
     /// </remarks>
     private string PinTooltip(bool pinned) => _launcher.WebRegularWindow
-        ? (pinned ? "Turn off always on top" : "Keep always on top")
-        : (pinned ? "Unpin — close when focus is lost" : "Pin open");
+        ? UiText.Get(pinned ? "web.turnOffOnTop" : "web.keepOnTop")
+        : UiText.Get(pinned ? "web.unpin" : "web.pinOpen");
 
     /// <summary>Flips the launcher's pin state, applies it, and re-labels the header button.</summary>
     private void TogglePin()
@@ -1241,7 +1252,7 @@ public sealed partial class WebFlyoutWindow : Window
     {
         if (_pinButton.Content is FontIcon icon)
             icon.Glyph = PinGlyph(_launcher.WebPinFlyout);
-        ToolTipService.SetToolTip(_pinButton, PinTooltip(_launcher.WebPinFlyout));
+        SetHeaderLabel(_pinButton, PinTooltip(_launcher.WebPinFlyout));
     }
 
     // U+E922 is Segoe Fluent's ChromeMaximize and U+E923 its ChromeRestore — the pair every
@@ -1250,7 +1261,7 @@ public sealed partial class WebFlyoutWindow : Window
     private static string MaximizeGlyph(bool maximized) => maximized ? "\uE923" : "\uE922";
 
     private static string MaximizeTooltip(bool maximized) =>
-        maximized ? "Restore size" : "Maximize";
+        UiText.Get(maximized ? "web.restoreSize" : "web.maximize");
 
     /// <summary>Grows the flyout to fill the screen, or puts it back to the size it was.</summary>
     private void ToggleMaximized()
@@ -1326,9 +1337,9 @@ public sealed partial class WebFlyoutWindow : Window
         if (_maximizeButton.Content is FontIcon icon)
             icon.Glyph = _isFullScreen ? "\uE73F" : MaximizeGlyph(_isMaximized);
         string tooltip = _isFullScreen
-            ? (string)Application.Current.Resources["ExitFullscreenContent"]
+            ? UiText.Get("web.exitFullscreen")
             : MaximizeTooltip(_isMaximized);
-        ToolTipService.SetToolTip(_maximizeButton, tooltip);
+        SetHeaderLabel(_maximizeButton, tooltip);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_maximizeButton, tooltip);
         UpdateFullscreenMaximizeButton();
         _ = RefreshFullscreenAvailabilityAsync();
@@ -2127,7 +2138,7 @@ public sealed partial class WebFlyoutWindow : Window
         // answer that can no longer be given.
         CancelPendingPermissions();
 
-        SetStatus("Loading…", busy: true, showRetry: false);
+        SetStatus(UiText.Get("common.loading"), busy: true, showRetry: false);
         UpdateNavigationButtons();   // the history went with the browser
         RefreshTabBar();
     }
@@ -2179,7 +2190,7 @@ public sealed partial class WebFlyoutWindow : Window
         if (string.IsNullOrEmpty(url))
         {
             UnloadWebView();
-            SetStatus("No web address is set for this launcher. Add one in its launcher settings.",
+            SetStatus(UiText.Get("web.noAddress"),
                 busy: false, showRetry: false);
             return;
         }
@@ -2210,7 +2221,7 @@ public sealed partial class WebFlyoutWindow : Window
         {
             _revealOnNavigationCompleted = true;
             tab.View.Visibility = Visibility.Collapsed;
-            SetStatus("Loading…", busy: true, showRetry: false);
+            SetStatus(UiText.Get("common.loading"), busy: true, showRetry: false);
 
             if (navigating) Navigate(url);
             else ReloadPage();
@@ -2253,7 +2264,7 @@ public sealed partial class WebFlyoutWindow : Window
 
         // The status overlay is shared chrome, so a background tab must not put a spinner over the
         // page the user is reading.
-        if (!background) SetStatus("Loading…", busy: true, showRetry: false);
+        if (!background) SetStatus(UiText.Get("common.loading"), busy: true, showRetry: false);
 
         var webView = new WebView2 { Visibility = background ? Visibility.Collapsed : Visibility.Visible };
         Grid.SetRow(webView, 1);   // row 0 belongs to the prompt bar
@@ -2322,8 +2333,7 @@ public sealed partial class WebFlyoutWindow : Window
 
             RefreshTabBar();
             SetStatus(
-                "This panel needs the Microsoft Edge WebView2 Runtime, which could not be started. " +
-                "Install it from microsoft.com/edge/webview2 and try again.",
+                UiText.Format("web.webView2Unavailable", ("url", "microsoft.com/edge/webview2")),
                 busy: false, showRetry: true);
             return null;
         }
@@ -2399,7 +2409,7 @@ public sealed partial class WebFlyoutWindow : Window
         if (!IsBlankAddress(tab.NavigatedUrl)) return;
         if (!IsActiveTabBlank) return;
 
-        SetStatus("Type an address above to open a page.", busy: false, showRetry: false);
+        SetStatus(UiText.Get("web.emptyTabHint"), busy: false, showRetry: false);
     }
 
     private void ConfigureCore(CoreWebView2 core, WebTab tab)
@@ -2530,7 +2540,10 @@ public sealed partial class WebFlyoutWindow : Window
             // stop rendering. The error is left on screen for whenever it is opened.
             CompletePreload();
 
-            SetStatus($"Could not load {NormalizeUrl(_launcher.WebAddress)} ({e.WebErrorStatus}).",
+            SetStatus(
+                UiText.Format("web.loadFailed",
+                    ("address", NormalizeUrl(_launcher.WebAddress)),
+                    ("error", e.WebErrorStatus)),
                 busy: false, showRetry: true);
             }
             finally { ReleaseWebViewObject(e); }
@@ -2539,7 +2552,7 @@ public sealed partial class WebFlyoutWindow : Window
         core.ProcessFailed += (_, _) =>
         {
             if (!IsActiveCore(core)) return;
-            SetStatus("The page stopped responding.", busy: false, showRetry: true);
+            SetStatus(UiText.Get("web.pageUnresponsive"), busy: false, showRetry: true);
             RevealWebViewIfPending();
         };
 
@@ -2991,7 +3004,7 @@ public sealed partial class WebFlyoutWindow : Window
         catch (Exception ex)
         {
             Logger.Warn(ex, "Navigating to {Url} failed", url);
-            SetStatus($"{url} is not a valid web address.", busy: false, showRetry: false);
+            SetStatus(UiText.Format("web.invalidAddress", ("address", url)), busy: false, showRetry: false);
         }
     }
 
@@ -3337,8 +3350,8 @@ public sealed partial class WebFlyoutWindow : Window
         // button claim that the preference changed.
         if (_addressBarButton != null)
         {
-            ToolTipService.SetToolTip(_addressBarButton,
-                _launcher.WebShowAddressBar ? "Hide the address bar" : "Show the address bar");
+            SetHeaderLabel(_addressBarButton,
+                UiText.Get(_launcher.WebShowAddressBar ? "web.hideAddressBar" : "web.showAddressBar"));
 
             if (_addressBarButton.Content is FontIcon glyph)
                 glyph.Opacity = _launcher.WebShowAddressBar ? 1.0 : 0.6;
@@ -3670,7 +3683,7 @@ public sealed partial class WebFlyoutWindow : Window
             return;
         }
 
-        SetStatus("Loading…", busy: true, showRetry: false);
+        SetStatus(UiText.Get("common.loading"), busy: true, showRetry: false);
     }
 
     /// <summary>Shows or hides the hairline, animating only while the launcher is open.</summary>

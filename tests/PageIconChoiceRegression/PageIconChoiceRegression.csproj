@@ -9,4 +9,11 @@
     <Compile Include="../../LittleLauncher/Classes/AutomaticPageIconChoice.cs" Link="AutomaticPageIconChoice.cs" />
     <Compile Include="../../LittleLauncher/Classes/PageIconPreview.cs" Link="PageIconPreview.cs" />
   </ItemGroup>
+  <!-- AutomaticPageIconChoice reads its status text through the real language layer. -->
+  <ItemGroup>
+    <Compile Include="../../Shared/SupportedLanguages.cs" Link="SupportedLanguages.cs" />
+    <Compile Include="../../Shared/UiText.cs" Link="UiText.cs" />
+    <EmbeddedResource Include="../../Shared/Localization/**/*.json"
+                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

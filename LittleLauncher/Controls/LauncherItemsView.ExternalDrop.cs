@@ -1,4 +1,5 @@
 using LittleLauncher.Models;
+using LittleLauncher.Localization;
 using LittleLauncher.Windows;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Services;
@@ -66,16 +67,16 @@ public sealed partial class LauncherItemsView
 
         e.DragUIOverride.IsCaptionVisible = true;
         e.DragUIOverride.IsGlyphVisible = true;
-        string caption = "Add to launcher";
+        string caption = UiText.Get("items.dropAddToLauncher");
         if (target.Group != null)
         {
             string name = GetItemDisplayName(target.Group);
             if (target.Zone == LauncherDropGeometry.GroupZone.Before)
-                caption = FormatDropCaption("LauncherDropBeforeGroup", "Add before {0}", name);
+                caption = UiText.Format("items.dropBeforeGroup", ("group", name));
             else if (target.Zone == LauncherDropGeometry.GroupZone.After)
-                caption = FormatDropCaption("LauncherDropAfterGroup", "Add after {0}", name);
+                caption = UiText.Format("items.dropAfterGroup", ("group", name));
             else
-                caption = FormatDropCaption("LauncherDropIntoGroup", "Add into {0}", name);
+                caption = UiText.Format("items.dropIntoGroup", ("group", name));
         }
         e.DragUIOverride.Caption = caption;
         e.Handled = true;
@@ -104,7 +105,7 @@ public sealed partial class LauncherItemsView
         e.AcceptedOperation = ExternalDropOperation(e);
         e.DragUIOverride.IsCaptionVisible = true;
         e.DragUIOverride.IsGlyphVisible = true;
-        e.DragUIOverride.Caption = "Add to launcher";
+        e.DragUIOverride.Caption = UiText.Get("items.dropAddToLauncher");
         e.Handled = true;
     }
 

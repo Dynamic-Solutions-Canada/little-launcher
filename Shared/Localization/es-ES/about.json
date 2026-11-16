@@ -1,0 +1,22 @@
+{
+  "about.title": "Acerca de",
+  "about.description": "Un lanzador de aplicaciones y sitios web personalizable que vive en la barra de tareas de Windows.",
+  "about.builtWith": "Creado con",
+  "about.sourceCode.title": "Código fuente",
+  "about.sourceCode.description": "Ver el proyecto en GitHub",
+  "about.sourceCode.link": "Repositorio de GitHub",
+  "about.update.title": "Actualizaciones",
+  "about.update.clickToCheck": "Haz clic para buscar actualizaciones",
+  "about.update.checkButton": "Buscar actualizaciones",
+  "about.update.checkingButton": "Buscando…",
+  "about.update.checkingStatus": "Buscando actualizaciones…",
+  "about.update.storeOpened": "Microsoft Store se ha abierto en la sección de actualizaciones y descargas. Comprueba allí si hay actualizaciones disponibles.",
+  "about.update.storeOpenFailed": "No se pudo abrir Microsoft Store.",
+  "about.update.unableToCheck": "No se pudieron buscar actualizaciones. Comprueba tu conexión a internet.",
+  "about.update.availableTitle": "Actualización disponible",
+  "about.update.available": "La versión {latest} está disponible (tienes la {current})",
+  "about.update.viewRelease": "Ver versión",
+  "about.update.upToDate": "Estás al día ({current})",
+  "about.update.failed": "No se pudo comprobar si hay actualizaciones. Inténtalo más tarde.",
+  "about.trayDescription": "Un lanzador de aplicaciones y sitios web personalizable que vive en la bandeja del escritorio."
+}

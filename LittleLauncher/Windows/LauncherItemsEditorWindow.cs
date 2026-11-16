@@ -1,6 +1,7 @@
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Controls;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -82,7 +83,7 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
         _hwnd = WindowNative.GetWindowHandle(this);
         try
         {
-            Title = ResourceText("LauncherItemsTitle");
+            Title = UiText.Get("prompts.launcherItems.title");
             SystemBackdrop = new MicaBackdrop();
             if (ownerHwnd != IntPtr.Zero)
                 SetWindowLongPtr(_hwnd, GWLP_HWNDPARENT, ownerHwnd);
@@ -106,7 +107,7 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
             };
             var done = new Button
             {
-                Content = ResourceText("LauncherItemsDone"),
+                Content = UiText.Get("common.done"),
                 Style = (Style)Application.Current.Resources["AccentButtonStyle"],
                 MinWidth = 90,
                 HorizontalAlignment = HorizontalAlignment.Right,
@@ -202,8 +203,6 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
         window.Resize(new SizeInt32(width, height));
         window.Move(new PointInt32(left, top));
     }
-
-    private static string ResourceText(string key) => (string)Application.Current.Resources[key];
 
     /// <summary>Uses the existing themed card surface around the preview, outside item geometry.</summary>
     private static Border CreateLauncherPreview(LauncherItemsView view)

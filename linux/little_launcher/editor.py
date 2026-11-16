@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QDialog, QFrame, QHBoxLayout, QPushButton, QScrollArea, QVBoxLayout,
 )
 
+from . import i18n
 from .item_editing import ItemEditingSession
 from .item_toolbar import ItemEditToolbar
 from .items_view import LauncherItemsView
@@ -20,7 +21,7 @@ class ItemsEditor(QDialog):
         self.controller = controller
         self.session = ItemEditingSession(controller, launcher, self)
         self.session.changed.connect(self.rebuild)
-        self.setWindowTitle(launcher.get('Name', 'Launcher') + ' · Edit items')
+        self.setWindowTitle(i18n.t('items.editorTitle', launcher=launcher.get('Name', 'Launcher')))
         self.resize(560, 620)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 8, 24, 24)
@@ -37,7 +38,7 @@ class ItemsEditor(QDialog):
         layout.addSpacing(16)
         footer = QHBoxLayout()
         footer.addStretch()
-        done = QPushButton('Done')
+        done = QPushButton(i18n.t('common.done'))
         done.setMinimumWidth(90)
         done.setDefault(True)
         done.clicked.connect(self.accept)

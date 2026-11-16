@@ -3,6 +3,7 @@ from copy import deepcopy
 import json
 from pathlib import Path
 from urllib.parse import urlsplit
+from . import i18n
 from .document import DocumentError
 from .storage import atomic_write
 
@@ -47,9 +48,9 @@ class WebSessions:
 
     def save(self, identifier, value):
         if self.error:
-            raise DocumentError('Saved browser tabs are unreadable. The existing session file was preserved.')
+            raise DocumentError(i18n.t('linuxWebSessions.unreadable'))
         if not isinstance(identifier, str) or not valid_session(value):
-            raise DocumentError('The browser returned an invalid tab session.')
+            raise DocumentError(i18n.t('linuxWebSessions.invalid'))
         if self.entries.get(identifier) == value:
             return
         candidate = deepcopy(self.entries)
@@ -59,6 +60,6 @@ class WebSessions:
             candidate.pop(identifier, None)
         raw = (json.dumps({'version': 1, 'launchers': candidate}, indent=2) + '\n').encode()
         if len(raw) > MAX_BYTES:
-            raise DocumentError('Saved browser tabs exceed the local storage limit. Existing sessions were preserved.')
+            raise DocumentError(i18n.t('linuxWebSessions.tooLarge'))
         atomic_write(self.path, raw)
         self.entries = candidate

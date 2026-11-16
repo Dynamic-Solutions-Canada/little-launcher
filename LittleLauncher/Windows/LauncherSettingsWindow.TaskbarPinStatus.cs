@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Services;
 using LittleLauncher.Shared;
 using Microsoft.UI.Xaml;
@@ -154,7 +155,8 @@ public sealed partial class LauncherSettingsWindow
         await _pinStateQuery;
         _pinStateChecking = false;
         if (_pinStateQueryFailure != null)
-            throw new InvalidOperationException("The taskbar status check could not finish. Close these settings and try again.", _pinStateQueryFailure);
+            // The message reaches the pin error dialog, so it is in the interface language.
+            throw new InvalidOperationException(UiText.Get("taskbarPin.statusCheckFailed"), _pinStateQueryFailure);
     }
 
     /// <summary>Native success/already-pinned is itself a fresh live result; no duplicate query is needed.</summary>
@@ -180,32 +182,32 @@ public sealed partial class LauncherSettingsWindow
     private void RefreshPinStatus()
     {
         if (_pinStatus == null || _pinButton == null) return;
-        string key = "TaskbarPinDescription";
-        string action = "TaskbarPinAction";
+        string key = "taskbarPin.description";
+        string action = "taskbarPin.pin";
         bool alreadyPinned = false;
         if (_pinStateChecking)
         {
-            key = "TaskbarPinChecking";
+            key = "taskbarPin.checking";
         }
         else if (_pinStateAumid == _launcher.PinAumid && _pinState == TaskbarPinState.Pinned)
         {
             PinSnapshot? baseline = PinSnapshot.Read(MainWindow.GetPhysicalAppDataDir(), _launcher.Id);
             PinDetailsState details = ComparePinDetails(baseline);
-            action = "TaskbarPinAgainAction";
-            if (details == PinDetailsState.Changed) key = "TaskbarPinChangedHint";
+            action = "taskbarPin.pinAgain";
+            if (details == PinDetailsState.Changed) key = "taskbarPin.changedHint";
             else if (details == PinDetailsState.Unchanged)
             {
-                key = "TaskbarAlreadyPinned";
-                action = "TaskbarPinnedAction";
+                key = "taskbarPin.alreadyPinned";
+                action = "taskbarPin.pinned";
                 alreadyPinned = true;
             }
-            else key = "TaskbarPinDetailsUnknown";
+            else key = "taskbarPin.detailsUnknown";
         }
         // Unknown is not proof of absence; product policy simply permits a fresh pin without an
         // old-pin warning. Keep the diagnostic state intact and let the user clean up duplicates.
-        _pinStatus.Text = (string)Application.Current.Resources[key];
+        _pinStatus.Text = UiText.Get(key);
         _pinStatus.Visibility = Visibility.Visible;
-        _pinButton.Content = (string)Application.Current.Resources[action];
+        _pinButton.Content = UiText.Get(action);
         _pinButton.IsEnabled = !_pinning && !alreadyPinned;
     }
 

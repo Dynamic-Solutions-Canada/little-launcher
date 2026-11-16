@@ -1,0 +1,15 @@
+{
+  "browserData.bookmarkAccessibleName": "{name}、{url}",
+  "browserData.bookmarks.bar": "ブックマークバー",
+  "browserData.bookmarks.otherFolder": "その他のブックマーク",
+  "browserData.bookmarks.synced": "同期されたブックマーク",
+  "browserData.bookmarks.menu": "ブックマークメニュー",
+  "browserData.bookmarks.toolbar": "ブックマークツールバー",
+  "browserData.profileCleanup.deletedLauncher": "削除済みのランチャー",
+  "browserData.profileCleanup.nowShared": "{launcher}（現在は共有プロファイルを使用）",
+  "browserData.size.gigabytes": "{size} GB",
+  "browserData.size.megabytes": "{size} MB",
+  "browserData.size.kilobytes": "{size} KB",
+  "browserData.size.bytes.one": "{count} バイト",
+  "browserData.size.bytes.other": "{count} バイト"
+}

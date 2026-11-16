@@ -1,0 +1,18 @@
+{
+  "webPosition.moveTo": "Mover para",
+  "webPosition.anchor.tray": "Perto do ícone da bandeja",
+  "webPosition.anchor.lastPosition": "Onde você o arrastou por último",
+  "webPosition.anchor.topLeft": "Superior esquerdo",
+  "webPosition.anchor.topCenter": "Superior central",
+  "webPosition.anchor.topRight": "Superior direito",
+  "webPosition.anchor.left": "Esquerda",
+  "webPosition.anchor.center": "Centro",
+  "webPosition.anchor.right": "Direita",
+  "webPosition.anchor.bottomLeft": "Inferior esquerdo",
+  "webPosition.anchor.bottomCenter": "Inferior central",
+  "webPosition.anchor.bottomRight": "Inferior direito",
+  "webPosition.pickerIntro": "Escolha onde este inicializador abre na tela que contém o ícone da bandeja.",
+  "webPosition.pickerNotice": "As posições arrastadas ficam neste dispositivo. É necessária a integração com a área de trabalho do KDE.",
+  "webPosition.saveFailed": "Não foi possível salvar a posição arrastada da janela.",
+  "webPosition.clearFailed": "Não foi possível limpar a posição arrastada anterior da janela."
+}

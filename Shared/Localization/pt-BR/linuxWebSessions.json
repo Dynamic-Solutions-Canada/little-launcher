@@ -1,0 +1,5 @@
+{
+  "linuxWebSessions.unreadable": "Não é possível ler as guias salvas do navegador. O arquivo de sessão existente foi preservado.",
+  "linuxWebSessions.invalid": "O navegador retornou uma sessão de guias inválida.",
+  "linuxWebSessions.tooLarge": "As guias salvas do navegador excedem o limite de armazenamento local. As sessões existentes foram preservadas."
+}

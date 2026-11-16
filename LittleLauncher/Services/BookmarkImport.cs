@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
@@ -54,7 +55,8 @@ public sealed record FlatBookmark(string Name, string Url, string FolderPath)
     /// "FlatBookmark { Name = …, Url = …, FolderPath = … }" for every row. The rows render from a
     /// template either way; this is purely what assistive tech and automation hear.
     /// </remarks>
-    public override string ToString() => $"{Name} — {Url}";
+    public override string ToString() =>
+        UiText.Format("browserData.bookmarkAccessibleName", ("name", Name), ("url", Url));
 }
 
 /// <summary>
@@ -161,9 +163,9 @@ public static class BookmarkImport
             }
 
             var rootSections = new[] {
-                ("bookmark_bar", "Bookmarks Bar"),
-                ("other",        "Other Bookmarks"),
-                ("synced",       "Synced Bookmarks"),
+                ("bookmark_bar", UiText.Get("browserData.bookmarks.bar")),
+                ("other",        UiText.Get("browserData.bookmarks.otherFolder")),
+                ("synced",       UiText.Get("browserData.bookmarks.synced")),
             };
             foreach (var (key, displayName) in rootSections)
             {
@@ -383,9 +385,9 @@ public static class BookmarkImport
             // Well-known top-level folders under the Places root (id=1)
             var topLevel = new (long id, string displayName)[]
             {
-                (2, "Bookmarks Menu"),
-                (3, "Bookmarks Toolbar"),
-                (5, "Other Bookmarks"),
+                (2, UiText.Get("browserData.bookmarks.menu")),
+                (3, UiText.Get("browserData.bookmarks.toolbar")),
+                (5, UiText.Get("browserData.bookmarks.otherFolder")),
             };
 
             foreach (var (folderId, displayName) in topLevel)

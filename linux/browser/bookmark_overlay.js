@@ -17,11 +17,11 @@ function graphic(button,item) {
 function show(items,folder,anchor,depth=0) {
   for(const panel of [...panels.children].slice(depth))panel.remove();openPaths=openPaths.slice(0,depth);
   openPaths.push(folder);
-  const panel=document.createElement('section');panel.className='bookmark-panel';panel.setAttribute('aria-label',folder?find(folder)?.Name || 'Folder':'More bookmarks');panel.dataset.depth=depth;
+  const panel=document.createElement('section');panel.className='bookmark-panel';panel.setAttribute('aria-label',folder?find(folder)?.Name || current.strings.folder:current.strings.moreBookmarks);panel.dataset.depth=depth;
   if(folder)panel.dataset.folder=JSON.stringify(folder);
   for(const item of items) {
-    const row=document.createElement('button');row.className='bookmark-row';row.dataset.path=JSON.stringify(item.sourcePath);row.title=item.Url || item.Name || 'Folder';graphic(row,item);
-    const label=document.createElement('span');label.textContent=item.Name || item.Url || 'Folder';row.append(label);
+    const row=document.createElement('button');row.className='bookmark-row';row.dataset.path=JSON.stringify(item.sourcePath);row.title=item.Url || item.Name || current.strings.folder;graphic(row,item);
+    const label=document.createElement('span');label.textContent=item.Name || item.Url || current.strings.folder;row.append(label);
     if(item.IsFolder){const arrow=document.createElement('span');arrow.textContent='›';arrow.style.flex='0';row.append(arrow);}
     const expand=()=>{if(!same(openPaths[depth+1],item.sourcePath))show(item.Children,item.sourcePath,row,depth+1);};
     row.addEventListener('click',event=>{
@@ -33,7 +33,7 @@ function show(items,folder,anchor,depth=0) {
     if(current.editable)drag.wire(row,item.sourcePath,!!item.IsFolder,current.version,true,expand);
     panel.append(row);
   }
-  if(!items.length){const empty=document.createElement('div');empty.className='empty-folder';empty.textContent='Empty folder';panel.append(empty);}
+  if(!items.length){const empty=document.createElement('div');empty.className='empty-folder';empty.textContent=current.strings.empty;panel.append(empty);}
   panel.addEventListener('contextmenu',event=>{event.preventDefault();window.launcher.action('bookmark-context',{...(folder?{path:folder}:{index:-1}),version:current.version});});
   panel.addEventListener('dragover',event=>{if(drag.session){event.preventDefault();event.dataTransfer.dropEffect='move';}});
   panel.addEventListener('drop',event=>{if(drag.accept(event)){event.preventDefault();drag.drop(folder || -1,true,!!folder);drag.finish();}});
@@ -46,7 +46,7 @@ function show(items,folder,anchor,depth=0) {
   if(!drag.session)panel.querySelector('button')?.focus();
 }
 function render(state) {
-  current=state;for(const [name,value]of Object.entries(state.theme))document.documentElement.style.setProperty('--'+name,value);
+  current=state;panels.setAttribute('aria-label',state.strings.panels);for(const [name,value]of Object.entries(state.theme))document.documentElement.style.setProperty('--'+name,value);
   const paths=openPaths.slice(1);panels.replaceChildren();openPaths=[];
   const folder=state.folder && find(state.folder);
   show(folder?folder.Children:state.bookmarks.slice(state.overflow),state.folder,null);

@@ -1,0 +1,10 @@
+{
+  "appPicker.openContainingFolder": "Ouvrir le dossier contenant",
+  "appPicker.title": "Choisir une application",
+  "appPicker.source.all": "Toutes les applications",
+  "appPicker.source.applications": "Applications",
+  "appPicker.source.webApps": "Applications web",
+  "appPicker.openFailed": "Impossible d’ouvrir l’application",
+  "appPicker.folderFailed.title": "Impossible d’ouvrir le dossier",
+  "appPicker.folderFailed.message": "Le gestionnaire de fichiers n’a pas pu ouvrir le dossier de cette application."
+}

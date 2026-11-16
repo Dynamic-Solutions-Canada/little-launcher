@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QScrollArea, QSizePolicy, QStyle, QStyleOption, QStylePainter, QVBoxLayout,
 )
 
+from . import i18n
 from .desktop import launch_item
 from .item_editing import ItemEditingSession
 from .item_toolbar import ItemEditToolbar
@@ -80,7 +81,7 @@ class ShortcutFlyout(QDialog):
             self._protocol_title = f"LittleLauncherFlyout:{launcher['Id']}:{anchor[0]}:{anchor[1]}" + (":native" if len(anchor) > 2 and anchor[2] == "native" else "")
             self.update_protocol_title()
         else:
-            self.setWindowTitle(launcher.get('Name', 'Launcher') + ' · Regular window')
+            self.setWindowTitle(i18n.t('items.regularWindowTitle', launcher=launcher.get('Name', 'Launcher')))
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.scroll = QScrollArea()
@@ -91,8 +92,8 @@ class ShortcutFlyout(QDialog):
         layout.addWidget(self.scroll)
         self.edit_button = QToolButton(self)
         self.edit_button.setIcon(QIcon.fromTheme('document-edit', self.style().standardIcon(QStyle.SP_FileDialogDetailedView)))
-        self.edit_button.setToolTip('Edit items')
-        self.edit_button.setAccessibleName('Edit items')
+        self.edit_button.setToolTip(i18n.t('items.editItems'))
+        self.edit_button.setAccessibleName(i18n.t('items.editItems'))
         self.edit_button.setAutoRaise(True)
         self.edit_button.setFixedSize(24, 24)
         self.edit_button.clicked.connect(self.enter_edit)
@@ -223,11 +224,11 @@ class ShortcutFlyout(QDialog):
     def options_menu(self, position):
         menu = QMenu(self)
         if self.editing:
-            menu.addAction('Done', self.exit_edit)
+            menu.addAction(i18n.t('common.done'), self.exit_edit)
         else:
-            menu.addAction('Edit items', self.enter_edit)
-        menu.addAction('Launcher settings', self.configure)
-        menu.addAction('App settings', self.app_settings_requested.emit)
+            menu.addAction(i18n.t('items.editItems'), self.enter_edit)
+        menu.addAction(i18n.t('items.launcherSettings'), self.configure)
+        menu.addAction(i18n.t('items.appSettings'), self.app_settings_requested.emit)
         self.owned_interaction = True
         try:
             menu.exec(position)
@@ -281,7 +282,7 @@ class ShortcutFlyout(QDialog):
         try:
             launch_item(item)
         except (OSError, ValueError) as error:
-            QMessageBox.warning(self, 'Could not open shortcut', str(error))
+            QMessageBox.warning(self, i18n.t('items.openFailed'), str(error))
             return
         self.hide()
 

@@ -11,6 +11,8 @@ import re
 from typing import Any
 from uuid import uuid4
 
+from . import i18n
+
 JsonObject = dict[str, Any]
 VISIBILITY_VERSION = 2
 
@@ -22,24 +24,24 @@ class DocumentError(ValueError):
 def validate_document(value: Any) -> JsonObject:
     """Validate known collection shapes while retaining all unrecognized fields."""
     if not isinstance(value, dict) or not isinstance(value.get("Launchers"), list):
-        raise DocumentError("Choose a settings or launchers file containing a Launchers list.")
+        raise DocumentError(i18n.t('launchers.document.noLaunchersList'))
     identifiers: set[str] = set()
     for launcher in value["Launchers"]:
         if not isinstance(launcher, dict):
-            raise DocumentError("A launcher entry is not an object.")
+            raise DocumentError(i18n.t('launchers.document.launcherNotObject'))
         identifier = launcher.get("Id")
         if not isinstance(identifier, str) or not identifier or identifier in identifiers:
-            raise DocumentError("Every launcher must have a unique, nonempty Id.")
+            raise DocumentError(i18n.t('launchers.document.duplicateId'))
         identifiers.add(identifier)
         for field in ('Platform', 'TrayIconPreviewData', 'TrayIconPreviewMode', 'Name', 'WebUrl', 'WebHomeUrl', 'WebDefaultBookmarkUrl', 'CustomTrayIconPath'):
             if field in launcher and not isinstance(launcher[field], str):
-                raise DocumentError(f'{field} must be text.')
+                raise DocumentError(i18n.t('launchers.document.fieldNotText', field=field))
         for field in ('NIconHide', 'ShowTitle', 'WebSharedProfile', 'WebRegularWindow', 'WebPinFlyout', 'WebLockSize', 'WebReloadOnShow', 'WebLinksInBrowser', 'WebWindowAutoHide', 'WebShowAddressBar', 'WebAlwaysShowTabs', 'WebShowBookmarkBar', 'IsShared', 'IsSharedOwner', 'SharedTwoWay'):
             if field in launcher and type(launcher[field]) is not bool:
-                raise DocumentError(f'{field} must be true or false.')
+                raise DocumentError(i18n.t('launchers.document.fieldNotBoolean', field=field))
         for field in ('Kind', 'ViewMode', 'WebHiddenPolicy', 'WebFlyoutWidth', 'WebFlyoutHeight', 'IconModeIconsPerRow', 'WebIdleUnloadMinutes', 'WebZoomPercent', 'WebAnchor'):
             if field in launcher and (type(launcher[field]) is not int or launcher[field] < 0):
-                raise DocumentError(f'{field} must be a nonnegative whole number.')
+                raise DocumentError(i18n.t('launchers.document.fieldNotCount', field=field))
         for collection in ("Items", "WebBookmarks"):
             _validate_items(launcher.get(collection, []))
     return deepcopy(value)
@@ -48,21 +50,21 @@ def validate_document(value: Any) -> JsonObject:
 def _validate_items(items: Any) -> None:
     """Reject malformed recursive lists before they reach editing or persistence."""
     if not isinstance(items, list):
-        raise DocumentError("A launcher item collection is not a list.")
+        raise DocumentError(i18n.t('launchers.document.itemsNotList'))
     for item in items:
         if not isinstance(item, dict):
-            raise DocumentError("A launcher item is not an object.")
+            raise DocumentError(i18n.t('launchers.document.itemNotObject'))
         for field in ('Name', 'Path', 'Url', 'Arguments', 'IconPath'):
             if field in item and not isinstance(item[field], str):
-                raise DocumentError(f'{field} must be text.')
+                raise DocumentError(i18n.t('launchers.document.fieldNotText', field=field))
         for field in ('IsWebsite', 'IsPwa', 'IsGroup', 'IsColumnBreak'):
             if field in item and type(item[field]) is not bool:
-                raise DocumentError(f'{field} must be true or false.')
+                raise DocumentError(i18n.t('launchers.document.fieldNotBoolean', field=field))
         targets = item.get("SupportedOperatingSystems")
         if targets is not None and (
             not isinstance(targets, list) or any(not isinstance(target, str) for target in targets)
         ):
-            raise DocumentError("Supported operating systems must be a list of names.")
+            raise DocumentError(i18n.t('launchers.document.operatingSystemsNotList'))
         if "Children" in item:
             _validate_items(item["Children"])
 
@@ -145,10 +147,7 @@ def require_sync_compatibility(envelope: JsonObject) -> None:
     validate_document(envelope)
     version = envelope.get("PlatformVisibilityVersion", 0)
     if type(version) is not int or version < VISIBILITY_VERSION:
-        raise DocumentError(
-            "Update Little Launcher on Windows before cross-platform sync. "
-            "This file was written by a version that cannot preserve whole-launcher operating-system ownership."
-        )
+        raise DocumentError(i18n.t('launchers.document.olderWindowsWriter'))
 
 
 def web_address(launcher: JsonObject) -> str:
@@ -182,5 +181,5 @@ def normalize_web_address(value: str, allow_empty: bool = False) -> str:
             raise ValueError()
         parsed.port
     except ValueError as error:
-        raise DocumentError('Enter a valid HTTP or HTTPS website address.') from error
+        raise DocumentError(i18n.t('launchers.document.invalidWebAddress')) from error
     return target

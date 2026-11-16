@@ -1,5 +1,6 @@
 ﻿using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Windows;
 using LittleLauncher.Services;
@@ -361,8 +362,8 @@ public sealed partial class MainWindow : Window
         try
         {
             var builder = new Microsoft.Windows.AppNotifications.Builder.AppNotificationBuilder()
-                .AddText("New: web launchers")
-                .AddText("A launcher can now open a web page — a dashboard, webmail, or any site — straight from its tray icon.");
+                .AddText(UiText.Get("home.whatsNew.title"))
+                .AddText(UiText.Get("tray.whatsNew.message"));
             builder.SetTag("upgrade");
             builder.SetGroup(AppNoticeGroup);
             Microsoft.Windows.AppNotifications.AppNotificationManager.Default.Show(builder.BuildNotification());
@@ -543,7 +544,7 @@ public sealed partial class MainWindow : Window
             var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
             if (launcher != null)
             {
-                var editSettings = new H.NotifyIcon.Core.PopupMenuItem { Text = "Edit Launcher Settings" };
+                var editSettings = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.editLauncherSettings") };
                 editSettings.Click += (s, e) =>
                 {
                     // Opens directly rather than routing through the settings window.
@@ -555,11 +556,11 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        var settingsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = "App Settings" };
+        var settingsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.appSettings") };
         settingsItem.Click += (s, e) => SettingsWindow.ShowInstance(this);
         popup.Items.Add(settingsItem);
         popup.Items.Add(new H.NotifyIcon.Core.PopupMenuSeparator());
-        var exitItem = new H.NotifyIcon.Core.PopupMenuItem { Text = "Exit" };
+        var exitItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.exit") };
         exitItem.Click += (s, e) =>
         {
             SettingsManager.SaveSettings();
@@ -1498,8 +1499,10 @@ public sealed partial class MainWindow : Window
             // saying the same thing — and Windows 11 watches how often an app's notifications go
             // un-interacted-with before offering to switch that app's notifications off outright.
             var builder = new Microsoft.Windows.AppNotifications.Builder.AppNotificationBuilder()
-                .AddText("Update Available")
-                .AddText($"Little Launcher {result.LatestVersion} is available. You are running {result.CurrentVersion}.");
+                .AddText(UiText.Get("about.update.availableTitle"))
+                .AddText(UiText.Format("tray.update.message",
+                    ("latest", result.LatestVersion),
+                    ("current", result.CurrentVersion)));
             builder.SetTag("update");
             builder.SetGroup(AppNoticeGroup);
             Microsoft.Windows.AppNotifications.AppNotificationManager.Default.Show(builder.BuildNotification());
@@ -2037,6 +2040,43 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Write the interface language in effect to <c>language.txt</c> beside the companion exe.
+    /// </summary>
+    /// <remarks>
+    /// The companion is a separate unpackaged process. Under MSIX it cannot see this app's settings
+    /// at the path the app uses, so rather than have it guess the package layout, the app hands it
+    /// the resolved identity (for example <c>fr-CA</c>) in the folder the companion already reads
+    /// <c>main-exe-path.txt</c> from. Rewritten whenever the choice changes.
+    /// </remarks>
+    /// <summary>
+    /// Relabel what the shell holds on the app's behalf after the interface language changes.
+    /// </summary>
+    /// <remarks>
+    /// The tray menu is built each time it opens, Settings rebuilds itself, and jump lists
+    /// rebuild on the settings save that records the choice, so they need nothing here. Start
+    /// menu shortcut names and the companion's language are written once and kept by Windows, so
+    /// they are rewritten now. Web launcher panels stay loaded in the background and keep their
+    /// toolbar text until the app restarts, which the language picker says.
+    /// </remarks>
+    private static void OnLanguageChanged()
+    {
+        WriteCompanionLanguage();
+        Services.StartMenuShortcutService.Sync(SettingsManager.Current.Launchers);
+    }
+
+    private static void WriteCompanionLanguage()
+    {
+        try
+        {
+            File.WriteAllText(Path.Combine(GetPhysicalAppDataDir(), "language.txt"), UiText.Locale);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to write the companion language breadcrumb");
+        }
+    }
+
+    /// <summary>
     /// Copies the companion flyout exe to the app data directory so it has a consistent location
     /// external processes can be pointed at, writes the <c>main-exe-path.txt</c> breadcrumb beside
     /// it, and cleans up legacy Start Menu shortcuts from previous versions.
@@ -2146,6 +2186,10 @@ public sealed partial class MainWindow : Window
             // if it isn't running (FindWindow returns null).
             if (!string.IsNullOrEmpty(mainExePath))
                 File.WriteAllText(Path.Combine(targetDir, "main-exe-path.txt"), mainExePath);
+
+            WriteCompanionLanguage();
+            UiText.Changed -= OnLanguageChanged;
+            UiText.Changed += OnLanguageChanged;
 
             // Remove the old Start Menu shortcut (no longer created — the
             // pin-to-taskbar button in Settings handles pinning directly).

@@ -1,4 +1,5 @@
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Services;
 using LittleLauncher.ViewModels;
 using NLog;
@@ -58,9 +59,11 @@ public partial class HomePage : Page
     private static string GetBuildTypeLabel()
     {
 #if DEBUG
-        return "(Debug)";
+        return UiText.Get("home.buildType.debug");
 #else
-        return MainWindow.IsPackaged ? "(MSIX)" : "(Portable)";
+        return MainWindow.IsPackaged
+            ? UiText.Get("home.buildType.msix")
+            : UiText.Get("home.buildType.portable");
 #endif
     }
 
@@ -98,11 +101,12 @@ public partial class HomePage : Page
             if (result is { UpdateAvailable: true })
             {
                 _updateResult = result;
-                UpdateInfoBar.Message =
-                    $"A new version ({result.LatestVersion}) is available. You are running {result.CurrentVersion}.";
+                UpdateInfoBar.Message = UiText.Format("home.update.message",
+                    ("latest", result.LatestVersion),
+                    ("current", result.CurrentVersion));
                 UpdateInfoBar.IsOpen = true;
 
-                UpdateActionButton.Content = "View Release";
+                UpdateActionButton.Content = UiText.Get("about.update.viewRelease");
             }
         }
         catch (Exception ex)

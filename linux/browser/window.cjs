@@ -11,6 +11,24 @@ const {PageFullscreen} = require('./fullscreen.cjs');
 const extensionRegistry=require('./extension_registry.cjs');
 const {installNotificationFrame}=require('./notification_frame.cjs');
 const {projectBookmarks, bookmarkActions, bookmarkVersion, resolveBookmark} = require('./bookmarks.cjs');
+const i18n = require('./i18n.cjs');
+const {t} = i18n;
+
+/**
+ * Resolved text for the trusted toolbar page. It reaches only the local chrome through its
+ * existing state message; the catalogs themselves and file access stay in this process.
+ */
+function chromeStrings(regular, maximized, loading) {
+  return i18n.strings({
+    back: 'common.back', forward: 'common.forward', reload: loading ? 'web.reloadWhileLoading' : 'web.reload',
+    home: 'web.home', more: 'web.more', extensions: 'webExtensions.extensionsButton',
+    address: 'web.showAddressBar', pin: regular ? 'web.keepOnTop' : 'web.pinOpen',
+    minimize: 'web.minimize', maximize: maximized ? 'web.restoreSize' : 'web.maximize', hide: 'common.close',
+    tabs: 'webShortcuts.group.tabs', newTab: 'webTabs.newTab', closeTab: 'webTabs.closeTab',
+    url: 'common.address', bookmarkAdd: 'web.addToBookmarks', moreBookmarks: 'webBookmarks.moreBookmarks',
+    addToBar: 'webBookmarks.addToBar',
+  });
+}
 
 /** Own native frame and isolated remote view; remote content cannot reach toolbar IPC. */
 class WebLauncher {
@@ -168,7 +186,7 @@ class WebLauncher {
         if (!item || item.IsFolder || !validUrl(item.Url)) return;
         if (action === 'open') this.action('navigate', item.Url);
         if (action === 'open-tab') this.createView(item.Url);
-        if (action === 'copy') void clipboard.writeText(item.Url).catch(() => this.emit({type:'warning',message:'The address could not be copied.'}));
+        if (action === 'copy') void clipboard.writeText(item.Url).catch(() => this.emit({type:'warning',message:t('web.copyAddressFailed')}));
         if (action === 'external') void shell.openExternal(item.Url).catch(() => {});
         return;
       }
@@ -178,7 +196,7 @@ class WebLauncher {
     };
     const template = bookmarkActions(expected, sourcePath, invoke, !!this.config.WebBookmarkIconsOnly,
       {editable: this.canEditBookmarks(), homeUrl: this.presentation.homeUrl});
-    if (index === -1) template.push({type: 'separator'}, {label: 'Icons only', type: 'checkbox',
+    if (index === -1) template.push({type: 'separator'}, {label: t('webBookmarks.iconsOnly'), type: 'checkbox',
       checked: !!this.config.WebBookmarkIconsOnly, enabled: this.canEditBookmarks(), click: item => void this.preference('WebBookmarkIconsOnly', item.checked)});
     this.menu(template);
   }
@@ -236,7 +254,7 @@ class WebLauncher {
 
   publishSession() {
     if (this.tabs.length > 64) {
-      if (!this.sessionLimitNoticed) {this.sessionLimitNoticed = true;this.emit({type:'warning',message:'This launcher has more than 64 tabs. Its previous saved session is preserved until tabs are closed.'});}
+      if (!this.sessionLimitNoticed) {this.sessionLimitNoticed = true;this.emit({type:'warning',message:t('linuxBrowser.sessionTabLimit')});}
       return;
     }
     if (this.restoringSession || this.detached || !this.tabs.length) return;
@@ -269,7 +287,11 @@ class WebLauncher {
       showBookmarkBar: this.presentation.showBookmarkBar, editable: this.canEditBookmarks(),
       showAddressBar: this.addressBarVisible,
       showTabs: !!this.config.WebAlwaysShowTabs || this.tabs.length > 1,
-      tabs: this.tabs.map(tab => ({id: tab.id, title: tab.title || tab.url || 'New tab', favicon: this.bookmarkIcons.peek(tab.url), active: tab === this.activeTab})),
+      tabs: this.tabs.map(tab => {
+        const title = tab.title || tab.url || t('webTabs.blankTabCaption');
+        // Page titles are inserted as values, never translated or expanded.
+        return {id: tab.id, title, closeLabel: t('webTabs.closeNamedTab', {title}), favicon: this.bookmarkIcons.peek(tab.url), active: tab === this.activeTab};
+      }),
       address: this.activeTab?.initializing ? this.activeTab.url : contents?.getURL() || this.activeTab?.url || '',
       canGoBack: !!contents?.navigationHistory.canGoBack(), canGoForward: !!contents?.navigationHistory.canGoForward(),
       pinSupported: this.anchored || process.env.XDG_SESSION_TYPE !== 'wayland',
@@ -277,7 +299,8 @@ class WebLauncher {
       regular: !this.anchored, nativeFrame: !this.anchored, maximized: this.window.isMaximized(),
       bookmarkIconsOnly: !!this.config.WebBookmarkIconsOnly,
       bookmarkVersion: bookmarkVersion(this.config.WebBookmarks || []),
-      name: this.config.Name + (this.detached ? ' · ' + (this.detachReason || 'Removed launcher: finish activity here') : ''),
+      name: this.detached ? t(this.detachReason || 'linuxBrowser.detached.removed', {launcher: this.config.Name}) : this.config.Name,
+      strings: chromeStrings(!this.anchored, this.window.isMaximized(), !!this.activeTab?.initializing || !!contents?.isLoading()),
       theme: this.theme, bookmarks: this.bookmarks(),
       extensions: this.services.extensions?.presentation(this) || [],
     });
@@ -309,8 +332,8 @@ class WebLauncher {
         const ticket = this.beginDialog();
         try {
           const result = await dialog.showMessageBox(this.window, {type: 'warning',
-            message: 'Closing this tab may interrupt media or transfers.',
-            buttons: ['Keep open', 'Close tab'], defaultId: 0, cancelId: 0});
+            message: t('webTabs.closeBusyTab'),
+            buttons: [t('webTabs.keepOpen'), t('webTabs.closeTab')], defaultId: 0, cancelId: 0});
           if (result.response !== 1) return;
         } finally { this.endDialog(ticket); }
       }
@@ -421,7 +444,7 @@ class WebLauncher {
       }};
     });
     contents.on('did-fail-load', (_event, code, _description, _url, main) => {
-      if (main && code !== -3) this.emit({type: 'error', id: this.id, message: 'The site could not be loaded. Check its address and connection.'});
+      if (main && code !== -3) this.emit({type: 'error', id: this.id, message: t('web.siteUnreachable')});
     });
     this.layout();
     const url = address || tab.url;
@@ -434,7 +457,7 @@ class WebLauncher {
           tab.bootstrapping=true;tab.bootstrapped=true;
           try{await contents.loadURL('about:blank');}finally{tab.bootstrapping=false;}
         }
-        try{await this.profiles.prepareContents?.(contents);}catch{if(!contents.isDestroyed())this.emit({type:'warning',message:'Website notification integration could not start. The page can still be opened.'});}
+        try{await this.profiles.prepareContents?.(contents);}catch{if(!contents.isDestroyed())this.emit({type:'warning',message:t('linuxBrowser.notificationIntegrationFailed')});}
         if(!contents.isDestroyed()&&url!=='about:blank')return contents.loadURL(url);
       }).catch(()=>{}).finally(()=>{tab.initializing=false;lifecycle.preparing=false;void lifecycle.update();this.toolbar();});
     }

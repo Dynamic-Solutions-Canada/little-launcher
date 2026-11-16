@@ -1,5 +1,6 @@
 ﻿using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
@@ -111,7 +112,7 @@ public sealed partial class LauncherSettingsWindow : Window
         _onClosing = onClosing;
         OpenCount++;
         _hwnd = WindowNative.GetWindowHandle(this);
-        Title = "Launcher Settings";
+        Title = UiText.Get("launcherSettings.title");
         SystemBackdrop = new MicaBackdrop();
 
         if (ownerHwnd != IntPtr.Zero)
@@ -233,7 +234,7 @@ public sealed partial class LauncherSettingsWindow : Window
     private void UpdateAcceptButton()
     {
         if (_doneButton == null) return;
-        _doneButton.Content = _isNewLauncher && !_launcher.IsWebLauncher ? "Next: Add Items" : "Done";
+        _doneButton.Content = UiText.Get(_isNewLauncher && !_launcher.IsWebLauncher ? "launcherSettings.nextAddItems" : "common.done");
     }
 
     /// <summary>The two text fields are the deferred edits; everything else applies as it changes.</summary>
@@ -426,9 +427,9 @@ public sealed partial class LauncherSettingsWindow : Window
         var dialog = new ContentDialog
         {
             XamlRoot = Content.XamlRoot,
-            Title = "Error",
+            Title = UiText.Get("common.error"),
             Content = message,
-            CloseButtonText = "OK",
+            CloseButtonText = UiText.Get("common.ok"),
         };
         await dialog.ShowAsync();
     }
@@ -438,7 +439,7 @@ public sealed partial class LauncherSettingsWindow : Window
         // ── Name row ────────────────────────────────────────────────
         var nameBox = new TextBox
         {
-            PlaceholderText = "Launcher name",
+            PlaceholderText = UiText.Get("launcherSettings.name.placeholder"),
             Text = launcher.Name,
             MinWidth = 160,
             MaxWidth = 280,
@@ -462,8 +463,8 @@ public sealed partial class LauncherSettingsWindow : Window
         nameRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var nameLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        nameLabel.Children.Add(new TextBlock { Text = "Name", FontSize = 14 });
-        nameLabel.Children.Add(new TextBlock { Text = "Display name in tray icon tooltip", FontSize = 12, Opacity = 0.5 });
+        nameLabel.Children.Add(new TextBlock { Text = UiText.Get("common.name"), FontSize = 14 });
+        nameLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.name.description"), FontSize = 12, Opacity = 0.5 });
         Grid.SetColumn(nameLabel, 0);
         Grid.SetColumn(nameBox, 1);
         nameRow.Children.Add(nameLabel);
@@ -478,7 +479,7 @@ public sealed partial class LauncherSettingsWindow : Window
         iconRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var iconLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        iconLabel.Children.Add(new TextBlock { Text = "Icon", FontSize = 14 });
+        iconLabel.Children.Add(new TextBlock { Text = UiText.Get("common.icon"), FontSize = 14 });
         // Text set by UpdateKindVisibility — a web launcher's icon arrives on its own.
         var iconSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
         iconLabel.Children.Add(iconSubtitle);
@@ -491,9 +492,9 @@ public sealed partial class LauncherSettingsWindow : Window
         var viewModeCombo = new ComboBox { MinWidth = 160 };
         var viewModes = new[]
         {
-            (Label: "Icons", Value: LauncherViewModes.Icon),
-            (Label: "Small Icons", Value: LauncherViewModes.SmallIcon),
-            (Label: "List", Value: LauncherViewModes.List),
+            (Label: UiText.Get("launcherSettings.viewMode.icons"), Value: LauncherViewModes.Icon),
+            (Label: UiText.Get("launcherSettings.viewMode.smallIcons"), Value: LauncherViewModes.SmallIcon),
+            (Label: UiText.Get("launcherSettings.viewMode.list"), Value: LauncherViewModes.List),
         };
 
         foreach (var viewMode in viewModes)
@@ -515,8 +516,8 @@ public sealed partial class LauncherSettingsWindow : Window
         viewModeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var viewModeLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        viewModeLabel.Children.Add(new TextBlock { Text = "View Mode", FontSize = 14 });
-        viewModeLabel.Children.Add(new TextBlock { Text = "How items appear in the flyout popup", FontSize = 12, Opacity = 0.5 });
+        viewModeLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.viewMode.title"), FontSize = 14 });
+        viewModeLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.viewMode.description"), FontSize = 12, Opacity = 0.5 });
         Grid.SetColumn(viewModeLabel, 0);
         Grid.SetColumn(viewModeCombo, 1);
         viewModeRow.Children.Add(viewModeLabel);
@@ -543,8 +544,8 @@ public sealed partial class LauncherSettingsWindow : Window
         iconsPerRowRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var iconsPerRowLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        iconsPerRowLabel.Children.Add(new TextBlock { Text = "Icons Per Row", FontSize = 14 });
-        iconsPerRowLabel.Children.Add(new TextBlock { Text = "How many icons fit across each icon-mode column", FontSize = 12, Opacity = 0.5 });
+        iconsPerRowLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.iconsPerRow.title"), FontSize = 14 });
+        iconsPerRowLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.iconsPerRow.description"), FontSize = 12, Opacity = 0.5 });
         Grid.SetColumn(iconsPerRowLabel, 0);
         Grid.SetColumn(iconsPerRowCombo, 1);
         iconsPerRowRow.Children.Add(iconsPerRowLabel);
@@ -593,8 +594,8 @@ public sealed partial class LauncherSettingsWindow : Window
         showTitleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var showTitleLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        showTitleLabel.Children.Add(new TextBlock { Text = "Show Title", FontSize = 14 });
-        showTitleLabel.Children.Add(new TextBlock { Text = "Show the launcher name at the top of the flyout", FontSize = 12, Opacity = 0.5 });
+        showTitleLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showTitle.title"), FontSize = 14 });
+        showTitleLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showTitle.description"), FontSize = 12, Opacity = 0.5 });
         Grid.SetColumn(showTitleLabel, 0);
         Grid.SetColumn(showTitleToggle, 1);
         showTitleRow.Children.Add(showTitleLabel);
@@ -620,8 +621,8 @@ public sealed partial class LauncherSettingsWindow : Window
         hideRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var hideLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        hideLabel.Children.Add(new TextBlock { Text = "Show in Tray", FontSize = 14 });
-        hideLabel.Children.Add(new TextBlock { Text = "Show this launcher's icon in the system tray", FontSize = 12, Opacity = 0.5 });
+        hideLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showInTray.title"), FontSize = 14 });
+        hideLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showInTray.description"), FontSize = 12, Opacity = 0.5 });
         Grid.SetColumn(hideLabel, 0);
         Grid.SetColumn(showToggle, 1);
         hideRow.Children.Add(hideLabel);
@@ -630,7 +631,7 @@ public sealed partial class LauncherSettingsWindow : Window
         // ── Pin to taskbar row ──────────────────────────────────
         var pinBtn = new Button
         {
-            Content = (string)Application.Current.Resources["TaskbarPinAction"],
+            Content = UiText.Get("taskbarPin.pin"),
             Tag = launcher,
         };
         _pinButton = pinBtn;
@@ -638,12 +639,12 @@ public sealed partial class LauncherSettingsWindow : Window
 
         _pinStatus = new TextBlock
         {
-            Text = (string)Application.Current.Resources["TaskbarPinDescription"],
+            Text = UiText.Get("taskbarPin.description"),
             FontSize = 12,
             Opacity = 0.5,
             TextWrapping = TextWrapping.Wrap,
         };
-        var taskbarRow = BuildRow("Show in Taskbar", _pinStatus, pinBtn);
+        var taskbarRow = BuildRow(UiText.Get("taskbarPin.title"), _pinStatus, pinBtn);
 
         // ── Web launcher rows ───────────────────────────────────
         var webAddressRow = BuildWebAddressRow(launcher);
@@ -658,8 +659,8 @@ public sealed partial class LauncherSettingsWindow : Window
         var typeCombo = new ComboBox { MinWidth = 160 };
         var kinds = new[]
         {
-            (Label: "Shortcuts", Value: LauncherKinds.Items),
-            (Label: "Web page", Value: LauncherKinds.Web),
+            (Label: UiText.Get("launcherSettings.type.shortcuts"), Value: LauncherKinds.Items),
+            (Label: UiText.Get("launcherSettings.type.web"), Value: LauncherKinds.Web),
         };
         foreach (var kind in kinds)
             typeCombo.Items.Add(new ComboBoxItem { Content = kind.Label, Tag = kind.Value });
@@ -685,9 +686,9 @@ public sealed partial class LauncherSettingsWindow : Window
             refreshBehaviorVisibility();
             refreshSizeRows();
             SyncAddressBox();
-            iconSubtitle.Text = isWeb
-                ? "Taken from the page automatically — or pick one here"
-                : "Icon style for this launcher";
+            iconSubtitle.Text = UiText.Get(isWeb
+                ? "launcherSettings.icon.webDescription"
+                : "launcherSettings.icon.description");
             refreshIconPreview();
             UpdateAcceptButton();
         }
@@ -707,7 +708,7 @@ public sealed partial class LauncherSettingsWindow : Window
             UpdateKindVisibility();
         };
 
-        var typeRow = BuildRow("Type", "What the tray icon opens", typeCombo);
+        var typeRow = BuildRow(UiText.Get("launcherSettings.type.title"), UiText.Get("launcherSettings.type.description"), typeCombo);
 
         // Shared definitions determine both this form and the flyout menu's section order.
         var sectionRows = new Dictionary<LauncherSettingsSection, IReadOnlyList<FrameworkElement>>
@@ -832,9 +833,8 @@ public sealed partial class LauncherSettingsWindow : Window
             WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
         };
 
-        return BuildRow("Bookmarks Bar",
-            "Shows this launcher's bookmarks along the bottom of the flyout, where they are added, "
-            + "renamed, put into folders and reordered.",
+        return BuildRow(UiText.Get("launcherSettings.bookmarksBar.title"),
+            UiText.Get("launcherSettings.bookmarksBar.description"),
             toggle);
     }
 
@@ -866,8 +866,8 @@ public sealed partial class LauncherSettingsWindow : Window
             WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
         };
 
-        return BuildRow("Bookmark Icons Only",
-            "Hides every bookmark's label, leaving just its icon.", toggle);
+        return BuildRow(UiText.Get("launcherSettings.bookmarkIconsOnly.title"),
+            UiText.Get("launcherSettings.bookmarkIconsOnly.description"), toggle);
     }
 
     /// <summary>
@@ -941,7 +941,7 @@ public sealed partial class LauncherSettingsWindow : Window
                     previewIcon.Glyph = "";   // globe — nothing has loaded yet
                     previewIcon.Visibility = Visibility.Visible;
                 }
-                previewLabel.Text = "From the page";
+                previewLabel.Text = UiText.Get("launcherSettings.icon.fromPage");
                 customIconRow.Visibility = Visibility.Collapsed;
                 return;
             }
@@ -950,7 +950,7 @@ public sealed partial class LauncherSettingsWindow : Window
             {
                 previewIcon.Glyph = "\uF0E2";
                 previewIcon.Visibility = Visibility.Visible;
-                previewLabel.Text = "Composite";
+                previewLabel.Text = UiText.Get("icons.composite");
             }
             else if (mode == TrayIconModes.Custom)
             {
@@ -968,7 +968,7 @@ public sealed partial class LauncherSettingsWindow : Window
                     previewIcon.Glyph = "\uE8B9";
                     previewIcon.Visibility = Visibility.Visible;
                 }
-                previewLabel.Text = "Custom";
+                previewLabel.Text = UiText.Get("common.custom");
             }
             else if (TrayIconModes.IsGlyphMode(mode))
             {
@@ -1022,7 +1022,7 @@ public sealed partial class LauncherSettingsWindow : Window
                     if (File.Exists(pngPath))
                         previewImage.Source = new BitmapImage(new Uri(pngPath));
                     previewImage.Visibility = Visibility.Visible;
-                    previewLabel.Text = mode;
+                    previewLabel.Text = PresetIconLabel(mode);
                 }
                 else
                 {
@@ -1036,13 +1036,13 @@ public sealed partial class LauncherSettingsWindow : Window
                     {
                         previewIcon.Glyph = match.glyph;
                         previewIcon.Visibility = Visibility.Visible;
-                        previewLabel.Text = match.label;
+                        previewLabel.Text = PresetIconLabel(match.label);
                     }
                     else
                     {
                         previewIcon.Glyph = "\uE774";
                         previewIcon.Visibility = Visibility.Visible;
-                        previewLabel.Text = mode;
+                        previewLabel.Text = PresetIconLabel(mode);
                     }
                 }
             }
@@ -1063,7 +1063,7 @@ public sealed partial class LauncherSettingsWindow : Window
                     if (!launcher.IsWebLauncher || result.PageIconPreview is not { } pagePreview ||
                         !string.Equals(launcher.WebAddress, pagePreview.Url, StringComparison.Ordinal))
                     {
-                        await ShowErrorAsync((string)Application.Current.Resources["PageIconAddressChanged"]);
+                        await ShowErrorAsync(UiText.Get("icons.pageIcon.addressChanged"));
                         return;
                     }
                     // Keep the managed favicon path itself: copying it into a custom file
@@ -1105,7 +1105,7 @@ public sealed partial class LauncherSettingsWindow : Window
             }
             catch (Exception)
             {
-                await ShowErrorAsync((string)Application.Current.Resources["IconSelectionFailed"]);
+                await ShowErrorAsync(UiText.Get("launcherSettings.icon.selectionFailed"));
             }
         }
 
@@ -1121,7 +1121,7 @@ public sealed partial class LauncherSettingsWindow : Window
             }
             catch (Exception)
             {
-                await ShowErrorAsync((string)Application.Current.Resources["IconSelectionFailed"]);
+                await ShowErrorAsync(UiText.Get("launcherSettings.icon.selectionFailed"));
             }
         }
 
@@ -1149,13 +1149,38 @@ public sealed partial class LauncherSettingsWindow : Window
         return (button, customIconRow, UpdatePreview);
     }
 
+    /// <summary>
+    /// The translated name of a built-in tray icon preset for the chooser button.
+    /// </summary>
+    /// <remarks>
+    /// The mode string itself is a saved identifier and stays English; only its label is
+    /// translated, using the names the icon gallery shows for the same presets. An unrecognised
+    /// mode is shown as stored rather than hidden.
+    /// </remarks>
+    private static string PresetIconLabel(string mode) => mode switch
+    {
+        TrayIconModes.Blue => UiText.Get("icons.color.blue"),
+        TrayIconModes.Green => UiText.Get("icons.color.green"),
+        TrayIconModes.Teal => UiText.Get("icons.color.teal"),
+        TrayIconModes.Red => UiText.Get("icons.color.red"),
+        TrayIconModes.Orange => UiText.Get("icons.color.orange"),
+        TrayIconModes.Purple => UiText.Get("icons.color.purple"),
+        TrayIconModes.Pin => UiText.Get("iconNames.pin"),
+        TrayIconModes.Star => UiText.Get("iconNames.star"),
+        TrayIconModes.Heart => UiText.Get("iconNames.heart"),
+        TrayIconModes.Lightning => UiText.Get("iconNames.lightning"),
+        TrayIconModes.Search => UiText.Get("iconNames.search"),
+        TrayIconModes.Globe => UiText.Get("iconNames.globe"),
+        _ => mode,
+    };
+
     /// <summary>Shows the current custom file without a second selection entry point.</summary>
     private (Grid Row, Action Refresh) BuildCustomIconRow(Launcher launcher)
     {
         var pathText = new TextBlock
         {
             Text = string.IsNullOrEmpty(launcher.CustomTrayIconPath)
-                ? "No file selected"
+                ? UiText.Get("launcherSettings.customIcon.noFile")
                 : System.IO.Path.GetFileName(launcher.CustomTrayIconPath),
             FontSize = 12,
             Opacity = 0.5,
@@ -1166,7 +1191,7 @@ public sealed partial class LauncherSettingsWindow : Window
         void RefreshPath()
         {
             pathText.Text = string.IsNullOrEmpty(launcher.CustomTrayIconPath)
-                ? "No file selected"
+                ? UiText.Get("launcherSettings.customIcon.noFile")
                 : Path.GetFileName(launcher.CustomTrayIconPath);
         }
 
@@ -1174,7 +1199,7 @@ public sealed partial class LauncherSettingsWindow : Window
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         var label = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        label.Children.Add(new TextBlock { Text = "Custom Icon", FontSize = 14 });
+        label.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.customIcon.title"), FontSize = 14 });
         label.Children.Add(pathText);
         Grid.SetColumn(label, 0);
         row.Children.Add(label);
@@ -1197,7 +1222,7 @@ public sealed partial class LauncherSettingsWindow : Window
         if (pinButton != null)
         {
             pinButton.IsEnabled = false;
-            pinButton.Content = "Fetching icon…";
+            pinButton.Content = UiText.Get("launcherSettings.icon.fetching");
         }
 
         try

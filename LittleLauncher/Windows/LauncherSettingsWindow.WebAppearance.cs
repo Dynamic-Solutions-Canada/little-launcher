@@ -1,4 +1,5 @@
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -24,8 +25,8 @@ public sealed partial class LauncherSettingsWindow
         // Not in Advanced: it is one of the few things that changes what the flyout *is*; a page
         // versus a small browser; rather than tuning one that already works, and it is the setting
         // the star for bookmarking the current page lives in.
-        var addressRow = BuildRow("Address Bar",
-            "Show the page address under the header, with a star for bookmarking it",
+        var addressRow = BuildRow(UiText.Get("launcherSettings.addressBar.title"),
+            UiText.Get("launcherSettings.addressBar.description"),
             addressToggle);
 
         // ── Tab bar ─────────────────────────────────────────────
@@ -46,8 +47,8 @@ public sealed partial class LauncherSettingsWindow
             Services.AutoSyncService.NotifyLaunchersChanged();
             WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
         };
-        var tabBarRow = BuildRow("Tab Bar",
-            "Keep the tab strip on screen with one page open. Off, it appears as soon as there is a second",
+        var tabBarRow = BuildRow(UiText.Get("launcherSettings.tabBar.title"),
+            UiText.Get("launcherSettings.tabBar.description"),
             tabBarToggle);
 
         return [tabBarRow, addressRow, BuildBookmarksRow(launcher), BuildBookmarkIconsOnlyRow(launcher)];

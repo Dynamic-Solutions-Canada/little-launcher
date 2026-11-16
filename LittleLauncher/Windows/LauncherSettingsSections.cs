@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+using LittleLauncher.Localization;
 using System;
 using System.Collections.Generic;
 
@@ -20,7 +20,8 @@ internal sealed record LauncherSettingsSectionDefinition(
     string LabelKey,
     bool WebOnly = false)
 {
-    internal string Label => LauncherSettingsSections.Text(LabelKey);
+    /// <summary>The section name in the current interface language.</summary>
+    internal string Label => UiText.Get(LabelKey);
 }
 
 /// <summary>Owns the section order and localized labels for both settings surfaces.</summary>
@@ -29,14 +30,10 @@ internal static class LauncherSettingsSections
     internal static IReadOnlyList<LauncherSettingsSectionDefinition> All { get; } = Array.AsReadOnly(
         new LauncherSettingsSectionDefinition[]
         {
-            new(LauncherSettingsSection.General, "LauncherSectionGeneral"),
-            new(LauncherSettingsSection.Appearance, "LauncherSectionAppearance"),
-            new(LauncherSettingsSection.SizeAndPosition, "LauncherSectionSizeAndPosition", WebOnly: true),
-            new(LauncherSettingsSection.Behavior, "LauncherSectionBehavior", WebOnly: true),
-            new(LauncherSettingsSection.PrivacyAndSignIns, "LauncherSectionPrivacyAndSignIns", WebOnly: true),
+            new(LauncherSettingsSection.General, "launcherSettings.section.general"),
+            new(LauncherSettingsSection.Appearance, "launcherSettings.section.appearance"),
+            new(LauncherSettingsSection.SizeAndPosition, "launcherSettings.section.sizeAndPosition", WebOnly: true),
+            new(LauncherSettingsSection.Behavior, "launcherSettings.section.behavior", WebOnly: true),
+            new(LauncherSettingsSection.PrivacyAndSignIns, "launcherSettings.section.privacyAndSignIns", WebOnly: true),
         });
-
-    /// <summary>Reads the app's string dictionary; a missing key remains identifiable.</summary>
-    internal static string Text(string key) =>
-        Application.Current.Resources.TryGetValue(key, out var value) && value is string text ? text : key;
 }

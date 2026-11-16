@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using LittleLauncher.Classes.Settings;
 using System.Net;
 using System.Net.Http.Headers;
@@ -76,13 +77,13 @@ public sealed class WebDavFileStore : ICloudFileStore
         var settings = SettingsManager.Current;
 
         if (string.IsNullOrWhiteSpace(settings.WebDavUrl))
-            return (false, "Enter the WebDAV folder URL.");
+            return (false, UiText.Get("cloud.webDav.enterFolderUrl"));
         if (string.IsNullOrWhiteSpace(settings.WebDavUsername))
-            return (false, "Enter the WebDAV username.");
+            return (false, UiText.Get("cloud.webDav.enterUsername"));
         if (string.IsNullOrEmpty(StoredPassword))
-            return (false, "Enter the WebDAV password.");
+            return (false, UiText.Get("cloud.webDav.enterPassword"));
         if (!Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri))
-            return (false, "That does not look like a valid URL.");
+            return (false, UiText.Get("cloud.webDav.invalidUrl"));
 
         try
         {
@@ -98,23 +99,24 @@ public sealed class WebDavFileStore : ICloudFileStore
             using var response = await Http.SendAsync(request, ct);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
-                return (false, "The server rejected that username or password.");
+                return (false, UiText.Get("cloud.webDav.credentialsRejected"));
             if (response.StatusCode == HttpStatusCode.NotFound)
-                return (false, "The server was reached, but that folder does not exist on it.");
+                return (false, UiText.Get("cloud.webDav.folderMissing"));
             if (!response.IsSuccessStatusCode)
-                return (false, $"The server refused the request ({(int)response.StatusCode}).");
+                return (false, UiText.Format("cloud.webDav.requestRefused", ("status", (int)response.StatusCode)));
 
-            string warning = uri.Scheme == Uri.UriSchemeHttps
-                ? ""
-                : " Warning: this is a plain http:// URL, so the password is sent unencrypted.";
+            // A plain http:// server works, but the user should know the password travels unencrypted.
+            string connected = uri.Scheme == Uri.UriSchemeHttps
+                ? UiText.Format("cloud.webDav.connected", ("host", uri.Host))
+                : UiText.Format("cloud.webDav.connectedInsecure", ("host", uri.Host));
 
             Logger.Info($"WebDAV connection verified at {uri.Host}");
-            return (true, $"Connected to {uri.Host}.{warning}");
+            return (true, connected);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "WebDAV connection test failed");
-            return (false, $"Could not reach the server: {ex.Message}");
+            return (false, UiText.Format("cloud.webDav.unreachable", ("error", ex.Message)));
         }
     }
 
@@ -194,11 +196,11 @@ public sealed class WebDavFileStore : ICloudFileStore
 
         throw new InvalidOperationException(response.StatusCode switch
         {
-            HttpStatusCode.Unauthorized => "The WebDAV server rejected the stored credentials. Reconnect.",
-            HttpStatusCode.Forbidden => "The WebDAV server refused access to that folder.",
-            HttpStatusCode.Conflict => "The WebDAV folder does not exist. Create it on the server first.",
-            HttpStatusCode.InsufficientStorage => "The WebDAV server is out of space.",
-            _ => $"WebDAV {operation} failed ({(int)response.StatusCode}).",
+            HttpStatusCode.Unauthorized => UiText.Get("cloud.webDav.storedCredentialsRejectedReconnect"),
+            HttpStatusCode.Forbidden => UiText.Get("cloud.webDav.folderForbidden"),
+            HttpStatusCode.Conflict => UiText.Get("cloud.webDav.folderConflict"),
+            HttpStatusCode.InsufficientStorage => UiText.Get("cloud.webDav.outOfSpace"),
+            _ => CloudErrors.DescribeStatus("WebDAV", operation, response.StatusCode),
         });
     }
 }

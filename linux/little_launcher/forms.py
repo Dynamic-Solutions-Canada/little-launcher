@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QSpinBox, QTabWidget, QVBoxLayout, QWidget, QMessageBox,
 )
 
+from . import i18n
 from .document import DocumentError, is_heading, normalize_web_address, new_shortcut
 
 
@@ -42,7 +43,7 @@ class FormDialog(QDialog):
         try:
             self.validate()
         except DocumentError as error:
-            QMessageBox.warning(self, 'Check these details', str(error))
+            QMessageBox.warning(self, i18n.t('prompts.checkDetails'), str(error))
             return
         super().accept()
 
@@ -63,24 +64,26 @@ class FormDialog(QDialog):
 class ShortcutDialog(FormDialog):
     """Edit a full original row; cancelling changes nothing."""
 
-    TYPES = ['Application', 'Website', 'Heading', 'Group', 'Column break']
+    # Combo order is the saved-kind index used throughout this form; only the labels are translated.
+    TYPE_KEYS = ['itemEditor.type.application', 'itemEditor.type.website', 'itemEditor.type.heading',
+                 'itemEditor.type.group', 'launcher.columnBreak']
 
     def __init__(self, item=None, parent=None, *, icon_directory=None):
-        super().__init__('Edit Item' if item else 'Add Item', parent)
+        super().__init__(i18n.t('itemEditor.editTitle') if item else i18n.t('itemEditor.addTitle'), parent)
         self.original = deepcopy(item) if item else new_shortcut('', '')
         self.icon_directory=icon_directory
         self.source_tabs = QTabWidget()
         self.sections.addWidget(self.source_tabs)
         from .app_picker import ApplicationList
         self.catalog = ApplicationList()
-        self.source_tabs.addTab(self.catalog, 'Apps && web apps')
+        self.source_tabs.addTab(self.catalog, i18n.t('itemEditor.tab.apps').replace('&', '&&'))
         custom = QWidget()
         custom_form = QFormLayout(custom)
         custom_form.setRowWrapPolicy(QFormLayout.WrapAllRows)
-        self.source_tabs.addTab(custom, 'File or link')
+        self.source_tabs.addTab(custom, i18n.t('itemEditor.tab.fileOrLink').replace('&', '&&'))
         form = self.section('Details', plain=True)
         self.kind = QComboBox()
-        self.kind.addItems(self.TYPES)
+        self.kind.addItems([i18n.t(key) for key in self.TYPE_KEYS])
         index = 0
         if self.original.get('IsColumnBreak'):
             index = 4
@@ -94,16 +97,16 @@ class ShortcutDialog(FormDialog):
         self.name = QLineEdit(self.original.get('Name', ''))
         self.target = QLineEdit(self.original.get('Path', ''))
         self.arguments = QLineEdit(self.original.get('Arguments', ''))
-        browse = QPushButton('Browse…')
+        browse = QPushButton(i18n.t('common.browse'))
         browse.clicked.connect(self._browse)
         target_row = QWidget()
         target_layout = QHBoxLayout(target_row)
         target_layout.setContentsMargins(0, 0, 0, 0)
         target_layout.addWidget(self.target)
         target_layout.addWidget(browse)
-        custom_form.addRow('Path or link', target_row)
-        custom_form.addRow('Type', self.kind)
-        form.addRow('Name', self.name)
+        custom_form.addRow(i18n.t('itemEditor.pathOrLink'), target_row)
+        custom_form.addRow(i18n.t('itemEditor.type.label'), self.kind)
+        form.addRow(i18n.t('common.name'), self.name)
         self.icon_fields={key:self.original.get(key,'') for key in ('IconGlyph','IconColor')}
         self.icon_path = QLineEdit(self.original.get('IconPath', ''))
         icon_row = QWidget()
@@ -111,12 +114,12 @@ class ShortcutDialog(FormDialog):
         icon_layout.setContentsMargins(0, 0, 0, 0)
         self.icon_preview=QLabel()
         icon_layout.addWidget(self.icon_preview)
-        icon_button = QPushButton('Choose…')
+        icon_button = QPushButton(i18n.t('itemEditor.icon.choose'))
         icon_button.clicked.connect(self._pick_icon)
         icon_layout.addWidget(icon_button)
-        form.addRow('Icon', icon_row)
-        form.addRow('Arguments', self.arguments)
-        self.app_window = QCheckBox('Open website in an application window')
+        form.addRow(i18n.t('common.icon'), icon_row)
+        form.addRow(i18n.t('itemEditor.arguments'), self.arguments)
+        self.app_window = QCheckBox(i18n.t('itemEditor.appWindow.header').replace('&', '&&'))
         self.app_window.setChecked(self.original.get('OpenInAppWindow', False))
         self.app_window.setEnabled(index == 1)
         form.addRow(self.app_window)
@@ -141,7 +144,7 @@ class ShortcutDialog(FormDialog):
         from .desktop import item_icon
         item={**self.original,**self.icon_fields,'IconPath':self.icon_path.text(),'Path':self.target.text(),'IsWebsite':self.kind.currentIndex()==1}
         self.icon_preview.setPixmap(item_icon(item).pixmap(32,32))
-        self.icon_preview.setToolTip(self.icon_path.text() or self.icon_fields.get('IconGlyph') or 'Automatic icon')
+        self.icon_preview.setToolTip(self.icon_path.text() or self.icon_fields.get('IconGlyph') or i18n.t('itemEditor.icon.auto'))
 
     def _pick_icon(self):
         from .icon_picker import IconPicker
@@ -155,7 +158,7 @@ class ShortcutDialog(FormDialog):
 
     def _target_changed(self):
         self.arguments.setEnabled(self.kind.currentIndex() == 0 and not self.target.text().endswith('.desktop'))
-        self.arguments.setToolTip('Choose an executable for extra arguments. Installed desktop entries use their own launch command.')
+        self.arguments.setToolTip(i18n.t('itemEditor.argumentsHint'))
 
     def _kind_changed(self, index):
         structural = index >= 2
@@ -166,9 +169,9 @@ class ShortcutDialog(FormDialog):
     def validate(self):
         value = self.value()
         if self.kind.currentIndex() < 2 and not value['Path']:
-            raise DocumentError('Choose a target before saving this shortcut.')
+            raise DocumentError(i18n.t('itemEditor.targetRequired'))
         if self.kind.currentIndex() in (2, 3) and not value['Name']:
-            raise DocumentError('Enter a name for this heading or group.')
+            raise DocumentError(i18n.t('itemEditor.nameRequired'))
 
     def _choose_application(self):
         from .app_picker import ApplicationPicker
@@ -181,7 +184,7 @@ class ShortcutDialog(FormDialog):
             self.arguments.clear()
 
     def _browse(self):
-        path, _ = QFileDialog.getOpenFileName(self, 'Choose application or file')
+        path, _ = QFileDialog.getOpenFileName(self, i18n.t('itemEditor.browseTitle'))
         if path:
             self.target.setText(path)
 
@@ -212,13 +215,13 @@ class BookmarkDialog(FormDialog):
     """Native name/address form; changes to bookmarks never change the launcher's home."""
 
     def __init__(self, name, address, parent=None, editing=False):
-        super().__init__('Edit bookmark' if editing else 'Add bookmark', parent)
+        super().__init__(i18n.t('webBookmarks.prompt.editBookmark') if editing else i18n.t('webBookmarks.prompt.addBookmark'), parent)
         self.resize(480, 240)
-        form = self.section('Bookmark')
+        form = self.section(i18n.t('webBookmarks.prompt.section'))
         self.name = QLineEdit(name)
         self.address = QLineEdit(address)
-        form.addRow('Name', self.name)
-        form.addRow('Address', self.address)
+        form.addRow(i18n.t('common.name'), self.name)
+        form.addRow(i18n.t('common.address'), self.address)
 
     def validate(self):
         self.value()
@@ -232,8 +235,11 @@ class BookmarkDialog(FormDialog):
 class NameDialog(QDialog):
     """Compact native counterpart of the shared Windows TextPromptWindow."""
 
-    def __init__(self, title, name='', parent=None, placeholder='Name', accept_text='Save'):
+    def __init__(self, title, name='', parent=None, placeholder=None, accept_text=None):
         super().__init__(parent)
+        # Defaults resolve per dialog so they follow the current interface language.
+        placeholder = i18n.t('common.name') if placeholder is None else placeholder
+        accept_text = i18n.t('common.save') if accept_text is None else accept_text
         self.setWindowTitle(title)
         self.resize(400, 168)
         self.setWindowModality(Qt.WindowModal)
@@ -263,7 +269,7 @@ class NameDialog(QDialog):
     def value(self):
         name = self.name.text().strip()
         if not name:
-            raise DocumentError('Enter a name.')
+            raise DocumentError(i18n.t('prompts.nameRequired'))
         return name
 
 
@@ -271,7 +277,7 @@ class BookmarkAddressDialog(NameDialog):
     """Single-address editor that validates before closing and never changes the caption."""
 
     def __init__(self, address, parent=None):
-        super().__init__('Edit bookmark address', address, parent, placeholder='Address')
+        super().__init__(i18n.t('webBookmarks.prompt.editAddress'), address, parent, placeholder=i18n.t('common.address'))
 
     def value(self):
         return normalize_web_address(super().value())
@@ -280,7 +286,7 @@ class BookmarkAddressDialog(NameDialog):
         try:
             self.value()
         except DocumentError as error:
-            QMessageBox.warning(self, 'Edit bookmark address', str(error))
+            QMessageBox.warning(self, i18n.t('webBookmarks.prompt.editAddress'), str(error))
             return
         super().accept()
 
@@ -289,7 +295,7 @@ class BookmarkFolderDialog(NameDialog):
     """Keep bookmark-specific serialization out of the shared single-name prompt."""
 
     def __init__(self, name, parent=None):
-        super().__init__('Rename folder' if name else 'Add folder', name, parent)
+        super().__init__(i18n.t('webBookmarks.prompt.renameFolder') if name else i18n.t('webBookmarks.prompt.addFolder'), name, parent)
 
     def value(self):
         return {'Name': super().value(), 'IsFolder': True}

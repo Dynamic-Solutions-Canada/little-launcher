@@ -13,10 +13,13 @@ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 
 ## Localization
 
-- String resources live in `Resources/Localization/Dictionary-en-US.xaml`
-- Reference via `{StaticResource KeyName}` in XAML (resource dictionary is merged in App.xaml)
-- In code: `Application.Current.Resources.TryGetValue("KeyName", out object value)`
-- Always add new string keys to the dictionary when adding UI text
+Read [localization.md](localization.md). In short:
+
+- UI text lives in the shared catalogs under `Shared/Localization/<catalog>/<area>.json`, never as a literal in XAML or code.
+- XAML: `xmlns:l="using:LittleLauncher.Localization"` on the root, then `Text="{l:Str Key=area.name}"`.
+- Code: `UiText.Get("area.name")`, `UiText.Format(...)` and `UiText.Plural(...)`.
+- Add every new English key to `en-US` and the same key, translated, to every other catalog.
+- Leave room for longer languages: German, Spanish and Portuguese often run 30 to 80 percent longer than English. Give secondary and description text `TextWrapping="Wrap"`, cap the width of controls whose content is translated, and do not size panes for the English labels; Settings sizes its navigation pane from the measured labels.
 
 ## Pages
 

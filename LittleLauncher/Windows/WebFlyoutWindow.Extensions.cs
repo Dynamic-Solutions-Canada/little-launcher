@@ -1,6 +1,7 @@
 ﻿// Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -172,8 +173,7 @@ public sealed partial class WebFlyoutWindow
             // left the user with nothing to act on.
             // ShowNotice, not SetStatus: the store page is on screen, and the status overlay shares
             // its row with the browser — which draws over it. See BuildNoticeBar.
-            ShowNotice("That extension could not be installed from the store. Download its .zip and "
-                     + "add it under Settings → Browser Extensions → Add Folder.");
+            ShowNotice(UiText.Get("webExtensions.storeInstallFailed"));
         }
         finally
         {
@@ -188,7 +188,7 @@ public sealed partial class WebFlyoutWindow
 
         if (folder == null)
         {
-            ShowNotice("That extension could not be unpacked. It may not be a browser extension.");
+            ShowNotice(UiText.Get("webExtensions.unpackFailed"));
             return;
         }
 
@@ -209,7 +209,7 @@ public sealed partial class WebFlyoutWindow
 
         // Said out loud, because the store page is still showing "Download interrupted" — from its
         // side the install genuinely did fail, and without this the user believes nothing happened.
-        ShowNotice($"{name} is installed and running in this launcher.");
+        ShowNotice(UiText.Format("webExtensions.installed", ("extension", name)));
     }
 
     // ── Showing an extension's panel ────────────────────────────────
@@ -255,7 +255,7 @@ public sealed partial class WebFlyoutWindow
 
         // U+E710 is Segoe Fluent's Add; U+E713 Settings. Neither is a puzzle piece — Segoe
         // Fluent has none — so E74C (OpenPane) reads closest to "a list of things behind this".
-        _extensionsButton ??= BuildHeaderButton("", "Extensions", (_, _) => ShowExtensionsMenu());
+        _extensionsButton ??= BuildHeaderButton("", UiText.Get("webExtensions.extensionsButton"), (_, _) => ShowExtensionsMenu());
 
         // Re-seated rather than left wherever it was: the pinned run is rebuilt around it.
         _headerButtons.Children.Remove(_extensionsButton);
@@ -315,18 +315,18 @@ public sealed partial class WebFlyoutWindow
             // absence would read as "not installed" for exactly the kind that needs no UI.
             if (action is { } popup)
             {
-                var open = new MenuFlyoutItem { Text = "Open" };
+                var open = new MenuFlyoutItem { Text = UiText.Get("common.open") };
                 open.Click += (_, _) => _ = ShowExtensionPopupAsync(extension.Folder, extension.Name);
                 item.Items.Add(open);
             }
             else
             {
-                item.Items.Add(new MenuFlyoutItem { Text = "Runs in the background", IsEnabled = false });
+                item.Items.Add(new MenuFlyoutItem { Text = UiText.Get("webExtensions.runsInBackground"), IsEnabled = false });
             }
 
             var pin = new ToggleMenuFlyoutItem
             {
-                Text = "Pin to the header",
+                Text = UiText.Get("webExtensions.pinToHeader"),
                 IsChecked = IsPinned(extension.Id, extension.Name),
 
                 // Nothing to pin without a popup: the button would open nothing.
@@ -426,7 +426,7 @@ public sealed partial class WebFlyoutWindow
 
             if (match == null)
             {
-                ShowNotice($"{name} is not loaded in this launcher yet. Reopen it and try again.");
+                ShowNotice(UiText.Format("webExtensions.notLoaded", ("extension", name)));
                 return;
             }
 

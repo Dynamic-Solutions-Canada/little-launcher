@@ -1,4 +1,5 @@
-﻿using LittleLauncher.Classes.Settings;
+﻿using LittleLauncher.Localization;
+using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
 using Microsoft.UI.Dispatching;
 using System.Collections.ObjectModel;
@@ -131,7 +132,7 @@ internal static class LauncherPayload
         if (localModified != default)
         {
             Logger.Info($"Download skipped: local launcher changes at {localModified:u} have not been uploaded yet");
-            reason = "Local launcher changes are newer than the server; skipped download.";
+            reason = UiText.Get("syncService.skipped.localLaunchersNewer");
             return true;
         }
 
@@ -147,7 +148,7 @@ internal static class LauncherPayload
                 {
                     Logger.Info($"Download skipped: local settings ({localFileModified:u}) " +
                                 $"are newer than remote ({remoteTimestamp.Value.UtcDateTime:u})");
-                    reason = "Local settings are newer than the sync location; skipped download.";
+                    reason = UiText.Get("syncService.skipped.localSettingsNewer");
                     return true;
                 }
             }

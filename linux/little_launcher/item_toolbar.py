@@ -7,6 +7,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QLayout, QPushButton, QStyle, QToolButton, QWidget,
 )
 
+from . import i18n
+
 
 class ActionFlowLayout(QLayout):
     """Wrap controls at their native natural widths without stretching each action to a column."""
@@ -82,9 +84,10 @@ class ItemEditToolbar(QWidget):
             actions = QWidget(self)
             flow = ActionFlowLayout(actions)
             layout.addWidget(actions, 1)
-        for text, theme, icon, kind in [('Add item', 'list-add', QStyle.SP_FileIcon, 0),
-                                        ('Add group', 'folder-new', QStyle.SP_DirIcon, 3),
-                                        ('Add column', 'view-split-left-right', QStyle.SP_FileDialogListView, 4)]:
+        for key, theme, icon, kind in [('items.addItem', 'list-add', QStyle.SP_FileIcon, 0),
+                                       ('items.addGroup', 'folder-new', QStyle.SP_DirIcon, 3),
+                                       ('items.addColumn', 'view-split-left-right', QStyle.SP_FileDialogListView, 4)]:
+            text = i18n.t(key)
             button = QToolButton(self) if compact else QPushButton(text, self)
             button.setIcon(QIcon.fromTheme(theme, self.style().standardIcon(icon)))
             button.setToolTip(text)
@@ -95,8 +98,8 @@ class ItemEditToolbar(QWidget):
                 flow.addWidget(button)
         settings = QToolButton(self)
         settings.setIcon(QIcon.fromTheme('configure', self.style().standardIcon(QStyle.SP_FileDialogDetailedView)))
-        settings.setToolTip('Launcher settings')
-        settings.setAccessibleName('Launcher settings')
+        settings.setToolTip(i18n.t('items.launcherSettings'))
+        settings.setAccessibleName(i18n.t('items.launcherSettings'))
         settings.clicked.connect(self.settings_requested)
         self.buttons.append(settings)
         if layout:
@@ -105,8 +108,8 @@ class ItemEditToolbar(QWidget):
         else:
             done = QToolButton(self)
             done.setIcon(self.style().standardIcon(QStyle.SP_DialogApplyButton))
-            done.setToolTip('Done')
-            done.setAccessibleName('Done')
+            done.setToolTip(i18n.t('common.done'))
+            done.setAccessibleName(i18n.t('common.done'))
             done.clicked.connect(self.done_requested)
             self.buttons.append(done)
             for button in self.buttons:

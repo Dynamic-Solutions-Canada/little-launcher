@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
@@ -64,7 +65,7 @@ public sealed partial class WebFlyoutWindow
         // beside it would be claiming the page has a property, which is the bar’s property.
         var bookmarkItem = new MenuFlyoutItem
         {
-            Text = IsCurrentAddressBookmarked() ? "Remove from bookmarks" : "Add to bookmarks",
+            Text = UiText.Get(IsCurrentAddressBookmarked() ? "web.removeFromBookmarks" : "web.addToBookmarks"),
             IsEnabled = !string.IsNullOrEmpty(CurrentAddressUrl()),
         };
         bookmarkItem.Click += (_, _) => ToggleBookmarkForAddress();
@@ -73,7 +74,7 @@ public sealed partial class WebFlyoutWindow
         // Its header button became the address bar's toggle, which is the per-moment decision of
         // the two. Handing the page to the real browser is a once-in-a-while action, and the menu
         // is where those belong.
-        var openInBrowser = new MenuFlyoutItem { Text = "Open in browser" };
+        var openInBrowser = new MenuFlyoutItem { Text = UiText.Get("web.openInBrowser") };
         openInBrowser.Click += (_, _) => OpenInBrowser();
         menu.Items.Add(openInBrowser);
 
@@ -87,18 +88,18 @@ public sealed partial class WebFlyoutWindow
 
         menu.Items.Add(BuildAdvancedSubmenu());
 
-        var shortcuts = new MenuFlyoutItem { Text = "Keyboard shortcuts" };
+        var shortcuts = new MenuFlyoutItem { Text = UiText.Get("webMenu.keyboardShortcuts") };
         shortcuts.Click += (_, _) => _ = ShowShortcutsAsync();
         menu.Items.Add(shortcuts);
 
-        var settings = new MenuFlyoutItem { Text = "Launcher settings…" };
+        var settings = new MenuFlyoutItem { Text = UiText.Get("webMenu.launcherSettings") };
         settings.Click += (_, _) => _ = OpenLauncherSettingsAsync();
         menu.Items.Add(settings);
 
         // Below it, and reached from the same place: the item flyout's context menu has carried
         // App Settings all along, and a web launcher had no way to the app's own settings without
         // going to the tray icon it was opened from.
-        var appSettings = new MenuFlyoutItem { Text = "App settings…" };
+        var appSettings = new MenuFlyoutItem { Text = UiText.Get("webMenu.appSettings") };
         appSettings.Click += (_, _) => OpenAppSettings();
         menu.Items.Add(appSettings);
 
@@ -127,12 +128,12 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private MenuFlyoutSubItem BuildAdvancedSubmenu()
     {
-        var submenu = new MenuFlyoutSubItem { Text = "Advanced" };
+        var submenu = new MenuFlyoutSubItem { Text = UiText.Get("webMenu.advanced") };
 
         // Nothing in the app opened DevTools. A web launcher is a browser with no menu bar, so the
         // only way in was a right-click on the page hoping the default context menu was still
         // there - and diagnosing anything inside a launcher started with finding that out.
-        var devTools = new MenuFlyoutItem { Text = "Developer tools" };
+        var devTools = new MenuFlyoutItem { Text = UiText.Get("webMenu.developerTools") };
         devTools.Click += (_, _) =>
         {
             try { _webView?.CoreWebView2?.OpenDevToolsWindow(); }
@@ -143,7 +144,7 @@ public sealed partial class WebFlyoutWindow
         // The header's reload is the ordinary one, which is answered from cache and so is no help
         // against the case people actually reload for: a page serving something stale. There is no
         // WebView2 API for it, but the DevTools protocol has one and the runtime speaks it.
-        var hardReload = new MenuFlyoutItem { Text = "Reload, ignoring cache" };
+        var hardReload = new MenuFlyoutItem { Text = UiText.Get("webMenu.reloadIgnoringCache") };
         hardReload.Click += (_, _) => _ = ReloadIgnoringCacheAsync();
         submenu.Items.Add(hardReload);
 
@@ -154,12 +155,12 @@ public sealed partial class WebFlyoutWindow
         // shows no banner - while the browser permission sits at "not asked" and every notification
         // it tries to raise goes nowhere. There is no browser UI to reach in a flyout, so without
         // this the launcher is simply stuck, which is what happened after a bulk rebuild reset them.
-        var askNotifications = new MenuFlyoutItem { Text = "Turn on notifications" };
+        var askNotifications = new MenuFlyoutItem { Text = UiText.Get("webMenu.turnOnNotifications") };
         askNotifications.Click += (_, _) => _ = RequestNotificationPermissionAsync();
         submenu.Items.Add(askNotifications);
 
         // See RebuildNotificationBridgeAsync for why this cannot be done for the user.
-        var rebuild = new MenuFlyoutItem { Text = "Rebuild notification bridge" };
+        var rebuild = new MenuFlyoutItem { Text = UiText.Get("webMenu.rebuildNotificationBridge") };
         rebuild.Click += (_, _) => _ = RebuildNotificationBridgeAsync();
         submenu.Items.Add(rebuild);
 
@@ -167,7 +168,7 @@ public sealed partial class WebFlyoutWindow
         // reach for it is rarely one launcher: a bridge changes for all of them together, and
         // finding out which launchers are stale by opening each one and rebuilding it is the sort
         // of errand this menu exists to remove.
-        var rebuildAll = new MenuFlyoutItem { Text = "Rebuild every launcher's bridge" };
+        var rebuildAll = new MenuFlyoutItem { Text = UiText.Get("webMenu.rebuildAllBridges") };
         rebuildAll.Click += (_, _) => _ = RebuildAllNotificationBridgesAsync();
         submenu.Items.Add(rebuildAll);
 
@@ -306,7 +307,7 @@ public sealed partial class WebFlyoutWindow
             Logger.Info("Nobody answered {Name}'s notification prompt, so its permission was put back to allowed",
                 _launcher.Name);
 
-            ShowNotice($"{_launcher.Name}'s notification permission was left as it was, because the prompt went unanswered.");
+            ShowNotice(UiText.Format("webMenu.notificationPermissionKept", ("launcher", _launcher.Name)));
         }
         catch (Exception ex)
         {
@@ -466,11 +467,11 @@ public sealed partial class WebFlyoutWindow
     private MenuFlyoutSubItem BuildZoomSubmenu()
     {
         int current = _launcher.ResolvedWebZoomPercent;
-        var submenu = new MenuFlyoutSubItem { Text = $"Zoom ({current}%)" };
+        var submenu = new MenuFlyoutSubItem { Text = UiText.Format("webMenu.zoom", ("percent", current)) };
 
         var reset = new MenuFlyoutItem
         {
-            Text = "Reset to 100%",
+            Text = UiText.Get("webMenu.zoomReset"),
             KeyboardAcceleratorTextOverride = "Ctrl+0",
             IsEnabled = current != 100,
         };
@@ -483,7 +484,7 @@ public sealed partial class WebFlyoutWindow
         {
             var item = new RadioMenuFlyoutItem
             {
-                Text = $"{level}%",
+                Text = UiText.Format("webMenu.zoomLevel", ("percent", level)),
                 GroupName = "WebZoom",
                 IsChecked = level == current,
             };
@@ -512,14 +513,14 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private MenuFlyoutSubItem BuildAnchorSubmenu()
     {
-        var submenu = new MenuFlyoutSubItem { Text = "Opens at" };
+        var submenu = new MenuFlyoutSubItem { Text = UiText.Get("webMenu.opensAt") };
 
         int current = WebAnchors.Normalize(_launcher.WebAnchor);
-        foreach (var (label, value) in AnchorChoices)
+        foreach (var (labelKey, value) in AnchorChoices)
         {
             var item = new RadioMenuFlyoutItem
             {
-                Text = label,
+                Text = UiText.Get(labelKey),
                 GroupName = "WebAnchor",
                 IsChecked = value == current,
             };
@@ -585,7 +586,7 @@ public sealed partial class WebFlyoutWindow
     /// <c>PinTooltip</c>. The menu spells them out where the header button only has a glyph.
     /// </remarks>
     private string PinMenuLabel() =>
-        _launcher.WebRegularWindow ? "Always on top" : "Stay open when focus is lost";
+        UiText.Get(_launcher.WebRegularWindow ? "webMenu.alwaysOnTop" : "webMenu.stayOpenOnFocusLoss");
 
     /// <summary>
     /// Applies a change of window mode to the live window.

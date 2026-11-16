@@ -1,0 +1,17 @@
+{
+  "taskbarPin.title": "Mostrar na barra de tarefas",
+  "taskbarPin.description": "Fixar um atalho na barra de tarefas para acesso rápido",
+  "taskbarPin.checking": "Verificando fixação na barra de tarefas…",
+  "taskbarPin.alreadyPinned": "Fixado na barra de tarefas.",
+  "taskbarPin.changedHint": "Desafixe e fixe novamente para aplicar estas alterações.",
+  "taskbarPin.detailsUnknown": "Fixado na barra de tarefas. Desafixe antes de fixar novamente.",
+  "taskbarPin.pin": "Fixar na barra de tarefas",
+  "taskbarPin.pinAgain": "Fixar novamente",
+  "taskbarPin.pinned": "Fixado",
+  "taskbarPin.companionMissing": "O executável complementar do painel suspenso não foi encontrado. Compile o projeto primeiro.",
+  "taskbarPin.helperNotStarted": "O auxiliar de fixação não foi iniciado.",
+  "taskbarPin.statusCheckFailed": "Não foi possível concluir a verificação de status da barra de tarefas. Feche estas configurações e tente novamente.",
+  "taskbarPin.unconfirmed": "O Windows não confirmou se este inicializador foi fixado. A fixação ainda pode aparecer.",
+  "taskbarPin.helperFailed": "O auxiliar de fixação não conseguiu concluir a solicitação. Consulte taskbar-pin.log para ver os detalhes.",
+  "taskbarPin.failed": "Não foi possível fixar este inicializador. {reason}"
+}

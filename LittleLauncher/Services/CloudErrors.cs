@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using System.Net;
 using System.Text.Json;
 
@@ -36,18 +37,45 @@ internal static class CloudErrors
         switch (status)
         {
             case HttpStatusCode.Unauthorized:
-                return $"{provider} rejected the sign-in. Sign in again.";
+                return UiText.Format("cloud.error.signInRejected", ("provider", provider));
             case HttpStatusCode.InsufficientStorage:
-                return $"The {provider} account is out of space.";
+                return UiText.Format("cloud.error.outOfSpace", ("provider", provider));
             case HttpStatusCode.TooManyRequests:
-                return $"{provider} is rate-limiting requests. Try again shortly.";
+                return UiText.Format("cloud.error.rateLimited", ("provider", provider));
         }
 
         string? serviceMessage = TryExtractMessage(body);
         if (!string.IsNullOrWhiteSpace(serviceMessage))
-            return $"{provider}: {serviceMessage}";
+            return UiText.Format("cloud.providerMessage", ("provider", provider), ("message", serviceMessage));
 
-        return $"{provider} {operation} failed ({(int)status}).";
+        return DescribeStatus(provider, operation, status);
+    }
+
+    /// <summary>
+    /// The plain "{provider} upload failed (500)." message, for a failure with nothing better to say.
+    /// </summary>
+    /// <param name="provider">Display name, e.g. "WebDAV".</param>
+    /// <param name="operation">The English operation word the stores log with, e.g. "upload".
+    /// Each known word has its own whole-sentence message so translations need not compose
+    /// fragments; an unknown word falls back to a generic "request failed".</param>
+    /// <param name="status">The HTTP status the server returned.</param>
+    public static string DescribeStatus(string provider, string operation, HttpStatusCode status)
+    {
+        string key = operation switch
+        {
+            "download" => "cloud.failed.download",
+            "upload" => "cloud.failed.upload",
+            "lookup" => "cloud.failed.lookup",
+            "create" => "cloud.failed.create",
+            "metadata" => "cloud.failed.metadata",
+            "publish" => "cloud.failed.publish",
+            "create a share link" => "cloud.failed.shareLink",
+            "read" => "cloud.failed.read",
+            "check" => "cloud.failed.check",
+            _ => "cloud.failed.request",
+        };
+
+        return UiText.Format(key, ("provider", provider), ("status", (int)status));
     }
 
     /// <summary>

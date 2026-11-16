@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using LittleLauncher.Localization;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -74,16 +75,15 @@ public static class OAuthPkceClient
     {
         using var listener = new HttpListener();
         HttpListenerContext? callback = null;
-        var result = new SignInResult(null, "Sign-in could not be completed. Try again.");
-        string phase = "opening the local callback listener";
+        var result = new SignInResult(null, UiText.Get("cloud.signIn.notCompleted"));
+        var phase = SignInPhase.Listener;
 
         try
         {
             ct.ThrowIfCancellationRequested();
             if (StartOnFreePort(listener, out string redirectUri) == 0)
             {
-                return new SignInResult(null,
-                    "Could not open the local sign-in callback listener. Try again.");
+                return new SignInResult(null, UiText.Get("cloud.signIn.listenerUnavailable"));
             }
 
             string verifier = CreateCodeVerifier();
@@ -92,10 +92,10 @@ public static class OAuthPkceClient
             string scope = string.IsNullOrWhiteSpace(scopeOverride) ? endpoint.Scope : scopeOverride;
             string authorizeUrl = BuildAuthorizeUrl(endpoint, redirectUri, challenge, scope, state);
 
-            phase = "opening the system browser";
+            phase = SignInPhase.Browser;
             openBrowser(authorizeUrl);
 
-            phase = "waiting for the browser callback";
+            phase = SignInPhase.Callback;
             callback = await WaitForCodeAsync(listener, state, callbackTimeout, ct);
             string? error = callback.Request.QueryString["error"];
             if (error != null)
@@ -104,41 +104,37 @@ public static class OAuthPkceClient
             }
             else
             {
-                phase = "exchanging the authorization code";
+                phase = SignInPhase.Exchange;
                 result = await ExchangeCodeAsync(
                     endpoint, callback.Request.QueryString["code"]!, verifier, redirectUri, scope, ct);
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            result = new SignInResult(null, "Sign-in was cancelled.");
+            result = new SignInResult(null, UiText.Get("cloud.signIn.cancelled"));
         }
         catch (TimeoutException)
         {
-            result = new SignInResult(null,
-                "Sign-in timed out waiting for the browser. Try again.");
+            result = new SignInResult(null, UiText.Get("cloud.signIn.browserTimeout"));
         }
         catch (OperationCanceledException)
         {
-            result = new SignInResult(null,
-                $"Sign-in timed out while {phase}. Check your connection and try again.");
+            result = new SignInResult(null, DescribePhaseFailure(PhaseFailure.TimedOut, phase));
         }
         catch (HttpRequestException)
         {
-            result = new SignInResult(null,
-                $"Sign-in could not reach the provider while {phase}. Check your connection and try again.");
+            result = new SignInResult(null, DescribePhaseFailure(PhaseFailure.Unreachable, phase));
         }
         catch (JsonException)
         {
-            result = new SignInResult(null,
-                "The provider returned an unreadable token response. Try signing in again.");
+            result = new SignInResult(null, UiText.Get("cloud.signIn.unreadableToken"));
         }
         catch (Exception ex)
         {
             // Exception messages can include request URLs or provider content. Only the phase
             // and exception type are safe diagnostics for this credential-bearing flow.
-            Logger.Warn($"OAuth sign-in failed while {phase} ({ex.GetType().Name})");
-            result = new SignInResult(null, $"Sign-in failed while {phase}. Try again.");
+            Logger.Warn($"OAuth sign-in failed while {DescribePhaseForLog(phase)} ({ex.GetType().Name})");
+            result = new SignInResult(null, DescribePhaseFailure(PhaseFailure.Failed, phase));
         }
         finally
         {
@@ -147,8 +143,8 @@ public static class OAuthPkceClient
                 // Token exchange may still fail after the provider redirects. Persistence is
                 // owned by the caller, so even a valid exchange asks the user to confirm in-app.
                 await RespondAsync(callback, result.Tokens != null
-                    ? "Authorization received. Return to Little Launcher to confirm sign-in."
-                    : "Sign-in was not completed. Return to Little Launcher for details.");
+                    ? UiText.Get("cloud.browserPage.authorized")
+                    : UiText.Get("cloud.browserPage.notCompleted"));
             }
 
             try { listener.Stop(); } catch { }
@@ -295,7 +291,7 @@ public static class OAuthPkceClient
                 }
 
                 await RespondAsync(context,
-                    "This request does not complete sign-in. Continue in the provider's browser tab.",
+                    UiText.Get("cloud.browserPage.unrelatedRequest"),
                     HttpStatusCode.BadRequest);
             }
         }
@@ -347,12 +343,12 @@ public static class OAuthPkceClient
     /// <summary>Describe only known OAuth errors; never echo provider-controlled text.</summary>
     private static string DescribeAuthorizationError(string error) => error switch
     {
-        "access_denied" => "Sign-in permission was declined (access_denied). Try again and accept the requested permission.",
-        "admin_policy_enforced" => "Your administrator blocked this sign-in (admin_policy_enforced).",
-        "org_internal" => "This app is restricted to another organization (org_internal).",
-        "temporarily_unavailable" => "The provider is temporarily unavailable. Try signing in again shortly.",
-        "server_error" => "The provider could not complete sign-in (server_error). Try again shortly.",
-        _ => "The provider did not authorize sign-in. Try again.",
+        "access_denied" => UiText.Get("cloud.authError.accessDenied"),
+        "admin_policy_enforced" => UiText.Get("cloud.authError.adminPolicy"),
+        "org_internal" => UiText.Get("cloud.authError.orgInternal"),
+        "temporarily_unavailable" => UiText.Get("cloud.authError.temporarilyUnavailable"),
+        "server_error" => UiText.Get("cloud.authError.serverError"),
+        _ => UiText.Get("cloud.authError.notAuthorized"),
     };
 
     private static async Task<SignInResult> ExchangeCodeAsync(
@@ -428,7 +424,7 @@ public static class OAuthPkceClient
 
         string access = root.TryGetProperty("access_token", out var a) ? a.GetString() ?? "" : "";
         if (string.IsNullOrWhiteSpace(access))
-            return new SignInResult(null, "The provider returned no access token. Try signing in again.");
+            return new SignInResult(null, UiText.Get("cloud.signIn.noAccessToken"));
 
         string refresh = root.TryGetProperty("refresh_token", out var r) ? r.GetString() ?? "" : "";
         if (refresh.Length == 0 && existingRefreshToken != null)
@@ -472,20 +468,64 @@ public static class OAuthPkceClient
 
         string detail = error switch
         {
-            "invalid_client" => "The provider rejected the app's OAuth credentials (invalid_client).",
-            "invalid_grant" => "The provider rejected the authorization code or grant (invalid_grant). Try signing in again.",
-            "invalid_request" => "The provider rejected the token request (invalid_request).",
-            "unauthorized_client" => "The provider does not allow this app to complete authorization (unauthorized_client).",
-            "unsupported_grant_type" => "The provider rejected the authorization method (unsupported_grant_type).",
-            "invalid_scope" => "The provider rejected the requested permission (invalid_scope).",
-            "access_denied" => "The provider declined authorization (access_denied).",
-            "temporarily_unavailable" => "The provider is temporarily unavailable. Try again shortly.",
-            "server_error" => "The provider could not complete the token request (server_error). Try again shortly.",
-            _ => "The provider rejected the token request. Try signing in again.",
+            "invalid_client" => UiText.Get("cloud.tokenError.invalidClient"),
+            "invalid_grant" => UiText.Get("cloud.tokenError.invalidGrant"),
+            "invalid_request" => UiText.Get("cloud.tokenError.invalidRequest"),
+            "unauthorized_client" => UiText.Get("cloud.tokenError.unauthorizedClient"),
+            "unsupported_grant_type" => UiText.Get("cloud.tokenError.unsupportedGrantType"),
+            "invalid_scope" => UiText.Get("cloud.tokenError.invalidScope"),
+            "access_denied" => UiText.Get("cloud.tokenError.accessDenied"),
+            "temporarily_unavailable" => UiText.Get("cloud.tokenError.temporarilyUnavailable"),
+            "server_error" => UiText.Get("cloud.tokenError.serverError"),
+            _ => UiText.Get("cloud.tokenError.rejected"),
         };
 
-        return $"{detail} HTTP {(int)status}.";
+        return UiText.Format("cloud.tokenError.withStatus", ("detail", detail), ("status", (int)status));
     }
+
+    // ── Sign-in phases ─────────────────────────────────────────────
+
+    /// <summary>Which step of the browser sign-in was running when it stopped.</summary>
+    private enum SignInPhase { Listener, Browser, Callback, Exchange }
+
+    /// <summary>How a sign-in phase ended without tokens.</summary>
+    private enum PhaseFailure { TimedOut, Unreachable, Failed }
+
+    /// <summary>
+    /// The user-facing message for a phase that timed out, could not reach the provider or failed
+    /// otherwise. Each combination is a whole sentence so translations never assemble fragments.
+    /// </summary>
+    private static string DescribePhaseFailure(PhaseFailure failure, SignInPhase phase)
+    {
+        string key = (failure, phase) switch
+        {
+            (PhaseFailure.TimedOut, SignInPhase.Listener) => "cloud.signInTimedOut.listener",
+            (PhaseFailure.TimedOut, SignInPhase.Browser) => "cloud.signInTimedOut.browser",
+            (PhaseFailure.TimedOut, SignInPhase.Callback) => "cloud.signInTimedOut.callback",
+            (PhaseFailure.TimedOut, _) => "cloud.signInTimedOut.exchange",
+
+            (PhaseFailure.Unreachable, SignInPhase.Listener) => "cloud.signInUnreachable.listener",
+            (PhaseFailure.Unreachable, SignInPhase.Browser) => "cloud.signInUnreachable.browser",
+            (PhaseFailure.Unreachable, SignInPhase.Callback) => "cloud.signInUnreachable.callback",
+            (PhaseFailure.Unreachable, _) => "cloud.signInUnreachable.exchange",
+
+            (_, SignInPhase.Listener) => "cloud.signInFailed.listener",
+            (_, SignInPhase.Browser) => "cloud.signInFailed.browser",
+            (_, SignInPhase.Callback) => "cloud.signInFailed.callback",
+            _ => "cloud.signInFailed.exchange",
+        };
+
+        return UiText.Get(key);
+    }
+
+    /// <summary>The phase in English for the diagnostic log, which is not translated.</summary>
+    private static string DescribePhaseForLog(SignInPhase phase) => phase switch
+    {
+        SignInPhase.Listener => "opening the local callback listener",
+        SignInPhase.Browser => "opening the system browser",
+        SignInPhase.Callback => "waiting for the browser callback",
+        _ => "exchanging the authorization code",
+    };
 
     // ── PKCE ────────────────────────────────────────────────────────
 

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using LittleLauncher.Localization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -47,8 +48,8 @@ public static class OneDriveSharedStore
     /// </summary>
     public static async Task<(bool Success, string Message)> PushAsync(Launcher launcher)
     {
-        if (!Store.IsSignedIn) return (false, "Sign in to OneDrive first.");
-        if (!HasConsent) return (false, "OneDrive sharing permission has not been granted yet.");
+        if (!Store.IsSignedIn) return (false, UiText.Get("sharing.oneDrive.signInFirst"));
+        if (!HasConsent) return (false, UiText.Get("sharing.oneDrive.consentMissing"));
 
         try
         {
@@ -81,12 +82,12 @@ public static class OneDriveSharedStore
             }
 
             Logger.Info($"Shared launcher '{launcher.Name}' published to OneDrive");
-            return (true, "Published to OneDrive.");
+            return (true, UiText.Get("sharing.oneDrive.published"));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"OneDrive share push failed for '{launcher.Name}'");
-            return (false, $"Sync failed: {ex.Message}");
+            return (false, UiText.Format("sharing.syncFailed", ("error", ex.Message)));
         }
     }
 
@@ -120,7 +121,7 @@ public static class OneDriveSharedStore
 
         return link is { Length: > 0 }
             ? (true, link)
-            : (false, "OneDrive did not return a share link.");
+            : (false, UiText.Get("sharing.oneDrive.noShareLink"));
     }
 
     // ── Subscriber ──────────────────────────────────────────────────
@@ -128,12 +129,12 @@ public static class OneDriveSharedStore
     /// <summary>Fetch the shared items and apply them.</summary>
     public static async Task<(bool Success, string Message)> PullAsync(Launcher launcher)
     {
-        if (!Store.IsSignedIn) return (false, "Sign in to OneDrive first.");
+        if (!Store.IsSignedIn) return (false, UiText.Get("sharing.oneDrive.signInFirst"));
 
         try
         {
             if (!await EnsureResolvedAsync(launcher))
-                return (false, "Could not resolve that OneDrive share link.");
+                return (false, UiText.Get("sharing.oneDrive.linkUnresolved"));
 
             using var request = await AuthorizedAsync(
                 HttpMethod.Get,
@@ -141,33 +142,33 @@ public static class OneDriveSharedStore
 
             using var response = await Http.SendAsync(request);
             if (response.StatusCode == HttpStatusCode.NotFound)
-                return (false, "The shared launcher file no longer exists.");
+                return (false, UiText.Get("sharing.fileNoLongerExists"));
             if (!response.IsSuccessStatusCode)
                 return (false, await DescribeAsync(response, "download"));
 
             var file = SharedLauncherPayload.Deserialize(await response.Content.ReadAsByteArrayAsync());
-            if (file == null) return (false, "Could not parse the shared launcher file.");
+            if (file == null) return (false, UiText.Get("sharing.couldNotParse"));
 
             await SharedLauncherPayload.ApplyAsync(launcher, file);
-            return (true, "Shared launcher updated.");
+            return (true, UiText.Get("sharing.updated"));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"OneDrive share pull failed for '{launcher.Name}'");
-            return (false, $"Sync failed: {ex.Message}");
+            return (false, UiText.Format("sharing.syncFailed", ("error", ex.Message)));
         }
     }
 
     /// <summary>Check a link resolves and holds valid data, before someone subscribes to it.</summary>
     public static async Task<(bool Success, int ItemCount, string Error)> VerifyAsync(Launcher launcher)
     {
-        if (!Store.IsSignedIn) return (false, 0, "Sign in to OneDrive first.");
-        if (launcher.SharedLinkUrl.Length == 0) return (false, 0, "Paste the share link.");
+        if (!Store.IsSignedIn) return (false, 0, UiText.Get("sharing.oneDrive.signInFirst"));
+        if (launcher.SharedLinkUrl.Length == 0) return (false, 0, UiText.Get("sharing.oneDrive.pasteLink"));
 
         try
         {
             if (!await EnsureResolvedAsync(launcher))
-                return (false, 0, "That link could not be opened. Check it was copied in full.");
+                return (false, 0, UiText.Get("sharing.oneDrive.linkUnopenable"));
 
             using var request = await AuthorizedAsync(
                 HttpMethod.Get,
@@ -179,7 +180,7 @@ public static class OneDriveSharedStore
 
             var file = SharedLauncherPayload.Deserialize(await response.Content.ReadAsByteArrayAsync());
             return file == null
-                ? (false, 0, "The file exists but could not be parsed.")
+                ? (false, 0, UiText.Get("sharing.verify.fileUnreadable"))
                 : (true, file.Items.Count, "");
         }
         catch (Exception ex)
@@ -243,7 +244,7 @@ public static class OneDriveSharedStore
     {
         string? token = await OAuthPkceClient.GetAccessTokenAsync(Provider, OneDriveEndpoint);
         if (token == null)
-            throw new InvalidOperationException("Not signed in to OneDrive. Sign in again to continue.");
+            throw new InvalidOperationException(UiText.Format("cloud.signInAgain", ("provider", "OneDrive")));
 
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

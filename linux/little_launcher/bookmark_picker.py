@@ -2,6 +2,7 @@
 from pathlib import Path
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox,QDialog,QDialogButtonBox,QFileDialog,QHBoxLayout,QLabel,QLineEdit,QTreeWidget,QTreeWidgetItem,QVBoxLayout,QPushButton
+from . import i18n
 from .browser_bookmarks import BookmarkSource,read_bookmarks,sources
 from .document import DocumentError
 
@@ -9,21 +10,23 @@ class BookmarkPicker(QDialog):
     def __init__(self,parent=None,catalog=None,*,multiple=False):
         super().__init__(parent)
         self.multiple=multiple;self.checked=set();self.visible_rows={};self.loading=False
-        self.setWindowTitle('Import Browser Bookmarks' if multiple else 'Choose a browser bookmark');self.resize(560,520)
+        # The chosen-file source name is also its combo identity, so resolve it once per dialog.
+        self.file_source_name=i18n.t('bookmarkPicker.bookmarkFile')
+        self.setWindowTitle(i18n.t('launchers.bookmarks.importTitle') if multiple else i18n.t('bookmarkPicker.title'));self.resize(560,520)
         self.catalog=sources() if catalog is None else catalog
         self.records=[]
         layout=QVBoxLayout(self);layout.setContentsMargins(20,16,20,16);layout.setSpacing(12)
         row=QHBoxLayout();self.browser=QComboBox();self.profile=QComboBox()
         row.addWidget(self.browser,1);row.addWidget(self.profile,1);layout.addLayout(row)
-        self.search=QLineEdit();self.search.setPlaceholderText('Search bookmarks');layout.addWidget(self.search)
-        self.list=QTreeWidget();self.list.setColumnCount(2);self.list.setHeaderLabels(['Name','Address']);self.list.setRootIsDecorated(False)
+        self.search=QLineEdit();self.search.setPlaceholderText(i18n.t('bookmarkPicker.search'));layout.addWidget(self.search)
+        self.list=QTreeWidget();self.list.setColumnCount(2);self.list.setHeaderLabels([i18n.t('common.name'),i18n.t('common.address')]);self.list.setRootIsDecorated(False)
         self.list.setColumnWidth(0,220);layout.addWidget(self.list,1)
         if multiple:
-            actions=QHBoxLayout();select=QPushButton('Select visible');clear=QPushButton('Clear selection')
+            actions=QHBoxLayout();select=QPushButton(i18n.t('bookmarkPicker.selectVisible'));clear=QPushButton(i18n.t('bookmarkPicker.clearSelection'))
             select.clicked.connect(self.select_visible);clear.clicked.connect(self.clear_selection);actions.addWidget(select);actions.addWidget(clear);actions.addStretch();layout.addLayout(actions)
         self.status=QLabel();self.status.setWordWrap(True);layout.addWidget(self.status)
-        footer=QHBoxLayout();browse=QPushButton('Choose bookmark file…');browse.clicked.connect(self.choose_file);footer.addWidget(browse);footer.addStretch()
-        buttons=QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel);self.confirm=buttons.button(QDialogButtonBox.Ok);self.confirm.setText('Import selected' if multiple else 'Select');self.confirm.setEnabled(False)
+        footer=QHBoxLayout();browse=QPushButton(i18n.t('bookmarkPicker.chooseFile'));browse.clicked.connect(self.choose_file);footer.addWidget(browse);footer.addStretch()
+        buttons=QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel);self.confirm=buttons.button(QDialogButtonBox.Ok);self.confirm.setText(i18n.t('bookmarkPicker.importSelected') if multiple else i18n.t('bookmarkPicker.use'));self.confirm.setEnabled(False)
         buttons.accepted.connect(self.accept);buttons.rejected.connect(self.reject);footer.addWidget(buttons);layout.addLayout(footer)
         self.browser.currentIndexChanged.connect(self.populate_profiles);self.profile.currentIndexChanged.connect(self.load)
         self.search.textChanged.connect(self.filter)
@@ -31,7 +34,7 @@ class BookmarkPicker(QDialog):
         self.list.itemChanged.connect(self.save_checks)
         if not multiple:self.list.itemDoubleClicked.connect(lambda *_:self.accept())
         self.browser.addItems(list(dict.fromkeys(source.browser for source in self.catalog)))
-        if not self.catalog:self.status.setText('No supported browser profiles found. Choose an exported Chrome/Edge bookmark JSON, Firefox places.sqlite, or bookmark HTML file.')
+        if not self.catalog:self.status.setText(i18n.t('bookmarkPicker.noSources'))
         self.search.setFocus()
 
     def populate_profiles(self):
@@ -42,7 +45,7 @@ class BookmarkPicker(QDialog):
     def load(self):
         source=self.profile.currentData();self.records=[];self.checked.clear()
         if source:
-            try:self.records=read_bookmarks(source.path);self.status.setText(f'{len(self.records)} bookmarks. Select one to continue.')
+            try:self.records=read_bookmarks(source.path);self.status.setText(i18n.plural('bookmarkPicker.loadedCount',len(self.records)))
             except DocumentError as error:self.status.setText(str(error))
         self.filter()
 
@@ -84,7 +87,7 @@ class BookmarkPicker(QDialog):
 
     def update_selection(self):
         self.confirm.setEnabled(bool(self.checked) if self.multiple else False)
-        if self.multiple and self.records:self.status.setText(f'{len(self.records)} bookmarks. {len(self.checked)} selected. Search keeps your selection.')
+        if self.multiple and self.records:self.status.setText(i18n.plural('bookmarkPicker.selectionStatus',len(self.records),selected=len(self.checked)))
 
     def select_visible(self):
         self.checked.update(self.visible_rows);self.filter()
@@ -93,11 +96,11 @@ class BookmarkPicker(QDialog):
         self.checked.clear();self.filter()
 
     def choose_file(self):
-        path,_=QFileDialog.getOpenFileName(self,'Choose bookmark file',filter='Bookmarks (Bookmarks *.json *.html *.htm *.sqlite *.db);;All files (*)')
+        path,_=QFileDialog.getOpenFileName(self,i18n.t('bookmarkPicker.chooseFileTitle'),filter=i18n.t('bookmarkPicker.fileFilter')+' (Bookmarks *.json *.html *.htm *.sqlite *.db);;'+i18n.t('prompts.fileFilter.all')+' (*)')
         if not path:return
-        self.catalog.append(BookmarkSource('Bookmark file',path.rsplit('/',1)[-1],Path(path)))
-        if self.browser.findText('Bookmark file')<0:self.browser.addItem('Bookmark file')
-        self.browser.setCurrentText('Bookmark file');self.populate_profiles();self.profile.setCurrentIndex(self.profile.count()-1)
+        self.catalog.append(BookmarkSource(self.file_source_name,path.rsplit('/',1)[-1],Path(path)))
+        if self.browser.findText(self.file_source_name)<0:self.browser.addItem(self.file_source_name)
+        self.browser.setCurrentText(self.file_source_name);self.populate_profiles();self.profile.setCurrentIndex(self.profile.count()-1)
 
     def selected(self):
         item=self.list.currentItem()
@@ -105,10 +108,10 @@ class BookmarkPicker(QDialog):
 
     def value(self):
         if self.multiple:
-            if not self.checked:raise DocumentError('Select at least one bookmark.')
+            if not self.checked:raise DocumentError(i18n.t('bookmarkPicker.selectAtLeastOne'))
             return [{'Name':record['Name'],'Url':record['Url']} for index,record in enumerate(self.records) if index in self.checked]
         selected=self.selected()
-        if not selected:raise DocumentError('Select a bookmark.')
+        if not selected:raise DocumentError(i18n.t('bookmarkPicker.selectOne'))
         return {'Name':selected['Name'],'Url':selected['Url']}
 
     def accept(self):

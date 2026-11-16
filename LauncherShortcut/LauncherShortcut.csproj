@@ -16,4 +16,14 @@
   <ItemGroup>
     <Compile Include="..\Shared\PinSnapshot.cs" Link="Shared\PinSnapshot.cs" />
   </ItemGroup>
+
+  <!-- Interface language, shared with the main app; see docs/localization.md. Only the
+       companion's own wording and the generic words are embedded, keeping the AOT exe small.
+       Logical names match LittleLauncher.csproj (RecursiveDir keeps the locale folder). -->
+  <ItemGroup>
+    <Compile Include="..\Shared\SupportedLanguages.cs" Link="Localization\SupportedLanguages.cs" />
+    <Compile Include="..\Shared\UiText.cs" Link="Localization\UiText.cs" />
+    <EmbeddedResource Include="..\Shared\Localization\**\pinning.json;..\Shared\Localization\**\common.json"
+                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.ViewModels;
 using Microsoft.UI.Xaml;
@@ -25,7 +26,7 @@ internal static class AppPickerRowActions
         var menu = new MenuFlyout();
         var open = new MenuFlyoutItem
         {
-            Text = (string)Application.Current.Resources["AppPickerOpen"],
+            Text = UiText.Get("common.open"),
             Icon = new SymbolIcon(Symbol.OpenFile)
         };
         open.Click += (_, _) => FlyoutWindow.Launch(new LauncherItem
@@ -40,7 +41,7 @@ internal static class AppPickerRowActions
         var folder = entry.ContainingFolder;
         var openFolder = new MenuFlyoutItem
         {
-            Text = (string)Application.Current.Resources["AppPickerOpenContainingFolder"],
+            Text = UiText.Get("appPicker.openContainingFolder"),
             Icon = new SymbolIcon(Symbol.Folder),
             IsEnabled = folder != null && Directory.Exists(folder)
         };

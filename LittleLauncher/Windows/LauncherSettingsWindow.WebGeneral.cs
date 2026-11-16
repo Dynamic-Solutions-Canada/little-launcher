@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Launcher = LittleLauncher.Models.Launcher;
@@ -39,7 +40,7 @@ public sealed partial class LauncherSettingsWindow
         // the same reason, and two labels for one action reads as two features.
         var bookmarkButton = new Button
         {
-            Content = "From browser…",
+            Content = UiText.Get("launcherSettings.webAddress.fromBrowser"),
             Margin = new Thickness(8, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center,
         };
@@ -68,7 +69,7 @@ public sealed partial class LauncherSettingsWindow
         // Still the first field of the form, because it is the one a launcher cannot work without
         // and the one a new launcher is opened to fill in. It edits the first bookmark; the list
         // below shows the same entry marked as the address, so neither is a second source of truth.
-        var urlRow = BuildStackedRow("Web Address", "The page this launcher opens", urlControls);
+        var urlRow = BuildStackedRow(UiText.Get("launcherSettings.webAddress.title"), UiText.Get("launcherSettings.webAddress.description"), urlControls);
 
         return urlRow;
     }

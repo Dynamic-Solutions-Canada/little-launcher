@@ -1,0 +1,20 @@
+{
+  "pinning.promptReminder": "Achte auf die Anheften-Abfrage von Windows.",
+  "pinning.manualInstructions": "{reason}\n\nKlicke mit der rechten Maustaste auf das Taskleistensymbol dieses Launchers und wähle „An Taskleiste anheften“.\n\nKlicke erst nach dem Anheften auf OK, oder auf Abbrechen, um die gespeicherte Anheftung unverändert zu lassen.",
+  "pinning.reason.unavailable": "Natives Anheften ist nicht verfügbar.",
+  "pinning.reason.manualRequested": "Hefte diesen Launcher manuell an.",
+  "pinning.reason.prepareFailed": "Windows konnte das native Anheften nicht vorbereiten. Du kannst diesen Launcher manuell anheften.",
+  "pinning.reason.packageIdentity": "Windows hat dieses Hilfsprogramm mit Paketidentität gestartet, daher kann natives Anheften nicht auf diesen einzelnen Launcher zielen.",
+  "pinning.reason.restrictedAccess": "Diese Windows-Version erfordert eingeschränkten Zugriff für natives Anheften. Du kannst diesen Launcher manuell anheften.",
+  "pinning.reason.unsupported": "Diese Windows-Version unterstützt kein natives Anheften aus Desktop-Apps.",
+  "pinning.reason.startFailed": "Windows konnte das native Anheften nicht starten.",
+  "pinning.reason.checkFailed": "Windows konnte nicht prüfen, ob dieser Launcher angeheftet ist.",
+  "pinning.reason.checkTimedOut": "Windows hat zu lange gebraucht, um diesen Launcher zu prüfen. Du kannst ihn manuell anheften.",
+  "pinning.reason.needsForeground": "Bring diesen Launcher in den Vordergrund, um ihn manuell anzuheften.",
+  "pinning.reason.requestBlocked": "Windows lässt gerade keine native Anheft-Anfrage zu.",
+  "pinning.reason.offerFailed": "Windows konnte natives Anheften nicht anbieten. Du kannst diesen Launcher manuell anheften.",
+  "pinning.replace.title": "Taskleisten-Anheftung ersetzen",
+  "pinning.replace.detailsChanged": "Dieser Launcher ist noch angeheftet. Sein Name, Symbol oder seine Startdetails haben sich geändert.",
+  "pinning.replace.detailsUnknown": "Dieser Launcher ist noch angeheftet. Seine vorherigen Details konnten nicht verglichen werden. Klicke auf Abbrechen, um die bestehende Anheftung zu behalten.",
+  "pinning.replace.message": "{explanation}\n\nLöse die Anheftung, indem du mit der rechten Maustaste darauf klickst und „Von Taskleiste lösen“ wählst. Klicke auf OK, wenn keine mehr vorhanden ist, um neu anzuheften, oder auf Abbrechen, um aufzuhören."
+}

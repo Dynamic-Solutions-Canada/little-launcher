@@ -1,4 +1,5 @@
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Services;
 using LittleLauncher.Windows;
@@ -54,7 +55,7 @@ internal static class LauncherBulkOps
         InitializePicker(picker);
         picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
         picker.SuggestedFileName = "launcher-items";
-        picker.FileTypeChoices.Add("JSON files", [".json"]);
+        picker.FileTypeChoices.Add(UiText.Get("launchers.bulk.jsonFiles"), [".json"]);
 
         var file = await picker.PickSaveFileAsync();
         if (file == null) return;
@@ -67,7 +68,7 @@ internal static class LauncherBulkOps
         }
         catch (Exception ex)
         {
-            await ShowMessageAsync(xamlRoot, "Export Failed", ex.Message);
+            await ShowMessageAsync(xamlRoot, UiText.Get("launchers.bulk.exportFailed"), ex.Message);
         }
     }
 
@@ -99,24 +100,26 @@ internal static class LauncherBulkOps
         }
         catch (Exception ex)
         {
-            await ShowMessageAsync(xamlRoot, "Import Failed", $"Could not read the file: {ex.Message}");
+            await ShowMessageAsync(xamlRoot,
+                UiText.Get("launchers.bulk.importFailed"),
+                UiText.Format("launchers.bulk.readFailed", ("error", ex.Message)));
             return;
         }
 
         if (imported == null || imported.Count == 0)
         {
-            await ShowMessageAsync(xamlRoot, "Import", "The file contained no items.");
+            await ShowMessageAsync(xamlRoot, UiText.Get("launchers.bulk.importTitle"), UiText.Get("launchers.bulk.noItems"));
             return;
         }
 
         var modeDialog = new ContentDialog
         {
             XamlRoot = xamlRoot,
-            Title = "Import Items",
-            Content = $"Found {imported.Count} item(s). Replace all existing items or add to the current list?",
-            PrimaryButtonText = "Replace",
-            SecondaryButtonText = "Add",
-            CloseButtonText = "Cancel"
+            Title = UiText.Get("launchers.bulk.importItemsTitle"),
+            Content = UiText.Plural("launchers.bulk.foundItems", imported.Count),
+            PrimaryButtonText = UiText.Get("launchers.bulk.replace"),
+            SecondaryButtonText = UiText.Get("common.add"),
+            CloseButtonText = UiText.Get("common.cancel")
         };
 
         var result = await modeDialog.ShowAsync();
@@ -146,7 +149,7 @@ internal static class LauncherBulkOps
             XamlRoot = xamlRoot,
             Title = title,
             Content = message,
-            CloseButtonText = "OK"
+            CloseButtonText = UiText.Get("common.ok")
         };
         await dialog.ShowAsync();
     }
@@ -169,9 +172,9 @@ internal static class LauncherBulkOps
             var d = new ContentDialog
             {
                 XamlRoot = xamlRoot,
-                Title = "No Supported Browsers Found",
-                Content = "No supported browsers were found. Bookmark import supports Microsoft Edge, Google Chrome, Brave, Vivaldi, Chromium, Firefox, Zen, Waterfox, and LibreWolf.",
-                CloseButtonText = "OK"
+                Title = UiText.Get("launchers.bookmarks.noBrowsersTitle"),
+                Content = UiText.Get("launchers.bookmarks.noBrowsersMessage"),
+                CloseButtonText = UiText.Get("common.ok")
             };
             await d.ShowAsync();
             return;
@@ -195,9 +198,9 @@ internal static class LauncherBulkOps
                 var d = new ContentDialog
                 {
                     XamlRoot = xamlRoot,
-                    Title = "No Bookmarks Found",
-                    Content = $"No web bookmarks were found in the selected {lastBrowser.DisplayName} profile.",
-                    CloseButtonText = "OK"
+                    Title = UiText.Get("launchers.bookmarks.noBookmarksTitle"),
+                    Content = UiText.Format("launchers.bookmarks.noBookmarksMessage", ("browser", lastBrowser.DisplayName)),
+                    CloseButtonText = UiText.Get("common.ok")
                 };
                 await d.ShowAsync();
                 continue;
@@ -234,7 +237,7 @@ internal static class LauncherBulkOps
     {
         var browserCombo = new ComboBox
         {
-            PlaceholderText = "Select browser",
+            PlaceholderText = UiText.Get("launchers.bookmarks.selectBrowser"),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         foreach (var b in browsers)
@@ -242,7 +245,7 @@ internal static class LauncherBulkOps
 
         var profileCombo = new ComboBox
         {
-            PlaceholderText = "Select profile",
+            PlaceholderText = UiText.Get("launchers.bookmarks.selectProfile"),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             IsEnabled = false
         };
@@ -252,9 +255,9 @@ internal static class LauncherBulkOps
         var dialog = new ContentDialog
         {
             XamlRoot = xamlRoot,
-            Title = "Import Browser Bookmarks",
-            PrimaryButtonText = "Next",
-            CloseButtonText = "Cancel",
+            Title = UiText.Get("launchers.bookmarks.importTitle"),
+            PrimaryButtonText = UiText.Get("common.next"),
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Primary,
             IsPrimaryButtonEnabled = false
         };
@@ -269,7 +272,7 @@ internal static class LauncherBulkOps
             currentProfiles = BrowserCatalog.GetBrowserProfiles(browser.ProfileDataDir, browser.Engine);
             if (currentProfiles.Count == 0)
             {
-                profileCombo.PlaceholderText = "No profiles found";
+                profileCombo.PlaceholderText = UiText.Get("bookmarkPicker.noProfiles");
                 dialog.IsPrimaryButtonEnabled = false;
                 return;
             }
@@ -305,17 +308,17 @@ internal static class LauncherBulkOps
         }
 
         var browserGroup = new StackPanel { Spacing = 4 };
-        browserGroup.Children.Add(new TextBlock { Text = "Browser", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        browserGroup.Children.Add(new TextBlock { Text = UiText.Get("bookmarkPicker.browser"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         browserGroup.Children.Add(browserCombo);
 
         var profileGroup = new StackPanel { Spacing = 4 };
-        profileGroup.Children.Add(new TextBlock { Text = "Profile", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        profileGroup.Children.Add(new TextBlock { Text = UiText.Get("bookmarkPicker.profile"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         profileGroup.Children.Add(profileCombo);
 
         var content = new StackPanel { Spacing = 16, MinWidth = 380 };
         content.Children.Add(new TextBlock
         {
-            Text = "Select a browser and profile to import bookmarks from.",
+            Text = UiText.Get("launchers.bookmarks.sourceIntro"),
             TextWrapping = TextWrapping.WrapWholeWords,
             Opacity = 0.7
         });
@@ -365,7 +368,7 @@ internal static class LauncherBulkOps
 
         var searchBox = new TextBox
         {
-            PlaceholderText = "Search bookmarks",
+            PlaceholderText = UiText.Get("bookmarkPicker.search"),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
 
@@ -374,7 +377,7 @@ internal static class LauncherBulkOps
             VerticalAlignment = VerticalAlignment.Center,
             Opacity = 0.7,
             FontSize = 13,
-            Text = "None selected"
+            Text = UiText.Get("launchers.bookmarks.noneSelected")
         };
 
         var matchCountText = new TextBlock
@@ -387,10 +390,10 @@ internal static class LauncherBulkOps
         var dialog = new ContentDialog
         {
             XamlRoot = xamlRoot,
-            Title = $"Select Bookmarks ({totalCount})",
-            PrimaryButtonText = "Import",
-            SecondaryButtonText = "← Back",
-            CloseButtonText = "Cancel",
+            Title = UiText.Format("launchers.bookmarks.selectTitle", ("count", totalCount)),
+            PrimaryButtonText = UiText.Get("launchers.bookmarks.import"),
+            SecondaryButtonText = UiText.Get("launchers.bookmarks.back"),
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Primary,
             IsPrimaryButtonEnabled = false
         };
@@ -409,10 +412,16 @@ internal static class LauncherBulkOps
         void UpdateCount(int shown)
         {
             int count = chosen.Count;
-            selectedCountText.Text = count > 0 ? $"{count} selected" : "None selected";
+            selectedCountText.Text = count > 0
+                ? UiText.Format("launchers.bookmarks.selectedCount", ("count", count))
+                : UiText.Get("launchers.bookmarks.noneSelected");
             dialog.IsPrimaryButtonEnabled = count > 0;
-            dialog.PrimaryButtonText = count > 0 ? $"Import {count}" : "Import";
-            matchCountText.Text = shown == totalCount ? "" : $"showing {shown} of {totalCount}";
+            dialog.PrimaryButtonText = count > 0
+                ? UiText.Format("launchers.bookmarks.importCount", ("count", count))
+                : UiText.Get("launchers.bookmarks.import");
+            matchCountText.Text = shown == totalCount
+                ? ""
+                : UiText.Format("launchers.bookmarks.showingCount", ("shown", shown), ("total", totalCount));
         }
 
         // The tree speaks only for the rows it is showing; anything filtered out keeps its state.
@@ -517,8 +526,8 @@ internal static class LauncherBulkOps
 
         // Both act on what is currently shown, so "Select All" under a search means "select all
         // matches" — which is the reason to search before selecting in the first place.
-        var selectAllButton = new HyperlinkButton { Content = "Select All", Padding = new Thickness(0) };
-        var deselectAllButton = new HyperlinkButton { Content = "Deselect All", Padding = new Thickness(0) };
+        var selectAllButton = new HyperlinkButton { Content = UiText.Get("launchers.bookmarks.selectAll"), Padding = new Thickness(0) };
+        var deselectAllButton = new HyperlinkButton { Content = UiText.Get("launchers.bookmarks.deselectAll"), Padding = new Thickness(0) };
 
         selectAllButton.Click += (_, _) =>
         {

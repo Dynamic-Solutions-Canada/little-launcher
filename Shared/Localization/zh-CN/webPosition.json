@@ -1,0 +1,18 @@
+{
+  "webPosition.moveTo": "移动到",
+  "webPosition.anchor.tray": "托盘图标附近",
+  "webPosition.anchor.lastPosition": "上次拖动到的位置",
+  "webPosition.anchor.topLeft": "左上",
+  "webPosition.anchor.topCenter": "顶部居中",
+  "webPosition.anchor.topRight": "右上",
+  "webPosition.anchor.left": "左侧",
+  "webPosition.anchor.center": "居中",
+  "webPosition.anchor.right": "右侧",
+  "webPosition.anchor.bottomLeft": "左下",
+  "webPosition.anchor.bottomCenter": "底部居中",
+  "webPosition.anchor.bottomRight": "右下",
+  "webPosition.pickerIntro": "选择此启动器在其托盘图标所在屏幕上的打开位置。",
+  "webPosition.pickerNotice": "拖动后的位置仅保存在此设备上。需要 KDE 桌面集成。",
+  "webPosition.saveFailed": "无法保存拖动后的窗口位置。",
+  "webPosition.clearFailed": "无法清除之前拖动的窗口位置。"
+}

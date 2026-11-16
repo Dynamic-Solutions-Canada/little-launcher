@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -14,7 +15,6 @@ internal static unsafe class TaskbarPinning
 {
     private const string LafKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModel\LimitedAccessFeatures\com.microsoft.windows.taskbar.pin";
     private const string LafSeed = "4096B239A7295B635C090E647E867B5707DA6AB6CB78340B01FE4E0C8F4953D4";
-    private const string ManualMessage = "Right-click this launcher's taskbar icon and choose \"Pin to taskbar\".\n\nClick OK only after pinning it, or Cancel to leave the saved pin unchanged.";
     private static readonly TimerProc TimerCallback = OnTimer;
     private static nint _manager;
     private static nint _operation;
@@ -37,9 +37,13 @@ internal static unsafe class TaskbarPinning
     private static Action<int>? _complete;
     private static PinShortcut? _shortcut;
     private static string? _pendingPath;
-    private static string _reason = "Native pinning is unavailable.";
+    // A catalog key rather than text, so the diagnostic log stays in English and the message is
+    // read in the user's language only when the manual fallback is actually shown.
+    private static string _reasonKey = "pinning.reason.unavailable";
 
-    internal static string InitialMessage => _reason + "\n\n" + ManualMessage;
+    /// <summary>Why native pinning was not used, followed by the manual pinning instructions.</summary>
+    internal static string InitialMessage =>
+        UiText.Format("pinning.manualInstructions", ("reason", UiText.Get(_reasonKey)));
 
     /// <summary>Runs a compact foreground card pointing to Windows confirmation, with no action buttons.</summary>
     internal static int RunNativeWindow(string name, string icon, Action<nint> stampIdentity)
@@ -117,7 +121,7 @@ internal static unsafe class TaskbarPinning
             if (manualOnly)
             {
                 _shortcut = new PinShortcut(aumid, exe, launcherId, name, icon);
-                _reason = "Pin this launcher manually.";
+                _reasonKey = "pinning.reason.manualRequested";
                 Log("fallback: explicit manual request; no native request");
                 return true;
             }
@@ -128,7 +132,7 @@ internal static unsafe class TaskbarPinning
         }
         catch (Exception ex)
         {
-            _reason = "Windows could not prepare native pinning. You can pin this launcher manually.";
+            _reasonKey = "pinning.reason.prepareFailed";
             Log($"fallback: prepare hr=0x{ex.HResult:X8}; {ex.Message}");
             Release(_manager);
             _manager = 0;
@@ -144,7 +148,7 @@ internal static unsafe class TaskbarPinning
         Log($"identity packageStatus={packageStatus}; aumid={aumid}");
         if (packageStatus != 15700 /* APPMODEL_ERROR_NO_PACKAGE */)
         {
-            _reason = "Windows started this helper with package identity, so native pinning cannot target this individual launcher.";
+            _reasonKey = "pinning.reason.packageIdentity";
             Log("fallback: inherited-package-identity");
             return false;
         }
@@ -156,7 +160,7 @@ internal static unsafe class TaskbarPinning
         using RegistryKey? key = Registry.LocalMachine.OpenSubKey(LafKey);
         if (key?.GetValue(LafSeed) is int required && required != 0)
         {
-            _reason = "This Windows version requires restricted access for native pinning. You can pin this launcher manually.";
+            _reasonKey = "pinning.reason.restrictedAccess";
             Log("fallback: laf-token-required");
             return false;
         }
@@ -168,7 +172,7 @@ internal static unsafe class TaskbarPinning
             int hr = RoGetActivationFactory(classId, new Guid("cdfefd63-e879-4134-b9a7-8283f05f9480"), out nint marker);
             if (hr < 0)
             {
-                _reason = "This Windows version does not support native pinning from desktop apps.";
+                _reasonKey = "pinning.reason.unsupported";
                 Log($"fallback: desktop-marker hr=0x{hr:X8}");
                 return false;
             }
@@ -197,7 +201,7 @@ internal static unsafe class TaskbarPinning
         _firstTimerCallback = true;
         if (SetTimer(hwnd, 1, 100, TimerCallback) == 0)
         {
-            ShowFallback("Windows could not start native pinning.");
+            ShowFallback("pinning.reason.startFailed");
         }
         else if (!_checkOnly) Log("native-window: operation timer armed");
     }
@@ -237,7 +241,7 @@ internal static unsafe class TaskbarPinning
                     CloseOperation(terminal: true);
                     if (_checkOnly) Complete(5);
                     else if (_pinRequestStarted) FinishUnconfirmed();
-                    else ShowFallback("Windows could not check whether this launcher is pinned.");
+                    else ShowFallback("pinning.reason.checkFailed");
                     return;
                 }
 
@@ -268,7 +272,7 @@ internal static unsafe class TaskbarPinning
                 }
                 if (_cancelRequested != 0)
                 {
-                    ShowFallback("Windows took too long to check this launcher. You can pin it manually.");
+                    ShowFallback("pinning.reason.checkTimedOut");
                     return;
                 }
                 _requesting = true;
@@ -278,7 +282,7 @@ internal static unsafe class TaskbarPinning
             {
                 if (GetForegroundWindow() != hwnd)
                 {
-                    if (++_attempts >= 30) ShowFallback("Bring this launcher to the foreground to pin it manually.");
+                    if (++_attempts >= 30) ShowFallback("pinning.reason.needsForeground");
                     return;
                 }
 
@@ -287,7 +291,7 @@ internal static unsafe class TaskbarPinning
                 if (allowed == 0)
                 {
                     // Give the shell a bounded chance to index the newly written Start entry.
-                    if (++_attempts >= 30) ShowFallback("Windows is not allowing a native pin request right now.");
+                    if (++_attempts >= 30) ShowFallback("pinning.reason.requestBlocked");
                     return;
                 }
 
@@ -322,7 +326,7 @@ internal static unsafe class TaskbarPinning
             }
             else
             {
-                ShowFallback("Windows could not offer native pinning. You can pin this launcher manually.");
+                ShowFallback("pinning.reason.offerFailed");
             }
         }
         finally { _checking = false; }
@@ -350,7 +354,7 @@ internal static unsafe class TaskbarPinning
         {
             if (_checkOnly) Complete(5);
             else if (_pinRequestStarted) FinishUnconfirmed();
-            else ShowFallback("Windows could not check whether this launcher is pinned.");
+            else ShowFallback("pinning.reason.checkFailed");
         }
     }
 
@@ -362,11 +366,12 @@ internal static unsafe class TaskbarPinning
         Complete(3);
     }
 
-    private static void ShowFallback(string reason)
+    /// <summary>Abandons the native request and records why, as a <c>pinning.reason.*</c> key.</summary>
+    private static void ShowFallback(string reasonKey)
     {
-        _reason = reason;
+        _reasonKey = reasonKey;
         _manualFallback = true;
-        Log("fallback: " + reason);
+        Log("fallback: " + reasonKey);
         Complete(_checkOnly ? 5 : 11);
     }
 

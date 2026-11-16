@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using LittleLauncher.Localization;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
@@ -174,8 +175,8 @@ public partial class LauncherItem : ObservableObject
     /// </remarks>
     public override string ToString()
     {
-        if (IsColumnBreak) return "Column break";
-        if (IsGroup) return $"{Name} (group)";
+        if (IsColumnBreak) return UiText.Get("launcher.columnBreak");
+        if (IsGroup) return UiText.Format("launcher.groupAccessibleName", ("name", Name));
         if (string.IsNullOrEmpty(Path)) return Name;   // heading
         return Name;
     }

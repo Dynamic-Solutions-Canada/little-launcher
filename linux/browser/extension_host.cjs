@@ -5,6 +5,7 @@ const log=require('electron-log');log.transports.file.level=false;log.transports
 const {registerBrowserExtensionCompatibility}=require('./vendor/generated/extensions/compatibility.js');
 const {getExtensionPopupUrl,getExtensionToolbarMetadata,readExtensionToolbarIcon}=require('./vendor/generated/extensions/manifest.js');
 const {openBrowserExtensionDocumentWindow}=require('./vendor/generated/extensions/document-window.js');
+const {t}=require('./i18n.cjs');
 
 /** Shared code choices, isolated extension/vault data in each persistent sign-in profile. */
 class ExtensionHost {
@@ -26,7 +27,7 @@ class ExtensionHost {
  }
  register(profile){
   if(this.sessions.has(profile)){const existing=this.sessions.get(profile);if(existing.suspended){existing.suspended=false;existing.ready=this.restore(profile);}return existing.ready;}
-  const state={compat:registerBrowserExtensionCompatibility(profile,{onStorageFailure:(id)=>{this.errors.set(id,'Extension background storage stopped. Disable and re-enable it to retry.');},onActionChanged:()=>this.changed()}),ready:null};
+  const state={compat:registerBrowserExtensionCompatibility(profile,{onStorageFailure:(id)=>{this.errors.set(id,t('webExtensions.storageStopped'));},onActionChanged:()=>this.changed()}),ready:null};
   this.sessions.set(profile,state);
   this.popups.set(profile,new Map());
   profile.extensions.on('extension-unloaded',(_event,extension)=>{const popup=this.popups.get(profile)?.get(extension.id);if(popup&&!popup.isDestroyed())popup.destroy();this.popups.get(profile)?.delete(extension.id);});
@@ -36,7 +37,7 @@ class ExtensionHost {
   for(const entry of this.entries.filter(item=>item.enabled)){
    if(this.sessions.get(profile).suspended)break;
    try{const loaded=await this.load(profile,entry.path);if(this.sessions.get(profile).suspended)profile.extensions.removeExtension(loaded.id);}
-   catch{this.errors.set(entry.path,'The extension could not start in this profile.');}
+   catch{this.errors.set(entry.path,t('webExtensions.startFailedInProfile'));}
   }
  }
  suspend(profile){
@@ -66,7 +67,7 @@ class ExtensionHost {
     const extension=await this.load(profile,directory);
     try{this.save([...this.entries,{path:directory,id:extension.id,name:extension.name,version:extension.version,enabled:true}]);}
     catch(error){profile.extensions.removeExtension(extension.id);throw error;}
-    for(const other of this.sessions.keys())if(other!==profile&&!this.sessions.get(other).suspended)try{await this.load(other,directory);}catch{this.errors.set(directory,'Could not load in another sign-in profile.');}
+    for(const other of this.sessions.keys())if(other!==profile&&!this.sessions.get(other).suspended)try{await this.load(other,directory);}catch{this.errors.set(directory,t('webExtensions.loadFailedInOtherProfile'));}
    }
   } else if(message.action==='enable'||message.action==='remove'){
    const entry=this.entries.find(item=>item.path===message.path);if(!entry)throw Error('The selected extension is no longer installed.');
@@ -75,7 +76,7 @@ class ExtensionHost {
    for(const current of this.sessions.keys()){
     const loaded=current.extensions.getAllExtensions().find(item=>item.path===entry.path);
     if(loaded)current.extensions.removeExtension(loaded.id);
-    if(message.action==='enable'&&message.enabled&&!this.sessions.get(current).suspended)try{await this.load(current,entry.path);this.errors.delete(entry.path);}catch{this.errors.set(entry.path,'The extension could not start.');}
+    if(message.action==='enable'&&message.enabled&&!this.sessions.get(current).suspended)try{await this.load(current,entry.path);this.errors.delete(entry.path);}catch{this.errors.set(entry.path,t('webExtensions.startFailed'));}
    }
   } else if(message.action==='pin'){
    const selected=this.list(profile).find(item=>item.id===message.id);
@@ -110,10 +111,10 @@ class ExtensionHost {
  }
  menu(owner){
   const profile=owner.view?.webContents.session;
-  const invoke=message=>{void this.command(message,profile,owner).catch(()=>this.emit({type:'warning',message:'The extension action could not complete.'}));};
+  const invoke=message=>{void this.command(message,profile,owner).catch(()=>this.emit({type:'warning',message:t('webExtensions.actionFailed')}));};
   return profile?this.presentation(owner).map(item=>({label:item.name,submenu:[
-   item.popup?{label:'Open',click:()=>invoke({action:'open',id:item.id})}:{label:item.running?'Runs in the background':'Disabled',enabled:false},
-   {label:'Pin to the header',type:'checkbox',checked:item.pinned,enabled:item.popup,click:()=>invoke({action:'pin',id:item.id,pinned:!item.pinned})}
+   item.popup?{label:t('common.open'),click:()=>invoke({action:'open',id:item.id})}:{label:t(item.running?'webExtensions.runsInBackground':'common.disabled'),enabled:false},
+   {label:t('webExtensions.pinToHeader'),type:'checkbox',checked:item.pinned,enabled:item.popup,click:()=>invoke({action:'pin',id:item.id,pinned:!item.pinned})}
   ]})):[];
  }
 }

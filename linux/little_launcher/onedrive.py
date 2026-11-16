@@ -13,6 +13,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit, quote
 from urllib.request import Request, HTTPRedirectHandler, build_opener
 
+from . import i18n
 from .document import DocumentError
 
 CLIENT_ID = 'eca1f6fc-ab2b-4dc6-8e93-86c74f846a26'
@@ -34,17 +35,19 @@ class CloudHTTPError(SyncError):
     def __init__(self, status, oauth_error=''):
         self.status = status
         self.oauth_error = oauth_error if oauth_error in ('invalid_grant', 'invalid_client', 'access_denied', 'interaction_required') else ''
-        label = {401: 'Sign in to OneDrive again.', 403: 'OneDrive denied access to the app folder.',
-                 409: 'OneDrive reported an upload conflict. Click Upload again to review the latest copy.',
-                 412: 'The cloud copy changed after review. Click Upload again to review it.',
-                 429: 'OneDrive is busy. Try again later.'}.get(status, 'OneDrive request failed.')
-        super().__init__(f'{label} (HTTP {status}' + (f', {self.oauth_error}' if self.oauth_error else '') + ')')
+        detail = f'HTTP {status}' + (f', {self.oauth_error}' if self.oauth_error else '')
+        key = {401: 'cloud.signInAgain', 403: 'cloud.oneDrive.accessDenied', 409: 'cloud.oneDrive.uploadConflict',
+               412: 'cloud.oneDrive.changedAfterReview', 429: 'cloud.error.rateLimited'}.get(status)
+        if key:
+            super().__init__(i18n.t('cloud.oneDrive.withStatus', message=i18n.t(key, provider='OneDrive'), detail=detail))
+        else:
+            super().__init__(i18n.t('cloud.failed.request', provider='OneDrive', status=detail))
 
 
 class SafeRedirect(HTTPRedirectHandler):
     def redirect_request(self, request, fp, code, msg, headers, newurl):
         if request.get_method() != 'GET' or urlsplit(newurl).scheme != 'https':
-            raise SyncError('OneDrive returned an unexpected redirect.')
+            raise SyncError(i18n.t('cloud.oneDrive.unexpectedRedirect'))
         redirected = super().redirect_request(request, fp, code, msg, headers, newurl)
         if urlsplit(request.full_url).netloc != urlsplit(newurl).netloc:
             redirected.remove_header('Authorization')
@@ -60,7 +63,7 @@ def http(method, url, *, token=None, body=None, headers=None, limit=MAX_DOCUMENT
         with build_opener(SafeRedirect()).open(request, timeout=30) as response:
             raw = response.read(limit + 1)
             if len(raw) > limit:
-                raise SyncError('The cloud response is too large; no settings were changed.')
+                raise SyncError(i18n.t('cloud.oneDrive.responseTooLarge'))
             return raw, dict(response.headers)
     except HTTPError as error:
         # Never expose raw OAuth responses, callback addresses, tokens or provider error text.
@@ -72,7 +75,7 @@ def http(method, url, *, token=None, body=None, headers=None, limit=MAX_DOCUMENT
                 pass
         raise CloudHTTPError(error.code, name) from None
     except (URLError, TimeoutError, OSError):
-        raise SyncError('Could not reach OneDrive. Check your connection and try again.') from None
+        raise SyncError(i18n.t('cloud.oneDrive.unreachable')) from None
 
 
 class SecretStore:
@@ -86,7 +89,7 @@ class SecretStore:
             bundled=Path(os.environ.get('APPDIR','/nonexistent'))/'usr/bin/secret-tool'
             executable=str(bundled) if bundled.is_file() and os.access(bundled,os.X_OK) else None
         if not executable:
-            raise SyncError('The desktop credential utility is unavailable. Use the complete AppImage build.')
+            raise SyncError(i18n.t('cloud.secretService.missing'))
         args = [executable, verb]
         if verb == 'store':
             args += ['--label=Little Launcher OneDrive']
@@ -94,11 +97,11 @@ class SecretStore:
         try:
             result = subprocess.run(args, input=value, capture_output=True, text=True, timeout=60)
         except (OSError, subprocess.TimeoutExpired):
-            raise SyncError('The desktop credential service did not respond. Unlock your wallet and try again.') from None
+            raise SyncError(i18n.t('cloud.secretService.noResponse')) from None
         if result.returncode:
             if verb in ('lookup', 'clear') and result.returncode == 1 and not result.stderr.strip():
                 return ''
-            raise SyncError('The desktop credential service is unavailable or locked. Unlock your wallet and try again.')
+            raise SyncError(i18n.t('cloud.secretService.locked'))
         return result.stdout.strip()
 
     def load(self):
@@ -111,7 +114,7 @@ class SecretStore:
                 raise ValueError()
             return result
         except ValueError:
-            raise SyncError('The saved OneDrive sign-in is unreadable. Sign in again.') from None
+            raise SyncError(i18n.t('cloud.oneDrive.savedSignInUnreadable')) from None
 
     def save(self, tokens):
         self._run('store', json.dumps(tokens))
@@ -151,7 +154,7 @@ class OneDrive:
                 raise ValueError()
             expires = int(values.get('expires_in', 3600))
         except (ValueError, KeyError, TypeError):
-            raise SyncError('OneDrive returned an invalid sign-in response.') from None
+            raise SyncError(i18n.t('cloud.oneDrive.invalidSignInResponse')) from None
         return {'access_token': token, 'refresh_token': values.get('refresh_token') or (previous or {}).get('refresh_token', ''),
                 'scope': values.get('scope') or (previous or {}).get('scope', SCOPE),
                 'expires_at': time.time() + max(0, expires),
@@ -163,11 +166,11 @@ class OneDrive:
 
     def test_connection(self):
         self.request('GET', 'https://graph.microsoft.com/v1.0/me/drive/special/approot?$select=id', token=self.access_token())
-        return 'OneDrive connection succeeded.'
+        return i18n.t('cloud.oneDrive.connectionSucceeded')
 
     def sign_in(self, open_browser, cancelled):
         if cancelled.is_set():
-            raise SyncError('Sign-in cancelled. The existing account was kept.')
+            raise SyncError(i18n.t('cloud.signIn.cancelledAccountKept'))
         state = secrets.token_urlsafe(32)
         verifier = secrets.token_urlsafe(48)
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
@@ -182,10 +185,10 @@ class OneDrive:
 
             def do_GET(self):
                 result = callback_parameters(self.path, state) if len(self.path) <= 16384 else None
-                status, text = 400, 'This request does not match the sign-in attempt.'
+                status, text = 400, i18n.t('cloud.browserPage.unrelatedRequest')
                 if result:
                     answer.append(result)
-                    status, text = 200, 'Authorization received. Return to Little Launcher to confirm sign-in.'
+                    status, text = 200, i18n.t('cloud.browserPage.authorized')
                 raw = text.encode()
                 self.send_response(status)
                 self.send_header('Content-Type', 'text/plain; charset=utf-8')
@@ -205,15 +208,15 @@ class OneDrive:
             while not answer and not cancelled.is_set() and time.monotonic() < deadline:
                 server.handle_request()
         if cancelled.is_set():
-            raise SyncError('Sign-in cancelled. The existing account was kept.')
+            raise SyncError(i18n.t('cloud.signIn.cancelledAccountKept'))
         if not answer:
-            raise SyncError('Sign-in timed out. Try again.')
+            raise SyncError(i18n.t('cloud.signIn.browserTimeout'))
         if answer[0][0] != 'code':
-            raise SyncError('OneDrive sign-in was declined. The existing account was kept.')
+            raise SyncError(i18n.t('cloud.oneDrive.declined'))
         tokens = self._token({'grant_type': 'authorization_code', 'code': answer[0][1],
                               'redirect_uri': redirect, 'code_verifier': verifier, 'scope': SCOPE})
         if cancelled.is_set():
-            raise SyncError('Sign-in cancelled. The existing account was kept.')
+            raise SyncError(i18n.t('cloud.signIn.cancelledAccountKept'))
         try:
             raw, _ = self.request('GET', 'https://graph.microsoft.com/v1.0/me/drive?$select=owner', token=tokens['access_token'])
             name = json.loads(raw).get('owner', {}).get('user', {}).get('displayName', '')
@@ -221,18 +224,18 @@ class OneDrive:
         except (SyncError, ValueError, KeyError, TypeError):
             pass
         if cancelled.is_set():
-            raise SyncError('Sign-in cancelled. The existing account was kept.')
+            raise SyncError(i18n.t('cloud.signIn.cancelledAccountKept'))
         self.secrets.save(tokens)
-        return 'Signed in to OneDrive on this device.'
+        return i18n.t('cloud.signedIn', provider='OneDrive')
 
     def access_token(self):
         tokens = self.secrets.load()
         if not tokens:
-            raise SignedOutError('Sign in to OneDrive first.')
+            raise SignedOutError(i18n.t('cloud.notSignedIn', provider='OneDrive'))
         if tokens.get('expires_at', 0) > time.time() + 120:
             return tokens['access_token']
         if not tokens.get('refresh_token'):
-            raise SignedOutError('Sign in to OneDrive again.')
+            raise SignedOutError(i18n.t('cloud.signInAgain', provider='OneDrive'))
         try:
             renewed = self._token({'grant_type': 'refresh_token', 'refresh_token': tokens['refresh_token'],
                                    'scope': tokens.get('scope') or SCOPE}, tokens)
@@ -254,16 +257,16 @@ class OneDrive:
         metadata = json.loads(raw)
         etag = metadata.get('eTag')
         if not isinstance(etag, str) or not etag:
-            raise SyncError('OneDrive did not return a file revision. Nothing was changed.')
+            raise SyncError(i18n.t('cloud.oneDrive.noRevision'))
         raw, _ = self.request('GET', ITEM + ':/content', token=token)
         # A content redirect cannot reliably carry If-Match. Verify metadata again afterwards.
         check, _ = self.request('GET', ITEM + '?$select=eTag', token=token)
         if json.loads(check).get('eTag') != etag:
-            raise SyncError('The cloud copy changed during download. Try again.')
+            raise SyncError(i18n.t('cloud.oneDrive.changedDuringDownload'))
         try:
             document = json.loads(raw)
         except (ValueError, UnicodeError):
-            raise SyncError('The OneDrive launcher file is unreadable. Nothing was changed.') from None
+            raise SyncError(i18n.t('cloud.oneDrive.fileUnreadable')) from None
         return document, etag
 
     def upload(self, document, etag):
@@ -274,10 +277,10 @@ class OneDrive:
         Upload URLs are preauthenticated and must not receive the account token.
         """
         if not isinstance(etag, str) or not etag or etag == '*':
-            raise SyncError('Download the existing OneDrive file before uploading.')
+            raise SyncError(i18n.t('cloud.oneDrive.downloadBeforeUpload'))
         body = json.dumps(document, ensure_ascii=False).encode()
         if len(body) > MAX_DOCUMENT:
-            raise SyncError('The launcher document exceeds the 32 MiB sync limit.')
+            raise SyncError(i18n.t('cloud.oneDrive.documentTooLarge'))
         token = self.access_token()
         raw, _ = self.request('GET', ITEM + '?$select=id,eTag', token=token, limit=65536)
         metadata = json.loads(raw)
@@ -285,7 +288,7 @@ class OneDrive:
         if metadata.get('eTag') != etag:
             raise CloudHTTPError(412)
         if not isinstance(identifier, str) or not 0 < len(identifier) <= 512:
-            raise SyncError('OneDrive did not identify the existing launcher file. Nothing was uploaded.')
+            raise SyncError(i18n.t('cloud.oneDrive.noFileIdentity'))
         # Update the exact existing item. conflictBehavior=fail rejects that existing
         # filename with409 even with a current If-Match. The frozen revision still
         # guards session creation and the provider invalidates stale sessions.
@@ -295,7 +298,7 @@ class OneDrive:
             headers={'Content-Type': 'application/json', 'If-Match': etag})
         upload_url = json.loads(raw).get('uploadUrl', '')
         if not isinstance(upload_url, str) or urlsplit(upload_url).scheme != 'https':
-            raise SyncError('OneDrive returned an invalid upload session.')
+            raise SyncError(i18n.t('cloud.oneDrive.invalidUploadSession'))
         result = None
         try:
             chunk_size = 16 * 320 * 1024
@@ -307,7 +310,7 @@ class OneDrive:
                 result = json.loads(raw)
             revision = result.get('eTag') if isinstance(result, dict) else None
             if not isinstance(revision, str) or not revision:
-                raise SyncError('OneDrive did not confirm the upload. Download before uploading again.')
+                raise SyncError(i18n.t('cloud.oneDrive.uploadNotConfirmed'))
             return revision
         except (SyncError, ValueError, TypeError):
             try:

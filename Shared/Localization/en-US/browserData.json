@@ -1,0 +1,15 @@
+{
+  "browserData.bookmarkAccessibleName": "{name}, {url}",
+  "browserData.bookmarks.bar": "Bookmarks Bar",
+  "browserData.bookmarks.otherFolder": "Other Bookmarks",
+  "browserData.bookmarks.synced": "Synced Bookmarks",
+  "browserData.bookmarks.menu": "Bookmarks Menu",
+  "browserData.bookmarks.toolbar": "Bookmarks Toolbar",
+  "browserData.profileCleanup.deletedLauncher": "a launcher that no longer exists",
+  "browserData.profileCleanup.nowShared": "{launcher}, which now uses the shared profile",
+  "browserData.size.gigabytes": "{size} GB",
+  "browserData.size.megabytes": "{size} MB",
+  "browserData.size.kilobytes": "{size} KB",
+  "browserData.size.bytes.one": "{count} byte",
+  "browserData.size.bytes.other": "{count} bytes"
+}

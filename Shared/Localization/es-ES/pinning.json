@@ -1,0 +1,20 @@
+{
+  "pinning.promptReminder": "Busca la solicitud de anclaje de Windows.",
+  "pinning.manualInstructions": "{reason}\n\nHaz clic con el botón derecho en el icono de este lanzador en la barra de tareas y elige \"Anclar a la barra de tareas\".\n\nHaz clic en Aceptar solo después de anclarlo, o en Cancelar para dejar sin cambios el anclaje guardado.",
+  "pinning.reason.unavailable": "El anclaje nativo no está disponible.",
+  "pinning.reason.manualRequested": "Ancla este lanzador manualmente.",
+  "pinning.reason.prepareFailed": "Windows no pudo preparar el anclaje nativo. Puedes anclar este lanzador manualmente.",
+  "pinning.reason.packageIdentity": "Windows inició este asistente con identidad de paquete, así que el anclaje nativo no puede dirigirse a este lanzador concreto.",
+  "pinning.reason.restrictedAccess": "Esta versión de Windows requiere acceso restringido para el anclaje nativo. Puedes anclar este lanzador manualmente.",
+  "pinning.reason.unsupported": "Esta versión de Windows no admite el anclaje nativo desde aplicaciones de escritorio.",
+  "pinning.reason.startFailed": "Windows no pudo iniciar el anclaje nativo.",
+  "pinning.reason.checkFailed": "Windows no pudo comprobar si este lanzador está anclado.",
+  "pinning.reason.checkTimedOut": "Windows tardó demasiado en comprobar este lanzador. Puedes anclarlo manualmente.",
+  "pinning.reason.needsForeground": "Trae este lanzador al primer plano para anclarlo manualmente.",
+  "pinning.reason.requestBlocked": "Windows no permite ahora mismo una solicitud de anclaje nativo.",
+  "pinning.reason.offerFailed": "Windows no pudo ofrecer el anclaje nativo. Puedes anclar este lanzador manualmente.",
+  "pinning.replace.title": "Reemplazar anclaje en la barra de tareas",
+  "pinning.replace.detailsChanged": "Este lanzador sigue anclado. Su nombre, su icono o sus datos de inicio han cambiado.",
+  "pinning.replace.detailsUnknown": "Este lanzador sigue anclado. No se pudieron comparar sus datos anteriores. Pulsa Cancelar para conservar el anclaje existente.",
+  "pinning.replace.message": "{explanation}\n\nQuita su anclaje de la barra de tareas haciendo clic con el botón derecho en él y eligiendo \"Desanclar de la barra de tareas\". Haz clic en Aceptar cuando no quede ninguno para crear un anclaje nuevo, o en Cancelar para detenerte."
+}

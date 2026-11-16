@@ -1,0 +1,20 @@
+{
+  "pinning.promptReminder": "Windows のピン留め確認画面を探してください。",
+  "pinning.manualInstructions": "{reason}\n\nこのランチャーのタスクバーアイコンを右クリックし、「タスクバーにピン留めする」を選んでください。\n\nピン留めした後で「OK」をクリックしてください。保存済みのピン留めを変更しない場合は「キャンセル」をクリックします。",
+  "pinning.reason.unavailable": "ネイティブのピン留めは利用できません。",
+  "pinning.reason.manualRequested": "このランチャーを手動でピン留めしてください。",
+  "pinning.reason.prepareFailed": "Windows でネイティブのピン留めを準備できませんでした。このランチャーは手動でピン留めできます。",
+  "pinning.reason.packageIdentity": "Windows がこのヘルパーをパッケージ ID 付きで起動したため、ネイティブのピン留めでこのランチャーを個別に対象にできません。",
+  "pinning.reason.restrictedAccess": "この Windows バージョンでは、ネイティブのピン留めに制限付きアクセスが必要です。このランチャーは手動でピン留めできます。",
+  "pinning.reason.unsupported": "この Windows バージョンは、デスクトップアプリからのネイティブのピン留めに対応していません。",
+  "pinning.reason.startFailed": "Windows でネイティブのピン留めを開始できませんでした。",
+  "pinning.reason.checkFailed": "Windows でこのランチャーがピン留めされているか確認できませんでした。",
+  "pinning.reason.checkTimedOut": "Windows でのこのランチャーの確認に時間がかかりすぎました。手動でピン留めできます。",
+  "pinning.reason.needsForeground": "手動でピン留めするには、このランチャーを前面に表示してください。",
+  "pinning.reason.requestBlocked": "現在、Windows はネイティブのピン留め要求を許可していません。",
+  "pinning.reason.offerFailed": "Windows でネイティブのピン留めを提示できませんでした。このランチャーは手動でピン留めできます。",
+  "pinning.replace.title": "タスクバーのピン留めの置き換え",
+  "pinning.replace.detailsChanged": "このランチャーはまだピン留めされています。名前、アイコン、または起動の詳細が変更されています。",
+  "pinning.replace.detailsUnknown": "このランチャーはまだピン留めされています。以前の詳細と比較できませんでした。既存のピン留めを残すには「キャンセル」をクリックしてください。",
+  "pinning.replace.message": "{explanation}\n\nタスクバーのピン留めを右クリックし、「タスクバーからピン留めを外す」を選んで削除してください。すべて削除したら「OK」をクリックして新しくピン留めします。中止するには「キャンセル」をクリックします。"
+}

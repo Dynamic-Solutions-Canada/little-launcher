@@ -1,0 +1,7 @@
+{
+  "tray.menu.editLauncherSettings": "Edit Launcher Settings",
+  "tray.menu.appSettings": "App Settings",
+  "tray.menu.exit": "Exit",
+  "tray.whatsNew.message": "A launcher can now open a web page (a dashboard, webmail, or any site) straight from its tray icon.",
+  "tray.update.message": "Little Launcher {latest} is available. You are running {current}."
+}

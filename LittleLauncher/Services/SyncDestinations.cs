@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
 
@@ -68,7 +69,7 @@ public static class SyncDestinations
     private sealed class SftpDestination : ISyncDestination
     {
         public int Provider => SyncProviders.Sftp;
-        public string DisplayName => "SFTP server";
+        public string DisplayName => UiText.Get("syncService.destination.sftp");
         public bool IsConfigured => !string.IsNullOrWhiteSpace(SettingsManager.Current.SftpHost);
 
         public Task<DateTimeOffset?> GetRemoteModifiedAsync() => SftpSyncService.GetRemoteModifiedAsync();
@@ -81,7 +82,7 @@ public static class SyncDestinations
     private sealed class FolderDestination : ISyncDestination
     {
         public int Provider => SyncProviders.Folder;
-        public string DisplayName => "Folder or network share";
+        public string DisplayName => UiText.Get("syncService.destination.folder");
         public bool IsConfigured => FolderSyncService.IsConfigured;
 
         public Task<DateTimeOffset?> GetRemoteModifiedAsync() => FolderSyncService.GetRemoteModifiedAsync();

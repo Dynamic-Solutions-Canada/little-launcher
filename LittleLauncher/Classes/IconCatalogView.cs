@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
+using LittleLauncher.Localization;
 
 namespace LittleLauncher.Classes;
 
@@ -73,8 +74,14 @@ internal sealed class IconCatalogView : Grid
     /// Searches match names exactly as the gallery did before; categories are hidden while searching.
     /// The framework creates/recycles only nearby containers and retains native keyboard navigation.
     /// </summary>
+    /// <param name="categories">Catalog keys for each category heading and icon name; their text
+    /// is read in the current language every time the catalog is shown.</param>
+    /// <remarks>
+    /// A query matches either the translated name or the English one, so English search terms
+    /// keep working whatever the interface language is.
+    /// </remarks>
     internal void ShowCatalog(
-        IEnumerable<(string Category, (string Glyph, string Name)[] Items)> categories,
+        IEnumerable<(string CategoryKey, (string Glyph, string NameKey)[] Items)> categories,
         string query, bool emoji, Brush foreground, string? currentGlyph, bool revealSelection = false)
     {
         Clear();
@@ -83,7 +90,7 @@ internal sealed class IconCatalogView : Grid
         try
         {
             _grid.Foreground = foreground;
-            AutomationProperties.SetName(_grid, emoji ? "Emoji" : "Segoe Fluent Icons");
+            AutomationProperties.SetName(_grid, emoji ? UiText.Get("icons.tab.emoji") : "Segoe Fluent Icons");
             _groupStyle.HeaderTemplate = string.IsNullOrEmpty(query)
                 ? Parse<DataTemplate>("""
                     <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
@@ -98,12 +105,14 @@ internal sealed class IconCatalogView : Grid
                     """);
             var groups = new List<IconCatalogGroup>();
             IconCatalogEntry? selected = null;
-            foreach (var (category, icons) in categories)
+            IReadOnlyDictionary<string, string> english = UiText.Catalog(SupportedLanguages.Default);
+            foreach (var (categoryKey, icons) in categories)
             {
-                var group = new IconCatalogGroup(category);
-                foreach (var (glyph, name) in icons)
+                var group = new IconCatalogGroup(UiText.Get(categoryKey));
+                foreach (var (glyph, nameKey) in icons)
                 {
-                    if (!string.IsNullOrEmpty(query) && !name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    string name = UiText.Get(nameKey);
+                    if (!string.IsNullOrEmpty(query) && !MatchesQuery(query, name, nameKey, english))
                     {
                         continue;
                     }
@@ -136,6 +145,20 @@ internal sealed class IconCatalogView : Grid
         {
             _updating = false;
         }
+    }
+
+    /// <summary>
+    /// True when <paramref name="query"/> occurs in the shown name or in its English name.
+    /// </summary>
+    private static bool MatchesQuery(string query, string name, string nameKey, IReadOnlyDictionary<string, string> english)
+    {
+        if (name.Contains(query, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return english.TryGetValue(nameKey, out string? englishName)
+            && englishName.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Releases the source and live selection on tab changes or close; late recycling events become inert.</summary>

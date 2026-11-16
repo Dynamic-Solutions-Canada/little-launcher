@@ -1,0 +1,18 @@
+{
+  "webPosition.moveTo": "Verschieben nach",
+  "webPosition.anchor.tray": "Beim Tray-Symbol",
+  "webPosition.anchor.lastPosition": "Wohin du es zuletzt gezogen hast",
+  "webPosition.anchor.topLeft": "Oben links",
+  "webPosition.anchor.topCenter": "Oben Mitte",
+  "webPosition.anchor.topRight": "Oben rechts",
+  "webPosition.anchor.left": "Links",
+  "webPosition.anchor.center": "Mitte",
+  "webPosition.anchor.right": "Rechts",
+  "webPosition.anchor.bottomLeft": "Unten links",
+  "webPosition.anchor.bottomCenter": "Unten Mitte",
+  "webPosition.anchor.bottomRight": "Unten rechts",
+  "webPosition.pickerIntro": "Wähle, wo sich dieser Launcher auf dem Bildschirm mit seinem Tray-Symbol öffnet.",
+  "webPosition.pickerNotice": "Gezogene Positionen bleiben auf diesem Gerät. KDE-Desktopintegration ist erforderlich.",
+  "webPosition.saveFailed": "Die gezogene Fensterposition konnte nicht gespeichert werden.",
+  "webPosition.clearFailed": "Die vorherige gezogene Fensterposition konnte nicht gelöscht werden."
+}

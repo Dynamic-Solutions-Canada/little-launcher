@@ -1,0 +1,10 @@
+{
+  "shell.jumpList.launcherSettings": "Configurações do inicializador",
+  "shell.jumpList.launcherSettingsTooltip": "Configurações de {launcher}",
+  "shell.jumpList.openInBrowser": "Abrir no navegador",
+  "shell.jumpList.editItems": "Editar itens",
+  "shell.jumpList.editItemsTooltip": "Editar os itens de {launcher}",
+  "shell.jumpList.appSettingsTooltip": "Configurações do próprio Little Launcher",
+  "shell.startMenu.unnamedWebLauncher": "Inicializador web",
+  "shell.pinStatusCheckDidNotStop": "A verificação de status da barra de tarefas não parou. Nenhuma nova fixação foi iniciada."
+}

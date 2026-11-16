@@ -1,4 +1,5 @@
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,17 +18,17 @@ public sealed partial class LauncherSettingsWindow
         var policyCombo = new ComboBox { MinWidth = 200 };
         var policies = new[]
         {
-            (Label: "Unload when idle", Value: WebHiddenPolicies.UnloadWhenIdle),
-            (Label: "Stay loaded (suspended)", Value: WebHiddenPolicies.Suspend),
-            (Label: "Keep running", Value: WebHiddenPolicies.KeepRunning),
+            (Label: UiText.Get("launcherSettings.hiddenPolicy.unloadWhenIdle"), Value: WebHiddenPolicies.UnloadWhenIdle),
+            (Label: UiText.Get("launcherSettings.hiddenPolicy.suspend"), Value: WebHiddenPolicies.Suspend),
+            (Label: UiText.Get("launcherSettings.hiddenPolicy.keepRunning"), Value: WebHiddenPolicies.KeepRunning),
         };
         foreach (var policy in policies)
             policyCombo.Items.Add(new ComboBoxItem { Content = policy.Label, Tag = policy.Value });
         policyCombo.SelectedIndex = Array.FindIndex(policies, p => p.Value == WebHiddenPolicies.Normalize(launcher.WebHiddenPolicy));
 
         var policyRow = BuildRow(
-            "When Hidden",
-            "Unloading frees all memory and stops video and polling; staying loaded reopens instantly",
+            UiText.Get("launcherSettings.hiddenPolicy.title"),
+            UiText.Get("launcherSettings.hiddenPolicy.description"),
             policyCombo);
 
         // ── Idle delay ──────────────────────────────────────────
@@ -46,7 +47,7 @@ public sealed partial class LauncherSettingsWindow
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
-        var idleRow = BuildRow("Unload After", "Minutes the flyout may sit closed before the page is dropped", idleBox);
+        var idleRow = BuildRow(UiText.Get("launcherSettings.unloadAfter.title"), UiText.Get("launcherSettings.unloadAfter.description"), idleBox);
 
         // Gated on the kind as well as the policy: the caller shows every web row at once, and
         // this row is the one exception that must stay hidden even then.
@@ -76,7 +77,7 @@ public sealed partial class LauncherSettingsWindow
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
-        var reloadRow = BuildRow("Reload On Open", "Fetch the page again each time, instead of showing it as you left it", reloadToggle);
+        var reloadRow = BuildRow(UiText.Get("launcherSettings.reloadOnOpen.title"), UiText.Get("launcherSettings.reloadOnOpen.description"), reloadToggle);
 
         // ── Links in the real browser ───────────────────────────
         // Its only home. It used to live in the flyout's More menu and nowhere else, which made it
@@ -93,8 +94,8 @@ public sealed partial class LauncherSettingsWindow
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
-        var linksRow = BuildRow("Open Links In Browser",
-            "Hand a link that opens a new window to your default browser, instead of opening it in a tab here",
+        var linksRow = BuildRow(UiText.Get("launcherSettings.openLinksInBrowser.title"),
+            UiText.Get("launcherSettings.openLinksInBrowser.description"),
             linksToggle);
 
         // ── Keep open on focus loss ─────────────────────────────
@@ -105,7 +106,7 @@ public sealed partial class LauncherSettingsWindow
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
-        var pinRow = BuildRow("Pin Open", "Stay on screen when you click elsewhere, instead of dismissing like a flyout", pinToggle);
+        var pinRow = BuildRow(UiText.Get("launcherSettings.pinOpen.title"), UiText.Get("launcherSettings.pinOpen.description"), pinToggle);
 
         // ── Regular window ──────────────────────────────────────
         var regularToggle = new ToggleSwitch { IsOn = launcher.WebRegularWindow, OnContent = "", OffContent = "", MinWidth = 0 };
@@ -118,14 +119,14 @@ public sealed partial class LauncherSettingsWindow
         // Names the window kind rather than any one symptom of it. "Show in taskbar" would be the
         // obvious label and would be a promise the shell cannot keep: the taskbar button and the
         // Alt-Tab entry are the same switch, so a launcher cannot have one without the other.
-        var regularRow = BuildRow("Regular Window",
-            "Behave like an ordinary app window: taskbar button, Alt-Tab entry, not always on top, and stays open until closed",
+        var regularRow = BuildRow(UiText.Get("launcherSettings.regularWindow.title"),
+            UiText.Get("launcherSettings.regularWindow.description"),
             regularToggle);
 
         // ── What the taskbar button's click does ────────────────
         var clickCombo = new ComboBox { MinWidth = 200 };
-        clickCombo.Items.Add(new ComboBoxItem { Content = "Minimize it", Tag = false });
-        clickCombo.Items.Add(new ComboBoxItem { Content = "Close it", Tag = true });
+        clickCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("launcherSettings.taskbarClick.minimize"), Tag = false });
+        clickCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("launcherSettings.taskbarClick.close"), Tag = true });
         clickCombo.SelectedIndex = launcher.WebTaskbarClickCloses ? 1 : 0;
         clickCombo.SelectionChanged += (_, _) =>
         {
@@ -134,8 +135,8 @@ public sealed partial class LauncherSettingsWindow
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
-        var clickRow = BuildRow("Taskbar Click",
-            "What clicking this launcher's taskbar button does while it is open",
+        var clickRow = BuildRow(UiText.Get("launcherSettings.taskbarClick.title"),
+            UiText.Get("launcherSettings.taskbarClick.description"),
             clickCombo);
 
         // ── Close on focus loss, as a window ────────────────────
@@ -146,8 +147,8 @@ public sealed partial class LauncherSettingsWindow
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
-        var autoHideRow = BuildRow("Close On Focus Loss",
-            "Dismiss like a flyout when you click elsewhere, while keeping the taskbar button and Alt-Tab entry",
+        var autoHideRow = BuildRow(UiText.Get("launcherSettings.closeOnFocusLoss.title"),
+            UiText.Get("launcherSettings.closeOnFocusLoss.description"),
             autoHideToggle);
 
         // Both only mean anything with Regular Window on; a flyout has no taskbar button to click,
@@ -195,12 +196,12 @@ public sealed partial class LauncherSettingsWindow
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
         var fullscreenRow = BuildRow(
-            LauncherSettingsSections.Text("WebFullscreenFillsLauncher"),
-            LauncherSettingsSections.Text("WebFullscreenFillsLauncherDescription"),
+            UiText.Get("launcherSettings.fullscreenFillsLauncher.title"),
+            UiText.Get("launcherSettings.fullscreenFillsLauncher.description"),
             fullscreenToggle);
         var fitVideoRow = BuildRow(
-            LauncherSettingsSections.Text("WebFitFullscreenToVideo"),
-            LauncherSettingsSections.Text("WebFitFullscreenToVideoDescription"),
+            UiText.Get("launcherSettings.fitFullscreenToVideo.title"),
+            UiText.Get("launcherSettings.fitFullscreenToVideo.description"),
             fitVideoToggle);
 
         void RefreshVisibility()

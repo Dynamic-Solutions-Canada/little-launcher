@@ -4,6 +4,7 @@ from copy import deepcopy
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QDialog, QMessageBox
 
+from . import i18n
 from .forms import NameDialog, ShortcutDialog
 from .document import launcher_supported
 
@@ -73,7 +74,8 @@ class ItemEditingSession(QObject):
             self.commit(expected)
             return
         if kind == 3:
-            dialog = NameDialog('Add Group', parent=self.parent_widget, placeholder='Group name', accept_text='Add')
+            dialog = NameDialog(i18n.t('items.groupPrompt.addTitle'), parent=self.parent_widget,
+                                placeholder=i18n.t('items.groupPrompt.namePlaceholder'), accept_text=i18n.t('common.add'))
         else:
             dialog = ShortcutDialog(parent=self.parent_widget,icon_directory=self.controller.directory/'icons')
             dialog.kind.setCurrentIndex(kind)
@@ -95,7 +97,8 @@ class ItemEditingSession(QObject):
         expected = deepcopy(self.original)
         _, _, original = self.resolve(expected, path)
         if original.get('IsGroup'):
-            dialog = NameDialog('Rename Group', original.get('Name', ''), self.parent_widget, 'Group name')
+            dialog = NameDialog(i18n.t('items.groupPrompt.renameTitle'), original.get('Name', ''), self.parent_widget,
+                                i18n.t('items.groupPrompt.namePlaceholder'))
         else:
             dialog = ShortcutDialog(original, self.parent_widget,icon_directory=self.controller.directory/'icons')
         if dialog.exec() != QDialog.Accepted:
@@ -106,10 +109,10 @@ class ItemEditingSession(QObject):
         else:
             value = dialog.value()
         if len(path) > 1 and value.get('IsGroup') and not original.get('IsGroup'):
-            QMessageBox.warning(self.parent_widget, 'Group placement', 'Move this item out of its group before changing it into a group.')
+            QMessageBox.warning(self.parent_widget, i18n.t('items.groupPlacement.title'), i18n.t('items.groupPlacement.message'))
             return
         if original.get('Children') and not value.get('IsGroup'):
-            QMessageBox.warning(self.parent_widget, 'Keep group contents', 'Move or remove the group contents before changing its type.')
+            QMessageBox.warning(self.parent_widget, i18n.t('items.keepGroupContents.title'), i18n.t('items.keepGroupContents.message'))
             return
         candidate = deepcopy(expected)
         collection, index, _ = self.resolve(candidate, path)
@@ -118,7 +121,7 @@ class ItemEditingSession(QObject):
 
     def remove_item(self, path):
         expected = deepcopy(self.original)
-        if QMessageBox.question(self.parent_widget, 'Remove item', 'Remove this item and its children?') != QMessageBox.Yes:
+        if QMessageBox.question(self.parent_widget, i18n.t('items.removePrompt.title'), i18n.t('items.removePrompt.message')) != QMessageBox.Yes:
             return
         candidate = deepcopy(expected)
         collection, index, _ = self.resolve(candidate, path)
@@ -200,14 +203,14 @@ class ItemEditingSession(QObject):
     def destinations(self, path):
         """Offer real saved groups and writable shortcut launchers, never web/read-only hosts."""
         _, _, item = self.resolve(self.original, path)
-        choices = [('Top Level', {'column': len([row for row in self.original['Items'] if row.get('IsColumnBreak')])})] if len(path) > 1 else []
+        choices = [(i18n.t('items.topLevel'), {'column': len([row for row in self.original['Items'] if row.get('IsColumnBreak')])})] if len(path) > 1 else []
         if not item.get('IsGroup'):
             for index, group in enumerate(self.original['Items']):
                 if group.get('IsGroup') and list(path[:-1]) != [index]:
-                    choices.append((group.get('Name', 'Group'), {'group': [index]}))
+                    choices.append((group.get('Name', i18n.t('items.defaultGroupName')), {'group': [index]}))
         for launcher in self.controller.launchers:
             if launcher['Id'] != self.original['Id'] and self.writable(launcher):
-                choices.append((launcher.get('Name', 'Launcher') + ' (launcher)', launcher['Id']))
+                choices.append((i18n.t('items.launcherDestination', launcher=launcher.get('Name', 'Launcher')), launcher['Id']))
         return choices
 
     def transfer(self, source, identifier):
@@ -220,7 +223,7 @@ class ItemEditingSession(QObject):
             target = next((row for row in document['Launchers'] if row['Id'] == identifier), None)
             from .document import DocumentError
             if origin != expected or not target or not self.writable(target) or not self.writable(origin):
-                raise DocumentError('A launcher changed while the move menu was open. Reopen it before moving.')
+                raise DocumentError(i18n.t('items.moveMenuStale'))
             collection, index, item = self.resolve(origin, source)
             collection.pop(index)
             target.setdefault('Items', []).append(item)
@@ -238,7 +241,7 @@ class ItemEditingSession(QObject):
         expected = deepcopy(view.launcher)
         def guarded(action, *args):
             if self.original != expected:
-                self.controller.failed.emit('This item view changed while its menu was open. Reopen the menu before editing.')
+                self.controller.failed.emit(i18n.t('items.viewMenuStale'))
                 return
             action(*args)
         view.move_destinations = self.destinations

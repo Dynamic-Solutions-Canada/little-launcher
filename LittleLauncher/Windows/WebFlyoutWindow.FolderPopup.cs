@@ -1,6 +1,7 @@
 ﻿// Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -153,7 +154,7 @@ public sealed partial class WebFlyoutWindow
         {
             panel.Children.Add(new TextBlock
             {
-                Text = "Empty",
+                Text = UiText.Get("webBookmarks.emptyFolder"),
                 Opacity = 0.5,
                 FontSize = 12,
                 Margin = new Thickness(8, 6, 8, 6),

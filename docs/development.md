@@ -83,10 +83,11 @@ LittleLauncher/              # WinUI 3 application project
 │   └── UserSettings.cs        # Observable settings (CommunityToolkit.Mvvm)
 ├── Windows/
 │   └── FlyoutWindow.xaml/.cs   # Launcher flyout popup
+├── Localization/Str.cs         # {l:Str Key=...} XAML markup extension
 └── Resources/
-    ├── Localization/
-    │   └── Dictionary-en-US.xaml
     └── LittleLauncher.ico
+
+Shared/Localization/           # Translation catalogs shared with Linux (see docs/localization.md)
 
 LauncherShortcut/              # Windows companion exe for pin-to-taskbar helper
 linux/                         # Native Linux Qt host, isolated Electron browser and AppImage packaging

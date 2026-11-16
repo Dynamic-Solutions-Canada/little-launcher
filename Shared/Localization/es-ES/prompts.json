@@ -1,0 +1,6 @@
+{
+  "prompts.launcherItems.title": "Elementos del lanzador",
+  "prompts.checkDetails": "Revisa estos datos",
+  "prompts.nameRequired": "Introduce un nombre.",
+  "prompts.fileFilter.all": "Todos los archivos"
+}

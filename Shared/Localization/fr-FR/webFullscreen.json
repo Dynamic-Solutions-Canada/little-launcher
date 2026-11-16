@@ -1,0 +1,8 @@
+{
+  "webFullscreen.enterContentFullscreen": "Vidéo en plein écran",
+  "webFullscreen.contentFullscreenUnavailable": "Impossible de passer cette vidéo en plein écran. Essayez la commande plein écran du lecteur.",
+  "webFullscreen.maximizeLauncher": "Agrandir le lanceur (garder le contenu en plein écran)",
+  "webFullscreen.restoreLauncherSize": "Restaurer la taille du lanceur (garder le contenu en plein écran)",
+  "webFullscreen.exitButton": "Quitter le plein écran",
+  "webFullscreen.exitWithEscape": "Quitter le contenu en plein écran (Échap)"
+}

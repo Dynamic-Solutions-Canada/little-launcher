@@ -3,6 +3,7 @@
 
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Services;
 using LittleLauncher.Windows;
@@ -136,12 +137,11 @@ public sealed partial class LaunchersPage : Page
         if (!isWeb)
         {
             int itemCount = CountLauncherItems(launcher.Items);
-            string subtitle = $"{itemCount} item{(itemCount == 1 ? "" : "s")}";
+            string subtitle = UiText.Plural("launchers.itemCount", itemCount);
             if (!launcher.IsSupportedOnThisOperatingSystem)
-                subtitle += " · " + (string)Application.Current.Resources["LauncherHiddenOnOperatingSystem"];
-            string editActionName = string.Format(
-                (string)Application.Current.Resources["LauncherEditItemsAction"], launcher.Name);
-            var itemsRow = CreateLauncherActionButton("Items", subtitle, editActionName);
+                subtitle += " · " + UiText.Get("launchers.card.hiddenOnOperatingSystem");
+            string editActionName = UiText.Format("launchers.card.editItems", ("launcher", launcher.Name));
+            var itemsRow = CreateLauncherActionButton(UiText.Get("launchers.card.items"), subtitle, editActionName);
             itemsRow.Tag = launcher;
             itemsRow.IsEnabled = launcher.IsSupportedOnThisOperatingSystem && launcher is not { IsShared: true, IsSharedOwner: false };
             itemsRow.Click += EditLauncherItems_Click;
@@ -153,8 +153,7 @@ public sealed partial class LaunchersPage : Page
             actions.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             actions.Children.Add(itemsRow);
 
-            string bulkActionName = string.Format(
-                (string)Application.Current.Resources["LauncherItemBulkActions"], launcher.Name);
+            string bulkActionName = UiText.Format("launchers.card.bulkActions", ("launcher", launcher.Name));
             var bulkButton = new Button
             {
                 Content = new FontIcon { Glyph = "\uE712", FontSize = 12, Opacity = 0.6 },
@@ -190,14 +189,16 @@ public sealed partial class LaunchersPage : Page
 
         // ── Settings row (opens settings dialog) ────────────────
         string settingsSubtitle = isWeb
-            ? (string.IsNullOrWhiteSpace(launcher.WebAddress) ? "No web address set" : launcher.WebAddress)
-            : "Name, icon, view mode, and more";
+            ? (string.IsNullOrWhiteSpace(launcher.WebAddress) ? UiText.Get("launchers.card.noWebAddress") : launcher.WebAddress)
+            : UiText.Get("launchers.card.settingsSubtitle");
         if (launcher.IsSupportedOnThisOperatingSystem && !SettingsManager.Current.IsLauncherEnabled(launcher.Id))
         {
-            settingsSubtitle = string.Format(
-                (string)Application.Current.Resources["LauncherDisabledOnDeviceSubtitle"], settingsSubtitle);
+            settingsSubtitle = UiText.Format("launchers.card.disabledOnDevice", ("subtitle", settingsSubtitle));
         }
-        var settingsRow = CreateLauncherActionButton("Settings", launcher.IsSupportedOnThisOperatingSystem ? settingsSubtitle : (string)Application.Current.Resources["LauncherHiddenOnOperatingSystem"]);
+        string settingsRowSubtitle = launcher.IsSupportedOnThisOperatingSystem
+            ? settingsSubtitle
+            : UiText.Get("launchers.card.hiddenOnOperatingSystem");
+        var settingsRow = CreateLauncherActionButton(UiText.Get("common.settings"), settingsRowSubtitle);
         settingsRow.IsEnabled = launcher.IsSupportedOnThisOperatingSystem;
         settingsRow.Click += async (s, e) =>
         {
@@ -222,8 +223,10 @@ public sealed partial class LaunchersPage : Page
         if (launcher.IsShared)
         {
             string badgeText = launcher.SharedTwoWay
-                ? "Shared"
-                : (launcher.IsSharedOwner ? "Shared (owner)" : "Subscribed");
+                ? UiText.Get("launchers.card.badgeShared")
+                : (launcher.IsSharedOwner
+                    ? UiText.Get("launchers.card.badgeSharedOwner")
+                    : UiText.Get("launchers.card.badgeSubscribed"));
 
             bool isAccent = launcher.SharedTwoWay || launcher.IsSharedOwner;
             var badge = new Border
@@ -267,7 +270,7 @@ public sealed partial class LaunchersPage : Page
                 Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
                 BorderThickness = new Thickness(0),
             };
-            ToolTipService.SetToolTip(syncBtn, "Sync now");
+            ToolTipService.SetToolTip(syncBtn, UiText.Get("launchers.card.syncNow"));
             syncBtn.Click += SyncSharedLauncher_Click;
             headerButtons.Children.Add(syncBtn);
 
@@ -282,7 +285,7 @@ public sealed partial class LaunchersPage : Page
                 Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
                 BorderThickness = new Thickness(0),
             };
-            ToolTipService.SetToolTip(settingsBtn, "Sharing settings");
+            ToolTipService.SetToolTip(settingsBtn, UiText.Get("launchers.card.sharingSettings"));
             settingsBtn.Click += ShareLauncher_Click;
             headerButtons.Children.Add(settingsBtn);
         }
@@ -301,7 +304,7 @@ public sealed partial class LaunchersPage : Page
                 Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
                 BorderThickness = new Thickness(0),
             };
-            ToolTipService.SetToolTip(shareBtn, "Share this launcher");
+            ToolTipService.SetToolTip(shareBtn, UiText.Get("launchers.card.share"));
             shareBtn.Click += ShareLauncher_Click;
             headerButtons.Children.Add(shareBtn);
         }
@@ -322,7 +325,7 @@ public sealed partial class LaunchersPage : Page
             BorderThickness = new Thickness(0),
             IsEnabled = launcherIndex > 0,
         };
-        ToolTipService.SetToolTip(moveUpBtn, "Move up");
+        ToolTipService.SetToolTip(moveUpBtn, UiText.Get("common.moveUp"));
         moveUpBtn.Click += MoveLauncherUp_Click;
         headerButtons.Children.Add(moveUpBtn);
 
@@ -338,7 +341,7 @@ public sealed partial class LaunchersPage : Page
             BorderThickness = new Thickness(0),
             IsEnabled = launcherIndex < launchers.Count - 1,
         };
-        ToolTipService.SetToolTip(moveDownBtn, "Move down");
+        ToolTipService.SetToolTip(moveDownBtn, UiText.Get("common.moveDown"));
         moveDownBtn.Click += MoveLauncherDown_Click;
         headerButtons.Children.Add(moveDownBtn);
 
@@ -502,7 +505,7 @@ public sealed partial class LaunchersPage : Page
                 Icon = new FontIcon { Glyph = "\uE8F2" },
                 Tag = preset,
             };
-            ToolTipService.SetToolTip(item, Application.Current.Resources["MessagingPresetHint"]);
+            ToolTipService.SetToolTip(item, UiText.Get("launchers.addMenu.messagingPresetHint"));
             item.Click += AddWebPreset_Click;
             AddLauncherMenu.Items.Insert(index++, item);
         }
@@ -540,7 +543,7 @@ public sealed partial class LaunchersPage : Page
         var newLauncher = new Launcher
         {
             Id = Guid.NewGuid().ToString(),
-            Name = $"Launcher {SettingsManager.Current.Launchers.Count + 1}",
+            Name = UiText.Format("launchers.defaultName.items", ("number", SettingsManager.Current.Launchers.Count + 1)),
             // Both set here rather than as model defaults: changing a default would flip it on for
             // every *existing* launcher, since the property is omitted from settings.json when it
             // holds its default value.
@@ -583,7 +586,7 @@ public sealed partial class LaunchersPage : Page
         var newLauncher = new Launcher
         {
             Id = Guid.NewGuid().ToString(),
-            Name = "Web Launcher",
+            Name = UiText.Get("launchers.defaultName.web"),
             Kind = LauncherKinds.Web,
             ShowTitle = true,
 
@@ -623,17 +626,17 @@ public sealed partial class LaunchersPage : Page
 
         var menu = new MenuFlyout();
 
-        var export = new MenuFlyoutItem { Text = "Export items…", Icon = new FontIcon { Glyph = "" } };
+        var export = new MenuFlyoutItem { Text = UiText.Get("launchers.bulk.exportItems"), Icon = new FontIcon { Glyph = "" } };
         export.Click += async (_, _) => await LauncherBulkOps.ExportItemsAsync(XamlRoot, launcher);
         menu.Items.Add(export);
 
-        var import = new MenuFlyoutItem { Text = "Import items…", Icon = new FontIcon { Glyph = "" }, IsEnabled = !readOnly };
+        var import = new MenuFlyoutItem { Text = UiText.Get("launchers.bulk.importItems"), Icon = new FontIcon { Glyph = "" }, IsEnabled = !readOnly };
         import.Click += async (_, _) => { await LauncherBulkOps.ImportItemsAsync(XamlRoot, launcher); RebuildLauncherCards(); };
         menu.Items.Add(import);
 
         menu.Items.Add(new MenuFlyoutSeparator());
 
-        var bookmarks = new MenuFlyoutItem { Text = "Import browser bookmarks…", Icon = new FontIcon { Glyph = "" }, IsEnabled = !readOnly };
+        var bookmarks = new MenuFlyoutItem { Text = UiText.Get("launchers.bulk.importBookmarks"), Icon = new FontIcon { Glyph = "" }, IsEnabled = !readOnly };
         bookmarks.Click += async (_, _) => { await LauncherBulkOps.ImportBookmarksAsync(XamlRoot, launcher); RebuildLauncherCards(); };
         menu.Items.Add(bookmarks);
 
@@ -676,8 +679,7 @@ public sealed partial class LaunchersPage : Page
     /// </summary>
     private ToggleSwitch BuildEnabledOnDeviceSwitch(Launcher launcher)
     {
-        string name = string.Format(
-            (string)Application.Current.Resources["LauncherEnabledOnDevice"], launcher.Name);
+        string name = UiText.Format("launchers.card.enabledOnDevice", ("launcher", launcher.Name));
         var toggle = new ToggleSwitch
         {
             IsOn = SettingsManager.Current.IsLauncherEnabled(launcher.Id),
@@ -711,10 +713,10 @@ public sealed partial class LaunchersPage : Page
             var dialog = new ContentDialog
             {
                 XamlRoot = this.XamlRoot,
-                Title = (string)Application.Current.Resources["LauncherDisableOnDeviceTitle"],
-                Content = (string)Application.Current.Resources["LauncherDisableOnDeviceMessage"],
-                PrimaryButtonText = (string)Application.Current.Resources["LauncherDisableOnDeviceConfirm"],
-                CloseButtonText = "Cancel",
+                Title = UiText.Get("launchers.disable.title"),
+                Content = UiText.Get("launchers.disable.message"),
+                PrimaryButtonText = UiText.Get("launchers.disable.confirm"),
+                CloseButtonText = UiText.Get("common.cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
             if (await dialog.ShowAsync() != ContentDialogResult.Primary)
@@ -739,17 +741,17 @@ public sealed partial class LaunchersPage : Page
 
         if (SettingsManager.Current.Launchers.Count <= 1)
         {
-            await ShowErrorDialog("You must keep at least one launcher.");
+            await ShowErrorDialog(UiText.Get("launchers.delete.keepOne"));
             return;
         }
 
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = "Delete Launcher",
-            Content = $"Delete the launcher \"{launcher.Name}\" and all its items? This cannot be undone.",
-            PrimaryButtonText = "Delete",
-            CloseButtonText = "Cancel",
+            Title = UiText.Get("launchers.delete.title"),
+            Content = UiText.Format("launchers.delete.message", ("launcher", launcher.Name)),
+            PrimaryButtonText = UiText.Get("common.delete"),
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Close,
         };
 
@@ -836,14 +838,16 @@ public sealed partial class LaunchersPage : Page
         {
             XamlRoot = this.XamlRoot,
             Title = launcher.IsShared
-                ? "Sharing Settings"
-                : "Share Launcher",
+                ? UiText.Get("launchers.share.titleExisting")
+                : UiText.Get("launchers.share.titleNew"),
             Content = new ScrollViewer { Content = formPanel, MaxHeight = 400 },
-            PrimaryButtonText = launcher.IsShared ? "Update" : "Share",
+            PrimaryButtonText = launcher.IsShared
+                ? UiText.Get("launchers.share.update")
+                : UiText.Get("launchers.share.share"),
             SecondaryButtonText = launcher.IsShared
-                ? "Stop Sharing"
+                ? UiText.Get("launchers.share.stop")
                 : null,
-            CloseButtonText = "Cancel",
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Primary,
         };
 
@@ -888,7 +892,7 @@ public sealed partial class LaunchersPage : Page
             var store = CloudSyncService.StoreFor(SyncProviders.OneDrive);
             if (store is not { IsSignedIn: true })
             {
-                await ShowErrorDialog("Sign in to OneDrive on the Cloud Sync page first.");
+                await ShowErrorDialog(UiText.Get("launchers.share.oneDriveSignInFirst"));
                 return;
             }
 
@@ -911,7 +915,7 @@ public sealed partial class LaunchersPage : Page
         {
             if (string.IsNullOrWhiteSpace(davUrlBox.Text) || string.IsNullOrWhiteSpace(davUserBox.Text))
             {
-                await ShowErrorDialog("WebDAV needs a file URL and a username.");
+                await ShowErrorDialog(UiText.Get("launchers.share.webDavNeedsUrlAndUser"));
                 return;
             }
 
@@ -925,7 +929,7 @@ public sealed partial class LaunchersPage : Page
 
             if (!WebDavSharedStore.HasCredentials(launcher))
             {
-                await ShowErrorDialog("Enter the WebDAV password.");
+                await ShowErrorDialog(UiText.Get("launchers.share.webDavPasswordRequired"));
                 return;
             }
         }
@@ -933,13 +937,13 @@ public sealed partial class LaunchersPage : Page
         {
             if (string.IsNullOrWhiteSpace(path))
             {
-                await ShowErrorDialog("Path is required.");
+                await ShowErrorDialog(UiText.Get("launchers.share.pathRequired"));
                 return;
             }
 
             if (mode == SharedSyncModes.Sftp && string.IsNullOrWhiteSpace(hostBox.Text))
             {
-                await ShowErrorDialog("SFTP host is required.");
+                await ShowErrorDialog(UiText.Get("launchers.share.sftpHostRequired"));
                 return;
             }
         }
@@ -995,21 +999,21 @@ public sealed partial class LaunchersPage : Page
             MaxHeight = 90,
         };
 
-        var copyButton = new Button { Content = "Copy link", Margin = new Thickness(0, 8, 0, 0) };
+        var copyButton = new Button { Content = UiText.Get("launchers.shareLink.copy"), Margin = new Thickness(0, 8, 0, 0) };
         copyButton.Click += (_, _) =>
         {
             var package = new global::Windows.ApplicationModel.DataTransfer.DataPackage();
             package.SetText(launcher.SharedLinkUrl);
             global::Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
-            copyButton.Content = "Copied";
+            copyButton.Content = UiText.Get("launchers.shareLink.copied");
         };
 
         var panel = new StackPanel { Spacing = 4, MinWidth = 420 };
         panel.Children.Add(new TextBlock
         {
-            Text = SharingText("SharingLinkSend") + "\n\n"
+            Text = UiText.Get("launchers.shareLink.send") + "\n\n"
                  + SharingDirectionText(launcher.SharedTwoWay) + "\n\n"
-                 + SharingText("SharingOneDriveFileWarning"),
+                 + UiText.Get("launchers.sharing.oneDriveFileWarning"),
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.75,
             Margin = new Thickness(0, 0, 0, 8),
@@ -1020,9 +1024,9 @@ public sealed partial class LaunchersPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = $"'{launcher.Name}' is shared",
+            Title = UiText.Format("launchers.shareLink.title", ("launcher", launcher.Name)),
             Content = panel,
-            CloseButtonText = "Done",
+            CloseButtonText = UiText.Get("common.done"),
             DefaultButton = ContentDialogButton.Close,
         };
 
@@ -1033,8 +1037,8 @@ public sealed partial class LaunchersPage : Page
     {
         var nameBox = new TextBox
         {
-            PlaceholderText = "Launcher name",
-            Text = "Shared Launcher",
+            PlaceholderText = UiText.Get("launchers.addShared.namePlaceholder"),
+            Text = UiText.Get("launchers.defaultName.shared"),
             Margin = new Thickness(0, 0, 0, 12),
         };
 
@@ -1043,17 +1047,17 @@ public sealed partial class LaunchersPage : Page
              davUrlBox, davUserBox, davPasswordBox, oneDriveLinkBox) = BuildShareForm(tempLauncher, isSubscribing: true);
 
         var fullPanel = new StackPanel { Spacing = 4 };
-        fullPanel.Children.Add(new TextBlock { Text = "Name", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
+        fullPanel.Children.Add(new TextBlock { Text = UiText.Get("common.name"), FontWeight = Microsoft.UI.Text.FontWeights.SemiBold });
         fullPanel.Children.Add(nameBox);
         fullPanel.Children.Add(formPanel);
 
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = "Add Shared Launcher",
+            Title = UiText.Get("launchers.addShared.title"),
             Content = new ScrollViewer { Content = fullPanel, MaxHeight = 400 },
-            PrimaryButtonText = "Add",
-            CloseButtonText = "Cancel",
+            PrimaryButtonText = UiText.Get("common.add"),
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Primary,
         };
 
@@ -1067,14 +1071,14 @@ public sealed partial class LaunchersPage : Page
         {
             if (string.IsNullOrWhiteSpace(oneDriveLinkBox.Text))
             {
-                await ShowErrorDialog("Paste the OneDrive share link you were sent.");
+                await ShowErrorDialog(UiText.Get("launchers.share.oneDriveLinkRequired"));
                 return;
             }
 
             var store = CloudSyncService.StoreFor(SyncProviders.OneDrive);
             if (store is not { IsSignedIn: true })
             {
-                await ShowErrorDialog("Sign in to OneDrive on the Cloud Sync page first.");
+                await ShowErrorDialog(UiText.Get("launchers.share.oneDriveSignInFirst"));
                 return;
             }
         }
@@ -1084,7 +1088,7 @@ public sealed partial class LaunchersPage : Page
                 || string.IsNullOrWhiteSpace(davUserBox.Text)
                 || davPasswordBox.Password.Length == 0)
             {
-                await ShowErrorDialog("WebDAV needs a file URL, a username and a password.");
+                await ShowErrorDialog(UiText.Get("launchers.share.webDavNeedsAll"));
                 return;
             }
         }
@@ -1092,13 +1096,13 @@ public sealed partial class LaunchersPage : Page
         {
             if (string.IsNullOrWhiteSpace(path))
             {
-                await ShowErrorDialog("Path is required.");
+                await ShowErrorDialog(UiText.Get("launchers.share.pathRequired"));
                 return;
             }
 
             if (mode == SharedSyncModes.Sftp && string.IsNullOrWhiteSpace(hostBox.Text))
             {
-                await ShowErrorDialog("SFTP host is required.");
+                await ShowErrorDialog(UiText.Get("launchers.share.sftpHostRequired"));
                 return;
             }
         }
@@ -1108,7 +1112,7 @@ public sealed partial class LaunchersPage : Page
         var newLauncher = new Launcher
         {
             Id = Guid.NewGuid().ToString(),
-            Name = string.IsNullOrWhiteSpace(nameBox.Text) ? "Shared Launcher" : nameBox.Text.Trim(),
+            Name = string.IsNullOrWhiteSpace(nameBox.Text) ? UiText.Get("launchers.defaultName.shared") : nameBox.Text.Trim(),
             IsShared = true,
             IsSharedOwner = false,
             SharedSyncMode = mode,
@@ -1140,7 +1144,7 @@ public sealed partial class LaunchersPage : Page
         {
             // The launcher is never added, so its stored password would be orphaned.
             WebDavSharedStore.ClearPassword(newLauncher);
-            await ShowErrorDialog($"Could not verify: {error}");
+            await ShowErrorDialog(UiText.Format("launchers.share.verifyFailed", ("error", error)));
             return;
         }
 
@@ -1158,17 +1162,12 @@ public sealed partial class LaunchersPage : Page
 
     // ── Shared dialog helpers ───────────────────────────────────────
 
-    /// <summary>Looks up sharing dialog copy in the application's merged localization dictionary.</summary>
-    private static string SharingText(string key) =>
-        Application.Current.Resources.TryGetValue(key, out var value) && value is string text ? text : key;
-
     /// <summary>Describes app editing policy without implying provider-level access restrictions.</summary>
     private static string SharingDirectionText(bool twoWay) =>
-        SharingText(twoWay ? "SharingTwoWayGuidance" : "SharingOneWayGuidance");
+        UiText.Get(twoWay ? "launchers.sharing.twoWayGuidance" : "launchers.sharing.oneWayGuidance");
 
     /// <summary>Example path shown for File mode, kept in one place so the two uses agree.</summary>
-    private const string FilePathPlaceholder =
-        @"C:\shared\launcher.json or \\server\share\launcher.json";
+    private static string FilePathPlaceholder => UiText.Get("launchers.share.filePathPlaceholder");
 
     /// <summary>Builds transport fields and live guidance; new subscribers adopt direction from the published file.</summary>
     private static (StackPanel Panel, ComboBox ModeCombo, TextBox PathBox,
@@ -1179,8 +1178,8 @@ public sealed partial class LaunchersPage : Page
     {
         // ── Direction ───────────────────────────────────────────────
         var directionCombo = new ComboBox { MinWidth = 160 };
-        directionCombo.Items.Add(SharingText("SharingDirectionTwoWay"));
-        directionCombo.Items.Add(SharingText("SharingDirectionOneWay"));
+        directionCombo.Items.Add(UiText.Get("launchers.sharing.directionTwoWay"));
+        directionCombo.Items.Add(UiText.Get("launchers.sharing.directionOneWay"));
         directionCombo.SelectedIndex = launcher.SharedTwoWay ? 0 : 1;
 
         // "How do you want to share this?" comes first and decides everything below it. The
@@ -1188,10 +1187,12 @@ public sealed partial class LaunchersPage : Page
         // meaning something different per mode — so the first thing a reader had to do was work
         // out which half of the dialog applied to them.
         var modeCombo = new ComboBox { MinWidth = 300, HorizontalAlignment = HorizontalAlignment.Stretch };
-        modeCombo.Items.Add("File: a folder, network share, or synced cloud folder");
-        modeCombo.Items.Add("SFTP server");
-        modeCombo.Items.Add("WebDAV server (Nextcloud, ownCloud...)");
-        modeCombo.Items.Add(isSubscribing ? "OneDrive: I have a share link" : "OneDrive: create a share link");
+        modeCombo.Items.Add(UiText.Get("launchers.share.modeFile"));
+        modeCombo.Items.Add(UiText.Get("launchers.share.modeSftp"));
+        modeCombo.Items.Add(UiText.Get("launchers.share.modeWebDav"));
+        modeCombo.Items.Add(isSubscribing
+            ? UiText.Get("launchers.share.modeOneDriveSubscribe")
+            : UiText.Get("launchers.share.modeOneDrivePublish"));
         modeCombo.SelectedIndex = launcher.SharedSyncMode;
 
         // What each choice actually means, in the dialog rather than in docs no one opens.
@@ -1205,23 +1206,23 @@ public sealed partial class LaunchersPage : Page
 
         var pathBox = new TextBox
         {
-            PlaceholderText = launcher.IsFileSync ? @"C:\shared\launcher.json or \\server\share\launcher.json" : "~/shared/launcher.json",
+            PlaceholderText = launcher.IsFileSync ? FilePathPlaceholder : "~/shared/launcher.json",
             Text = launcher.SharedPath,
         };
 
         var pathCaption = new TextBlock
         {
-            Text = SharingText(isSubscribing ? "SharingFileSubscriberPath" : "SharingFilePublisherPath"),
+            Text = UiText.Get(isSubscribing ? "launchers.sharing.fileSubscriberPath" : "launchers.sharing.filePublisherPath"),
             FontSize = 12,
             Opacity = 0.6,
             TextWrapping = TextWrapping.Wrap,
         };
         pathCaption.Visibility = launcher.IsFileSync ? Visibility.Visible : Visibility.Collapsed;
 
-        var hostBox = new TextBox { PlaceholderText = "hostname or IP", Text = launcher.SharedSftpHost };
+        var hostBox = new TextBox { PlaceholderText = UiText.Get("launchers.share.hostPlaceholder"), Text = launcher.SharedSftpHost };
         var portBox = new TextBox { PlaceholderText = "22", Text = launcher.SharedSftpPort == 22 ? "" : launcher.SharedSftpPort.ToString() };
         var userBox = new TextBox { PlaceholderText = Environment.UserName, Text = launcher.SharedSftpUsername };
-        var keyBox = new TextBox { PlaceholderText = "auto-detect (~/.ssh/)", Text = launcher.SharedSftpPrivateKeyPath };
+        var keyBox = new TextBox { PlaceholderText = UiText.Get("launchers.share.keyPlaceholder"), Text = launcher.SharedSftpPrivateKeyPath };
 
         // WebDAV-specific fields. Its own URL and account rather than the global WebDAV
         // settings: the server a colleague shares from is routinely not the one you sync to.
@@ -1230,8 +1231,13 @@ public sealed partial class LaunchersPage : Page
             PlaceholderText = "https://cloud.example.com/remote.php/dav/files/me/Shared/team.json",
             Text = launcher.SharedWebDavUrl,
         };
-        var davUserBox = new TextBox { PlaceholderText = "username", Text = launcher.SharedWebDavUsername };
-        var davPasswordBox = new PasswordBox { PlaceholderText = WebDavSharedStore.HasCredentials(launcher) ? "saved, type to replace" : "app password" };
+        var davUserBox = new TextBox { PlaceholderText = UiText.Get("launchers.share.usernamePlaceholder"), Text = launcher.SharedWebDavUsername };
+        var davPasswordBox = new PasswordBox
+        {
+            PlaceholderText = WebDavSharedStore.HasCredentials(launcher)
+                ? UiText.Get("launchers.share.passwordSavedPlaceholder")
+                : UiText.Get("launchers.share.appPasswordPlaceholder"),
+        };
 
         var davPanel = new StackPanel { Spacing = 4 };
 
@@ -1240,7 +1246,7 @@ public sealed partial class LaunchersPage : Page
         // ever holds a link — showing a file path here is exactly what made this confusing.
         var oneDriveLinkBox = new TextBox
         {
-            PlaceholderText = "https://1drv.ms/... (paste the link you were sent)",
+            PlaceholderText = UiText.Get("launchers.share.oneDriveLinkPlaceholder"),
             Text = launcher.SharedLinkUrl,
         };
         var oneDrivePanel = new StackPanel { Spacing = 4 };
@@ -1265,17 +1271,17 @@ public sealed partial class LaunchersPage : Page
         // was previously shown a box captioned "leave this empty" — a field that exists to be
         // ignored, in a dialog whose whole purpose is the thing it would have contained.
         if (isSubscribing)
-            AddField(oneDrivePanel, "Share link", oneDriveLinkBox);
+            AddField(oneDrivePanel, UiText.Get("launchers.share.shareLink"), oneDriveLinkBox);
         oneDrivePanel.Children.Add(oneDriveNote);
 
-        AddField(davPanel, "File URL", davUrlBox);
-        AddField(davPanel, "Username", davUserBox);
-        AddField(davPanel, "Password", davPasswordBox);
+        AddField(davPanel, UiText.Get("launchers.share.fileUrl"), davUrlBox);
+        AddField(davPanel, UiText.Get("launchers.share.username"), davUserBox);
+        AddField(davPanel, UiText.Get("launchers.share.password"), davPasswordBox);
 
-        AddField(sftpPanel, "SFTP Host", hostBox);
-        AddField(sftpPanel, "Port", portBox);
-        AddField(sftpPanel, "Username", userBox);
-        AddField(sftpPanel, "Private Key", keyBox);
+        AddField(sftpPanel, UiText.Get("launchers.share.sftpHost"), hostBox);
+        AddField(sftpPanel, UiText.Get("launchers.share.port"), portBox);
+        AddField(sftpPanel, UiText.Get("launchers.share.username"), userBox);
+        AddField(sftpPanel, UiText.Get("launchers.share.privateKey"), keyBox);
 
         sftpPanel.Visibility = launcher.IsSftpSync ? Visibility.Visible : Visibility.Collapsed;
         davPanel.Visibility = launcher.IsWebDavSync ? Visibility.Visible : Visibility.Collapsed;
@@ -1283,7 +1289,7 @@ public sealed partial class LaunchersPage : Page
 
         // Update visibility and placeholder when mode changes
         var pathRow = new StackPanel { Spacing = 4 };
-        AddField(pathRow, "Path", pathBox);
+        AddField(pathRow, UiText.Get("launchers.share.path"), pathBox);
 
         var directionCaption = new TextBlock
         {
@@ -1316,23 +1322,23 @@ public sealed partial class LaunchersPage : Page
 
             string captionKey = mode switch
             {
-                SharedSyncModes.Sftp => isSubscribing ? "SharingSftpSubscriber" : "SharingSftpPublisher",
-                SharedSyncModes.WebDav => isSubscribing ? "SharingWebDavSubscriber" : "SharingWebDavPublisher",
-                SharedSyncModes.OneDrive when isSubscribing => "SharingOneDriveSubscriber",
+                SharedSyncModes.Sftp => isSubscribing ? "launchers.sharing.sftpSubscriber" : "launchers.sharing.sftpPublisher",
+                SharedSyncModes.WebDav => isSubscribing ? "launchers.sharing.webDavSubscriber" : "launchers.sharing.webDavPublisher",
+                SharedSyncModes.OneDrive when isSubscribing => "launchers.sharing.oneDriveSubscriber",
                 SharedSyncModes.OneDrive when launcher.IsOneDriveSync
-                    && launcher.SharedLinkUrl.Length > 0 => "SharingOneDriveExisting",
-                SharedSyncModes.OneDrive => "SharingOneDrivePublisher",
-                _ => isSubscribing ? "SharingFileSubscriber" : "SharingFilePublisher",
+                    && launcher.SharedLinkUrl.Length > 0 => "launchers.sharing.oneDriveExisting",
+                SharedSyncModes.OneDrive => "launchers.sharing.oneDrivePublisher",
+                _ => isSubscribing ? "launchers.sharing.fileSubscriber" : "launchers.sharing.filePublisher",
             };
-            modeCaption.Text = SharingText(captionKey);
+            modeCaption.Text = UiText.Get(captionKey);
 
             // Direction controls editing in Little Launcher, not the provider's file permissions.
             // Do not infer a new subscriber's direction before the published payload is fetched.
             directionCaption.Text = isSubscribing
-                ? SharingText("SharingSubscriberDirection")
+                ? UiText.Get("launchers.sharing.subscriberDirection")
                 : SharingDirectionText(directionCombo.SelectedIndex == 0);
 
-            oneDriveNote.Text = SharingText("SharingOneDriveFileWarning");
+            oneDriveNote.Text = UiText.Get("launchers.sharing.oneDriveFileWarning");
             oneDriveNote.Visibility = isOneDrive ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -1343,7 +1349,10 @@ public sealed partial class LaunchersPage : Page
 
         // Provider first, then only its inputs, then direction — the order the decisions
         // are actually made in.
-        AddField(panel, isSubscribing ? "How was it shared with you?" : "How do you want to share this?", modeCombo);
+        string modeQuestion = isSubscribing
+            ? UiText.Get("launchers.share.modeQuestionSubscribe")
+            : UiText.Get("launchers.share.modeQuestionPublish");
+        AddField(panel, modeQuestion, modeCombo);
         panel.Children.Add(modeCaption);
         panel.Children.Add(pathRow);
         panel.Children.Add(pathCaption);
@@ -1355,7 +1364,7 @@ public sealed partial class LaunchersPage : Page
         // that was meant to be read-only, so they are told rather than asked: the answer is
         // published in the file and adopted on the first pull.
         if (!isSubscribing)
-            AddField(panel, "Direction", directionCombo);
+            AddField(panel, UiText.Get("launchers.share.direction"), directionCombo);
         panel.Children.Add(directionCaption);
 
         ApplyMode(modeCombo.SelectedIndex);
@@ -1368,15 +1377,15 @@ public sealed partial class LaunchersPage : Page
 
     private async Task<string?> ShowPasswordPrompt()
     {
-        var passwordBox = new PasswordBox { PlaceholderText = "SSH key passphrase or password" };
+        var passwordBox = new PasswordBox { PlaceholderText = UiText.Get("launchers.auth.placeholder") };
 
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = "Authentication Required",
+            Title = UiText.Get("launchers.auth.title"),
             Content = passwordBox,
-            PrimaryButtonText = "OK",
-            CloseButtonText = "Cancel",
+            PrimaryButtonText = UiText.Get("common.ok"),
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Primary,
         };
 
@@ -1390,9 +1399,9 @@ public sealed partial class LaunchersPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = this.XamlRoot,
-            Title = "Error",
+            Title = UiText.Get("common.error"),
             Content = message,
-            CloseButtonText = "OK",
+            CloseButtonText = UiText.Get("common.ok"),
         };
         await dialog.ShowAsync();
     }

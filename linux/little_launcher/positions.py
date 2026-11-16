@@ -3,6 +3,8 @@ import os
 from PySide6.QtCore import ClassInfo, QObject, Slot
 from PySide6.QtDBus import QDBusConnection
 
+from . import i18n
+
 SERVICE = 'org.littlelauncher.Placement'
 INTERFACE = 'org.littlelauncher.Placement'
 
@@ -45,7 +47,7 @@ class PlacementBridge(QObject):
             try:
                 self.controller.preferences.set('WebPositions', {key: value for key, value in positions.items() if key not in changed})
             except OSError:
-                self.controller.failed.emit('The previous dragged window position could not be cleared.')
+                self.controller.failed.emit(i18n.t('webPosition.clearFailed'))
 
     def get(self, identifier):
         value = self.controller.preferences.data.get('WebPositions', {}).get(identifier)
@@ -62,7 +64,7 @@ class PlacementBridge(QObject):
         try:
             self.controller.preferences.set('WebPositions', positions)
         except OSError:
-            self.controller.failed.emit('The dragged window position could not be saved.')
+            self.controller.failed.emit(i18n.t('webPosition.saveFailed'))
             return
         self.controller.local_changed.emit()
 

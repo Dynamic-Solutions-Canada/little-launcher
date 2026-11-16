@@ -1,4 +1,5 @@
-﻿using LittleLauncher.Classes.Settings;
+﻿using LittleLauncher.Localization;
+using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
 using System.IO;
 
@@ -46,16 +47,17 @@ public static class CloudSyncService
     public static async Task<(bool Success, string Message)> TestAsync(int provider)
     {
         var store = StoreFor(provider);
-        if (store == null) return (false, "That is not a cloud provider.");
+        if (store == null) return (false, UiText.Get("cloud.notCloudProvider"));
         if (!store.IsAvailable) return (false, CloudSyncCredentials.NotConfiguredMessage(store.ProviderName));
-        if (!store.IsSignedIn) return (false, $"Not signed in to {store.ProviderName}.");
+        if (!store.IsSignedIn) return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
 
         try
         {
             var modified = await store.GetRemoteModifiedAsync();
             return modified.HasValue
-                ? (true, $"Connected to {store.ProviderName}. Launcher data last changed {DescribeAge(modified.Value)}.")
-                : (true, $"Connected to {store.ProviderName}. No launcher data there yet — upload to create it.");
+                ? (true, UiText.Format("cloud.connectedWithData",
+                    ("provider", store.ProviderName), ("age", DescribeAge(modified.Value))))
+                : (true, UiText.Format("cloud.connectedNoData", ("provider", store.ProviderName)));
         }
         catch (Exception ex)
         {
@@ -68,8 +70,8 @@ public static class CloudSyncService
     public static async Task<(bool Success, string Message)> UploadLaunchersAsync(int provider)
     {
         var store = StoreFor(provider);
-        if (store == null) return (false, "That is not a cloud provider.");
-        if (!store.IsSignedIn) return (false, $"Not signed in to {store.ProviderName}.");
+        if (store == null) return (false, UiText.Get("cloud.notCloudProvider"));
+        if (!store.IsSignedIn) return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
 
         try
         {
@@ -79,12 +81,12 @@ public static class CloudSyncService
             await store.UploadAsync(payload.ToArray());
 
             Logger.Info($"Launchers uploaded to {store.ProviderName}");
-            return (true, $"Launchers uploaded to {store.ProviderName}.");
+            return (true, UiText.Format("syncService.uploadedTo", ("destinations", store.ProviderName)));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to upload launchers to {store.ProviderName}");
-            return (false, $"Upload failed: {ex.Message}");
+            return (false, UiText.Format("syncService.uploadFailed", ("error", ex.Message)));
         }
     }
 
@@ -99,19 +101,19 @@ public static class CloudSyncService
         int provider, bool force = false)
     {
         var store = StoreFor(provider);
-        if (store == null) return (false, "That is not a cloud provider.");
-        if (!store.IsSignedIn) return (false, $"Not signed in to {store.ProviderName}.");
+        if (store == null) return (false, UiText.Get("cloud.notCloudProvider"));
+        if (!store.IsSignedIn) return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
 
         try
         {
             byte[]? bytes = await store.DownloadAsync();
             if (bytes == null)
-                return (false, $"No launchers file found in {store.ProviderName}.");
+                return (false, UiText.Format("cloud.noLaunchersFile", ("provider", store.ProviderName)));
 
             using var stream = new MemoryStream(bytes, writable: false);
             var (launchers, remoteTimestamp, extensions) = LauncherPayload.Deserialize(stream);
             if (launchers == null)
-                return (false, $"Failed to parse launchers from {store.ProviderName}.");
+                return (false, UiText.Format("cloud.parseFailed", ("provider", store.ProviderName)));
 
             if (LauncherPayload.ShouldSkipDownload(remoteTimestamp, force, out string reason))
                 return (false, reason);
@@ -119,21 +121,22 @@ public static class CloudSyncService
             await LauncherPayload.ApplyAsync(launchers, extensions);
 
             Logger.Info($"Launchers downloaded from {store.ProviderName}");
-            return (true, $"Launchers downloaded from {store.ProviderName}.");
+            return (true, UiText.Format("cloud.downloaded", ("provider", store.ProviderName)));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to download launchers from {store.ProviderName}");
-            return (false, $"Download failed: {ex.Message}");
+            return (false, UiText.Format("syncService.downloadFailed", ("error", ex.Message)));
         }
     }
 
+    /// <summary>A short relative age, such as "5 min ago", for the connection test result.</summary>
     private static string DescribeAge(DateTimeOffset when)
     {
         var age = DateTimeOffset.UtcNow - when;
-        if (age < TimeSpan.FromMinutes(1)) return "just now";
-        if (age < TimeSpan.FromHours(1)) return $"{(int)age.TotalMinutes} min ago";
-        if (age < TimeSpan.FromDays(1)) return $"{(int)age.TotalHours} h ago";
-        return $"{(int)age.TotalDays} days ago";
+        if (age < TimeSpan.FromMinutes(1)) return UiText.Get("syncService.age.justNow");
+        if (age < TimeSpan.FromHours(1)) return UiText.Plural("syncService.age.minutes", (int)age.TotalMinutes);
+        if (age < TimeSpan.FromDays(1)) return UiText.Plural("syncService.age.hours", (int)age.TotalHours);
+        return UiText.Plural("syncService.age.days", (int)age.TotalDays);
     }
 }

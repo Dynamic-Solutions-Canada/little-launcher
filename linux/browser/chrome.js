@@ -21,8 +21,21 @@ function icon(button, name) {
 }
 for (const action of Object.keys(paths).filter(key => !['restore', 'folder', 'globe'].includes(key))) {
   const button = document.getElementById(action);
-  icon(button, action); button.setAttribute('aria-label', button.title);
+  icon(button, action);
   button.addEventListener('click', () => window.launcher.action(action));
+}
+// Header and address labels by element id, keyed to the strings the main process sends.
+const labelled = {back: 'back', forward: 'forward', reload: 'reload', home: 'home', more: 'more',
+  extensions: 'extensions', address: 'address', pin: 'pin', minimize: 'minimize', maximize: 'maximize',
+  hide: 'hide', 'new-tab': 'newTab', 'bookmark-add': 'bookmarkAdd'};
+/** Apply the main process's resolved interface text; the page itself holds no catalog. */
+function applyStrings(strings) {
+  for (const [id, name] of Object.entries(labelled)) {
+    const button = document.getElementById(id);
+    button.title = strings[name]; button.setAttribute('aria-label', strings[name]);
+  }
+  document.getElementById('tabs').setAttribute('aria-label', strings.tabs);
+  url.setAttribute('aria-label', strings.url); url.placeholder = strings.url;
 }
 const url = document.getElementById('url');
 document.getElementById('address-form').addEventListener('submit', event => {
@@ -126,7 +139,7 @@ function renderState(state) {
   }
   document.getElementById('back').disabled = !state.canGoBack;
   document.getElementById('forward').disabled = !state.canGoForward;
-  document.getElementById('reload').title = state.loading ? 'Reload (loading)' : 'Reload';
+  applyStrings(state.strings);
   document.getElementById('pin').setAttribute('aria-pressed', String(state.pinned));
   document.getElementById('address').setAttribute('aria-pressed', String(state.showAddressBar));
   for (const name of ['title', 'minimize', 'maximize', 'hide']) document.getElementById(name).hidden = !!state.nativeFrame;
@@ -148,7 +161,7 @@ function renderState(state) {
     select.addEventListener('click', () => window.launcher.action('select-tab', tab.id));
     select.addEventListener('auxclick', event => { if (event.button === 1) window.launcher.action('close-tab', tab.id); });
     const close = document.createElement('button'); close.className = 'tab-close';
-    close.title = 'Close tab'; close.setAttribute('aria-label', 'Close ' + tab.title); icon(close, 'hide');
+    close.title = state.strings.closeTab; close.setAttribute('aria-label', tab.closeLabel); icon(close, 'hide');
     close.addEventListener('click', () => window.launcher.action('close-tab', tab.id));
     cell.addEventListener('contextmenu', event => {
       event.preventDefault(); event.stopPropagation(); window.launcher.action('tab-context', tab.id);
@@ -190,14 +203,14 @@ function renderState(state) {
     bar.append(button);
   }
   const overflow = document.createElement('button'); overflow.className = 'bookmark-overflow';
-  overflow.textContent = '»'; overflow.title = 'More bookmarks'; overflow.setAttribute('aria-label', overflow.title);
+  overflow.textContent = '»'; overflow.title = state.strings.moreBookmarks; overflow.setAttribute('aria-label', overflow.title);
   const openOverflow=()=>{const rect=overflow.getBoundingClientRect();window.launcher.action('bookmark-overflow',{index:overflowFrom,version:bookmarkVersion,anchor:{x:rect.left,y:rect.top}});};
   overflow.addEventListener('click',openOverflow);
   let overflowTimer;overflow.addEventListener('dragover',event=>{if(bookmarkDrag.session){event.preventDefault();if(!overflowTimer)overflowTimer=setTimeout(()=>{overflowTimer=null;openOverflow();},400);}});
   overflow.addEventListener('dragleave',()=>{clearTimeout(overflowTimer);overflowTimer=null;});
   bar.append(overflow);
   const add = document.createElement('button'); icon(add, 'new-tab');
-  add.title = 'Add current page to bookmarks'; add.setAttribute('aria-label', add.title); add.disabled = !state.editable;
+  add.title = state.strings.addToBar; add.setAttribute('aria-label', add.title); add.disabled = !state.editable;
   add.addEventListener('click', () => window.launcher.action('bookmark-add')); bar.append(add);
   layoutBookmarks();
 }

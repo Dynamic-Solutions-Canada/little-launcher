@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
 using LittleLauncher.Classes;
+using LittleLauncher.Localization;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -37,6 +38,12 @@ public sealed class ShortcutsWindow : Window
     private readonly IntPtr _hwnd;
 
     /// <summary>
+    /// Separates a shortcut's alternative key combinations in a row's Keys value. A control
+    /// character, so it can never collide with a key name or with translated text.
+    /// </summary>
+    internal const string AlternativeSeparator = "\u001F";
+
+    /// <summary>
     /// Shows the sheet and completes when it closes. <paramref name="ownerHwnd"/> keeps it above
     /// the flyout, which is always-on-top; <paramref name="onCreated"/> hands the window back so
     /// the caller can close it if the launcher goes away.
@@ -59,7 +66,7 @@ public sealed class ShortcutsWindow : Window
         IntPtr ownerHwnd)
     {
         _hwnd = WindowNative.GetWindowHandle(this);
-        Title = "Keyboard shortcuts";
+        Title = UiText.Get("shortcuts.title");
         SystemBackdrop = new MicaBackdrop();
 
         // Owned windows always sit above their owner — required because the flyout sets
@@ -95,7 +102,7 @@ public sealed class ShortcutsWindow : Window
                 {
                     new TextBlock
                     {
-                        Text = $"While {launcherName} has focus",
+                        Text = UiText.Format("shortcuts.whileFocused", ("launcher", launcherName)),
                         FontSize = 12,
                         Opacity = 0.6,
                         TextWrapping = TextWrapping.Wrap,
@@ -109,7 +116,7 @@ public sealed class ShortcutsWindow : Window
 
         var close = new Button
         {
-            Content = "Close",
+            Content = UiText.Get("common.close"),
             Style = (Style)Application.Current.Resources["AccentButtonStyle"],
             MinWidth = 90,
             HorizontalAlignment = HorizontalAlignment.Right,
@@ -122,7 +129,7 @@ public sealed class ShortcutsWindow : Window
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        var titleBar = WindowChrome.BuildTitleBar("Keyboard shortcuts");
+        var titleBar = WindowChrome.BuildTitleBar(Title);
         Grid.SetRow(titleBar, 0);
         Grid.SetRow(body, 1);
         Grid.SetRow(close, 2);
@@ -167,15 +174,15 @@ public sealed class ShortcutsWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
         };
 
-        // "Ctrl+Shift+Tab" becomes three caps; "Ctrl+R  or  F5" becomes two runs with a lowercase
-        // "or" between them, which is the only prose the sheet needs.
-        foreach (string alternative in keys.Split("  or  ", StringSplitOptions.TrimEntries))
+        // "Ctrl+Shift+Tab" becomes three caps; alternatives (Ctrl+R, F5) become two runs with a
+        // translated "or" between them, which is the only prose the sheet needs.
+        foreach (string alternative in keys.Split(AlternativeSeparator, StringSplitOptions.TrimEntries))
         {
             if (caps.Children.Count > 0)
             {
                 caps.Children.Add(new TextBlock
                 {
-                    Text = "or",
+                    Text = UiText.Get("shortcuts.or"),
                     FontSize = 11,
                     Opacity = 0.5,
                     VerticalAlignment = VerticalAlignment.Center,

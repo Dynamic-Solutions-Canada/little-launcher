@@ -1,0 +1,18 @@
+{
+  "webPosition.moveTo": "Mover a",
+  "webPosition.anchor.tray": "Cerca de su icono de la bandeja",
+  "webPosition.anchor.lastPosition": "Donde la arrastraste por última vez",
+  "webPosition.anchor.topLeft": "Arriba a la izquierda",
+  "webPosition.anchor.topCenter": "Arriba en el centro",
+  "webPosition.anchor.topRight": "Arriba a la derecha",
+  "webPosition.anchor.left": "Izquierda",
+  "webPosition.anchor.center": "Centro",
+  "webPosition.anchor.right": "Derecha",
+  "webPosition.anchor.bottomLeft": "Abajo a la izquierda",
+  "webPosition.anchor.bottomCenter": "Abajo en el centro",
+  "webPosition.anchor.bottomRight": "Abajo a la derecha",
+  "webPosition.pickerIntro": "Elige dónde se abre este lanzador en la pantalla que contiene su icono de la bandeja.",
+  "webPosition.pickerNotice": "Las posiciones arrastradas se quedan en este dispositivo. Se necesita la integración con el escritorio KDE.",
+  "webPosition.saveFailed": "No se pudo guardar la posición de la ventana arrastrada.",
+  "webPosition.clearFailed": "No se pudo borrar la posición anterior de la ventana arrastrada."
+}

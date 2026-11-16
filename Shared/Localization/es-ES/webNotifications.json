@@ -1,0 +1,5 @@
+{
+  "webNotifications.keepRunningPrompt": "Las notificaciones solo llegan mientras esta página está en ejecución, y ahora {launcher} se detiene cuando se cierra su ventana emergente.",
+  "webNotifications.keepRunning": "Mantener en ejecución",
+  "webNotifications.notNow": "Ahora no"
+}

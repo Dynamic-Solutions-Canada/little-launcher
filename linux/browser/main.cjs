@@ -7,6 +7,9 @@ const {Profiles} = require('./profiles.cjs');
 const {ExtensionHost}=require('./extension_host.cjs');
 const {browserUserAgent} = require('./browser_identity.cjs');
 const {windowIcon} = require('./window_icon.cjs');
+const i18n = require('./i18n.cjs');
+// The native process resolves the language; these arguments are never visible to web pages.
+i18n.configureFromArguments(process.argv);
 app.userAgentFallback = browserUserAgent();
 if (process.env.XDG_SESSION_TYPE === 'wayland') app.commandLine.appendSwitch('ozone-platform', 'wayland');
 
@@ -42,8 +45,8 @@ function request(value) {
     if (value.type !== 'close-launcher') return Promise.resolve(false);
     const owner = windows.get(value.id);
     return dialog.showMessageBox(owner?.window, {type: 'warning',
-      buttons: ['Keep open', 'Close page'], defaultId: 0, cancelId: 0,
-      message: 'Closing this page may interrupt media or transfers.'}).then(result => result.response === 1);
+      buttons: [i18n.t('webTabs.keepOpen'), i18n.t('linuxBrowser.closePage')], defaultId: 0, cancelId: 0,
+      message: i18n.t('linuxBrowser.closePageBusy')}).then(result => result.response === 1);
   }
   return new Promise(resolve => {
     const token = String(++sequence);
@@ -119,7 +122,7 @@ async function command(message) {
       if(!config || typeof config.Id!=='string' || config.Kind!==1)throw Error('Choose a web launcher profile.');
       const entries=await extensions.command(message,profiles.get(config),windows.get(config.Id));
       emit({type:'extensions-state',id:config.Id,entries});
-    }catch {emit({type:'extensions-state',id:message.launcher?.Id,entries:[],error:'The extension action could not complete. Check that the package is valid and open the launcher before opening its extension.'});}
+    }catch {emit({type:'extensions-state',id:message.launcher?.Id,entries:[],error:i18n.t('webExtensions.actionFailedDetail')});}
     return;
   }
   if (message.type === 'theme') {
@@ -159,18 +162,20 @@ async function command(message) {
     if (!config || typeof config.Id !== 'string' || !/^[a-zA-Z0-9-]+$/.test(config.Id) || message.confirmed !== true) return;
     if (message.action === 'reset-permissions') {
       profiles.resetPermissions(config);
-      emit({type:'notice',message:'Site permissions reset for this sign-in profile. Pages will ask again.'});
+      emit({type:'notice',message:i18n.t('linuxBrowser.permissionsReset')});
     } else if (message.action === 'clear-data') {
       try {
         await profiles.clearData(config,[...windows.values()]);
-        emit({type:'notice',message:'Browsing data cleared for this sign-in profile.'});
+        emit({type:'notice',message:i18n.t('linuxBrowser.browsingDataCleared')});
       } catch {
-        emit({type:'warning',message:'Browsing data could not be cleared. Finish active media or transfers in this sign-in profile and try again.'});
+        emit({type:'warning',message:i18n.t('linuxBrowser.browsingDataClearFailed')});
       }
     }
     return;
   }
   if (!['show', 'configure'].includes(message.type)) return;
+  // A language change in the native app applies to menus and chrome built after this message.
+  if (typeof message.language === 'string') i18n.configure({catalog: message.language});
   const config = message.launcher;
   if (!message.presentation || typeof message.presentation.homeUrl !== 'string') return;
   if (!config || typeof config.Id !== 'string' || !/^[a-zA-Z0-9-]+$/.test(config.Id)) return;
@@ -178,7 +183,7 @@ async function command(message) {
   let owner = windows.get(config.Id);
   if (owner && Boolean(owner.config.WebSharedProfile) !== Boolean(config.WebSharedProfile)) {
     if (owner.busy) {
-      emit({type: 'error', id: config.Id, message: 'The sign-in profile is saved. This active page keeps its previous profile until activity finishes and you reopen the launcher.'});
+      emit({type: 'error', id: config.Id, message: i18n.t('linuxBrowser.profileChangeDeferred')});
       return;
     }
     if (owner.window.isVisible() && message.type === 'configure') {
@@ -233,9 +238,9 @@ app.whenReady().then(() => {
       const message = JSON.parse(line);
       // Permission/dialog replies must bypass the queue that may be awaiting them.
       if (message.type === 'reply') void command(message);
-      else queued = queued.then(() => command(message)).catch(() => emit({type: 'error', message: 'Browser command failed.'}));
+      else queued = queued.then(() => command(message)).catch(() => emit({type: 'error', message: i18n.t('linuxBrowser.commandFailed')}));
     } catch {
-      emit({type: 'error', message: 'Invalid browser command.'});
+      emit({type: 'error', message: i18n.t('linuxBrowser.invalidCommand')});
     }
   });
   input.on('close', async () => {
@@ -247,14 +252,14 @@ app.whenReady().then(() => {
     if (active) {
       for (const owner of windows.values()) {
         owner.detached = true;
-        owner.detachReason = 'App connection lost: finish activity here';
+        owner.detachReason = 'linuxBrowser.detached.disconnected';
         owner.config = {...owner.config, WebRegularWindow: true};
         owner.hide();
         owner.show(null);
         owner.toolbar();
       }
-      const result = await dialog.showMessageBox({type: 'warning', buttons: ['Keep running', 'Quit'],
-        defaultId: 0, cancelId: 0, message: 'Little Launcher disconnected. Quitting may interrupt media or downloads.'});
+      const result = await dialog.showMessageBox({type: 'warning', buttons: [i18n.t('linuxBrowser.keepRunning'), i18n.t('common.quit')],
+        defaultId: 0, cancelId: 0, message: i18n.t('linuxBrowser.disconnected')});
       if (result.response !== 1) return;
     }
     quitting = true;

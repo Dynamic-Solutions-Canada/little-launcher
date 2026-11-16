@@ -10,6 +10,7 @@ from uuid import uuid4
 from PySide6.QtCore import QObject, QThread, QTimer, Signal, QUrl
 from PySide6.QtGui import QDesktopServices
 
+from . import i18n
 from .document import DocumentError, VISIBILITY_VERSION, require_sync_compatibility, sync_envelope, validate_document
 from .onedrive import CloudHTTPError, OneDrive, SecretStore, SignedOutError, SyncError
 from .portable_icons import pack_icons, unpack_icons, preserve_icons
@@ -87,7 +88,7 @@ def upload_changes(local, remote):
         'removed': len(right.keys() - left.keys()),
         'changed': len(changed),
         'iconChanges': len(icons),
-        'iconNames': [str(left[key].get('Name') or 'Unnamed launcher')[:120] for key in sorted(icons)[:10]],
+        'iconNames': [str(left[key].get('Name') or i18n.t('syncService.unnamedLauncher'))[:120] for key in sorted(icons)[:10]],
     }
 
 
@@ -110,7 +111,7 @@ class SyncJob(QThread):
             if isinstance(error, SignedOutError) or (isinstance(error, CloudHTTPError) and (error.status == 401 or error.oauth_error == 'invalid_grant')):
                 self.signed_out.emit()
             # Auth/network helpers already sanitize errors. Avoid raw URLs and response bodies.
-            self.failed.emit(self.browser_error or (str(error) if isinstance(error, DocumentError) else 'Sync could not complete. Local and cloud copies were preserved; try again.'))
+            self.failed.emit(self.browser_error or (str(error) if isinstance(error, DocumentError) else i18n.t('syncService.failedCopiesKept')))
 
 
 class LauncherSync(QObject):
@@ -163,7 +164,7 @@ class LauncherSync(QObject):
             try:
                 complete(value)
             except (DocumentError, OSError) as error:
-                self._failed(str(error) if isinstance(error,DocumentError) else 'The sync result could not be saved. Your launcher data was preserved; try again.', interactive)
+                self._failed(str(error) if isinstance(error,DocumentError) else i18n.t('syncService.resultNotSaved'), interactive)
         job.result.connect(receive)
         if check_account_failure:
             job.signed_out.connect(lambda: self._account(False))
@@ -175,7 +176,7 @@ class LauncherSync(QObject):
         if self.job is not job or job.cancelled.is_set():
             return
         if not QDesktopServices.openUrl(QUrl(url)):
-            job.browser_error = 'The default browser could not open OneDrive sign-in. Check your default browser and try again.'
+            job.browser_error = i18n.t('syncService.browserFailed')
             job.cancelled.set()
             self.status.emit(job.browser_error)
 
@@ -215,7 +216,7 @@ class LauncherSync(QObject):
         self._run(lambda _: self.transport.account_state(), complete)
 
     def test_connection(self):
-        self.status.emit('Testing enabled destinations…')
+        self.status.emit(i18n.t('sync.message.testing'))
         self._run(lambda _: self.transport.test_connection(), self.status.emit)
 
     def set_enabled(self, enabled):
@@ -227,7 +228,7 @@ class LauncherSync(QObject):
             self.timer.setInterval(minutes * 60_000)
 
     def sign_in(self):
-        self.status.emit('Complete OneDrive sign-in in your browser. You can cancel here.')
+        self.status.emit(i18n.t('sync.message.waitingForSignIn', provider='OneDrive'))
         def operation(job):
             message = self.transport.sign_in(job.browse.emit, job.cancelled)
             return message, self.transport.account_state()
@@ -235,14 +236,14 @@ class LauncherSync(QObject):
             message, account = result
             self.save_state(Automatic=False, Baseline=None, ETag=None, Compatible=False, Enabled=True)
             self._account(account['signedIn'], account.get('name', ''))
-            self.status.emit(message + ' Download your cloud launchers to review them.')
+            self.status.emit(i18n.t('syncService.signedInDownloadNext', message=message))
         self._run(operation, complete, cancellable=True, check_account_failure=False)
 
     def sign_out(self):
         def complete(_):
             self.save_state(Automatic=False, Baseline=None, ETag=None, Compatible=False)
             self._account(False)
-            self.status.emit('Signed out on this device. Cloud data and local launchers were kept.')
+            self.status.emit(i18n.t('syncService.signedOut'))
         self._run(lambda _: self.transport.secrets.clear(), complete)
 
     def writer_compatible(self):
@@ -251,16 +252,13 @@ class LauncherSync(QObject):
 
     def automatic_unavailable_reason(self):
         if not self.signed_in:
-            return 'Sign in to OneDrive to use automatic sync.'
+            return i18n.t('syncService.automatic.signIn')
         if not self.state.get('Enabled', True):
-            return 'Turn on the OneDrive destination above to use automatic sync.'
+            return i18n.t('syncService.automatic.turnOn')
         if not self.state.get('Baseline') or not self.state.get('ETag'):
-            return 'Download your launchers from OneDrive first, then turn on automatic sync.'
+            return i18n.t('syncService.automatic.downloadFirst')
         if not self.writer_compatible():
-            return ('Automatic sync needs a newer cloud file. Update Little Launcher on Windows '
-                    'to a version with Linux sync support, upload your launchers there, then download '
-                    'them here. This prevents older versions from losing Windows- or Linux-only launchers and their icons. '
-                    'Manual download is still available.')
+            return i18n.t('syncService.automatic.newerFile')
         return ''
 
     def set_automatic(self, enabled):
@@ -271,7 +269,7 @@ class LauncherSync(QObject):
         try:
             self.save_state(Automatic=enabled)
         except OSError:
-            self.status.emit('The automatic sync preference could not be saved. Your previous choice was kept.')
+            self.status.emit(i18n.t('syncService.automatic.saveFailed'))
             return False
         if enabled:
             QTimer.singleShot(0, self.automatic)
@@ -290,11 +288,11 @@ class LauncherSync(QObject):
         if self.job:
             return
         revision = self.controller.revision
-        self.status.emit('Downloading launchers from OneDrive…')
+        self.status.emit(i18n.t('sync.message.downloading'))
         def complete(result):
             try:
                 if result is None:
-                    raise SyncError('No launchers.json was found in the OneDrive app folder. Upload from Windows first.')
+                    raise SyncError(i18n.t('syncService.download.missing'))
                 downloaded, etag = result
                 validate_document(downloaded)
                 compatible = True
@@ -303,9 +301,9 @@ class LauncherSync(QObject):
                 except DocumentError:
                     compatible = False
                     if automatic:
-                        raise SyncError('Automatic sync paused: update the Windows writer. Manual download is still available.')
+                        raise SyncError(i18n.t('syncService.download.automaticPaused'))
                 if self.controller.revision != revision:
-                    raise SyncError('Local launchers changed during download. Your edits were kept; download again when ready.')
+                    raise SyncError(i18n.t('syncService.download.localChanged'))
                 incoming = unpack_icons(downloaded, self.controller.directory)
                 candidate = apply_remote(self.controller.document, incoming)
                 # Back up the exact full local document before any sync-driven replacement.
@@ -315,14 +313,14 @@ class LauncherSync(QObject):
                 if changed:
                     atomic_write(backup, (json.dumps(self.controller.document, indent=2, ensure_ascii=False) + '\n').encode())
                     if not self.controller.edit(lambda document: document.update(candidate)):
-                        raise SyncError('Downloaded launchers were not applied. Local changes were kept.')
+                        raise SyncError(i18n.t('syncService.download.notApplied'))
                 self._account(True, self.account_name)
                 baseline = fingerprint(pack_icons(self.controller.document,LauncherIcons.glyph_png))
                 self.save_state(Baseline=baseline, ETag=etag, Compatible=compatible,
                                 Automatic=self.state.get('Automatic', False) and compatible)
-                self.status.emit(f'Downloaded {len(incoming["Launchers"])} launchers. ' +
-                    ('Local data was backed up before replacement.' if changed else 'No launcher changes.') +
-                    ('' if compatible else ' This older Windows file is available for testing; uploads and automatic sync stay off until Windows is updated.'))
+                self.status.emit(i18n.plural('syncService.download.done', len(incoming['Launchers'])) + ' ' +
+                    i18n.t('syncService.download.backedUp' if changed else 'syncService.download.noChanges') +
+                    ('' if compatible else ' ' + i18n.t('syncService.download.olderWriter')))
             except (DocumentError, OSError) as error:
                 self._failed(str(error))
         self._run(lambda _: self.transport.download(), complete, interactive=not automatic)
@@ -333,7 +331,7 @@ class LauncherSync(QObject):
             return
         self._upload_review = None
         if not self.writer_compatible() or not self.state.get('ETag'):
-            self._failed('Download a file written by the updated Windows version before uploading.', True)
+            self._failed(i18n.t('syncService.upload.needsCompatibleDownload'), True)
             return
         try:
             snapshot = pack_icons(self.controller.document, LauncherIcons.glyph_png)
@@ -343,21 +341,21 @@ class LauncherSync(QObject):
                     launcher.pop(field, None)
             baseline, revision = fingerprint(snapshot), self.controller.revision
         except (DocumentError, OSError):
-            self._failed('The launcher icons could not be prepared. Your local and cloud copies were kept.', True)
+            self._failed(i18n.t('syncService.upload.iconsNotPrepared'), True)
             return
-        self.status.emit('Checking OneDrive before upload…')
+        self.status.emit(i18n.t('syncService.upload.checking'))
         def complete(remote):
             if remote is None:
-                raise SyncError('The OneDrive copy is missing. Nothing was uploaded.')
+                raise SyncError(i18n.t('syncService.upload.cloudMissing'))
             document, etag = remote
             validate_document(document)
             require_sync_compatibility(document)
             if self.controller.revision != revision:
-                raise SyncError('Local launchers changed during preparation. Click Upload again to review the latest copy.')
+                raise SyncError(i18n.t('syncService.upload.localChanged'))
             decision = sync_decision(baseline, fingerprint(document), self.state.get('Baseline'), etag != self.state.get('ETag'))
             if decision == 'same':
                 self.save_state(Baseline=baseline, ETag=etag)
-                self.status.emit('Launchers and icons are already up to date in OneDrive.')
+                self.status.emit(i18n.t('syncService.upload.upToDate'))
                 return
             review = {'action':'download' if decision=='remote' else 'upload','conflict':decision=='conflict',
                       'remoteHash':fingerprint(document),'token':uuid4().hex, 'revision':revision, 'baseline':baseline,
@@ -383,32 +381,32 @@ class LauncherSync(QObject):
         try:
             if (review['expires'] < time.monotonic() or self.controller.revision != review['revision']
                     or fingerprint(pack_icons(self.controller.document,LauncherIcons.glyph_png)) != review['baseline']):
-                raise SyncError('The local copy changed or this review expired. Click Upload again; nothing was uploaded.')
+                raise SyncError(i18n.t('syncService.upload.reviewExpired'))
         except (DocumentError, OSError) as error:
-            self._failed(str(error) if isinstance(error,DocumentError) else 'The icons changed. Click Upload again.', True)
+            self._failed(str(error) if isinstance(error,DocumentError) else i18n.t('syncService.upload.iconsChanged'), True)
             return
         if use_cloud or review['action'] == 'download':
             self.download()
             return
-        self.status.emit('Uploading the reviewed launcher copy to OneDrive…')
+        self.status.emit(i18n.t('syncService.upload.uploadingReviewed'))
         backup = self.controller.directory/'backups'/('before-onedrive-upload-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
         def operation(_):
             remote = self.transport.download()
             if not remote or remote[1] != review['etag'] or fingerprint(remote[0]) != review['remoteHash']:
-                raise SyncError('OneDrive changed again after your review. Click Upload to review the new copy; nothing was overwritten.')
+                raise SyncError(i18n.t('syncService.upload.cloudChangedAgain'))
             require_sync_compatibility(remote[0])
             atomic_write(backup,(json.dumps(remote[0],indent=2,ensure_ascii=False)+'\n').encode())
             return self.transport.upload(review['envelope'],review['etag'])
         def complete(etag):
             self.save_state(Baseline=review['baseline'],ETag=etag)
-            self.status.emit('Launchers and their icons uploaded to OneDrive. Download them on the other device.')
+            self.status.emit(i18n.t('syncService.upload.reviewedDone'))
         self._run(operation, complete, interactive=True)
 
     def upload(self):
         if self.job or self._upload_review is not None:
             return
         if not self.writer_compatible() or not self.state.get('ETag'):
-            self._failed('Download a file written by the updated Windows version before uploading. This protects OS-specific shortcuts from older writers.')
+            self._failed(i18n.t('syncService.upload.needsCompatibleDownloadAutomatic'))
             return
         try:
             snapshot = pack_icons(self.controller.document,LauncherIcons.glyph_png)
@@ -420,19 +418,19 @@ class LauncherSync(QObject):
         except DocumentError as error:
             self._failed(str(error))
             return
-        self.status.emit('Uploading launchers to OneDrive…')
+        self.status.emit(i18n.t('sync.message.uploading'))
         def operation(_):
             remote = self.transport.download()
             if not remote:
-                raise SyncError('The OneDrive copy is missing. Nothing was uploaded.')
+                raise SyncError(i18n.t('syncService.upload.cloudMissing'))
             require_sync_compatibility(remote[0])
             decision=sync_decision(baseline,fingerprint(remote[0]),self.state.get('Baseline'),remote[1]!=etag)
             if decision == 'same':return remote[1],False
             if decision in ('conflict','remote'):
-                raise SyncError('OneDrive changed on another device. Use Upload to review the conflict; your local edits were kept.')
+                raise SyncError(i18n.t('syncService.upload.conflict'))
             return self.transport.upload(envelope, remote[1]),True
         def complete(result):
             new_etag,uploaded=result
             self.save_state(Baseline=baseline, ETag=new_etag)
-            self.status.emit('Launchers and custom launcher images uploaded to OneDrive.' if uploaded else 'Launchers and icons are already up to date in OneDrive.')
+            self.status.emit(i18n.t('syncService.upload.done' if uploaded else 'syncService.upload.upToDate'))
         self._run(operation, complete)

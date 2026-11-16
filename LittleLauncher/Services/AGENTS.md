@@ -21,3 +21,5 @@ bounded and cancelable; only known exits establish state, and cleanup must finis
 may replace a pin snapshot. Never query the packaged Settings process identity instead.
 
 `PortableLauncherIcon.cs` is the custom-image boundary shared by global transports. Read [sync.md](../../docs/sync.md) and [icons.md](../../docs/icons.md) before changing it. Capture on detached models, reject malformed/oversized content before the live merge, and materialize only to a hash-derived path in physical AppData.
+
+Messages these services return or throw for the UI come from the shared catalogs through `UiText` (area files `syncService`, `cloud`, `sharing`, `browserData`, `shell`); read [localization.md](../../docs/localization.md). Log text and server-supplied text stay untranslated.

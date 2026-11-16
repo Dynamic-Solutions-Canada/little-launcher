@@ -1,0 +1,10 @@
+{
+  "shell.jumpList.launcherSettings": "Launcher-Einstellungen",
+  "shell.jumpList.launcherSettingsTooltip": "Einstellungen für {launcher}",
+  "shell.jumpList.openInBrowser": "Im Browser öffnen",
+  "shell.jumpList.editItems": "Einträge bearbeiten",
+  "shell.jumpList.editItemsTooltip": "Einträge in {launcher} bearbeiten",
+  "shell.jumpList.appSettingsTooltip": "Einstellungen für Little Launcher selbst",
+  "shell.startMenu.unnamedWebLauncher": "Web-Launcher",
+  "shell.pinStatusCheckDidNotStop": "Die Statusprüfung der Taskleiste wurde nicht beendet. Es wurde kein neues Anheften gestartet."
+}

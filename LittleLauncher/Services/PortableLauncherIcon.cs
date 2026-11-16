@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using System.IO;
 using System.Security.Cryptography;
@@ -12,16 +13,16 @@ internal static class PortableLauncherIcon
     internal static byte[] Decode(string data)
     {
         if (data.Length > 4 * ((MaxBytes + 2) / 3))
-            throw new InvalidDataException("A synced launcher icon exceeds 1 MiB.");
+            throw new InvalidDataException(UiText.Get("syncService.syncedIcon.tooLarge"));
         byte[] bytes = Convert.FromBase64String(data);
         if (bytes.Length == 0 || bytes.Length > MaxBytes)
-            throw new InvalidDataException("A synced launcher icon is empty or too large.");
+            throw new InvalidDataException(UiText.Get("syncService.syncedIcon.emptyOrTooLarge"));
         bool supported = bytes.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })
             || bytes.AsSpan().StartsWith(new byte[] { 0, 0, 1, 0 })
             || bytes.AsSpan().StartsWith(new byte[] { 255, 216, 255 })
             || bytes.AsSpan().StartsWith("GIF87a"u8) || bytes.AsSpan().StartsWith("GIF89a"u8)
             || bytes.AsSpan().StartsWith("BM"u8);
-        if (!supported) throw new InvalidDataException("A synced launcher icon is not a supported image.");
+        if (!supported) throw new InvalidDataException(UiText.Get("syncService.syncedIcon.unsupported"));
         return bytes;
     }
 
@@ -56,7 +57,7 @@ internal static class PortableLauncherIcon
         if (File.Exists(launcher.CustomTrayIconPath))
         {
             if (new FileInfo(launcher.CustomTrayIconPath).Length > MaxBytes)
-                throw new InvalidDataException("Choose a custom launcher icon smaller than 1 MiB before uploading.");
+                throw new InvalidDataException(UiText.Get("syncService.iconTooLarge"));
             string data = Convert.ToBase64String(File.ReadAllBytes(launcher.CustomTrayIconPath));
             Decode(data);
             launcher.CustomTrayIconData = data;

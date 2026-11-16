@@ -1,7 +1,24 @@
 'use strict';
 const {WebContentsView}=require('electron'),path=require('node:path');
 const {fitVideoSize}=require('./fullscreen_geometry.cjs');
+const i18n=require('./i18n.cjs');
 const videoRatio=`(()=>{const root=document.fullscreenElement;if(!root)return null;const videos=root.matches('video')?[root]:[...root.querySelectorAll('video')];const visible=videos.filter(video=>video.videoWidth>0&&video.videoHeight>0&&video.getBoundingClientRect().width>0&&video.getBoundingClientRect().height>0);visible.sort((a,b)=>{const x=a.getBoundingClientRect(),y=b.getBoundingClientRect();return y.width*y.height-x.width*x.height});return visible.length?visible[0].videoWidth/visible[0].videoHeight:null})()`;
+
+/**
+ * Width for the controls strip, so translated labels are not clipped.
+ * Estimated from the labels rather than measured in the page, which would need a new IPC message
+ * from trusted chrome: about 8px per Latin character and 15px per wide (CJK) character, plus each
+ * button's padding. Never narrower than the original 220px, nor wider than 480px.
+ * @param {string[]} labels the visible button labels
+ * @returns {number} strip width in DIPs
+ */
+function stripWidth(labels) {
+  let text=0;
+  for(const label of labels) {
+    for(const character of label)text+=/[\u1100-\uffdc]/u.test(character)?15:8;
+  }
+  return Math.max(220,Math.min(480,text+labels.length*28+12));
+}
 
 /** Host-owned fullscreen presentation; no preload or controls are injected into the website. */
 class PageFullscreen {
@@ -44,8 +61,13 @@ class PageFullscreen {
   layout() {
     if(!this.state || !this.view || this.view.webContents.isDestroyed())return;
     const [width]=this.owner.window.getContentSize();
-    this.view.setBounds({x:Math.max(0,width-220),y:0,width:Math.min(width,220),height:34});
-    this.view.webContents.send('fullscreen-state',{theme:this.owner.theme,contained:this.state.contained,maximized:this.owner.window.isMaximized()});
+    const maximized=this.owner.window.isMaximized();
+    // Resolved labels only; this trusted local page never reads the catalogs itself.
+    const strings=i18n.strings({maximize:maximized?'web.restoreSize':'web.maximize',maximizeTitle:maximized?'webFullscreen.restoreLauncherSize':'webFullscreen.maximizeLauncher',
+      exit:'webFullscreen.exitButton',exitTitle:'webFullscreen.exitWithEscape'});
+    const strip=Math.min(width,stripWidth(this.state.contained?[strings.maximize,strings.exit]:[strings.exit]));
+    this.view.setBounds({x:Math.max(0,width-strip),y:0,width:strip,height:34});
+    this.view.webContents.send('fullscreen-state',{theme:this.owner.theme,contained:this.state.contained,maximized,strings});
   }
   action(action) {
     if(action==='exit-fullscreen'){this.exitPage();return true;}

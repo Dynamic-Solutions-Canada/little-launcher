@@ -1,4 +1,5 @@
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -53,7 +54,7 @@ public sealed partial class LauncherSettingsWindow
             WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
         };
 
-        var sizeRow = BuildRow("Flyout Size", "Width × height of the web flyout, in pixels", sizeControls);
+        var sizeRow = BuildRow(UiText.Get("launcherSettings.flyoutSize.title"), UiText.Get("launcherSettings.flyoutSize.description"), sizeControls);
 
         // ── Zoom ────────────────────────────────────────────────
         var zoomCombo = new ComboBox { MinWidth = 100 };
@@ -64,7 +65,7 @@ public sealed partial class LauncherSettingsWindow
         int currentZoom = launcher.ResolvedWebZoomPercent;
         int[] zoomLevels = Launcher.WebZoomLevelsIncluding(currentZoom);
         foreach (int zoom in zoomLevels)
-            zoomCombo.Items.Add(new ComboBoxItem { Content = $"{zoom}%", Tag = zoom });
+            zoomCombo.Items.Add(new ComboBoxItem { Content = UiText.Format("launcherSettings.zoom.percent", ("percent", zoom)), Tag = zoom });
         zoomCombo.SelectedIndex = Array.IndexOf(zoomLevels, currentZoom);
         zoomCombo.SelectionChanged += (_, _) =>
         {
@@ -74,25 +75,25 @@ public sealed partial class LauncherSettingsWindow
             Services.AutoSyncService.NotifyLaunchersChanged();
             WebFlyoutWindow.ApplyLauncherChanges(launcher.Id);
         };
-        var zoomRow = BuildRow("Zoom", "Page zoom inside the flyout, also on the flyout's “…” menu", zoomCombo);
+        var zoomRow = BuildRow(UiText.Get("launcherSettings.zoom.title"), UiText.Get("launcherSettings.zoom.description"), zoomCombo);
 
         // ── Opening position ────────────────────────────────────
         var anchorCombo = new ComboBox { MinWidth = 200 };
         (string Label, int Value)[] anchors =
         [
-            ("Near its tray icon", WebAnchors.Tray),
+            (UiText.Get("launcherSettings.opensAt.tray"), WebAnchors.Tray),
             // Second, beside the other answer that is not a fixed spot, and named for the gesture
             // that sets it; so the list says how to change it as well as what it does.
-            ("Where you last dragged it", WebAnchors.LastPosition),
-            ("Top left", WebAnchors.TopLeft),
-            ("Top centre", WebAnchors.TopCenter),
-            ("Top right", WebAnchors.TopRight),
-            ("Left", WebAnchors.Left),
-            ("Centre", WebAnchors.Center),
-            ("Right", WebAnchors.Right),
-            ("Bottom left", WebAnchors.BottomLeft),
-            ("Bottom centre", WebAnchors.BottomCenter),
-            ("Bottom right", WebAnchors.BottomRight),
+            (UiText.Get("launcherSettings.opensAt.lastPosition"), WebAnchors.LastPosition),
+            (UiText.Get("launcherSettings.opensAt.topLeft"), WebAnchors.TopLeft),
+            (UiText.Get("launcherSettings.opensAt.topCentre"), WebAnchors.TopCenter),
+            (UiText.Get("launcherSettings.opensAt.topRight"), WebAnchors.TopRight),
+            (UiText.Get("launcherSettings.opensAt.left"), WebAnchors.Left),
+            (UiText.Get("launcherSettings.opensAt.centre"), WebAnchors.Center),
+            (UiText.Get("launcherSettings.opensAt.right"), WebAnchors.Right),
+            (UiText.Get("launcherSettings.opensAt.bottomLeft"), WebAnchors.BottomLeft),
+            (UiText.Get("launcherSettings.opensAt.bottomCentre"), WebAnchors.BottomCenter),
+            (UiText.Get("launcherSettings.opensAt.bottomRight"), WebAnchors.BottomRight),
         ];
         foreach (var a in anchors)
             anchorCombo.Items.Add(new ComboBoxItem { Content = a.Label, Tag = a.Value });
@@ -100,10 +101,10 @@ public sealed partial class LauncherSettingsWindow
 
         var anchorSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
 
-        void UpdateAnchorText() => anchorSubtitle.Text =
+        void UpdateAnchorText() => anchorSubtitle.Text = UiText.Get(
             WebAnchors.Normalize(launcher.WebAnchor) == WebAnchors.LastPosition
-                ? "Drag the flyout anywhere and it opens there next time"
-                : "Where it opens on the screen holding its tray icon. A move lasts until you close it";
+                ? "launcherSettings.opensAt.lastPositionDescription"
+                : "launcherSettings.opensAt.anchoredDescription");
 
         anchorCombo.SelectionChanged += (_, _) =>
         {
@@ -122,7 +123,7 @@ public sealed partial class LauncherSettingsWindow
             UpdateAnchorText();
         };
 
-        var anchorRow = BuildRow("Opens At", anchorSubtitle, anchorCombo);
+        var anchorRow = BuildRow(UiText.Get("launcherSettings.opensAt.title"), anchorSubtitle, anchorCombo);
 
         // ── Remember size ───────────────────────────────────────
         // Stored inverted (WebLockSize) because this one is ON by default, and a bool defaulting
@@ -134,8 +135,8 @@ public sealed partial class LauncherSettingsWindow
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
-        var rememberSizeRow = BuildRow("Remember Size Changes",
-            "Keep this flyout at the size you drag it to; otherwise it reopens at the size above",
+        var rememberSizeRow = BuildRow(UiText.Get("launcherSettings.rememberSize.title"),
+            UiText.Get("launcherSettings.rememberSize.description"),
             rememberSizeToggle);
 
         void Refresh()

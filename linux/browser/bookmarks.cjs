@@ -1,6 +1,7 @@
 'use strict';
 const {validUrl} = require('./urls.cjs');
 const {createHash} = require('node:crypto');
+const {t} = require('./i18n.cjs');
 
 /** Bind a rendered bar action to its complete saved tree, including undisplayed metadata. */
 function bookmarkVersion(items) {
@@ -12,7 +13,7 @@ function projectBookmarks(items, parent = []) {
   return items.flatMap((item, index) => {
     const sourcePath = [...parent, index];
     if (item.IsFolder) {
-      return [{Name: item.Name || 'Folder', IsFolder: true, IconsOnly: !!item.IconsOnly, sourcePath,
+      return [{Name: item.Name || t('webBookmarks.defaultFolderName'), IsFolder: true, IconsOnly: !!item.IconsOnly, sourcePath,
         Children: projectBookmarks(item.Children || [], sourcePath)}];
     }
     return validUrl(item.Url) ? [{Name: item.Name, Url: item.Url, IconsOnly: item.IconsOnly, sourcePath}] : [];
@@ -37,7 +38,7 @@ function folders(items, parent = [], prefix = '') {
   return items.flatMap((item, index) => {
     if (!item.IsFolder) return [];
     const sourcePath = [...parent, index];
-    const label = prefix + (item.Name || 'Folder');
+    const label = prefix + (item.Name || t('webBookmarks.defaultFolderName'));
     return [{sourcePath, label}, ...folders(item.Children || [], sourcePath, label + ' / ')];
   });
 }
@@ -47,56 +48,56 @@ function bookmarkActions(items, sourcePath, invoke, iconsOnly = false, options =
   const selection = resolveBookmark(items, sourcePath);
   if (!selection) {
     return [
-      {label: 'Add bookmark…', enabled: options.editable !== false, click: () => invoke('add', [])},
-      {label: 'Add from browser…', enabled: options.editable !== false, click: () => invoke('import', sourcePath)},
-      {label: 'Add folder…', enabled: options.editable !== false, click: () => invoke('add-folder', [])},
+      {label: t('webBookmarks.addBookmarkMenu'), enabled: options.editable !== false, click: () => invoke('add', [])},
+      {label: t('webBookmarks.addFromBrowserMenu'), enabled: options.editable !== false, click: () => invoke('import', sourcePath)},
+      {label: t('webBookmarks.addFolderMenu'), enabled: options.editable !== false, click: () => invoke('add-folder', [])},
     ];
   }
   const {item, collection, index} = selection;
   const actions = [];
   if (item.IsFolder) {
     actions.push(
-      {label: 'Add bookmark…', enabled: options.editable !== false, click: () => invoke('add', sourcePath)},
-      {label: 'Add from browser…', enabled: options.editable !== false, click: () => invoke('import', sourcePath)},
-      {label: 'Add folder…', enabled: options.editable !== false, click: () => invoke('add-folder', sourcePath)},
+      {label: t('webBookmarks.addBookmarkMenu'), enabled: options.editable !== false, click: () => invoke('add', sourcePath)},
+      {label: t('webBookmarks.addFromBrowserMenu'), enabled: options.editable !== false, click: () => invoke('import', sourcePath)},
+      {label: t('webBookmarks.addFolderMenu'), enabled: options.editable !== false, click: () => invoke('add-folder', sourcePath)},
     );
     const contents = (item.Children || []).map((child, childIndex) => ({
-      label: child.Name || child.Url || 'Bookmark',
+      label: child.Name || child.Url || t('webBookmarks.defaultBookmarkName'),
       submenu: bookmarkActions(items, [...sourcePath, childIndex], invoke, iconsOnly, options),
     }));
-    if (contents.length) actions.push({label: 'Edit contents', submenu: contents});
+    if (contents.length) actions.push({label: t('webBookmarks.editContents'), submenu: contents});
     actions.push({type: 'separator'});
   }
   if (!item.IsFolder) {
     const valid = validUrl(item.Url);
     actions.push(
-      {label: 'Open', enabled: valid, click: () => invoke('open', sourcePath)},
-      {label: 'Open in new tab', enabled: valid, click: () => invoke('open-tab', sourcePath)},
+      {label: t('common.open'), enabled: valid, click: () => invoke('open', sourcePath)},
+      {label: t('webBookmarks.openInNewTab'), enabled: valid, click: () => invoke('open-tab', sourcePath)},
       {type: 'separator'},
-      {label: 'Rename…', enabled: options.editable !== false, click: () => invoke('rename', sourcePath)},
-      {label: 'Edit address…', enabled: options.editable !== false, click: () => invoke('address', sourcePath)},
-      {label: 'Copy address', enabled: valid, click: () => invoke('copy', sourcePath)},
+      {label: t('webBookmarks.renameMenu'), enabled: options.editable !== false, click: () => invoke('rename', sourcePath)},
+      {label: t('webBookmarks.editAddressMenu'), enabled: options.editable !== false, click: () => invoke('address', sourcePath)},
+      {label: t('webBookmarks.copyAddress'), enabled: valid, click: () => invoke('copy', sourcePath)},
     );
-  } else actions.push({label: 'Rename…', enabled: options.editable !== false, click: () => invoke('edit', sourcePath)});
+  } else actions.push({label: t('webBookmarks.renameMenu'), enabled: options.editable !== false, click: () => invoke('edit', sourcePath)});
   actions.push(
-    {label: 'Icon only', type: 'checkbox', checked: iconsOnly || !!item.IconsOnly, enabled: !iconsOnly && options.editable !== false,
+    {label: t('webBookmarks.iconOnly'), type: 'checkbox', checked: iconsOnly || !!item.IconsOnly, enabled: !iconsOnly && options.editable !== false,
       click: menuItem => invoke('icons-only', sourcePath, {value: menuItem.checked})},
   );
   if (!item.IsFolder) actions.push(
-    {label: 'Open in browser', enabled: validUrl(item.Url), click: () => invoke('external', sourcePath)},
+    {label: t('webBookmarks.openInBrowser'), enabled: validUrl(item.Url), click: () => invoke('external', sourcePath)},
     {type: 'separator'},
-    {label: 'Set as home page', enabled: options.editable !== false && validUrl(item.Url) && item.Url !== options.homeUrl,
+    {label: t('webBookmarks.setAsHomePage'), enabled: options.editable !== false && validUrl(item.Url) && item.Url !== options.homeUrl,
       click: () => invoke('set-home', sourcePath)},
   );
   if (options.editable === false) return actions;
   actions.push(
-    {label: sourcePath.length === 1 ? 'Move left' : 'Move up', enabled: index > 0, click: () => invoke('step', sourcePath, {delta: -1})},
-    {label: sourcePath.length === 1 ? 'Move right' : 'Move down', enabled: index < collection.length - 1,
+    {label: t(sourcePath.length === 1 ? 'webBookmarks.moveLeft' : 'common.moveUp'), enabled: index > 0, click: () => invoke('step', sourcePath, {delta: -1})},
+    {label: t(sourcePath.length === 1 ? 'webBookmarks.moveRight' : 'common.moveDown'), enabled: index < collection.length - 1,
       click: () => invoke('step', sourcePath, {delta: 1})},
   );
   const parent = sourcePath.slice(0, -1);
   if (parent.length) {
-    actions.push({label: 'Move to bookmark bar', click: () => invoke('move', sourcePath, {parent: []})});
+    actions.push({label: t('webBookmarks.moveToBar'), click: () => invoke('move', sourcePath, {parent: []})});
   }
   const destinations = folders(items).filter(folder => {
     const target = folder.sourcePath;
@@ -105,11 +106,11 @@ function bookmarkActions(items, sourcePath, invoke, iconsOnly = false, options =
       sourcePath.every((value, i) => value === target[i]);
     return !current && !descendant;
   });
-  if (destinations.length) actions.push({label: 'Move to folder', submenu: destinations.map(folder => ({
+  if (destinations.length) actions.push({label: t('webBookmarks.moveToFolder'), submenu: destinations.map(folder => ({
     label: folder.label, click: () => invoke('move', sourcePath, {parent: folder.sourcePath}),
   }))});
   actions.push({type: 'separator'},
-    {label: item.IsFolder ? 'Remove folder' : 'Remove', click: () => invoke('remove', sourcePath)});
+    {label: t(item.IsFolder ? 'webBookmarks.removeFolder' : 'common.remove'), click: () => invoke('remove', sourcePath)});
   return actions;
 }
 

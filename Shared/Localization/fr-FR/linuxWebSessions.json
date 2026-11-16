@@ -1,0 +1,5 @@
+{
+  "linuxWebSessions.unreadable": "Les onglets enregistrés du navigateur sont illisibles. Le fichier de session existant a été conservé.",
+  "linuxWebSessions.invalid": "Le navigateur a renvoyé une session d’onglets non valide.",
+  "linuxWebSessions.tooLarge": "Les onglets enregistrés du navigateur dépassent la limite de stockage local. Les sessions existantes ont été conservées."
+}

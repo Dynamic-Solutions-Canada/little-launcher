@@ -1,0 +1,10 @@
+{
+  "appPicker.openContainingFolder": "保存先のフォルダーを開く",
+  "appPicker.title": "アプリケーションを選択",
+  "appPicker.source.all": "すべてのアプリ",
+  "appPicker.source.applications": "アプリケーション",
+  "appPicker.source.webApps": "Web アプリ",
+  "appPicker.openFailed": "アプリケーションを開けませんでした",
+  "appPicker.folderFailed.title": "フォルダーを開けませんでした",
+  "appPicker.folderFailed.message": "ファイルマネージャーでこのアプリケーションのフォルダーを開けませんでした。"
+}

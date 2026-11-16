@@ -1,0 +1,17 @@
+{
+  "taskbarPin.title": "タスクバーに表示",
+  "taskbarPin.description": "ショートカットをタスクバーにピン留めしてすばやくアクセス",
+  "taskbarPin.checking": "タスクバーのピン留めを確認中…",
+  "taskbarPin.alreadyPinned": "タスクバーにピン留めされています。",
+  "taskbarPin.changedHint": "これらの変更を適用するには、ピン留めを外してからもう一度ピン留めしてください。",
+  "taskbarPin.detailsUnknown": "タスクバーにピン留めされています。もう一度ピン留めする前に、ピン留めを外してください。",
+  "taskbarPin.pin": "タスクバーにピン留め",
+  "taskbarPin.pinAgain": "再度ピン留め",
+  "taskbarPin.pinned": "ピン留め済み",
+  "taskbarPin.companionMissing": "付属のフライアウト用 exe が見つかりません。先にプロジェクトをビルドしてください。",
+  "taskbarPin.helperNotStarted": "ピン留めヘルパーが起動しませんでした。",
+  "taskbarPin.statusCheckFailed": "タスクバーの状態確認を完了できませんでした。この設定を閉じて再試行してください。",
+  "taskbarPin.unconfirmed": "このランチャーがピン留めされたかどうか、Windows で確認できませんでした。後でピン留めが表示される場合があります。",
+  "taskbarPin.helperFailed": "ピン留めヘルパーで要求を完了できませんでした。詳細は taskbar-pin.log を参照してください。",
+  "taskbarPin.failed": "このランチャーをピン留めできませんでした。{reason}"
+}

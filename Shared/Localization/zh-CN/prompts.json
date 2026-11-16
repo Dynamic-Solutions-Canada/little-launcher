@@ -1,0 +1,6 @@
+{
+  "prompts.launcherItems.title": "启动器项目",
+  "prompts.checkDetails": "请检查这些信息",
+  "prompts.nameRequired": "请输入名称。",
+  "prompts.fileFilter.all": "所有文件"
+}

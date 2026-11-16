@@ -1,6 +1,7 @@
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
+using LittleLauncher.Localization;
 using LittleLauncher.Pages;
 using LittleLauncher.Services;
 using System.Collections.Generic;
@@ -317,7 +318,7 @@ public sealed partial class LauncherItemsView
         ClearInsertionIndicator();
         e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
         e.Handled = true;
-        ApplyDragPreview(e, DragPreviewText("LauncherDragCannotMove", "Cannot move here"));
+        ApplyDragPreview(e, UiText.Get("items.dragCannotMove"));
     }
 
     private bool CanMoveTo(ListViewBase listView)
@@ -351,9 +352,9 @@ public sealed partial class LauncherItemsView
     private static string GetItemDisplayName(LauncherItem item)
     {
         if (item.IsGroup && string.IsNullOrWhiteSpace(item.Name))
-            return "section";
+            return UiText.Get("items.unnamedGroup");
 
-        return string.IsNullOrWhiteSpace(item.Name) ? "item" : item.Name;
+        return string.IsNullOrWhiteSpace(item.Name) ? UiText.Get("items.unnamedItem") : item.Name;
     }
 
     private sealed class ResizeGrip : Grid

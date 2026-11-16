@@ -1,0 +1,5 @@
+{
+  "webNotifications.keepRunningPrompt": "Benachrichtigungen kommen nur an, solange diese Seite läuft, und {launcher} wird derzeit beendet, wenn sein Flyout geschlossen wird.",
+  "webNotifications.keepRunning": "Weiter ausführen",
+  "webNotifications.notNow": "Nicht jetzt"
+}

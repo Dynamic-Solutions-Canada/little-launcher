@@ -1,0 +1,10 @@
+{
+  "appPicker.openContainingFolder": "Übergeordneten Ordner öffnen",
+  "appPicker.title": "Anwendung auswählen",
+  "appPicker.source.all": "Alle Apps",
+  "appPicker.source.applications": "Anwendungen",
+  "appPicker.source.webApps": "Web-Apps",
+  "appPicker.openFailed": "Anwendung konnte nicht geöffnet werden",
+  "appPicker.folderFailed.title": "Ordner konnte nicht geöffnet werden",
+  "appPicker.folderFailed.message": "Der Dateimanager konnte den Ordner dieser Anwendung nicht öffnen."
+}

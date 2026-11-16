@@ -6,6 +6,7 @@ const {PermissionStore}=require('./permission_store.cjs');
 const {installWorkerNotifications}=require('./worker_notifications.cjs');
 const {browserUserAgent,googleSignIn,applyNavigationIdentity} = require('./browser_identity.cjs');
 const {requestContents} = require('./request_contents.cjs');
+const {t} = require('./i18n.cjs');
 const {PageNotifications}=require('./page_notifications.cjs');
 
 /** Persistent browser partitions contain no portable credentials or settings. */
@@ -215,7 +216,7 @@ class Profiles {
         owner.lifecycle.downloads.delete(item);
         owner.lifecycle.update();
       });
-      item.setSaveDialogOptions({title: 'Save download'});
+      item.setSaveDialogOptions({title: t('web.saveDownload')});
     });
     void this.extensions?.register(profile);
     return profile;
@@ -238,7 +239,7 @@ class Profiles {
         this.permissionStore.set(this.profileKeys.get(profile),origin,allowed===true);
         grants.set(origin,allowed===true);await this.refreshNotificationPages(profile);
         return allowed===true?'granted':'denied';
-      }catch{this.permissionError('Notification permission could not be saved. Existing permissions were preserved.');return 'denied';}
+      }catch{this.permissionError(t('linuxBrowser.notificationPermissionNotSaved'));return 'denied';}
     })();prompts.set(origin,pending);
     try{return await pending;}finally{prompts.delete(origin);}
   }

@@ -1,4 +1,5 @@
 using LittleLauncher.Classes;
+using LittleLauncher.Localization;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -74,7 +75,7 @@ public sealed class TextPromptWindow : Window
             Style = (Style)Application.Current.Resources["AccentButtonStyle"],
             MinWidth = 90,
         };
-        var cancel = new Button { Content = "Cancel", MinWidth = 90 };
+        var cancel = new Button { Content = UiText.Get("common.cancel"), MinWidth = 90 };
 
         void Commit()
         {

@@ -1,5 +1,6 @@
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -39,7 +40,7 @@ public sealed partial class LauncherSettingsWindow
             string flyoutExe = MainWindow.GetFlyoutCompanionPath();
             if (!File.Exists(flyoutExe))
             {
-                await ReportPinErrorAsync("The companion flyout exe was not found. Build the project first.");
+                await ReportPinErrorAsync(UiText.Get("taskbarPin.companionMissing"));
                 return;
             }
 
@@ -88,7 +89,7 @@ public sealed partial class LauncherSettingsWindow
                 // Give the companion foreground ownership for Windows confirmation or manual pinning.
                 NativeMethods.ShowWindow(_hwnd, 6 /* SW_MINIMIZE */);
                 using var process = System.Diagnostics.Process.Start(start);
-                if (process == null) throw new InvalidOperationException("The pin helper did not start.");
+                if (process == null) throw new InvalidOperationException(UiText.Get("taskbarPin.helperNotStarted"));
                 await process.WaitForExitAsync();
                 result = process.ExitCode;
             }
@@ -122,16 +123,16 @@ public sealed partial class LauncherSettingsWindow
             }
             else if (result == 3)
             {
-                await ReportPinErrorAsync((string)Application.Current.Resources["TaskbarPinUnconfirmed"]);
+                await ReportPinErrorAsync(UiText.Get("taskbarPin.unconfirmed"));
             }
             else if (result != 0)
             {
-                await ReportPinErrorAsync("The pin helper could not complete the request. See taskbar-pin.log for details.");
+                await ReportPinErrorAsync(UiText.Get("taskbarPin.helperFailed"));
             }
         }
         catch (Exception ex)
         {
-            await ReportPinErrorAsync("Could not pin this launcher. " + ex.Message);
+            await ReportPinErrorAsync(UiText.Format("taskbarPin.failed", ("reason", ex.Message)));
         }
         finally
         {

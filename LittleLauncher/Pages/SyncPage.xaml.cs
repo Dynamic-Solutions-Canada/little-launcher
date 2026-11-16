@@ -1,4 +1,5 @@
 ﻿using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Services;
 using LittleLauncher.Windows;
@@ -107,19 +108,23 @@ public partial class SyncPage : Page
         {
             case SyncProviders.Sftp:
                 string host = SettingsManager.Current.SftpHost;
-                return string.IsNullOrWhiteSpace(host) ? "No host set" : host;
+                return string.IsNullOrWhiteSpace(host) ? UiText.Get("sync.status.noHost") : host;
 
             case SyncProviders.Folder:
                 string folder = SettingsManager.Current.SyncFolderPath;
-                return string.IsNullOrWhiteSpace(folder) ? "No folder set" : folder;
+                return string.IsNullOrWhiteSpace(folder) ? UiText.Get("sync.status.noFolder") : folder;
 
             default:
                 var store = CloudSyncService.StoreFor(provider);
                 if (store == null) return "";
-                if (!store.IsAvailable) return "Not available in this build";
+                if (!store.IsAvailable) return UiText.Get("sync.status.notAvailable");
                 if (!store.IsSignedIn)
-                    return provider == SyncProviders.WebDav ? "Not connected" : "Not signed in";
-                return store.AccountName.Length > 0 ? store.AccountName : "Connected";
+                {
+                    return provider == SyncProviders.WebDav
+                        ? UiText.Get("sync.status.notConnected")
+                        : UiText.Get("sync.status.notSignedIn");
+                }
+                return store.AccountName.Length > 0 ? store.AccountName : UiText.Get("sync.status.connected");
         }
     }
 
@@ -152,16 +157,16 @@ public partial class SyncPage : Page
         if (store.IsSignedIn)
         {
             hint.Text = provider == SyncProviders.OneDrive
-                ? "Stored in this app's own OneDrive folder. Nothing else in your drive is visible to it."
-                : "Stored in this app's hidden Drive folder. Nothing else in your Drive is visible to it.";
+                ? UiText.Get("sync.oneDrive.signedInHint")
+                : UiText.Get("sync.googleDrive.signedInHint");
             signIn.Visibility = Visibility.Collapsed;
             signOut.Visibility = Visibility.Visible;
         }
         else
         {
             hint.Text = provider == SyncProviders.OneDrive
-                ? "Sign in with a personal Microsoft account. Work and school accounts need the \"Folder or network share\" destination."
-                : "Sign in with your Google account. Opens in your browser.";
+                ? UiText.Get("sync.oneDrive.signInHint")
+                : UiText.Get("sync.googleDrive.signInHint");
             signIn.Visibility = Visibility.Visible;
             signOut.Visibility = Visibility.Collapsed;
         }
@@ -181,16 +186,18 @@ public partial class SyncPage : Page
         WebDavPasswordBox.Password = "";
 
         WebDavPasswordHint.Text = connected
-            ? "Saved and encrypted on this PC. Enter a new one to replace it."
-            : "Use an app password if your server issues them, not your account password.";
+            ? UiText.Get("sync.webDav.savedHint")
+            : UiText.Get("sync.webDav.passwordHint");
 
-        WebDavConnectButton.Content = connected ? "Replace" : "Connect";
+        WebDavConnectButton.Content = connected
+            ? UiText.Get("sync.webDav.replace")
+            : UiText.Get("sync.webDav.connect");
         WebDavDisconnectButton.Visibility = connected ? Visibility.Visible : Visibility.Collapsed;
 
         if (connected && store != null)
         {
             WebDavNotice.Severity = InfoBarSeverity.Success;
-            WebDavNotice.Message = $"Connected as {store.AccountName}.";
+            WebDavNotice.Message = UiText.Format("sync.webDav.connectedAs", ("account", store.AccountName));
             WebDavNotice.IsOpen = true;
         }
     }
@@ -205,7 +212,7 @@ public partial class SyncPage : Page
         if (store == null) return;
 
         button.IsEnabled = false;
-        ShowStatus($"Waiting for {store.ProviderName} sign-in in your browser...", InfoBarSeverity.Informational);
+        ShowStatus(UiText.Format("sync.message.waitingForSignIn", ("provider", store.ProviderName)), InfoBarSeverity.Informational);
 
         try
         {
@@ -219,7 +226,7 @@ public partial class SyncPage : Page
         catch (Exception ex)
         {
             Logger.Error(ex, $"{store.ProviderName} sign-in failed");
-            ShowStatus($"Sign-in failed: {ex.Message}", InfoBarSeverity.Error);
+            ShowStatus(UiText.Format("sync.message.signInFailed", ("error", ex.Message)), InfoBarSeverity.Error);
         }
         finally
         {
@@ -242,12 +249,10 @@ public partial class SyncPage : Page
         // in the account until revoked there; a WebDAV password was only ever stored here, so
         // telling someone to "revoke access" would send them looking for a screen that does not
         // exist. Either way, never imply more happened than did.
-        ShowStatus(
-            provider == SyncProviders.WebDav
-                ? "WebDAV password forgotten on this PC. The URL and username are kept."
-                : $"Signed out of {store.ProviderName} on this PC. Revoke the app's access in your "
-                  + $"{store.ProviderName} account settings to remove it everywhere.",
-            InfoBarSeverity.Success);
+        string message = provider == SyncProviders.WebDav
+            ? UiText.Get("sync.message.webDavForgotten")
+            : UiText.Format("sync.message.signedOut", ("provider", store.ProviderName));
+        ShowStatus(message, InfoBarSeverity.Success);
 
         RefreshDestinations();
     }
@@ -257,7 +262,7 @@ public partial class SyncPage : Page
         string password = WebDavPasswordBox.Password;
         if (string.IsNullOrEmpty(password))
         {
-            ShowStatus("Enter the WebDAV password first.", InfoBarSeverity.Warning);
+            ShowStatus(UiText.Get("sync.message.webDavEnterPassword"), InfoBarSeverity.Warning);
             return;
         }
 
@@ -266,7 +271,7 @@ public partial class SyncPage : Page
         WebDavPasswordBox.Password = "";
 
         WebDavConnectButton.IsEnabled = false;
-        ShowStatus("Checking the WebDAV server...", InfoBarSeverity.Informational);
+        ShowStatus(UiText.Get("sync.message.webDavChecking"), InfoBarSeverity.Informational);
 
         try
         {
@@ -319,7 +324,7 @@ public partial class SyncPage : Page
     private async void ExportSshConfig_Click(object sender, RoutedEventArgs e)
     {
         var picker = new FileSavePicker();
-        picker.FileTypeChoices.Add("JSON Files", new List<string> { ".json" });
+        picker.FileTypeChoices.Add(UiText.Get("sync.message.jsonFiles"), new List<string> { ".json" });
         picker.SuggestedFileName = "ssh-connection";
         InitializePicker(picker);
         var file = await picker.PickSaveFileAsync();
@@ -330,12 +335,14 @@ public partial class SyncPage : Page
             var profile = SshConnectionProfile.FromCurrentSettings();
             string json = JsonSerializer.Serialize(profile, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(file.Path, json);
-            ShowStatus($"Connection profile exported to {Path.GetFileName(file.Path)}", InfoBarSeverity.Success);
+            ShowStatus(
+                UiText.Format("sync.message.connectionExported", ("file", Path.GetFileName(file.Path))),
+                InfoBarSeverity.Success);
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to export SSH connection profile");
-            ShowStatus($"Export failed: {ex.Message}", InfoBarSeverity.Error);
+            ShowStatus(UiText.Format("sync.message.exportFailed", ("error", ex.Message)), InfoBarSeverity.Error);
         }
     }
 
@@ -357,13 +364,13 @@ public partial class SyncPage : Page
                 profile.ApplyToCurrentSettings();
                 SettingsManager.SaveSettings();
                 RefreshDestinations();
-                ShowStatus("Connection profile imported.", InfoBarSeverity.Success);
+                ShowStatus(UiText.Get("sync.message.connectionImported"), InfoBarSeverity.Success);
             }
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to import SSH connection profile");
-            ShowStatus($"Import failed: {ex.Message}", InfoBarSeverity.Error);
+            ShowStatus(UiText.Format("sync.message.importFailed", ("error", ex.Message)), InfoBarSeverity.Error);
         }
     }
 
@@ -435,7 +442,7 @@ public partial class SyncPage : Page
 
     private async Task RunTestAsync(string? password)
     {
-        ShowStatus("Testing destinations...", InfoBarSeverity.Informational);
+        ShowStatus(UiText.Get("sync.message.testing"), InfoBarSeverity.Informational);
         var (success, message) = await LauncherSyncService.TestAsync(password);
         ShowStatus(message, success ? InfoBarSeverity.Success : InfoBarSeverity.Error);
         RefreshDestinations();
@@ -443,7 +450,7 @@ public partial class SyncPage : Page
 
     private async Task RunUploadAsync(string? password)
     {
-        ShowStatus("Uploading launchers...", InfoBarSeverity.Informational);
+        ShowStatus(UiText.Get("sync.message.uploading"), InfoBarSeverity.Informational);
         var (success, message) = await LauncherSyncService.UploadLaunchersAsync(password);
         if (success)
             AutoSyncService.ClearPendingLocalItemChanges();
@@ -452,7 +459,7 @@ public partial class SyncPage : Page
 
     private async Task RunDownloadAsync(string? password)
     {
-        ShowStatus("Downloading launchers...", InfoBarSeverity.Informational);
+        ShowStatus(UiText.Get("sync.message.downloading"), InfoBarSeverity.Informational);
         var (success, message) = await LauncherSyncService.DownloadLaunchersAsync(password, force: true);
         ShowStatus(message, success ? InfoBarSeverity.Success : InfoBarSeverity.Error);
 

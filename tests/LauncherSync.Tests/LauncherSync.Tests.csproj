@@ -15,4 +15,11 @@
     <Compile Include="../../LittleLauncher/Services/LauncherPayload.cs" Link="LauncherPayload.cs" />
     <Compile Include="../../LittleLauncher/Services/PortableLauncherIcon.cs" Link="PortableLauncherIcon.cs" />
   </ItemGroup>
+  <!-- The real language layer and catalogs, embedded exactly as LittleLauncher.csproj does. -->
+  <ItemGroup>
+    <Compile Include="../../Shared/SupportedLanguages.cs" Link="SupportedLanguages.cs" />
+    <Compile Include="../../Shared/UiText.cs" Link="UiText.cs" />
+    <EmbeddedResource Include="../../Shared/Localization/**/*.json"
+                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

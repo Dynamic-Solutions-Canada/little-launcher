@@ -7,6 +7,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using LittleLauncher.Localization;
 using static LittleLauncher.Classes.NativeMethods;
 
 namespace LittleLauncher.Windows;
@@ -49,8 +50,9 @@ public sealed partial class WebFlyoutWindow
         if (button.Content is FontIcon icon)
             icon.Glyph = MaximizeGlyph(_isMaximized);
 
-        string key = _isMaximized ? "RestoreFullscreenLauncherSize" : "MaximizeFullscreenLauncher";
-        string label = (string)Application.Current.Resources[key];
+        string label = _isMaximized
+            ? UiText.Get("webFullscreen.restoreLauncherSize")
+            : UiText.Get("webFullscreen.maximizeLauncher");
         ToolTipService.SetToolTip(button, label);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
     }

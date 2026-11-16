@@ -1,4 +1,5 @@
 ﻿using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -229,7 +230,7 @@ public sealed partial class WebFlyoutWindow
         };
 
         // U+E711 is Segoe Fluent's Cancel.
-        var dismiss = BuildHeaderButton("", "Dismiss", (_, _) => HideNotice());
+        var dismiss = BuildHeaderButton("\uE711", UiText.Get("webPermissions.dismissNotice"), (_, _) => HideNotice());
 
         _noticeBar = new Grid
         {
@@ -355,9 +356,9 @@ public sealed partial class WebFlyoutWindow
         _permissionDeferrals.Enqueue((e, deferral));
 
         EnqueuePrompt(new PromptRequest(
-            $"{DescribeOrigin(e.Uri)} wants to {DescribePermission(e.PermissionKind)}.",
-            "Allow",
-            "Block",
+            DescribePermissionRequest(DescribeOrigin(e.Uri), e.PermissionKind),
+            UiText.Get("webPermissions.allow"),
+            UiText.Get("webPermissions.block"),
             allowed => ResolvePermission(allowed)));
     }
 
@@ -434,9 +435,9 @@ public sealed partial class WebFlyoutWindow
         if (!_keepRunningOffered.Add(_launcher.Id)) return;
 
         EnqueuePrompt(new PromptRequest(
-            $"Notifications only arrive while this page is running, and {_launcher.Name} currently stops when its flyout is dismissed.",
-            "Keep running",
-            "Not now",
+            UiText.Format("webNotifications.keepRunningPrompt", ("launcher", _launcher.Name)),
+            UiText.Get("webNotifications.keepRunning"),
+            UiText.Get("webNotifications.notNow"),
             accepted =>
             {
                 if (!accepted) return;
@@ -455,26 +456,40 @@ public sealed partial class WebFlyoutWindow
         }
         catch
         {
-            return "This page";
+            return UiText.Get("webPermissions.unknownOrigin");
         }
     }
 
-    private static string DescribePermission(CoreWebView2PermissionKind kind) => kind switch
+    /// <summary>
+    /// The prompt bar's question for one permission request, naming the site that asked.
+    /// </summary>
+    /// <remarks>
+    /// One whole sentence per permission kind rather than a shared "wants to {action}" frame, so
+    /// each language can order and inflect the request naturally.
+    /// </remarks>
+    /// <param name="origin">The requesting host, or the "this page" fallback from
+    /// <see cref="DescribeOrigin"/>.</param>
+    private static string DescribePermissionRequest(string origin, CoreWebView2PermissionKind kind)
     {
-        CoreWebView2PermissionKind.Microphone => "use your microphone",
-        CoreWebView2PermissionKind.Camera => "use your camera",
-        CoreWebView2PermissionKind.Geolocation => "know your location",
-        CoreWebView2PermissionKind.Notifications => "send you notifications",
-        CoreWebView2PermissionKind.OtherSensors => "use your device's sensors",
-        CoreWebView2PermissionKind.ClipboardRead => "read your clipboard",
-        CoreWebView2PermissionKind.MultipleAutomaticDownloads => "download several files at once",
-        CoreWebView2PermissionKind.FileReadWrite => "read and change files you choose",
-        CoreWebView2PermissionKind.Autoplay => "play audio and video automatically",
-        CoreWebView2PermissionKind.LocalFonts => "see the fonts installed on this PC",
-        CoreWebView2PermissionKind.MidiSystemExclusiveMessages => "control your MIDI devices",
-        CoreWebView2PermissionKind.WindowManagement => "see your displays",
-        _ => "use a device feature",
-    };
+        string key = kind switch
+        {
+            CoreWebView2PermissionKind.Microphone => "webPermissions.request.microphone",
+            CoreWebView2PermissionKind.Camera => "webPermissions.request.camera",
+            CoreWebView2PermissionKind.Geolocation => "webPermissions.request.location",
+            CoreWebView2PermissionKind.Notifications => "webPermissions.request.notifications",
+            CoreWebView2PermissionKind.OtherSensors => "webPermissions.request.sensors",
+            CoreWebView2PermissionKind.ClipboardRead => "webPermissions.request.clipboardRead",
+            CoreWebView2PermissionKind.MultipleAutomaticDownloads => "webPermissions.request.multipleDownloads",
+            CoreWebView2PermissionKind.FileReadWrite => "webPermissions.request.files",
+            CoreWebView2PermissionKind.Autoplay => "webPermissions.request.autoplay",
+            CoreWebView2PermissionKind.LocalFonts => "webPermissions.request.localFonts",
+            CoreWebView2PermissionKind.MidiSystemExclusiveMessages => "webPermissions.request.midi",
+            CoreWebView2PermissionKind.WindowManagement => "webPermissions.request.windowManagement",
+            _ => "webPermissions.request.deviceFeature",
+        };
+
+        return UiText.Format(key, ("origin", origin));
+    }
 
     // ── Stored answers ──────────────────────────────────────────────
 

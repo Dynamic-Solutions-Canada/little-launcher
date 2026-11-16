@@ -6,6 +6,7 @@ from PySide6.QtCore import QEvent, QUrl, Qt, Signal
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFrame, QHBoxLayout, QLineEdit, QListWidget, QListWidgetItem, QMenu, QMessageBox, QVBoxLayout, QWidget
 
+from . import i18n
 from .catalog import DesktopCatalog
 from .desktop import ICON, launch_item
 
@@ -25,9 +26,9 @@ class ApplicationList(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.search = QLineEdit()
-        self.search.setPlaceholderText('Search installed applications')
+        self.search.setPlaceholderText(i18n.t('itemEditor.searchApps'))
         search_row=QHBoxLayout();search_row.addWidget(self.search,1)
-        self.source=QComboBox();self.source.addItems(['All apps','Applications','Web apps']);search_row.addWidget(self.source);layout.addLayout(search_row)
+        self.source=QComboBox();self.source.addItems([i18n.t('appPicker.source.all'),i18n.t('appPicker.source.applications'),i18n.t('appPicker.source.webApps')]);search_row.addWidget(self.source);layout.addLayout(search_row)
         self.list = QListWidget()
         self.list.setFrameShape(QFrame.NoFrame)
         self.list.setMinimumHeight(180)
@@ -56,19 +57,19 @@ class ApplicationList(QWidget):
 
     def row_menu(self,item):
         entry=deepcopy(item.data(Qt.UserRole));menu=QMenu(self)
-        menu.addAction('Open',lambda:self.open_entry(entry))
+        menu.addAction(i18n.t('common.open'),lambda:self.open_entry(entry))
         folder=Path(entry['_path']).parent
-        action=menu.addAction('Open containing folder',lambda:self.open_folder(folder))
+        action=menu.addAction(i18n.t('appPicker.openContainingFolder'),lambda:self.open_folder(folder))
         action.setEnabled(folder.is_dir())
         return menu
 
     def open_entry(self,entry):
         try:launch_item({'Name':entry['Name'],'Path':entry['_path'],'Arguments':''})
-        except (OSError,ValueError) as error:QMessageBox.warning(self,'Could not open application',str(error))
+        except (OSError,ValueError) as error:QMessageBox.warning(self,i18n.t('appPicker.openFailed'),str(error))
 
     def open_folder(self,folder):
         if folder.is_dir() and not QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder))):
-            QMessageBox.warning(self,'Could not open folder','The file manager could not open this application’s folder.')
+            QMessageBox.warning(self,i18n.t('appPicker.folderFailed.title'),i18n.t('appPicker.folderFailed.message'))
 
     def eventFilter(self,widget,event):
         item=None;point=None
@@ -90,7 +91,7 @@ class ApplicationList(QWidget):
 class ApplicationPicker(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle('Choose an application')
+        self.setWindowTitle(i18n.t('appPicker.title'))
         self.resize(520, 560)
         layout = QVBoxLayout(self)
         self.catalog = ApplicationList(self)

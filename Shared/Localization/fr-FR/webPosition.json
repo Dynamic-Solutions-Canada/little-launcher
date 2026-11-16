@@ -1,0 +1,18 @@
+{
+  "webPosition.moveTo": "Déplacer vers",
+  "webPosition.anchor.tray": "Près de son icône de notification",
+  "webPosition.anchor.lastPosition": "Là où vous l’avez déplacé en dernier",
+  "webPosition.anchor.topLeft": "En haut à gauche",
+  "webPosition.anchor.topCenter": "En haut au centre",
+  "webPosition.anchor.topRight": "En haut à droite",
+  "webPosition.anchor.left": "À gauche",
+  "webPosition.anchor.center": "Au centre",
+  "webPosition.anchor.right": "À droite",
+  "webPosition.anchor.bottomLeft": "En bas à gauche",
+  "webPosition.anchor.bottomCenter": "En bas au centre",
+  "webPosition.anchor.bottomRight": "En bas à droite",
+  "webPosition.pickerIntro": "Choisissez où ce lanceur s’ouvre sur l’écran qui contient son icône de notification.",
+  "webPosition.pickerNotice": "Les positions par glissement restent sur cet appareil. L’intégration au bureau KDE est requise.",
+  "webPosition.saveFailed": "Impossible d’enregistrer la position de la fenêtre déplacée.",
+  "webPosition.clearFailed": "Impossible d’effacer la position précédente de la fenêtre déplacée."
+}

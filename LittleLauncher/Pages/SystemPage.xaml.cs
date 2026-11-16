@@ -1,4 +1,5 @@
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using NLog;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -33,9 +34,70 @@ public partial class SystemPage : Page
         WebShortcutsToggle.IsOn = !SettingsManager.Current.DisableWebLauncherShortcuts;
         _updatingShortcutsSwitch = false;
 
+        PopulateLanguages();
+
         _ = RefreshStartupStateAsync();
         _ = RefreshProfileCleanupAsync();
         RefreshExtensionList();
+    }
+
+    // ── Interface language ─────────────────────────────────────────
+
+    private bool _updatingLanguage;
+
+    /// <summary>
+    /// Set once the language has been changed in this run, so the rebuilt page keeps saying that
+    /// background web launchers switch after a restart.
+    /// </summary>
+    private static bool _languageChangedThisRun;
+
+    /// <summary>
+    /// Fill the language picker: Match device first, then each supported language in its own
+    /// name, with the saved choice selected.
+    /// </summary>
+    /// <remarks>
+    /// Match device names the language it currently resolves to, so the user can see what they
+    /// would get without switching. The item's <c>Tag</c> is the saved value; empty is Match device.
+    /// </remarks>
+    private void PopulateLanguages()
+    {
+        _updatingLanguage = true;
+
+        string deviceName = SupportedLanguages.NativeNames[UiText.DeviceLocale];
+        LanguageCombo.Items.Add(new ComboBoxItem
+        {
+            Content = UiText.Format("system.language.matchDevice", ("language", deviceName)),
+            Tag = "",
+        });
+
+        foreach (string locale in SupportedLanguages.Ordered)
+            LanguageCombo.Items.Add(new ComboBoxItem { Content = SupportedLanguages.NativeNames[locale], Tag = locale });
+
+        string saved = SupportedLanguages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? "";
+        LanguageCombo.SelectedItem = LanguageCombo.Items
+            .OfType<ComboBoxItem>()
+            .First(item => (string)item.Tag == saved);
+
+        LanguageRestartNote.Visibility = _languageChangedThisRun ? Visibility.Visible : Visibility.Collapsed;
+
+        _updatingLanguage = false;
+    }
+
+    /// <summary>
+    /// Save a new language and rebuild Settings in it. Other windows pick it up as they open.
+    /// </summary>
+    private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingLanguage || LanguageCombo.SelectedItem is not ComboBoxItem { Tag: string choice }) return;
+        if (choice == (SupportedLanguages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? "")) return;
+
+        SettingsManager.Current.LanguageOverride = choice;
+        SettingsManager.SaveSettings();
+        _languageChangedThisRun = true;
+        UiText.NotifyChanged();
+
+        // Deferred so this page's own event handler finishes before its window is replaced.
+        DispatcherQueue.TryEnqueue(() => SettingsWindow.ReopenAfterLanguageChange(typeof(SystemPage)));
     }
 
     // ── Browser extensions ─────────────────────────────────────────
@@ -57,7 +119,7 @@ public partial class SystemPage : Page
         {
             ExtensionList.Children.Add(new TextBlock
             {
-                Text = "None installed.",
+                Text = UiText.Get("system.extensions.none"),
                 FontSize = 12,
                 Opacity = 0.5,
             });
@@ -87,13 +149,13 @@ public partial class SystemPage : Page
             {
                 label.Children.Add(new TextBlock
                 {
-                    Text = "Folder is missing — remove it and add it again",
+                    Text = UiText.Get("system.extensions.folderMissing"),
                     FontSize = 11,
                     Opacity = 0.6,
                 });
             }
 
-            var remove = new Button { Content = "Remove" };
+            var remove = new Button { Content = UiText.Get("common.remove") };
             remove.Click += (_, _) =>
             {
                 Services.BrowserExtensionService.Uninstall(captured);
@@ -159,9 +221,9 @@ public partial class SystemPage : Page
 
         ProfileCleanupButton.IsEnabled = any;
         ProfileCleanupSubtitle.Text = any
-            ? $"{found.Count} left behind by deleted launchers, or by launchers moved to the shared profile "
-              + $"— {Services.WebProfileCleanupService.FormatSize(bytes)}"
-            : "Nothing to clean up. Sign-ins for launchers you still have are never touched";
+            ? UiText.Plural("system.profiles.reclaimable", found.Count,
+                ("size", Services.WebProfileCleanupService.FormatSize(bytes)))
+            : UiText.Get("system.profiles.nothing");
     }
 
     /// <summary>
@@ -182,30 +244,30 @@ public partial class SystemPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            Title = "Delete unused browser profiles",
-            Content = "These hold cookies and sign-ins nothing is using any more:" + NewLine + NewLine
-                    + string.Join(NewLine, lines)
-                    + NewLine + NewLine
-                    + "Launchers you still have keep their own sign-ins. This cannot be undone.",
-            PrimaryButtonText = "Delete",
-            CloseButtonText = "Cancel",
+            Title = UiText.Get("system.profiles.deleteTitle"),
+            Content = UiText.Format("system.profiles.deleteMessage", ("profiles", string.Join(NewLine, lines))),
+            PrimaryButtonText = UiText.Get("common.delete"),
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Close,
         };
 
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
 
         ProfileCleanupButton.IsEnabled = false;
-        ProfileCleanupButton.Content = "Deleting…";
+        ProfileCleanupButton.Content = UiText.Get("system.profiles.deleting");
 
         var (deleted, bytes) = await Services.WebProfileCleanupService.DeleteAsync(_reclaimableProfiles);
 
-        ProfileCleanupButton.Content = "Delete";
+        ProfileCleanupButton.Content = UiText.Get("common.delete");
         await RefreshProfileCleanupAsync();
 
         // Rescanned above, so anything a locked file kept back is still listed and still offered.
         if (deleted > 0)
-            ProfileCleanupSubtitle.Text = $"Freed {Services.WebProfileCleanupService.FormatSize(bytes)}. "
-                                        + ProfileCleanupSubtitle.Text;
+        {
+            ProfileCleanupSubtitle.Text = UiText.Format("system.profiles.freed",
+                ("size", Services.WebProfileCleanupService.FormatSize(bytes)),
+                ("status", ProfileCleanupSubtitle.Text));
+        }
     }
 
     private void WebShortcutsToggle_Toggled(object sender, RoutedEventArgs e)
@@ -342,8 +404,9 @@ public partial class SystemPage : Page
     private async Task ExportButtonClickAsync()
     {
         var picker = new FileSavePicker();
-        picker.FileTypeChoices.Add("XML Files", new List<string> { ".xml" });
-        picker.SuggestedFileName = $"Little Launcher Settings {DateTime.Now:yyyy-MM-dd HH-mm-ss}";
+        picker.FileTypeChoices.Add(UiText.Get("system.backup.xmlFiles"), new List<string> { ".xml" });
+        picker.SuggestedFileName = UiText.Format("system.backup.suggestedFileName",
+            ("timestamp", DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss", System.Globalization.CultureInfo.InvariantCulture)));
         InitializePicker(picker);
         var file = await picker.PickSaveFileAsync();
         if (file != null)

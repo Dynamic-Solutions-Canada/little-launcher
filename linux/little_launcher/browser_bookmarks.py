@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+from . import i18n
 from .document import DocumentError, normalize_web_address
 
 MAX_BOOKMARKS=10000
@@ -49,7 +50,7 @@ def read_bookmarks(path):
         try:address=normalize_web_address(address)
         except (DocumentError,TypeError,AttributeError):return
         result.append({'Name':str(name or address)[:1024],'Url':address,'Folder':folder})
-        if len(result)>MAX_BOOKMARKS:raise DocumentError('This bookmark source exceeds the 10,000-entry import limit.')
+        if len(result)>MAX_BOOKMARKS:raise DocumentError(i18n.t('bookmarkPicker.error.tooManyEntries'))
     try:
         if path.suffix.lower() in ('.sqlite','.db'):
             with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=.25)) as database:
@@ -57,18 +58,18 @@ def read_bookmarks(path):
                 database.execute('BEGIN')
                 columns={row[1] for row in database.execute('PRAGMA table_info(moz_bookmarks)')}
                 folders={row[0]:(row[1],row[2]) for row in database.execute('SELECT id,substr(title,1,1024),parent FROM moz_bookmarks WHERE type=2 LIMIT 10001')} if 'id' in columns else {}
-                if len(folders)>MAX_BOOKMARKS:raise DocumentError('This bookmark source has too many folders to import.')
+                if len(folders)>MAX_BOOKMARKS:raise DocumentError(i18n.t('bookmarkPicker.error.tooManyFolders'))
                 def folder_path(parent):
                     names=[];seen=set()
                     while parent in folders:
-                        if parent in seen or len(seen)>=32:raise DocumentError('This bookmark source contains an invalid or overly deep folder tree.')
+                        if parent in seen or len(seen)>=32:raise DocumentError(i18n.t('bookmarkPicker.error.invalidTree'))
                         seen.add(parent);name,parent=folders[parent]
                         if name:names.append(str(name))
                     return '/'.join(reversed(names))
                 for name,address,parent in database.execute('SELECT substr(b.title,1,1024),substr(p.url,1,8193),b.parent FROM moz_bookmarks b JOIN moz_places p ON p.id=b.fk WHERE b.type=1 ORDER BY b.parent,b.position LIMIT 10001'):
                     add(name,address,folder_path(parent))
         else:
-            if path.stat().st_size>MAX_FILE:raise DocumentError('This bookmark source is too large to import.')
+            if path.stat().st_size>MAX_FILE:raise DocumentError(i18n.t('bookmarkPicker.error.tooLarge'))
             raw=path.read_text(encoding='utf-8-sig')
             if path.suffix.lower() in ('.html','.htm'):
                 class Parser(HTMLParser):
@@ -85,7 +86,7 @@ def read_bookmarks(path):
                             pushed=self.pending is not None;self.levels.append(pushed)
                             if pushed:
                                 self.folders.append(self.pending);self.pending=None
-                                if len(self.folders)>32:raise DocumentError('This bookmark source has too many folder levels.')
+                                if len(self.folders)>32:raise DocumentError(i18n.t('bookmarkPicker.error.tooDeep'))
                     def handle_data(self,text):
                         if self.address is not None:self.label+=text
                         elif self.heading is not None:self.heading+=text
@@ -108,5 +109,5 @@ def read_bookmarks(path):
     except DocumentError:
         raise
     except (OSError,ValueError,sqlite3.Error,TypeError,AttributeError):
-        raise DocumentError('This browser bookmark source could not be read. Close the browser or choose an exported bookmark file.') from None
+        raise DocumentError(i18n.t('bookmarkPicker.error.unreadable')) from None
     return result

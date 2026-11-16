@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using Microsoft.UI.Xaml.Controls;
 
 namespace LittleLauncher.Windows;
@@ -29,7 +30,7 @@ public sealed partial class WebFlyoutWindow
 
         var settings = new MenuFlyoutItem
         {
-            Text = string.Format(LauncherSettingsSections.Text("LauncherSectionSettingsLink"), definition.Label),
+            Text = UiText.Format("webMenu.sectionSettingsLink", ("section", definition.Label)),
         };
         settings.Click += (_, _) => _ = OpenLauncherSettingsAsync(definition.Id);
         submenu.Items.Add(settings);
@@ -46,13 +47,13 @@ public sealed partial class WebFlyoutWindow
         // Off, the strip appears on its own as soon as there is a second tab and goes away again
         // when there is not; so this reads as "keep it", not "switch tabs on". Turning it on with
         // one tab open is also the only way to reach the "+" without following a link first.
-        submenu.Items.Add(Toggle("Tab bar", _launcher.WebAlwaysShowTabs, on =>
+        submenu.Items.Add(Toggle(UiText.Get("webMenu.tabBar"), _launcher.WebAlwaysShowTabs, on =>
         {
             _launcher.WebAlwaysShowTabs = on;
             ApplyTabBarVisibility();
         }));
 
-        submenu.Items.Add(Toggle("Address bar", _launcher.WebShowAddressBar, on =>
+        submenu.Items.Add(Toggle(UiText.Get("webMenu.addressBar"), _launcher.WebShowAddressBar, on =>
         {
             _launcher.WebShowAddressBar = on;
             ApplyAddressBarVisibility();
@@ -61,7 +62,7 @@ public sealed partial class WebFlyoutWindow
         // The bar is where bookmarks are managed, so being able to bring it back without walking to
         // launcher settings matters more than it did when it appeared on its own. Listed after the
         // address bar because that is the order the two strips appear in on the flyout.
-        submenu.Items.Add(Toggle("Bookmarks bar", _launcher.ShowsBookmarkBar, on =>
+        submenu.Items.Add(Toggle(UiText.Get("webMenu.bookmarksBar"), _launcher.ShowsBookmarkBar, on =>
         {
             _launcher.WebShowBookmarkBar = on;
             RebuildBookmarkBar(force: true);
@@ -85,7 +86,7 @@ public sealed partial class WebFlyoutWindow
         // WebLockSize is the inverse of what is shown, because this one is on by default and a
         // bool defaulting to true cannot be turned off under WhenWritingDefault. Inverted here, in
         // the line that builds the item; never in the model.
-        submenu.Items.Add(Toggle("Remember size changes", !_launcher.WebLockSize, on =>
+        submenu.Items.Add(Toggle(UiText.Get("webMenu.rememberSize"), !_launcher.WebLockSize, on =>
         {
             _launcher.WebLockSize = !on;
         }));
@@ -95,7 +96,7 @@ public sealed partial class WebFlyoutWindow
     private void AddBehaviorQuickSettings(MenuFlyoutSubItem submenu)
     {
         // ── How it presents itself ──────────────────────────────
-        submenu.Items.Add(Toggle("Regular window", _launcher.WebRegularWindow, on =>
+        submenu.Items.Add(Toggle(UiText.Get("webMenu.regularWindow"), _launcher.WebRegularWindow, on =>
         {
             _launcher.WebRegularWindow = on;
             ApplyWindowMode();
@@ -106,7 +107,7 @@ public sealed partial class WebFlyoutWindow
         // as something you are missing out on.
         if (_launcher.WebRegularWindow)
         {
-            submenu.Items.Add(Toggle("Close when focus is lost", _launcher.WebWindowAutoHide, on =>
+            submenu.Items.Add(Toggle(UiText.Get("webMenu.closeOnFocusLoss"), _launcher.WebWindowAutoHide, on =>
             {
                 _launcher.WebWindowAutoHide = on;
             }));
@@ -119,11 +120,11 @@ public sealed partial class WebFlyoutWindow
             UpdatePinButton();
         }));
 
-        submenu.Items.Add(Toggle(LauncherSettingsSections.Text("WebFullscreenFillsLauncher"), _launcher.WebFullScreenInWindow, on =>
+        submenu.Items.Add(Toggle(UiText.Get("webMenu.fullscreenFillsLauncher"), _launcher.WebFullScreenInWindow, on =>
         {
             _launcher.WebFullScreenInWindow = on;
         }));
-        var fitFullscreenToVideo = Toggle(LauncherSettingsSections.Text("WebFitFullscreenToVideo"), _launcher.WebFitFullscreenToVideo, on =>
+        var fitFullscreenToVideo = Toggle(UiText.Get("webMenu.fitFullscreenToVideo"), _launcher.WebFitFullscreenToVideo, on =>
         {
             _launcher.WebFitFullscreenToVideo = on;
         });

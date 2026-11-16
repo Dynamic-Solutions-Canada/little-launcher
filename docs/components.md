@@ -2,6 +2,8 @@
 
 Paths in this reference are relative to the LittleLauncher project unless stated otherwise.
 
+`Shared/SupportedLanguages.cs` (repository root) owns the supported interface languages and Match device resolution; `Shared/UiText.cs` loads the embedded shared catalogs and provides `Get`, `Format` and `Plural`. `Localization/Str.cs` is the `{l:Str Key=...}` XAML markup extension. The language picker lives on `Pages/SystemPage`, and `SettingsWindow.ReopenAfterLanguageChange` rebuilds Settings in the new language. Linux mirrors this in `linux/little_launcher/i18n.py`. See [localization.md](localization.md).
+
 `Models/WebLauncherPresets.cs` owns messaging service creation templates. The Add Launcher
 menu creates independent, editable web launchers from them and opens their sign-in pages.
 
@@ -87,6 +89,8 @@ Second Linux parity ownership: `icons.py`/`browser/window_icon.cjs` carry bounde
 Linux `external_drop.py` owns standard native URI-drop validation/feedback and commits via `ItemEditingSession.add_external`. `icon_glyphs.py` owns semantic/legacy/Unicode rendering, while `icon_picker.py` owns pending native choice. The native theme monitor deduplicates actual changes before application refresh. Remote page zoom is isolated per WebContents even when sessions/sign-ins are shared; trusted toolbar scale remains fixed.
 
 Third Linux parity ownership: `positions.py` contains the native QtDBus `PlacementBridge` and device-local coordinates; `anchor_picker.py` owns the pending native position grid. `browser/bookmark_overlay.cjs` owns the local folder/overflow native view, `bookmark_overlay.js` its nested UI, and `bookmark_drag.js` the shared host-bound local drag session. `browser/fullscreen.cjs` owns page fullscreen and the trusted exit/maximize surface; `fullscreen_geometry.cjs` owns ratio bounds. All local IPC routes pass `WebLauncher.trustedToolbar/handleToolbar`, including strict main-frame checks, and remote pages remain bridge-free. See [linux.md](linux.md).
+
+Linux `browser/i18n.cjs` owns interface text for the Electron main process: it reads the catalog the native app resolved, falls back to English, and hands trusted local pages frozen resolved strings in their existing state messages. See [localization.md](localization.md).
 
 ## Linux AppImage and shortcut continuation
 

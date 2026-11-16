@@ -1,0 +1,16 @@
+{
+  "home.title": "Início",
+  "home.buildType.debug": "(Depuração)",
+  "home.buildType.msix": "(MSIX)",
+  "home.buildType.portable": "(Portátil)",
+  "home.update.message": "Uma nova versão ({latest}) está disponível. Você está usando a versão {current}.",
+  "home.whatsNew.title": "Novidade: inicializadores web",
+  "home.whatsNew.message": "Um inicializador agora pode abrir uma página web em vez de uma lista de atalhos: um painel do Home Assistant, webmail ou qualquer site, diretamente pelo ícone da bandeja. Ele mantém o login e não consome nada enquanto está fechado.",
+  "home.whatsNew.action": "Configurar um",
+  "home.launchersCard.description": "Gerenciar inicializadores e atalhos",
+  "home.syncCard.description": "OneDrive, Google Drive, compartilhamento de rede ou SFTP",
+  "home.summary.launchers.one": "{count} inicializador.",
+  "home.summary.launchers.other": "{count} inicializadores.",
+  "home.summary.hiddenOnLinux.one": "{count} desabilitado no Linux porque pertence a outro sistema operacional.",
+  "home.summary.hiddenOnLinux.other": "{count} desabilitados no Linux porque pertencem a outro sistema operacional."
+}

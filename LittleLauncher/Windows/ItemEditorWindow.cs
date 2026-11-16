@@ -1,4 +1,5 @@
 ﻿using LittleLauncher.Classes;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Services;
 using LittleLauncher.ViewModels;
@@ -83,7 +84,7 @@ public sealed class ItemEditorWindow : Window
         _hwnd = WindowNative.GetWindowHandle(this);
 
         bool isEdit = existingItem != null;
-        Title = isEdit ? "Edit Item" : "Add Item";
+        Title = UiText.Get(isEdit ? "itemEditor.editTitle" : "itemEditor.addTitle");
         SystemBackdrop = new MicaBackdrop();
 
         // Owned windows always sit above their owner — required because the flyout sets
@@ -188,17 +189,17 @@ public sealed class ItemEditorWindow : Window
         // Created up front so validation handlers can toggle it before the form exists.
         var saveButton = new Button
         {
-            Content = isEdit ? "Save" : "Add",
+            Content = UiText.Get(isEdit ? "common.save" : "common.add"),
             Style = (Style)Application.Current.Resources["AccentButtonStyle"],
             MinWidth = 90
         };
-        var cancelButton = new Button { Content = "Cancel", MinWidth = 90 };
+        var cancelButton = new Button { Content = UiText.Get("common.cancel"), MinWidth = 90 };
 
         // -- 2. Unified app + PWA picker (search + icon list) --
         var searchBox = new AutoSuggestBox
         {
             QueryIcon = new SymbolIcon(Symbol.Find),
-            PlaceholderText = "Loading apps…",
+            PlaceholderText = UiText.Get("itemEditor.loadingApps"),
             Margin = new Thickness(0, 0, 0, 8),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
@@ -214,13 +215,13 @@ public sealed class ItemEditorWindow : Window
         // Custom path/link inputs (live in the "File or link" pane).
         var pathBox = new TextBox
         {
-            PlaceholderText = @"C:\path\to\app.exe  or  https://example.com",
+            PlaceholderText = UiText.Get("itemEditor.pathPlaceholder"),
             Margin = new Thickness(0, 0, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         var browseButton = new Button
         {
-            Content = "Browse",
+            Content = UiText.Get("common.browse"),
             Padding = new Thickness(8, 4, 8, 4),
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Bottom,
@@ -284,7 +285,7 @@ public sealed class ItemEditorWindow : Window
             if (catalogLoaded) return;
             catalogLoaded = true;
             allEntries = await AppPickerService.RunStaAsync(BuildCatalog) ?? new List<AppPickerEntry>();
-            searchBox.PlaceholderText = "Search apps and web apps…";
+            searchBox.PlaceholderText = UiText.Get("itemEditor.searchApps");
             FilterApps(searchBox.Text);
             AppPickerService.LoadIcons(allEntries, DispatcherQueue);
             if (pendingEditSelect)
@@ -370,10 +371,10 @@ public sealed class ItemEditorWindow : Window
             "</Grid></DataTemplate>");
 
         // -- 3. Arguments (Application only) --
-        var argsLabel = Label("Arguments");
+        var argsLabel = Label(UiText.Get("itemEditor.arguments"));
         var argsBox = new TextBox
         {
-            PlaceholderText = "(optional)",
+            PlaceholderText = UiText.Get("itemEditor.optional"),
             Margin = new Thickness(0, 0, 0, 8),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
@@ -381,24 +382,24 @@ public sealed class ItemEditorWindow : Window
         // -- 4. Web app window mode (Website only) --
         var appWindowToggle = new ToggleSwitch
         {
-            Header = "Open as app window",
-            OffContent = "Use normal browser tab",
-            OnContent = "Open in standalone window",
+            Header = UiText.Get("itemEditor.appWindow.header"),
+            OffContent = UiText.Get("itemEditor.appWindow.off"),
+            OnContent = UiText.Get("itemEditor.appWindow.on"),
             IsOn = openInAppWindow,
             Margin = new Thickness(0, 0, 0, 8)
         };
 
         // -- 4a. Browser picker --
-        var browserLabel = Label("Browser");
+        var browserLabel = Label(UiText.Get("itemEditor.browser"));
         var browserCombo = new ComboBox { Margin = new Thickness(0, 0, 0, 8), HorizontalAlignment = HorizontalAlignment.Stretch };
         var installedBrowsers = BrowserCatalog.GetInstalledBrowsers();
-        browserCombo.Items.Add(new ComboBoxItem { Content = "Default browser", Tag = "" });
+        browserCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("itemEditor.defaultBrowser"), Tag = "" });
         foreach (var browser in installedBrowsers)
             browserCombo.Items.Add(new ComboBoxItem { Content = browser.DisplayName, Tag = browser.ExePath });
-        browserCombo.Items.Add(new ComboBoxItem { Content = "Custom…", Tag = "__custom__" });
+        browserCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("itemEditor.customBrowser"), Tag = "__custom__" });
 
         // -- 4b. Profile picker --
-        var profileLabel = Label("Profile");
+        var profileLabel = Label(UiText.Get("itemEditor.profile"));
         var profileCombo = new ComboBox { Margin = new Thickness(0, 0, 0, 8), HorizontalAlignment = HorizontalAlignment.Stretch };
 
         void PopulateProfileCombo()
@@ -418,13 +419,13 @@ public sealed class ItemEditorWindow : Window
                 currentEngine = match?.Engine ?? BrowserCatalog.DetectEngine(appWindowBrowser);
             }
 
-            profileCombo.Items.Add(new ComboBoxItem { Content = "App sandbox (isolated)", Tag = "" });
+            profileCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("itemEditor.sandboxProfile"), Tag = "" });
 
             if (currentEngine != BrowserEngine.Gecko)
             {
                 if (string.IsNullOrEmpty(appWindowBrowser))
                 {
-                    profileCombo.Items.Add(new ComboBoxItem { Content = "Default profile", Tag = "__default__" });
+                    profileCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("itemEditor.defaultProfile"), Tag = "__default__" });
                 }
                 else
                 {
@@ -550,7 +551,7 @@ public sealed class ItemEditorWindow : Window
         // -- 5. Name --
         var nameBox = new TextBox
         {
-            PlaceholderText = "(optional)",
+            PlaceholderText = UiText.Get("itemEditor.optional"),
             Margin = new Thickness(0, 0, 0, 8),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
@@ -581,7 +582,7 @@ public sealed class ItemEditorWindow : Window
         };
         var iconStatus = new TextBlock
         {
-            Text = "Auto-detected",
+            Text = UiText.Get("itemEditor.icon.autoDetected"),
             FontSize = 12,
             Opacity = 0.5,
             VerticalAlignment = VerticalAlignment.Center
@@ -598,7 +599,7 @@ public sealed class ItemEditorWindow : Window
 
         var refreshButton = new Button
         {
-            Content = "Retry",
+            Content = UiText.Get("common.retry"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(8, 0, 0, 0),
             Padding = new Thickness(8, 4, 8, 4),
@@ -621,11 +622,16 @@ public sealed class ItemEditorWindow : Window
                 {
                     iconPreview.Source = new BitmapImage { DecodePixelWidth = 32, UriSource = new Uri(fetchedIconPath, UriKind.Absolute) };
                     iconPreview.Visibility = Visibility.Visible;
-                    iconStatus.Text = customGlyph != null ? "Custom image" : (isWebsite ? "Auto favicon" : "Auto icon");
+                    string statusKey = "itemEditor.icon.auto";
+                    if (customGlyph != null)
+                        statusKey = "itemEditor.icon.customImage";
+                    else if (isWebsite)
+                        statusKey = "itemEditor.icon.autoFavicon";
+                    iconStatus.Text = UiText.Get(statusKey);
                 }
                 catch
                 {
-                    iconStatus.Text = "Failed to load icon";
+                    iconStatus.Text = UiText.Get("itemEditor.icon.loadFailed");
                 }
             }
             else if (customGlyph != null)
@@ -662,11 +668,11 @@ public sealed class ItemEditorWindow : Window
                         iconEmojiPreview.ClearValue(TextBlock.ForegroundProperty);
                     iconEmojiPreview.Visibility = Visibility.Visible;
                 }
-                iconStatus.Text = "Custom icon";
+                iconStatus.Text = UiText.Get("itemEditor.icon.custom");
             }
             else
             {
-                iconStatus.Text = "No icon";
+                iconStatus.Text = UiText.Get("itemEditor.icon.none");
             }
         }
 
@@ -679,7 +685,7 @@ public sealed class ItemEditorWindow : Window
                 Children =
                 {
                     new FontIcon { Glyph = "", FontSize = 12 },
-                    new TextBlock { Text = "Choose" }
+                    new TextBlock { Text = UiText.Get("itemEditor.icon.choose") }
                 }
             },
             VerticalAlignment = VerticalAlignment.Center,
@@ -728,7 +734,7 @@ public sealed class ItemEditorWindow : Window
                 iconPreview.Visibility = Visibility.Collapsed;
                 iconGlyphPreview.Visibility = Visibility.Collapsed;
                 iconEmojiPreview.Visibility = Visibility.Collapsed;
-                iconStatus.Text = "Auto-detected";
+                iconStatus.Text = UiText.Get("itemEditor.icon.autoDetected");
                 _ = DoFetch(force: true);
             },
             currentGlyph: customGlyph,
@@ -818,16 +824,16 @@ public sealed class ItemEditorWindow : Window
                     lastFetchedPath = fetchPath;
                 }
 
-                iconStatus.Text = "Fetching...";
+                iconStatus.Text = UiText.Get("itemEditor.icon.fetching");
                 refreshButton.IsEnabled = false;
                 nameBox.IsEnabled = false;
-                nameBox.PlaceholderText = "Fetching name...";
+                nameBox.PlaceholderText = UiText.Get("itemEditor.fetchingName");
                 var titleTask = FaviconService.FetchWebsiteTitleAsync(fetchPath);
                 var iconTask = FaviconService.FetchAndCacheAsync(fetchPath);
                 await Task.WhenAll(titleTask, iconTask);
                 refreshButton.IsEnabled = true;
                 nameBox.IsEnabled = true;
-                nameBox.PlaceholderText = "(optional)";
+                nameBox.PlaceholderText = UiText.Get("itemEditor.optional");
 
                 if (force || string.IsNullOrEmpty(nameBox.Text))
                 {
@@ -844,13 +850,13 @@ public sealed class ItemEditorWindow : Window
                 }
                 else
                 {
-                    iconStatus.Text = "Could not fetch icon";
+                    iconStatus.Text = UiText.Get("itemEditor.icon.fetchFailed");
                 }
             }
             else if (isPwa)
             {
                 // Prefer the PWA's own web icon/manifest asset; fall back to the shell image.
-                iconStatus.Text = "Fetching icon...";
+                iconStatus.Text = UiText.Get("itemEditor.icon.fetchingIcon");
                 refreshButton.IsEnabled = false;
                 var iconPath = await FaviconService.GetBestPwaIconAsync(path);
                 refreshButton.IsEnabled = true;
@@ -861,21 +867,21 @@ public sealed class ItemEditorWindow : Window
                 }
                 else
                 {
-                    iconStatus.Text = "No icon available";
+                    iconStatus.Text = UiText.Get("itemEditor.icon.unavailable");
                 }
             }
             else if (path.StartsWith(@"shell:AppsFolder\", StringComparison.OrdinalIgnoreCase))
             {
                 // Store / packaged app — extract icon via shell
                 string aumid = path[@"shell:AppsFolder\".Length..];
-                iconStatus.Text = "Extracting icon...";
+                iconStatus.Text = UiText.Get("itemEditor.icon.extracting");
                 refreshButton.IsEnabled = false;
                 nameBox.IsEnabled = false;
-                nameBox.PlaceholderText = "Detecting name...";
+                nameBox.PlaceholderText = UiText.Get("itemEditor.detectingName");
                 var appIcon = FaviconService.GetPwaIconFromShell(aumid);
                 refreshButton.IsEnabled = true;
                 nameBox.IsEnabled = true;
-                nameBox.PlaceholderText = "(optional)";
+                nameBox.PlaceholderText = UiText.Get("itemEditor.optional");
                 if (!string.IsNullOrEmpty(appIcon))
                 {
                     fetchedIconPath = appIcon;
@@ -883,7 +889,7 @@ public sealed class ItemEditorWindow : Window
                 }
                 else
                 {
-                    iconStatus.Text = "Could not extract icon";
+                    iconStatus.Text = UiText.Get("itemEditor.icon.extractFailed");
                 }
             }
             else
@@ -895,14 +901,14 @@ public sealed class ItemEditorWindow : Window
                         nameBox.Text = appName;
                 }
 
-                iconStatus.Text = "Extracting icon...";
+                iconStatus.Text = UiText.Get("itemEditor.icon.extracting");
                 refreshButton.IsEnabled = false;
                 nameBox.IsEnabled = false;
-                nameBox.PlaceholderText = "Detecting name...";
+                nameBox.PlaceholderText = UiText.Get("itemEditor.detectingName");
                 var appIcon = FaviconService.GetApplicationIcon(path);
                 refreshButton.IsEnabled = true;
                 nameBox.IsEnabled = true;
-                nameBox.PlaceholderText = "(optional)";
+                nameBox.PlaceholderText = UiText.Get("itemEditor.optional");
                 if (!string.IsNullOrEmpty(appIcon))
                 {
                     fetchedIconPath = appIcon;
@@ -910,7 +916,7 @@ public sealed class ItemEditorWindow : Window
                 }
                 else
                 {
-                    iconStatus.Text = "Could not extract icon";
+                    iconStatus.Text = UiText.Get("itemEditor.icon.extractFailed");
                 }
             }
         }
@@ -1005,7 +1011,7 @@ public sealed class ItemEditorWindow : Window
         pathRow.Children.Add(browseButton);
 
         var customPanel = new StackPanel { Visibility = Visibility.Collapsed };
-        customPanel.Children.Add(Label("Path or link"));
+        customPanel.Children.Add(Label(UiText.Get("itemEditor.pathOrLink")));
         customPanel.Children.Add(pathRow);
         customPanel.Children.Add(argsLabel);
         customPanel.Children.Add(argsBox);
@@ -1017,8 +1023,8 @@ public sealed class ItemEditorWindow : Window
         tabContent.Children.Add(customPanel);
 
         // -- Tab strip --
-        var listTab = new SelectorBarItem { Text = "Apps & web apps", Tag = "list" };
-        var customTab = new SelectorBarItem { Text = "File or link", Tag = "custom" };
+        var listTab = new SelectorBarItem { Text = UiText.Get("itemEditor.tab.apps"), Tag = "list" };
+        var customTab = new SelectorBarItem { Text = UiText.Get("itemEditor.tab.fileOrLink"), Tag = "custom" };
         var tabBar = new SelectorBar { Margin = new Thickness(0, 0, 0, 4) };
         tabBar.Items.Add(listTab);
         tabBar.Items.Add(customTab);
@@ -1050,9 +1056,9 @@ public sealed class ItemEditorWindow : Window
         var form = new StackPanel { MinWidth = 460 };
         form.Children.Add(tabBar);
         form.Children.Add(tabContent);
-        form.Children.Add(Label("Name"));
+        form.Children.Add(Label(UiText.Get("common.name")));
         form.Children.Add(nameBox);
-        form.Children.Add(Label("Icon"));
+        form.Children.Add(Label(UiText.Get("common.icon")));
         form.Children.Add(iconRow);
 
         form.Children.Add(validationHint);
@@ -1066,7 +1072,7 @@ public sealed class ItemEditorWindow : Window
             // finishes loading — treat that pending state as valid so Save isn't disabled.
             if (string.IsNullOrWhiteSpace(t) && !(isEdit && pendingEditSelect))
             {
-                validationHint.Text = "Choose an app or web app above, or enter a path or link.";
+                validationHint.Text = UiText.Get("itemEditor.targetRequired");
                 validationHint.Visibility = Visibility.Visible;
                 saveButton.IsEnabled = false;
             }
@@ -1154,7 +1160,7 @@ public sealed class ItemEditorWindow : Window
                 Children =
                 {
                     new FontIcon { Glyph = "", FontSize = 14 },
-                    new TextBlock { Text = "Delete" },
+                    new TextBlock { Text = UiText.Get("common.delete") },
                 },
             },
             Visibility = isEdit ? Visibility.Visible : Visibility.Collapsed,
@@ -1164,10 +1170,12 @@ public sealed class ItemEditorWindow : Window
             var confirm = new ContentDialog
             {
                 XamlRoot = Content.XamlRoot,
-                Title = "Delete item?",
-                Content = $"“{(string.IsNullOrWhiteSpace(existingItem?.Name) ? "This item" : existingItem!.Name)}” will be removed from this launcher.",
-                PrimaryButtonText = "Delete",
-                CloseButtonText = "Cancel",
+                Title = UiText.Get("itemEditor.delete.title"),
+                Content = string.IsNullOrWhiteSpace(existingItem?.Name)
+                    ? UiText.Get("itemEditor.delete.messageUnnamed")
+                    : UiText.Format("itemEditor.delete.message", ("name", existingItem!.Name)),
+                PrimaryButtonText = UiText.Get("common.delete"),
+                CloseButtonText = UiText.Get("common.cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
             if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;

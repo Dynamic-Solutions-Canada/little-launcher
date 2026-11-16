@@ -24,6 +24,7 @@ Project documentation lives in this directory. [The root README](../README.md) i
 | [Icons](icons.md) | Launcher, tray, window and item icon selection and portable assets |
 | [Sync](sync.md) | Portable payloads, sync providers, revision guards and conflicts |
 | [XAML](xaml.md) | WinUI controls, localization and native backdrops |
+| [Localization](localization.md) | Supported languages, shared translation catalogs and adding UI text |
 | [Native interop](pinvoke.md) | Win32 signatures, shell integration and native API conventions |
 | [Packaging and updates](installer.md) | Windows Store/portable and Linux AppImage delivery |
 | [Versioning](versioning.md) | Version source, release artifacts and publication workflow |

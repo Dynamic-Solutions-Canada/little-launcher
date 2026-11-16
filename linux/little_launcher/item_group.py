@@ -2,6 +2,7 @@
 from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QApplication, QWidget
+from . import i18n
 from .item_drag import ItemDrag
 from .item_geometry import group_drop_zone
 
@@ -71,8 +72,8 @@ class ItemGroup(QWidget):
         self.intent = None
         self.setAcceptDrops(self.editing)
         self.setMouseTracking(self.editing)
-        self.setAccessibleName(self.item.get('Name', 'Group'))
-        self.setAccessibleDescription('Group containing launcher items')
+        self.setAccessibleName(self.item.get('Name', i18n.t('items.defaultGroupName')))
+        self.setAccessibleDescription(i18n.t('items.groupDescription'))
         self.overlay = None
         self.press_position = QPoint()
 
@@ -156,12 +157,13 @@ class ItemGroup(QWidget):
 
     def caption(self, intent):
         mode, child, after = intent
-        name = self.item.get('Name', 'Group')
+        name = self.item.get('Name', i18n.t('items.unnamedGroup'))
         if mode in ('before', 'after'):
-            return f'Move {mode} {name}'
+            return i18n.t('items.dragAfterGroup' if mode == 'after' else 'items.dragBeforeGroup', group=name)
         if mode == 'child':
-            return f"Into {name}: {'after' if after else 'before'} {child.item.get('Name', 'item')}"
-        return f'Into {name}: at end'
+            child_name = child.item.get('Name', i18n.t('items.unnamedItem'))
+            return i18n.t('items.dragIntoGroupAfter' if after else 'items.dragIntoGroupBefore', group=name, item=child_name)
+        return i18n.t('items.dragIntoGroupEnd', group=name)
 
     def drag_move(self, widget, event):
         source = ItemDrag.source(event.mimeData(), self.session) if self.editing else None

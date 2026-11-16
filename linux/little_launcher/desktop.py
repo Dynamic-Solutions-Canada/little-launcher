@@ -9,6 +9,7 @@ from PySide6.QtCore import QEvent, QFileInfo, QLibraryInfo, QObject, QTimer, QUr
 from PySide6.QtGui import QDesktopServices, QIcon
 from PySide6.QtWidgets import QApplication, QFileIconProvider
 
+from . import i18n
 from .storage import atomic_write
 from .catalog import DesktopCatalog
 from .icon_glyphs import glyph_icon
@@ -53,32 +54,32 @@ def launch_item(item):
     if item.get('IsWebsite'):
         url = QUrl(target)
         if url.scheme() not in ('http', 'https') or not url.host():
-            raise ValueError('Website shortcuts need a valid HTTP or HTTPS address.')
+            raise ValueError(i18n.t('linuxDesktop.launch.invalidWebsite'))
         if not QDesktopServices.openUrl(url):
-            raise OSError('The default browser could not open this address.')
+            raise OSError(i18n.t('linuxDesktop.launch.browserFailed'))
         return
     if target.endswith('.desktop'):
         if item.get('Arguments'):
-            raise ValueError('Choose the executable instead of a desktop entry to supply extra arguments.')
+            raise ValueError(i18n.t('linuxDesktop.launch.desktopEntryArguments'))
         entry = desktop_entry(target)
         if not entry:
-            raise FileNotFoundError('This application is not installed on this machine.')
+            raise FileNotFoundError(i18n.t('linuxDesktop.launch.notInstalled'))
         launcher = shutil.which('gio')
         if launcher:
             command = [launcher, 'launch', entry['_path']]
         else:
             launcher = shutil.which('gtk-launch')
             if not launcher or Path(target).is_absolute():
-                raise OSError('Desktop application launching requires gio.')
+                raise OSError(i18n.t('linuxDesktop.launch.needsGio'))
             command = [launcher, target.removesuffix('.desktop')]
 
     else:
         executable = shutil.which(target) if not Path(target).is_absolute() else target
         if not executable or not Path(executable).exists():
-            raise FileNotFoundError('This shortcut target is unavailable. Edit it or reconnect its drive.')
+            raise FileNotFoundError(i18n.t('linuxDesktop.launch.targetMissing'))
         if Path(executable).is_dir() or not os.access(executable, os.X_OK):
             if not QDesktopServices.openUrl(QUrl.fromLocalFile(executable)):
-                raise OSError('No application could open this target.')
+                raise OSError(i18n.t('linuxDesktop.launch.noHandler'))
             return
         command = [executable, *shlex.split(item.get('Arguments', ''))]
     subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -90,14 +91,14 @@ def desktop_executable():
     value=os.environ.get('APPIMAGE')
     if value:
         path=Path(value)
-        if not path.is_absolute() or not path.is_file():raise OSError('The AppImage file is unavailable. Run it from its permanent location.')
+        if not path.is_absolute() or not path.is_file():raise OSError(i18n.t('linuxDesktop.appImageUnavailable'))
         return path
     return ROOT/'bin/little-launcher'
 
 
 def desktop_argument(path):
     value=str(path)
-    if any(ord(character)<32 for character in value):raise ValueError('The application path contains unsupported control characters.')
+    if any(ord(character)<32 for character in value):raise ValueError(i18n.t('linuxDesktop.pathControlCharacters'))
     value=value.replace('\\','\\\\')
     for character in (chr(34),chr(96),chr(36)):value=value.replace(character,'\\'+character)
     return chr(34)+value.replace('\\','\\\\').replace('%','%%')+chr(34)
@@ -174,7 +175,7 @@ class DesktopIntegration:
 
     def _call(self, *arguments):
         if not self.qdbus:
-            raise OSError('KDE D-Bus tooling is not installed.')
+            raise OSError(i18n.t('linuxDesktop.qdbusMissing'))
         return subprocess.run([self.qdbus, *arguments], check=True, capture_output=True,
                               text=True, timeout=5).stdout.strip()
 
@@ -192,7 +193,7 @@ class DesktopIntegration:
     def enable(self):
         """Persist and load the packaged helper; regular-window mode survives setup failure."""
         if 'KDE' not in os.environ.get('XDG_CURRENT_DESKTOP', ''):
-            raise OSError('Anchored GNOME integration is not available yet. Regular-window mode remains available.')
+            raise OSError(i18n.t('linuxDesktop.gnomeUnavailable'))
         directory = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share')) / 'kwin/scripts' / self.SCRIPT_ID
         for relative in ['metadata.json', 'contents/code/main.js']:
             atomic_write(directory / relative, (ROOT / 'desktop/kwin' / relative).read_bytes())
@@ -201,7 +202,7 @@ class DesktopIntegration:
             self._call('org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.unloadScript', self.SCRIPT_ID)
         writer = shutil.which('kwriteconfig6')
         if not writer:
-            raise OSError('KDE configuration tooling is not installed.')
+            raise OSError(i18n.t('linuxDesktop.kwriteconfigMissing'))
         subprocess.run([writer, '--file', 'kwinrc', '--group', 'Plugins', '--key',
                         self.SCRIPT_ID + 'Enabled', 'true'], check=True, timeout=5)
         self._call('org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.loadScript',
@@ -209,7 +210,7 @@ class DesktopIntegration:
         self._call('org.kde.KWin', '/Scripting', 'org.kde.kwin.Scripting.start')
         self.refresh()
         if not self.enabled:
-            raise OSError('Desktop integration could not be loaded. Regular-window mode is still active.')
+            raise OSError(i18n.t('linuxDesktop.integrationNotLoaded'))
 
 
 def native_theme():

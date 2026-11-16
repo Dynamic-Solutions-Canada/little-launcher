@@ -4,6 +4,8 @@ from math import copysign, floor
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtWidgets import QWidget
 
+from . import i18n
+
 
 class IconResizeGrip(QWidget):
     def __init__(self, view, left):
@@ -12,8 +14,8 @@ class IconResizeGrip(QWidget):
         self.left = left
         self.active = False
         self.setCursor(Qt.SizeHorCursor)
-        self.setToolTip('Drag to change icons per row')
-        self.setAccessibleName('Resize icon grid from ' + ('left' if left else 'right'))
+        self.setToolTip(i18n.t('items.resizeGridTooltip'))
+        self.setAccessibleName(i18n.t('items.resizeGridLeft') if left else i18n.t('items.resizeGridRight'))
         self.setFocusPolicy(Qt.StrongFocus)
 
     def mousePressEvent(self, event):

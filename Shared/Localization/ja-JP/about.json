@@ -1,0 +1,22 @@
+{
+  "about.title": "バージョン情報",
+  "about.description": "Windows のタスクバーに常駐する、カスタマイズ可能なアプリと Web サイトのランチャーです。",
+  "about.builtWith": "使用技術",
+  "about.sourceCode.title": "ソースコード",
+  "about.sourceCode.description": "GitHub でプロジェクトを見る",
+  "about.sourceCode.link": "GitHub リポジトリ",
+  "about.update.title": "更新",
+  "about.update.clickToCheck": "クリックして更新を確認",
+  "about.update.checkButton": "更新を確認",
+  "about.update.checkingButton": "確認中…",
+  "about.update.checkingStatus": "更新を確認中…",
+  "about.update.storeOpened": "Microsoft Store の「ダウンロードと更新」を開きました。利用可能な更新はそちらで確認してください。",
+  "about.update.storeOpenFailed": "Microsoft Store を開けませんでした。",
+  "about.update.unableToCheck": "更新を確認できませんでした。インターネット接続を確認してください。",
+  "about.update.availableTitle": "更新があります",
+  "about.update.available": "バージョン {latest} を利用できます（現在は {current}）",
+  "about.update.viewRelease": "リリースを表示",
+  "about.update.upToDate": "最新の状態です（{current}）",
+  "about.update.failed": "更新を確認できませんでした。後で再試行してください。",
+  "about.trayDescription": "デスクトップのトレイに常駐する、カスタマイズ可能なアプリと Web サイトのランチャーです。"
+}

@@ -1,0 +1,5 @@
+{
+  "webNotifications.keepRunningPrompt": "As notificações só chegam enquanto esta página está em execução, e {launcher} atualmente é encerrado quando seu painel suspenso é fechado.",
+  "webNotifications.keepRunning": "Manter em execução",
+  "webNotifications.notNow": "Agora não"
+}

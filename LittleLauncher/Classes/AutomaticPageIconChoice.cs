@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using global::Windows.Storage.Streams;
+using LittleLauncher.Localization;
 
 namespace LittleLauncher.Classes;
 
@@ -43,7 +44,7 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
         var label = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         label.Children.Add(new TextBlock
         {
-            Text = Text("PageIconChoiceLabel"), FontWeight = Microsoft.UI.Text.FontWeights.Medium,
+            Text = UiText.Get("icons.pageIcon.choice"), FontWeight = Microsoft.UI.Text.FontWeights.Medium,
             TextWrapping = TextWrapping.Wrap
         });
         label.Children.Add(_status);
@@ -60,15 +61,15 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Padding = new Thickness(12, 8, 12, 8), BorderThickness = new Thickness(0)
         };
-        AutomationProperties.SetName(SelectButton, Text("PageIconChoiceLabel"));
+        AutomationProperties.SetName(SelectButton, UiText.Get("icons.pageIcon.choice"));
         SelectButton.Click += (_, _) => onSelected();
         Children.Add(SelectButton);
-        _retry = new Button { Content = Text("PageIconRetry"), VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(_retry, Text("PageIconRetryAccessibleName"));
+        _retry = new Button { Content = UiText.Get("common.retry"), VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(_retry, UiText.Get("icons.pageIcon.retryAccessibleName"));
         _retry.Click += async (_, _) => await LoadAsync(retry: true);
         Grid.SetColumn(_retry, 1);
         Children.Add(_retry);
-        _status.Text = Text("PageIconMissing");
+        _status.Text = UiText.Get("icons.pageIcon.missing");
     }
 
     /// <summary>Loads the existing managed file only; opening the chooser never fetches or starts a browser.</summary>
@@ -101,7 +102,7 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
         int version = ++_version;
         _retry.IsEnabled = false;
         _progress.IsActive = true;
-        _status.Text = Text("PageIconLoading");
+        _status.Text = UiText.Get("icons.pageIcon.loading");
         try
         {
             byte[]? bytes;
@@ -121,20 +122,20 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
             }
             if (bytes == null || bytes.Length == 0)
             {
-                _status.Text = Text(retry ? "PageIconRetryFailed" : "PageIconMissing");
+                _status.Text = UiText.Get(retry ? "icons.pageIcon.retryFailed" : "icons.pageIcon.missing");
                 return;
             }
             await DecodePreviewAsync(bytes, version, request.Token);
             if (IsCurrent(version))
             {
-                _status.Text = Text(retry ? "PageIconReady" : "PageIconSavedPreview");
+                _status.Text = UiText.Get(retry ? "icons.pageIcon.ready" : "icons.pageIcon.savedPreview");
             }
         }
         catch (OperationCanceledException)
         {
             if (IsCurrent(version))
             {
-                _status.Text = Text("PageIconRetryFailed");
+                _status.Text = UiText.Get("icons.pageIcon.retryFailed");
             }
         }
         catch (Exception ex)
@@ -142,7 +143,7 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
             NLog.LogManager.GetCurrentClassLogger().Debug(ex, "Loading the automatic page-icon preview failed");
             if (IsCurrent(version))
             {
-                _status.Text = Text("PageIconRetryFailed");
+                _status.Text = UiText.Get("icons.pageIcon.retryFailed");
             }
         }
         finally
@@ -160,7 +161,7 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
                 _retry.IsEnabled = sourceCurrent;
                 if (!sourceCurrent)
                 {
-                    _status.Text = Text("PageIconAddressChanged");
+                    _status.Text = UiText.Get("icons.pageIcon.addressChanged");
                     SelectButton.IsEnabled = false;
                 }
             }
@@ -199,6 +200,4 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
         _image.Visibility = Visibility.Visible;
         _onPreviewChanged();
     }
-
-    private static string Text(string key) => (string)Application.Current.Resources[key];
 }

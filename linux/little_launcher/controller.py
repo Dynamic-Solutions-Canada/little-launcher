@@ -4,6 +4,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
 
+from . import i18n
 from .document import DocumentError, launcher_hidden, launcher_supported, validate_document
 from .storage import DocumentStore, LocalPreferences
 
@@ -34,7 +35,7 @@ class LauncherController(QObject):
 
     def set_enabled(self, identifier, enabled):
         if enabled and not launcher_supported(self.launcher(identifier) or {}):
-            self.failed.emit('This shortcut launcher belongs to another operating system. Create a Linux launcher instead.');return False
+            self.failed.emit(i18n.t('launchers.foreignPlatform'));return False
         disabled = set(self.preferences.data.get('DisabledLauncherIds', []))
         disabled.discard(identifier) if enabled else disabled.add(identifier)
         try:
@@ -65,14 +66,14 @@ class LauncherController(QObject):
             for index, existing in enumerate(document['Launchers']):
                 if existing['Id'] == launcher['Id']:
                     if expected is not None and existing != expected:
-                        raise DocumentError('This launcher changed while the editor was open. Reopen it before saving.')
+                        raise DocumentError(i18n.t('launchers.document.changedWhileEditing'))
                     read_only = existing.get('IsShared') and not existing.get('IsSharedOwner') and not existing.get('SharedTwoWay')
                     if read_only and any(launcher.get(field, []) != existing.get(field, [])
                                          for field in ('Items', 'WebBookmarks')):
-                        raise DocumentError('This subscribed launcher is read-only.')
+                        raise DocumentError(i18n.t('launchers.document.readOnly'))
                     document['Launchers'][index] = deepcopy(launcher)
                     return
-            raise DocumentError('This launcher was removed. Reload before editing it.')
+            raise DocumentError(i18n.t('launchers.document.removed'))
         return self.edit(replace)
 
     def import_document(self, document):
@@ -102,5 +103,5 @@ class LauncherController(QObject):
                     # The import is already durable; a notice preference must not report it as failed.
                     pass
                 names = ', '.join(item.get('Name', 'Launcher') for item in newly_hidden)
-                self.hidden_notice.emit(names + '\n\nThese shortcut launchers belong to Windows and are disabled on Linux. They stay in the launcher list and sync. Create a separate Linux shortcut launcher for this system.')
+                self.hidden_notice.emit(i18n.t('launchers.hiddenNotice.message', launchers=names))
         return saved

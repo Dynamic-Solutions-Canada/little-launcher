@@ -1,0 +1,15 @@
+{
+  "webTabs.newTab": "Nova guia",
+  "webTabs.addressBar": "Barra de endereços",
+  "webTabs.blankTabCaption": "Nova guia",
+  "webTabs.closeTab": "Fechar guia",
+  "webTabs.closeNamedTab": "Fechar {title}",
+  "webTabs.closeBusyTab": "Fechar esta guia pode interromper mídias ou transferências.",
+  "webTabs.keepOpen": "Manter aberta",
+  "webTabs.actionFailed": "Não foi possível concluir a ação da guia.",
+  "webTabs.duplicate": "Duplicar",
+  "webTabs.copyAddress": "Copiar endereço",
+  "webTabs.closeOtherTabs": "Fechar outras guias",
+  "webTabs.reopenClosedTab": "Reabrir guia fechada",
+  "webTabs.extensionFallbackTitle": "Extensão"
+}

@@ -1,0 +1,22 @@
+{
+  "about.title": "À propos",
+  "about.description": "Un lanceur d’applications et de sites web personnalisable, intégré à votre barre des tâches Windows.",
+  "about.builtWith": "Conçu avec",
+  "about.sourceCode.title": "Code source",
+  "about.sourceCode.description": "Voir le projet sur GitHub",
+  "about.sourceCode.link": "Dépôt GitHub",
+  "about.update.title": "Mises à jour",
+  "about.update.clickToCheck": "Cliquez pour rechercher des mises à jour",
+  "about.update.checkButton": "Rechercher des mises à jour",
+  "about.update.checkingButton": "Recherche…",
+  "about.update.checkingStatus": "Recherche de mises à jour…",
+  "about.update.storeOpened": "Le Microsoft Store est ouvert sur Mises à jour et téléchargements. Recherchez-y les mises à jour disponibles.",
+  "about.update.storeOpenFailed": "Impossible d’ouvrir le Microsoft Store.",
+  "about.update.unableToCheck": "Impossible de rechercher des mises à jour. Vérifiez votre connexion Internet.",
+  "about.update.availableTitle": "Mise à jour disponible",
+  "about.update.available": "La version {latest} est disponible (vous avez la {current})",
+  "about.update.viewRelease": "Voir la version",
+  "about.update.upToDate": "Vous êtes à jour ({current})",
+  "about.update.failed": "La recherche de mises à jour a échoué. Réessayez plus tard.",
+  "about.trayDescription": "Un lanceur d’applications et de sites web personnalisable, intégré à la zone de notification de votre bureau."
+}

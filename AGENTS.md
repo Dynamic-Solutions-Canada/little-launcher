@@ -21,6 +21,7 @@ These guides hold detailed conventions for specific areas. Before editing, read 
 | [docs/web-launchers.md](docs/web-launchers.md) | Web launchers, the WebView2 flyout, its resource policy | `Windows/WebFlyoutWindow.cs`, `Windows/LauncherPanels.cs` |
 | [docs/sync.md](docs/sync.md) | Global sync, sync providers, adding a transport | `Services/*SyncService.cs`, `Services/LauncherPayload.cs`, `Services/CloudFolderService.cs`, `Pages/SyncPage.xaml*` |
 | [docs/xaml.md](docs/xaml.md) | WinUI 3 XAML, controls, localization, backdrops | `**/*.xaml`, `SettingsWindow.ItemEditing.cs` |
+| [docs/localization.md](docs/localization.md) | Interface language, translation catalogs and adding UI text | `Shared/Localization/**`, `Shared/UiText.cs`, `Shared/SupportedLanguages.cs`, `LittleLauncher/Localization/**`, `linux/little_launcher/i18n.py` |
 | [docs/icons.md](docs/icons.md) | App/tray/shortcut/window icons | `MainWindow.xaml.cs`, `SettingsWindow.xaml.cs`, `LaunchersPage.xaml*`, `HomePage.xaml.cs`, `FlyoutConverters.cs`, `FlyoutWindow.xaml*`, `IconGallery.cs`, `LauncherShortcut/**` |
 | [docs/installer.md](docs/installer.md) | Packaging (portable zip + Store MSIX), install/upgrade, update flows | `UpdateService.cs`, `build-msix.ps1`, `Package.appxmanifest` |
 | [docs/versioning.md](docs/versioning.md) | Version bumps and releases | `Directory.Build.props`, `MainWindow.xaml.cs`, `Package.appxmanifest`, `build-msix.ps1`, `.github/workflows/build-msix.yml` |
@@ -33,7 +34,7 @@ These guides hold detailed conventions for specific areas. Before editing, read 
 - P/Invoke declarations live in `NativeMethods.cs`. Always use `using static LittleLauncher.Classes.NativeMethods;` imports.
 - Use `[LibraryImport]` for new P/Invoke declarations; existing ones use `[DllImport]`.
 - Pages are WinUI 3 `Page` objects navigated via `NavigationView`. No MVVM framework routing — just `TargetPageType` in XAML.
-- String resources live in `Resources/Localization/Dictionary-en-US.xaml`. In code: `Application.Current.Resources.TryGetValue("KeyName", out object value)`.
+- UI text lives in the shared catalogs under `Shared/Localization/` for both Windows and Linux; see [docs/localization.md](docs/localization.md). XAML uses `{l:Str Key=area.name}`, C# uses `UiText`, Python uses `i18n.t`. Every new key needs all seven catalogs.
 - Use `CommunityToolkit.Mvvm.Input.RelayCommand` for ICommand implementations.
 - **MSIX VFS rule:** Any file path referenced by external processes (shell `.lnk` files, companion exe) must use `MainWindow.GetPhysicalAppDataDir()`, not raw `Environment.GetFolderPath(ApplicationData)`. The latter is VFS-redirected inside MSIX. See [docs/icons.md](docs/icons.md) for details.
 
@@ -62,7 +63,7 @@ Release builds AOT-publish the companion exe (`LauncherShortcut`) automatically.
 
 ## Common tasks
 
-- **Add a new settings page:** Create `Pages/FooPage.xaml` + `.cs`, add a `NavigationViewItem` in `SettingsWindow.xaml`, add any new string keys to `Dictionary-en-US.xaml`.
+- **Add a new settings page:** Create `Pages/FooPage.xaml` + `.cs`, add a `NavigationViewItem` in `SettingsWindow.xaml`, add its text to the shared catalogs (all seven).
 - **Add a new launcher feature:** Extend `LauncherItem`, update the shared `LauncherItemsView` renderer/edit behavior, and update `ItemEditorWindow` for its form. Preserve both native and regular hosts.
 - **Add a new setting:** Add an `[ObservableProperty]` to `UserSettings.cs`. It will auto-serialize to JSON.
 - **Add/extend icon gallery tabs:** Edit `Classes/IconGallery.cs`; add entries to `FluentIconCategories` or `EmojiCategories` arrays. The gallery supports Segoe Fluent Icons (PUA glyphs), emojis, and app color icons. Icon selection uses a pending-selection model with Confirm/Cancel buttons. Selected icons get an accent border. Color swatches override `ButtonBackgroundPointerOver`/`ButtonBackgroundPressed` to keep their color on hover. When opened, the gallery pre-selects the current icon (correct tab, color swatch, and icon button) so the user can change just the color without re-finding the icon.

@@ -1,0 +1,7 @@
+{
+  "tray.menu.editLauncherSettings": "Editar configurações do inicializador",
+  "tray.menu.appSettings": "Configurações do aplicativo",
+  "tray.menu.exit": "Sair",
+  "tray.whatsNew.message": "Um inicializador agora pode abrir uma página web (um painel de controle, webmail ou qualquer site) diretamente pelo ícone da bandeja.",
+  "tray.update.message": "O Little Launcher {latest} está disponível. Você está usando a versão {current}."
+}

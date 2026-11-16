@@ -21,6 +21,17 @@ public partial class UserSettings : ObservableObject
     [ObservableProperty]
     public partial int AppTheme { get; set; }
 
+    /// <summary>
+    /// Interface language: a supported identity such as <c>fr-CA</c>, or empty for Match device.
+    /// </summary>
+    /// <remarks>
+    /// Per device, like the theme: it is in this file, not the launcher payload, so sync never
+    /// carries one machine's language to another. An unknown value (a language a newer build
+    /// added, say) also means Match device; see <c>SupportedLanguages.NormalizeOverride</c>.
+    /// </remarks>
+    [ObservableProperty]
+    public partial string LanguageOverride { get; set; }
+
     /// <summary>Start minimized to tray when Windows starts.</summary>
     [ObservableProperty]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
@@ -398,6 +409,7 @@ public partial class UserSettings : ObservableObject
     public UserSettings()
     {
         AppTheme = 0;
+        LanguageOverride = "";
         Startup = true;
         FlyoutAnimationsEnabled = true;
         NIconHide = false;

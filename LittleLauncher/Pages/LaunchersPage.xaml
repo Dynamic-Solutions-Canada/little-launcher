@@ -1,6 +1,7 @@
 <Page x:Class="LittleLauncher.Pages.LaunchersPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:l="using:LittleLauncher.Localization">
 
     <Grid>
 
@@ -8,8 +9,8 @@
             <Grid>
                 <StackPanel MaxWidth="450" Margin="16">
 
-                    <TextBlock Text="Launchers" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <TextBlock Text="Each launcher has its own set of launcher items and its own tray icon."
+                    <TextBlock Text="{l:Str Key=launchers.title}" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock TextWrapping="Wrap" Text="{l:Str Key=launchers.description}"
                                FontSize="13" Opacity="0.6" Margin="0,0,0,20"/>
 
                     <!-- Keep creation in one menu above the cards. The messaging presets are
@@ -18,25 +19,25 @@
                     <Button x:Name="AddLauncherButton" HorizontalAlignment="Left" Margin="0,0,0,20">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE710;" FontSize="14"/>
-                            <TextBlock Text="Add Launcher"/>
+                            <TextBlock Text="{l:Str Key=launchers.addButton}"/>
                             <FontIcon Glyph="&#xE70D;" FontSize="10" Opacity="0.6"/>
                         </StackPanel>
                         <Button.Flyout>
                             <MenuFlyout x:Name="AddLauncherMenu" Placement="Bottom">
-                                <MenuFlyoutItem Text="Shortcuts" Click="AddLauncherButton_Click">
+                                <MenuFlyoutItem Text="{l:Str Key=launchers.addMenu.shortcuts}" Click="AddLauncherButton_Click">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE71D;"/>
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
                                 <!-- A web launcher is otherwise only discoverable by opening
                                      launcher settings and noticing the Type dropdown. -->
-                                <MenuFlyoutItem Text="Web page" Click="AddWebLauncherButton_Click">
+                                <MenuFlyoutItem Text="{l:Str Key=launchers.addMenu.webPage}" Click="AddWebLauncherButton_Click">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE774;"/>
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
                                 <MenuFlyoutSeparator x:Name="SharedLauncherSeparator"/>
-                                <MenuFlyoutItem Text="From a shared link…" Click="AddSharedLauncherButton_Click">
+                                <MenuFlyoutItem Text="{l:Str Key=launchers.addMenu.fromSharedLink}" Click="AddSharedLauncherButton_Click">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE753;"/>
                                     </MenuFlyoutItem.Icon>

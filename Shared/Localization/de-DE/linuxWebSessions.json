@@ -1,0 +1,5 @@
+{
+  "linuxWebSessions.unreadable": "Gespeicherte Browser-Tabs sind nicht lesbar. Die vorhandene Sitzungsdatei wurde beibehalten.",
+  "linuxWebSessions.invalid": "Der Browser hat eine ungültige Tab-Sitzung zurückgegeben.",
+  "linuxWebSessions.tooLarge": "Gespeicherte Browser-Tabs überschreiten das lokale Speicherlimit. Vorhandene Sitzungen wurden beibehalten."
+}

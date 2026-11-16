@@ -1,0 +1,20 @@
+{
+  "pinning.promptReminder": "Look for the Windows pinning prompt.",
+  "pinning.manualInstructions": "{reason}\n\nRight-click this launcher's taskbar icon and choose \"Pin to taskbar\".\n\nClick OK only after pinning it, or Cancel to leave the saved pin unchanged.",
+  "pinning.reason.unavailable": "Native pinning is unavailable.",
+  "pinning.reason.manualRequested": "Pin this launcher manually.",
+  "pinning.reason.prepareFailed": "Windows could not prepare native pinning. You can pin this launcher manually.",
+  "pinning.reason.packageIdentity": "Windows started this helper with package identity, so native pinning cannot target this individual launcher.",
+  "pinning.reason.restrictedAccess": "This Windows version requires restricted access for native pinning. You can pin this launcher manually.",
+  "pinning.reason.unsupported": "This Windows version does not support native pinning from desktop apps.",
+  "pinning.reason.startFailed": "Windows could not start native pinning.",
+  "pinning.reason.checkFailed": "Windows could not check whether this launcher is pinned.",
+  "pinning.reason.checkTimedOut": "Windows took too long to check this launcher. You can pin it manually.",
+  "pinning.reason.needsForeground": "Bring this launcher to the foreground to pin it manually.",
+  "pinning.reason.requestBlocked": "Windows is not allowing a native pin request right now.",
+  "pinning.reason.offerFailed": "Windows could not offer native pinning. You can pin this launcher manually.",
+  "pinning.replace.title": "Replace taskbar pin",
+  "pinning.replace.detailsChanged": "This launcher is still pinned. Its name, icon or launch details have changed.",
+  "pinning.replace.detailsUnknown": "This launcher is still pinned. Its previous details could not be compared. Cancel to keep the existing pin.",
+  "pinning.replace.message": "{explanation}\n\nRemove its taskbar pin by right-clicking it and choosing \"Unpin from taskbar\". Click OK when none remain to create a fresh pin, or Cancel to stop."
+}

@@ -1,0 +1,5 @@
+{
+  "linuxWebSessions.unreadable": "No se pueden leer las pestañas guardadas del navegador. Se conservó el archivo de sesión existente.",
+  "linuxWebSessions.invalid": "El navegador devolvió una sesión de pestañas no válida.",
+  "linuxWebSessions.tooLarge": "Las pestañas guardadas del navegador superan el límite de almacenamiento local. Se conservaron las sesiones existentes."
+}

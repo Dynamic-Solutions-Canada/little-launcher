@@ -1,0 +1,20 @@
+{
+  "pinning.promptReminder": "请留意 Windows 的固定提示。",
+  "pinning.manualInstructions": "{reason}\n\n右键单击此启动器的任务栏图标，然后选择“固定到任务栏”。\n\n固定后再单击“确定”，或单击“取消”以保持已保存的固定项不变。",
+  "pinning.reason.unavailable": "原生固定功能不可用。",
+  "pinning.reason.manualRequested": "请手动固定此启动器。",
+  "pinning.reason.prepareFailed": "Windows 无法准备原生固定。你可以手动固定此启动器。",
+  "pinning.reason.packageIdentity": "Windows 以包标识启动了此帮助程序，因此原生固定无法针对此单个启动器。",
+  "pinning.reason.restrictedAccess": "此 Windows 版本的原生固定需要受限访问权限。你可以手动固定此启动器。",
+  "pinning.reason.unsupported": "此 Windows 版本不支持从桌面应用进行原生固定。",
+  "pinning.reason.startFailed": "Windows 无法启动原生固定。",
+  "pinning.reason.checkFailed": "Windows 无法检查此启动器是否已固定。",
+  "pinning.reason.checkTimedOut": "Windows 检查此启动器耗时过长。你可以手动固定。",
+  "pinning.reason.needsForeground": "请将此启动器切换到前台以手动固定。",
+  "pinning.reason.requestBlocked": "Windows 目前不允许原生固定请求。",
+  "pinning.reason.offerFailed": "Windows 无法提供原生固定。你可以手动固定此启动器。",
+  "pinning.replace.title": "替换任务栏固定项",
+  "pinning.replace.detailsChanged": "此启动器仍处于固定状态。其名称、图标或启动信息已更改。",
+  "pinning.replace.detailsUnknown": "此启动器仍处于固定状态。无法比较其之前的信息。单击“取消”以保留现有固定项。",
+  "pinning.replace.message": "{explanation}\n\n右键单击任务栏上的固定项并选择“从任务栏取消固定”以将其移除。全部移除后单击“确定”以创建新的固定项，或单击“取消”以停止。"
+}

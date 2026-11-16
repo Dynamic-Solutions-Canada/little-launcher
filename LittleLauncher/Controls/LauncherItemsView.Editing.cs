@@ -1,5 +1,6 @@
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Pages;
 using LittleLauncher.Services;
@@ -128,8 +129,8 @@ public sealed partial class LauncherItemsView
         if (!empty) return;
 
         _emptyPlaceholder.Text = _isEditMode
-            ? "This launcher is empty.\nAdd your first item with + above."
-            : "This launcher is empty.\nHover here and click the pencil to add items.";
+            ? UiText.Get("items.emptyEditing")
+            : UiText.Get("items.emptyBrowsing");
 
         _emptyPlaceholder.MaxWidth = Math.Max(120, GetFlyoutWidth() - (FlyoutOuterPadding * 4));
     }
@@ -161,7 +162,7 @@ public sealed partial class LauncherItemsView
             Opacity = 0,
             IsHitTestVisible = false,
         };
-        ToolTipService.SetToolTip(_editPencil, "Edit items");
+        ToolTipService.SetToolTip(_editPencil, UiText.Get("items.editItems"));
         _editPencil.SetValue(Canvas.ZIndexProperty, 11);
         _editPencil.Click += (_, _) => EnterEditMode();
         RootGrid.Children.Add(_editPencil);
@@ -207,19 +208,19 @@ public sealed partial class LauncherItemsView
             };
         }
 
-        toolbar.Children.Add(EditButton("", EditActionLabel("LauncherItemsAddItem", "Add item"), () => _ = AddItemAsync()));
-        toolbar.Children.Add(EditButton("", EditActionLabel("LauncherItemsAddGroup", "Add group"), () => _ = AddGroupAsync()));
-        toolbar.Children.Add(EditButtonDrawn(BuildAddColumnIcon(), EditActionLabel("LauncherItemsAddColumn", "Add column"), AddColumn));
+        toolbar.Children.Add(EditButton("", UiText.Get("items.addItem"), () => _ = AddItemAsync()));
+        toolbar.Children.Add(EditButton("", UiText.Get("items.addGroup"), () => _ = AddGroupAsync()));
+        toolbar.Children.Add(EditButtonDrawn(BuildAddColumnIcon(), UiText.Get("items.addColumn"), AddColumn));
         var settings = EditButtonCore(
             new FontIcon { Glyph = "", FontSize = _host.IsRegularWindow ? 16 : 12 },
-            EditActionLabel("LauncherItemsSettingsAction", "Launcher settings"),
+            UiText.Get("items.launcherSettings"),
             () => _ = OpenLauncherSettingsAsync());
         if (_host.IsRegularWindow)
             return BuildRegularEditToolbar(toolbar, settings);
 
         toolbar.Children.Add(settings);
         if (!_host.IsRegularWindow)
-            toolbar.Children.Add(EditButton("", "Done", ExitEditMode));
+            toolbar.Children.Add(EditButton("", UiText.Get("common.done"), ExitEditMode));
         return toolbar;
     }
 
@@ -240,9 +241,6 @@ public sealed partial class LauncherItemsView
         toolbar.Children.Add(settings);
         return toolbar;
     }
-
-    private static string EditActionLabel(string key, string fallback) =>
-        Application.Current.Resources.TryGetValue(key, out object value) ? (string)value : fallback;
 
     /// <summary>Regular buttons wrap at natural widths; native buttons retain their fixed slots.</summary>
     private void UpdateEditToolbarColumns()
@@ -616,10 +614,10 @@ public sealed partial class LauncherItemsView
         bool isEdit = existingName != null;
 
         string? name = await RunModalAsync(track => TextPromptWindow.ShowAsync(
-            title: isEdit ? "Rename Group" : "Add Group",
-            placeholder: "Group name",
+            title: UiText.Get(isEdit ? "items.groupPrompt.renameTitle" : "items.groupPrompt.addTitle"),
+            placeholder: UiText.Get("items.groupPrompt.namePlaceholder"),
             initialText: existingName,
-            acceptText: isEdit ? "Save" : "Add",
+            acceptText: UiText.Get(isEdit ? "common.save" : "common.add"),
             ownerHwnd: _hwnd,
             onCreated: track));
 
@@ -689,13 +687,13 @@ public sealed partial class LauncherItemsView
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(2, 0, 0, 0),
         };
-        ToolTipService.SetToolTip(remove, "Remove this column");
+        ToolTipService.SetToolTip(remove, UiText.Get("items.removeColumn"));
         int captured = columnIndex;
         remove.Click += (_, _) => RemoveColumnAt(captured);
 
         var label = new TextBlock
         {
-            Text = $"Column {columnIndex + 1}",
+            Text = UiText.Format("items.columnTitle", ("number", columnIndex + 1)),
             FontSize = 11,
             Opacity = 0.6,
             VerticalAlignment = VerticalAlignment.Center,
@@ -855,8 +853,8 @@ public sealed partial class LauncherItemsView
             return;
         }
 
-        string moveBackwardText = IsIconMode ? "Move left" : "Move up";
-        string moveForwardText = IsIconMode ? "Move right" : "Move down";
+        string moveBackwardText = UiText.Get(IsIconMode ? "items.moveLeft" : "common.moveUp");
+        string moveForwardText = UiText.Get(IsIconMode ? "items.moveRight" : "common.moveDown");
         string moveBackwardGlyph = IsIconMode ? "\uE76B" : "\uE70E";
         string moveForwardGlyph = IsIconMode ? "\uE76C" : "\uE70D";
 
@@ -900,11 +898,11 @@ public sealed partial class LauncherItemsView
             }
         }
 
-        var moveToSub = new MenuFlyoutSubItem { Text = "Move to\u2026", Icon = new FontIcon { Glyph = "\uE8DE" } };
+        var moveToSub = new MenuFlyoutSubItem { Text = UiText.Get("items.moveTo"), Icon = new FontIcon { Glyph = "\uE8DE" } };
 
         if (currentParent != null)
         {
-            var topLevel = new MenuFlyoutItem { Text = "Top Level", Icon = new FontIcon { Glyph = "\uE74B" } };
+            var topLevel = new MenuFlyoutItem { Text = UiText.Get("items.topLevel"), Icon = new FontIcon { Glyph = "\uE74B" } };
             topLevel.Click += (_, _) =>
             {
                 currentParent.Remove(item);
@@ -941,7 +939,7 @@ public sealed partial class LauncherItemsView
                 var targetLauncher = launcher;
                 var launcherOption = new MenuFlyoutItem
                 {
-                    Text = $"{targetLauncher.Name} (launcher)",
+                    Text = UiText.Format("items.launcherDestination", ("launcher", targetLauncher.Name)),
                     Icon = new FontIcon { Glyph = "\uF0E2" }
                 };
                 launcherOption.Click += (_, _) =>
@@ -972,7 +970,7 @@ public sealed partial class LauncherItemsView
 
         var edit = new MenuFlyoutItem
         {
-            Text = item.IsGroup ? "Rename\u2026" : "Edit",
+            Text = UiText.Get(item.IsGroup ? "items.renameGroup" : "common.edit"),
             Icon = new FontIcon { Glyph = "\uE70F" }
         };
         edit.Click += (_, _) =>
@@ -984,7 +982,7 @@ public sealed partial class LauncherItemsView
         };
         flyout.Items.Add(edit);
 
-        var remove = new MenuFlyoutItem { Text = "Remove", Icon = new FontIcon { Glyph = "\uE74D" } };
+        var remove = new MenuFlyoutItem { Text = UiText.Get("common.remove"), Icon = new FontIcon { Glyph = "\uE74D" } };
         remove.Click += (_, _) => RemoveItem(item);
         flyout.Items.Add(remove);
 
@@ -1063,7 +1061,7 @@ public sealed partial class LauncherItemsView
         // reachable from the edit toolbar, so this keeps one obvious way in.
         var editMode = new MenuFlyoutItem
         {
-            Text = "Edit items",
+            Text = UiText.Get("items.editItems"),
             Icon = new FontIcon { Glyph = "" }
         };
         editMode.Click += ContextEditMode_Click;
@@ -1073,7 +1071,7 @@ public sealed partial class LauncherItemsView
 
         var settingsItem = new MenuFlyoutItem
         {
-            Text = "App Settings",
+            Text = UiText.Get("items.appSettings"),
             Icon = new FontIcon { Glyph = "\uE713" }
         };
         settingsItem.Click += ContextSettingsItem_Click;

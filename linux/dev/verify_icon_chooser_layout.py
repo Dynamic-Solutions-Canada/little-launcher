@@ -13,7 +13,7 @@ original={'Id':'web-fixture','Kind':1,'WebHomeUrl':'https://example.com','TrayIc
 window=IconPicker(original,cache_directory=root/'icons');window.show();result={}
 def verify():
  try:
-  assert [window.tabs.tabText(i)for i in range(window.tabs.count())]==['Launcher presets','Symbols','Emoji','selfh.st']
+  assert [window.tabs.tabText(i)for i in range(window.tabs.count())]==['Launcher Presets','Symbols','Emoji','selfh.st Icons']
   assert window.tabs.currentIndex()==0 and window.width()==420
   assert window.site_tab==0 and window.browse_button.isVisible()
   assert not any(mode=='Composite'for _,mode in window.tiles)

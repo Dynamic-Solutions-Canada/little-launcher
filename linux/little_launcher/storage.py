@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import tempfile
 
+from . import i18n
 from .document import DocumentError, JsonObject, validate_document
 
 
@@ -29,7 +30,7 @@ class DocumentStore:
         try:
             document = json.loads(raw) if raw else {"Launchers": []}
         except (UnicodeError, json.JSONDecodeError) as error:
-            raise DocumentError("Settings are unreadable. The existing file has been preserved.") from error
+            raise DocumentError(i18n.t('launchers.document.settingsUnreadable')) from error
         return validate_document(document), self._revision(raw)
 
     def commit(self, document: JsonObject, expected_revision: str) -> str:
@@ -39,7 +40,7 @@ class DocumentStore:
         with self._lock():
             previous = self.path.read_bytes() if self.path.exists() else b""
             if self._revision(previous) != expected_revision:
-                raise ConcurrentEditError("Settings changed elsewhere. Reload before saving this edit.")
+                raise ConcurrentEditError(i18n.t('launchers.document.changedElsewhere'))
             raw = (json.dumps(validated, indent=2, ensure_ascii=False) + "\n").encode()
             atomic_write(self.path, raw)
         return self._revision(raw)
@@ -87,7 +88,7 @@ class LocalPreferences:
         try:
             self.data = json.loads(path.read_text()) if path.exists() else {"StartAtLogin": True}
         except (ValueError, UnicodeError) as error:
-            raise DocumentError('Machine preferences are unreadable and have been preserved.') from error
+            raise DocumentError(i18n.t('launchers.document.preferencesUnreadable')) from error
         if (not isinstance(self.data, dict)
                 or type(self.data.get('StartAtLogin', True)) is not bool
                 or not isinstance(self.data.get('OneDriveSync', {}), dict)
@@ -96,8 +97,9 @@ class LocalPreferences:
                 or not isinstance(self.data.get('DisabledLauncherIds', []), list)
                 or any(not isinstance(item, str) for item in self.data.get('DisabledLauncherIds', []))
                 or not isinstance(self.data.get('HiddenLauncherNotices', []), list)
-                or any(not isinstance(item, str) for item in self.data.get('HiddenLauncherNotices', []))):
-            raise DocumentError("Machine preferences are unreadable and have been preserved.")
+                or any(not isinstance(item, str) for item in self.data.get('HiddenLauncherNotices', []))
+                or not isinstance(self.data.get('Language', ''), str)):
+            raise DocumentError(i18n.t('launchers.document.preferencesUnreadable'))
 
     def set(self, key: str, value) -> None:
         """Persist a local choice without copying it into global sync."""

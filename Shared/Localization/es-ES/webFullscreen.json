@@ -1,0 +1,8 @@
+{
+  "webFullscreen.enterContentFullscreen": "Vídeo a pantalla completa",
+  "webFullscreen.contentFullscreenUnavailable": "Este vídeo no pudo pasar a pantalla completa. Prueba el control de pantalla completa del reproductor.",
+  "webFullscreen.maximizeLauncher": "Maximizar el lanzador (mantener el contenido a pantalla completa)",
+  "webFullscreen.restoreLauncherSize": "Restaurar el tamaño del lanzador (mantener el contenido a pantalla completa)",
+  "webFullscreen.exitButton": "Salir de pantalla completa",
+  "webFullscreen.exitWithEscape": "Salir del contenido a pantalla completa (Esc)"
+}

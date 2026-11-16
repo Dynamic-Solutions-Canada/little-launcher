@@ -1,6 +1,7 @@
 ﻿// Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.Web.WebView2.Core;
@@ -45,36 +46,59 @@ public sealed partial class WebFlyoutWindow
     /// it, so a shortcut cannot be handled without being documented or documented without working.
     /// </summary>
     /// <param name="Id">Matched by both routes; also the page script's wire value.</param>
-    /// <param name="Keys">As shown on the sheet, and parsed into a XAML accelerator.</param>
-    /// <param name="Description">What it does, in the flyout's terms rather than a browser's.</param>
-    /// <param name="Group">Heading it sits under on the sheet.</param>
-    private record Shortcut(string Id, string Keys, string Description, string Group);
+    /// <param name="Keys">As shown on the sheet, and parsed into a XAML accelerator unless the
+    /// shortcut has an <paramref name="Alternative"/>.</param>
+    /// <param name="DescriptionKey">Catalog key for what it does, in the flyout's terms rather than a browser's.</param>
+    /// <param name="GroupKey">Catalog key for the heading it sits under on the sheet.</param>
+    /// <param name="Alternative">A second way to do the same thing, shown after "or" on the sheet.
+    /// A function rather than text because a wheel gesture is named in words, which have to be read
+    /// in the current language when the sheet opens.</param>
+    private record Shortcut(string Id, string Keys, string DescriptionKey, string GroupKey, Func<string>? Alternative = null);
 
     private static readonly Shortcut[] Shortcuts =
     [
-        new("tab.next",     "Ctrl+Tab",          "Next tab",                          "Tabs"),
-        new("tab.previous", "Ctrl+Shift+Tab",    "Previous tab",                      "Tabs"),
-        new("tab.new",      "Ctrl+T",            "New tab on this launcher's page",   "Tabs"),
-        new("tab.close",    "Ctrl+W",            "Close the current tab",             "Tabs"),
-        new("tab.reopen",   "Ctrl+Shift+T",      "Reopen the tab you just closed",    "Tabs"),
-        new("tab.first",    "Ctrl+1 … Ctrl+8",   "Jump to that tab",                  "Tabs"),
-        new("tab.last",     "Ctrl+9",            "Jump to the last tab",              "Tabs"),
+        new("tab.next",     "Ctrl+Tab",          "webShortcuts.tabNext",      "webShortcuts.group.tabs"),
+        new("tab.previous", "Ctrl+Shift+Tab",    "webShortcuts.tabPrevious",  "webShortcuts.group.tabs"),
+        new("tab.new",      "Ctrl+T",            "webShortcuts.tabNew",       "webShortcuts.group.tabs"),
+        new("tab.close",    "Ctrl+W",            "webShortcuts.tabClose",     "webShortcuts.group.tabs"),
+        new("tab.reopen",   "Ctrl+Shift+T",      "webShortcuts.tabReopen",    "webShortcuts.group.tabs"),
+        new("tab.first",    "Ctrl+1 … Ctrl+8",   "webShortcuts.tabJump",      "webShortcuts.group.tabs"),
+        new("tab.last",     "Ctrl+9",            "webShortcuts.tabLast",      "webShortcuts.group.tabs"),
 
-        new("nav.back",     "Alt+Left",          "Back",                              "Navigation"),
-        new("nav.forward",  "Alt+Right",         "Forward",                           "Navigation"),
-        new("nav.reload",   "Ctrl+R  or  F5",    "Reload the page",                   "Navigation"),
-        new("nav.address",  "Ctrl+L",            "Focus the address bar",             "Navigation"),
-        new("nav.home",     "Alt+Home",          "Back to this launcher's own page",  "Navigation"),
+        new("nav.back",     "Alt+Left",          "common.back",               "webShortcuts.group.navigation"),
+        new("nav.forward",  "Alt+Right",         "common.forward",            "webShortcuts.group.navigation"),
+        new("nav.reload",   "Ctrl+R",            "webShortcuts.reload",       "webShortcuts.group.navigation",
+            static () => "F5"),
+        new("nav.address",  "Ctrl+L",            "webShortcuts.focusAddress", "webShortcuts.group.navigation"),
+        new("nav.home",     "Alt+Home",          "webShortcuts.home",         "webShortcuts.group.navigation"),
 
-        new("page.zoomIn",  "Ctrl+Plus  or  Ctrl+Wheel up",   "Zoom in",              "Page"),
-        new("page.zoomOut", "Ctrl+Minus  or  Ctrl+Wheel down", "Zoom out",             "Page"),
-        new("page.zoomOff", "Ctrl+0",            "Reset zoom to 100%",                "Page"),
-        new("page.bookmark", "Ctrl+D",           "Add or remove this page's bookmark", "Page"),
-        new("page.browser", "Ctrl+Shift+O",      "Open this page in your browser",    "Page"),
+        new("page.zoomIn",  "Ctrl+Plus",         "webShortcuts.zoomIn",       "webShortcuts.group.page",
+            static () => "Ctrl+" + UiText.Get("webShortcuts.wheelUp")),
+        new("page.zoomOut", "Ctrl+Minus",        "webShortcuts.zoomOut",      "webShortcuts.group.page",
+            static () => "Ctrl+" + UiText.Get("webShortcuts.wheelDown")),
+        new("page.zoomOff", "Ctrl+0",            "webShortcuts.zoomReset",    "webShortcuts.group.page"),
+        new("page.bookmark", "Ctrl+D",           "webShortcuts.bookmark",     "webShortcuts.group.page"),
+        new("page.browser", "Ctrl+Shift+O",      "webShortcuts.openInBrowser", "webShortcuts.group.page"),
 
-        new("app.shortcuts", "Ctrl+/",           "Show this list",                    "Launcher"),
-        new("app.close",    "Escape",            "Close the flyout",                  "Launcher"),
+        new("app.shortcuts", "Ctrl+/",           "webShortcuts.showList",     "webShortcuts.group.launcher"),
+        new("app.close",    "Escape",            "webShortcuts.closeFlyout",  "webShortcuts.group.launcher"),
     ];
+
+    /// <summary>
+    /// The keys for the sheet: the combo, and its alternative if it has one, joined with
+    /// <see cref="ShortcutsWindow.AlternativeSeparator"/>.
+    /// </summary>
+    /// <remarks>
+    /// The sheet draws key caps with a translated "or" between alternatives, so it needs them
+    /// apart; joining with translated prose and splitting it again would break in every language
+    /// whose "or" differs from the English one.
+    /// </remarks>
+    private static string DisplayKeys(Shortcut shortcut)
+    {
+        if (shortcut.Alternative == null) return shortcut.Keys;
+
+        return shortcut.Keys + ShortcutsWindow.AlternativeSeparator + shortcut.Alternative();
+    }
 
     /// <summary>Addresses of tabs closed this session, newest last. Ctrl+Shift+T pops it.</summary>
     private readonly List<string> _closedTabUrls = [];
@@ -210,6 +234,9 @@ public sealed partial class WebFlyoutWindow
     {
         foreach (var shortcut in Shortcuts)
         {
+            // A shortcut with an alternative is documentation of two routes rather than one combo,
+            // and the page script owns it, as it did when the "or" was part of the keys text.
+            if (shortcut.Alternative != null) continue;
             if (!TryParseAccelerator(shortcut.Keys, out var key, out var modifiers)) continue;
 
             var accelerator = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
@@ -414,7 +441,9 @@ public sealed partial class WebFlyoutWindow
         SetTopmost(false);
         try
         {
-            var rows = Shortcuts.Select(s => (s.Group, s.Keys, s.Description)).ToList();
+            var rows = Shortcuts
+                .Select(s => (UiText.Get(s.GroupKey), DisplayKeys(s), UiText.Get(s.DescriptionKey)))
+                .ToList();
             await ShortcutsWindow.ShowAsync(_launcher.Name, rows, _hwnd, w => _openModal = w);
         }
         finally

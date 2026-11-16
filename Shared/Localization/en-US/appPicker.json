@@ -1,0 +1,10 @@
+{
+  "appPicker.openContainingFolder": "Open containing folder",
+  "appPicker.title": "Choose an application",
+  "appPicker.source.all": "All apps",
+  "appPicker.source.applications": "Applications",
+  "appPicker.source.webApps": "Web apps",
+  "appPicker.openFailed": "Could not open application",
+  "appPicker.folderFailed.title": "Could not open folder",
+  "appPicker.folderFailed.message": "The file manager could not open this application’s folder."
+}

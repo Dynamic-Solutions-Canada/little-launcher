@@ -1,0 +1,15 @@
+{
+  "browserData.bookmarkAccessibleName": "{name}, {url}",
+  "browserData.bookmarks.bar": "Barra de favoritos",
+  "browserData.bookmarks.otherFolder": "Outros favoritos",
+  "browserData.bookmarks.synced": "Favoritos sincronizados",
+  "browserData.bookmarks.menu": "Menu de favoritos",
+  "browserData.bookmarks.toolbar": "Barra de ferramentas de favoritos",
+  "browserData.profileCleanup.deletedLauncher": "um inicializador que não existe mais",
+  "browserData.profileCleanup.nowShared": "{launcher}, que agora usa o perfil compartilhado",
+  "browserData.size.gigabytes": "{size} GB",
+  "browserData.size.megabytes": "{size} MB",
+  "browserData.size.kilobytes": "{size} KB",
+  "browserData.size.bytes.one": "{count} byte",
+  "browserData.size.bytes.other": "{count} bytes"
+}

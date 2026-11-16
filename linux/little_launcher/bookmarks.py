@@ -3,6 +3,7 @@ from copy import deepcopy
 
 from PySide6.QtWidgets import QDialog, QMessageBox
 
+from . import i18n
 from .document import DocumentError
 from .forms import BookmarkDialog, BookmarkFolderDialog, NameDialog, BookmarkAddressDialog
 from .bookmark_tree import BookmarkTree
@@ -23,13 +24,13 @@ class BookmarkActions:
             return
         original = deepcopy(launcher)
         if message.get('expected') != original.get('WebBookmarks', []):
-            self.controller.failed.emit('Bookmarks changed. Reopen the bookmark menu before editing.')
+            self.controller.failed.emit(i18n.t('webBookmarks.error.listChanged'))
             return
         if original.get('IsShared') and not original.get('IsSharedOwner') and not original.get('SharedTwoWay'):
-            self.controller.failed.emit('This subscribed launcher is read-only.')
+            self.controller.failed.emit(i18n.t('webBookmarks.error.readOnly'))
             return
         if message.get('action') == 'set-home' and message.get('expectedHome') != original.get('WebHomeUrl'):
-            self.controller.failed.emit('The home page changed. Reopen the bookmark menu before editing.')
+            self.controller.failed.emit(i18n.t('webBookmarks.error.homeChanged'))
             return
         tree = BookmarkTree(original.get('WebBookmarks', []))
         candidate = deepcopy(original)
@@ -37,7 +38,7 @@ class BookmarkActions:
             if message.get('action') == 'set-home':
                 _, _, item = tree.resolve(message.get('path'))
                 if item.get('IsFolder'):
-                    raise DocumentError('Choose a bookmark address as the home page.')
+                    raise DocumentError(i18n.t('webBookmarks.error.homeNeedsAddress'))
                 from .document import normalize_web_address
                 candidate['WebHomeUrl'] = normalize_web_address(item.get('Url', ''))
             elif not self._apply(tree, message):
@@ -69,20 +70,20 @@ class BookmarkActions:
         elif action in ('rename', 'address'):
             _, _, item = tree.resolve(path)
             if item.get('IsFolder'):
-                raise DocumentError('Use Rename for a folder.')
-            dialog = (NameDialog('Rename bookmark', item.get('Name') or item.get('Url', ''), self.parent)
+                raise DocumentError(i18n.t('webBookmarks.error.renameFolder'))
+            dialog = (NameDialog(i18n.t('webBookmarks.prompt.renameBookmark'), item.get('Name') or item.get('Url', ''), self.parent)
                       if action == 'rename' else BookmarkAddressDialog(item.get('Url', ''), self.parent))
             if dialog.exec() != QDialog.Accepted:
                 return False
             tree.replace(path, {'Name' if action == 'rename' else 'Url': dialog.value()})
         elif action == 'icons-only':
             if type(message.get('value')) is not bool:
-                raise DocumentError('Icon only requires an explicit on/off value.')
+                raise DocumentError(i18n.t('webBookmarks.error.iconOnlyValue'))
             tree.replace(path, {'IconsOnly': message['value']})
         elif action == 'remove':
             collection, index, item = tree.resolve(path)
-            text = 'Remove this folder and all its bookmarks?' if item.get('IsFolder') else 'Remove this bookmark?'
-            if QMessageBox.question(self.parent, 'Remove bookmark', text) != QMessageBox.Yes:
+            text = i18n.t('webBookmarks.removePrompt.folder') if item.get('IsFolder') else i18n.t('webBookmarks.removePrompt.bookmark')
+            if QMessageBox.question(self.parent, i18n.t('webBookmarks.removePrompt.title'), text) != QMessageBox.Yes:
                 return False
             collection.pop(index)
         elif action == 'step':
@@ -92,5 +93,5 @@ class BookmarkActions:
         elif action == 'move':
             tree.move(path, message.get('parent'))
         else:
-            raise DocumentError('This bookmark action is unavailable.')
+            raise DocumentError(i18n.t('webBookmarks.error.unavailableAction'))
         return True

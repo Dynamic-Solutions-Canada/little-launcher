@@ -1,0 +1,20 @@
+{
+  "pinning.promptReminder": "Procure a solicitação de fixação do Windows.",
+  "pinning.manualInstructions": "{reason}\n\nClique com o botão direito no ícone deste inicializador na barra de tarefas e escolha \"Fixar na barra de tarefas\".\n\nClique em OK somente depois de fixá-lo, ou em Cancelar para manter a fixação salva inalterada.",
+  "pinning.reason.unavailable": "A fixação nativa não está disponível.",
+  "pinning.reason.manualRequested": "Fixe este inicializador manualmente.",
+  "pinning.reason.prepareFailed": "O Windows não conseguiu preparar a fixação nativa. Você pode fixar este inicializador manualmente.",
+  "pinning.reason.packageIdentity": "O Windows iniciou este auxiliar com identidade de pacote, então a fixação nativa não pode ser direcionada a este inicializador específico.",
+  "pinning.reason.restrictedAccess": "Esta versão do Windows exige acesso restrito para a fixação nativa. Você pode fixar este inicializador manualmente.",
+  "pinning.reason.unsupported": "Esta versão do Windows não oferece suporte à fixação nativa por aplicativos da área de trabalho.",
+  "pinning.reason.startFailed": "O Windows não conseguiu iniciar a fixação nativa.",
+  "pinning.reason.checkFailed": "O Windows não conseguiu verificar se este inicializador está fixado.",
+  "pinning.reason.checkTimedOut": "O Windows demorou demais para verificar este inicializador. Você pode fixá-lo manualmente.",
+  "pinning.reason.needsForeground": "Traga este inicializador para o primeiro plano para fixá-lo manualmente.",
+  "pinning.reason.requestBlocked": "O Windows não está permitindo uma solicitação de fixação nativa no momento.",
+  "pinning.reason.offerFailed": "O Windows não conseguiu oferecer a fixação nativa. Você pode fixar este inicializador manualmente.",
+  "pinning.replace.title": "Substituir fixação na barra de tarefas",
+  "pinning.replace.detailsChanged": "Este inicializador ainda está fixado. O nome, o ícone ou os detalhes de inicialização foram alterados.",
+  "pinning.replace.detailsUnknown": "Este inicializador ainda está fixado. Não foi possível comparar os detalhes anteriores. Cancele para manter a fixação existente.",
+  "pinning.replace.message": "{explanation}\n\nRemova a fixação da barra de tarefas clicando com o botão direito nele e escolhendo \"Desafixar da barra de tarefas\". Clique em OK quando não houver mais nenhuma para criar uma nova fixação, ou em Cancelar para parar."
+}

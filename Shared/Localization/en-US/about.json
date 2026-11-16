@@ -1,0 +1,22 @@
+{
+  "about.title": "About",
+  "about.description": "A customizable application and website launcher that lives in your Windows taskbar.",
+  "about.builtWith": "Built With",
+  "about.sourceCode.title": "Source Code",
+  "about.sourceCode.description": "View the project on GitHub",
+  "about.sourceCode.link": "GitHub Repository",
+  "about.update.title": "Updates",
+  "about.update.clickToCheck": "Click to check for updates",
+  "about.update.checkButton": "Check for Updates",
+  "about.update.checkingButton": "Checking…",
+  "about.update.checkingStatus": "Checking for updates…",
+  "about.update.storeOpened": "The Microsoft Store is open to Updates & downloads. Check there for available updates.",
+  "about.update.storeOpenFailed": "Unable to open the Microsoft Store.",
+  "about.update.unableToCheck": "Unable to check for updates. Check your internet connection.",
+  "about.update.availableTitle": "Update Available",
+  "about.update.available": "Version {latest} is available (you have {current})",
+  "about.update.viewRelease": "View Release",
+  "about.update.upToDate": "You're up to date ({current})",
+  "about.update.failed": "Update check failed. Try again later.",
+  "about.trayDescription": "A customizable application and website launcher that lives in your desktop tray."
+}

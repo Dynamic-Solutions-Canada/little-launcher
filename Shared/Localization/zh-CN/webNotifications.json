@@ -1,0 +1,5 @@
+{
+  "webNotifications.keepRunningPrompt": "只有此页面运行时才能收到通知，而 {launcher} 目前会在关闭浮出窗口时停止运行。",
+  "webNotifications.keepRunning": "保持运行",
+  "webNotifications.notNow": "暂不"
+}

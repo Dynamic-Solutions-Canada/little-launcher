@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
 using LittleLauncher.Classes;
+using LittleLauncher.Localization;
 using LittleLauncher.Pages;
 using LittleLauncher.Services;
 using Microsoft.UI;
@@ -54,7 +55,7 @@ public sealed class BookmarkPickerWindow : Window
     private BookmarkPickerWindow(IntPtr ownerHwnd)
     {
         _hwnd = WindowNative.GetWindowHandle(this);
-        Title = "Choose a Bookmark";
+        Title = UiText.Get("bookmarkPicker.title");
         SystemBackdrop = new MicaBackdrop();
 
         // Owned windows always sit above their owner — required because the flyout sets
@@ -66,12 +67,12 @@ public sealed class BookmarkPickerWindow : Window
 
         var accept = new Button
         {
-            Content = "Use",
+            Content = UiText.Get("bookmarkPicker.use"),
             Style = (Style)Application.Current.Resources["AccentButtonStyle"],
             MinWidth = 90,
             IsEnabled = false,
         };
-        var cancel = new Button { Content = "Cancel", MinWidth = 90 };
+        var cancel = new Button { Content = UiText.Get("common.cancel"), MinWidth = 90 };
 
         void Commit()
         {

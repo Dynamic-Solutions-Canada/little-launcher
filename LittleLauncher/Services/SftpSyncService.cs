@@ -1,4 +1,5 @@
-﻿using LittleLauncher.Classes.Settings;
+﻿using LittleLauncher.Localization;
+using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
 using Renci.SshNet;
 using System.IO;
@@ -40,13 +41,13 @@ public static class SftpSyncService
             client.Disconnect();
 
             return connected
-                ? (true, "Connection successful!")
-                : (false, "Connection failed — no error but not connected.");
+                ? (true, UiText.Get("syncService.sftp.connected"))
+                : (false, UiText.Get("syncService.sftp.notConnected"));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "SFTP connection test failed");
-            return (false, $"Connection failed: {ex.Message}");
+            return (false, UiText.Format("syncService.sftp.connectionFailed", ("error", ex.Message)));
         }
     }
 
@@ -75,12 +76,12 @@ public static class SftpSyncService
             client.Disconnect();
 
             Logger.Info($"Launchers uploaded to {remotePath}");
-            return (true, $"Launchers uploaded to {SettingsManager.Current.SftpHost}");
+            return (true, UiText.Format("syncService.sftp.uploaded", ("host", SettingsManager.Current.SftpHost)));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to upload launchers via SFTP");
-            return (false, $"Upload failed: {ex.Message}");
+            return (false, UiText.Format("syncService.uploadFailed", ("error", ex.Message)));
         }
     }
 
@@ -109,7 +110,7 @@ public static class SftpSyncService
             if (!await Task.Run(() => client.Exists(remotePath)))
             {
                 client.Disconnect();
-                return (false, "No launchers file found on the remote server.");
+                return (false, UiText.Get("syncService.sftp.noLaunchersFile"));
             }
 
             using var stream = new MemoryStream();
@@ -120,7 +121,7 @@ public static class SftpSyncService
 
             var (launchers, remoteTimestamp, extensions) = LauncherPayload.Deserialize(stream);
             if (launchers == null)
-                return (false, "Failed to parse launchers from server.");
+                return (false, UiText.Get("syncService.sftp.parseFailed"));
 
             if (LauncherPayload.ShouldSkipDownload(remoteTimestamp, force, out string reason))
                 return (false, reason);
@@ -128,12 +129,12 @@ public static class SftpSyncService
             await LauncherPayload.ApplyAsync(launchers, extensions);
 
             Logger.Info($"Launchers downloaded from {remotePath}");
-            return (true, $"Launchers downloaded from {SettingsManager.Current.SftpHost}");
+            return (true, UiText.Format("syncService.sftp.downloaded", ("host", SettingsManager.Current.SftpHost)));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, "Failed to download launchers via SFTP");
-            return (false, $"Download failed: {ex.Message}");
+            return (false, UiText.Format("syncService.downloadFailed", ("error", ex.Message)));
         }
     }
 
@@ -315,12 +316,12 @@ public static class SftpSyncService
             await Task.Run(() => LauncherPayload.WriteAtomic(path, bytes));
 
             Logger.Info($"Shared launcher '{launcher.Name}' written to {path}");
-            return (true, $"Saved to {path}");
+            return (true, UiText.Format("sharing.savedTo", ("path", path)));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to write shared launcher '{launcher.Name}' to file");
-            return (false, $"Save failed: {ex.Message}");
+            return (false, UiText.Format("sharing.saveFailed", ("error", ex.Message)));
         }
     }
 
@@ -330,20 +331,20 @@ public static class SftpSyncService
         {
             string path = launcher.SharedPath;
             if (!File.Exists(path))
-                return (false, "Shared launcher file not found.");
+                return (false, UiText.Get("sharing.fileNotFound"));
 
             var file = SharedLauncherPayload.Deserialize(await File.ReadAllBytesAsync(path));
             if (file == null)
-                return (false, "Failed to parse shared launcher file.");
+                return (false, UiText.Get("sharing.parseFailed"));
 
             await SharedLauncherPayload.ApplyAsync(launcher, file);
             Logger.Info($"Shared launcher '{launcher.Name}' synced from {path}");
-            return (true, "Shared launcher updated.");
+            return (true, UiText.Get("sharing.updated"));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to read shared launcher '{launcher.Name}' from file");
-            return (false, $"Sync failed: {ex.Message}");
+            return (false, UiText.Format("sharing.syncFailed", ("error", ex.Message)));
         }
     }
 
@@ -353,11 +354,11 @@ public static class SftpSyncService
         {
             string path = launcher.SharedPath;
             if (!File.Exists(path))
-                return (false, 0, "File not found.");
+                return (false, 0, UiText.Get("sharing.verify.notFound"));
 
             var file = SharedLauncherPayload.Deserialize(await File.ReadAllBytesAsync(path));
             if (file == null)
-                return (false, 0, "File exists but could not be parsed.");
+                return (false, 0, UiText.Get("sharing.verify.unreadable"));
 
             return (true, file.Items.Count, "");
         }
@@ -388,12 +389,12 @@ public static class SftpSyncService
             client.Disconnect();
 
             Logger.Info($"Shared launcher '{launcher.Name}' uploaded to {launcher.SharedSftpHost}:{launcher.SharedPath}");
-            return (true, $"Synced to {launcher.SharedSftpHost}:{launcher.SharedPath}");
+            return (true, UiText.Format("sharing.syncedTo", ("location", $"{launcher.SharedSftpHost}:{launcher.SharedPath}")));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to share launcher '{launcher.Name}'");
-            return (false, $"Sync failed: {ex.Message}");
+            return (false, UiText.Format("sharing.syncFailed", ("error", ex.Message)));
         }
     }
 
@@ -409,7 +410,7 @@ public static class SftpSyncService
             if (!await Task.Run(() => client.Exists(remotePath)))
             {
                 client.Disconnect();
-                return (false, "Shared launcher file not found on remote server.");
+                return (false, UiText.Get("sharing.sftp.fileNotFound"));
             }
 
             using var ms = new MemoryStream();
@@ -419,16 +420,16 @@ public static class SftpSyncService
 
             var file = SharedLauncherPayload.Deserialize(ms.ToArray());
             if (file == null)
-                return (false, "Failed to parse shared launcher file.");
+                return (false, UiText.Get("sharing.parseFailed"));
 
             await SharedLauncherPayload.ApplyAsync(launcher, file);
             Logger.Info($"Shared launcher '{launcher.Name}' synced from {launcher.SharedSftpHost}");
-            return (true, "Shared launcher updated.");
+            return (true, UiText.Get("sharing.updated"));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to sync shared launcher '{launcher.Name}'");
-            return (false, $"Sync failed: {ex.Message}");
+            return (false, UiText.Format("sharing.syncFailed", ("error", ex.Message)));
         }
     }
 
@@ -444,7 +445,7 @@ public static class SftpSyncService
             if (!await Task.Run(() => client.Exists(remotePath)))
             {
                 client.Disconnect();
-                return (false, 0, "File not found on server.");
+                return (false, 0, UiText.Get("sharing.verify.notFoundOnServer"));
             }
 
             using var ms = new MemoryStream();
@@ -454,7 +455,7 @@ public static class SftpSyncService
 
             var file = SharedLauncherPayload.Deserialize(ms.ToArray());
             if (file == null)
-                return (false, 0, "File exists but could not be parsed.");
+                return (false, 0, UiText.Get("sharing.verify.unreadable"));
 
             return (true, file.Items.Count, "");
         }
@@ -482,7 +483,7 @@ public static class SftpSyncService
         var settings = SettingsManager.Current;
 
         if (string.IsNullOrWhiteSpace(settings.SftpHost))
-            throw new InvalidOperationException("SFTP host is not configured.");
+            throw new InvalidOperationException(UiText.Get("syncService.sftp.hostNotConfigured"));
 
         // Default to Windows username if not specified
         string username = string.IsNullOrWhiteSpace(settings.SftpUsername)
@@ -510,7 +511,7 @@ public static class SftpSyncService
             return new SftpClient(settings.SftpHost, settings.SftpPort, username, password);
         }
 
-        throw new InvalidOperationException("No SSH key found and no password provided. Place a key in ~/.ssh/ or specify a path.");
+        throw new InvalidOperationException(UiText.Get("syncService.sftp.noKey"));
     }
 
     /// <summary>
@@ -584,7 +585,7 @@ public static class SftpSyncService
         }
 
         if (!client.Exists(path))
-            throw new InvalidOperationException($"Failed to create remote directory: {path}");
+            throw new InvalidOperationException(UiText.Format("syncService.sftp.createDirectoryFailed", ("path", path)));
     }
 
     /// <summary>
@@ -593,7 +594,7 @@ public static class SftpSyncService
     private static SftpClient CreateSharedSftpClient(Launcher launcher, string? password)
     {
         if (string.IsNullOrWhiteSpace(launcher.SharedSftpHost))
-            throw new InvalidOperationException("SFTP host is not configured for this shared launcher.");
+            throw new InvalidOperationException(UiText.Get("sharing.sftp.hostNotConfigured"));
 
         string username = string.IsNullOrWhiteSpace(launcher.SharedSftpUsername)
             ? Environment.UserName
@@ -616,7 +617,7 @@ public static class SftpSyncService
             return new SftpClient(launcher.SharedSftpHost, launcher.SharedSftpPort, username, password);
 
         throw new InvalidOperationException(
-            "No SSH key found and no password provided. Place a key in ~/.ssh/ or specify a path.");
+            UiText.Get("syncService.sftp.noKey"));
     }
 
     /// <summary>Extract the directory portion of a remote path.</summary>

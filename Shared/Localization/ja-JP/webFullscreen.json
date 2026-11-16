@@ -1,0 +1,8 @@
+{
+  "webFullscreen.enterContentFullscreen": "動画を全画面表示",
+  "webFullscreen.contentFullscreenUnavailable": "この動画を全画面表示にできませんでした。プレーヤーの全画面ボタンを使ってください。",
+  "webFullscreen.maximizeLauncher": "ランチャーを最大化（コンテンツの全画面表示を維持）",
+  "webFullscreen.restoreLauncherSize": "ランチャーのサイズを元に戻す（コンテンツの全画面表示を維持）",
+  "webFullscreen.exitButton": "全画面表示を終了",
+  "webFullscreen.exitWithEscape": "全画面表示のコンテンツを終了（Esc）"
+}

@@ -38,6 +38,8 @@ def stage(appdir,engine,version):
     app=appdir/'usr/lib/little-launcher';app.mkdir(parents=True)
     for name in ['bin','little_launcher','resources','desktop/kwin']:
         shutil.copytree(SOURCE/name,app/name,ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
+    # Interface catalogs shared with Windows; i18n.py looks for them beside the package.
+    shutil.copytree(ROOT/'Shared/Localization',app/'localization',ignore=shutil.ignore_patterns('*.cs'))
     browser=app/'browser';browser.mkdir()
     for path in (SOURCE/'browser').iterdir():
         if path.suffix in ('.cjs','.js','.css','.html') or path.name=='package.json':shutil.copy2(path,browser/path.name)

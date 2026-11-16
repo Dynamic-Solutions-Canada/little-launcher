@@ -5,11 +5,12 @@ import os
 from pathlib import Path
 import sys
 
-from PySide6.QtCore import QLockFile, QTimer
+from PySide6.QtCore import QLibraryInfo, QLocale, QLockFile, QTimer, QTranslator
 from PySide6.QtGui import QIcon
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from . import i18n
 from .browser import BrowserHost
 from .controller import LauncherController
 from .desktop import DesktopIntegration, ICON, NativeThemeMonitor, native_tray_coordinates, set_autostart, register_appimage, prepare_desktop_environment
@@ -30,6 +31,9 @@ class LauncherApplication:
     def __init__(self, app, directory):
         self.app = app
         self.controller = LauncherController(directory)
+        # Before any window exists: every label is read in the language in effect when it is built.
+        i18n.configure(lambda: self.controller.preferences.data.get('Language'), lambda: QLocale.system().uiLanguages())
+        self.qt_translator = self._install_qt_translations()
         self.integration = DesktopIntegration()
         self.settings = SettingsWindow(self.controller, self.integration)
         self.browser = BrowserHost(directory)
@@ -67,8 +71,8 @@ class LauncherApplication:
         self.browser.bookmark_requested.connect(self.settings.add_bookmark)
         self.browser.bookmark_action_requested.connect(self.settings.bookmark_actions.handle)
         self.settings.profile_action_requested.connect(self.profile_action)
-        self.browser.notice.connect(lambda message: QMessageBox.information(self.settings, 'Browser settings', message))
-        self.browser.failed.connect(lambda message: QMessageBox.warning(self.settings, 'Web launcher', message))
+        self.browser.notice.connect(lambda message: QMessageBox.information(self.settings, i18n.t('web.noticeTitle'), message))
+        self.browser.failed.connect(lambda message: QMessageBox.warning(self.settings, i18n.t('web.errorTitle'), message))
         self.browser.quit_ready.connect(self.app.quit)
         self.controller.changed.connect(self.refresh)
         self.controller.local_changed.connect(self.refresh)
@@ -102,7 +106,7 @@ class LauncherApplication:
         launcher = self.controller.launcher(identifier)
         if launcher and launcher.get('Kind') == 1 and action in ('clear-data', 'reset-permissions'):
             if type(expected_shared) is not bool or launcher.get('WebSharedProfile', False) != expected_shared:
-                self.controller.failed.emit('This launcher’s sign-in profile changed. Reopen settings before changing its data.')
+                self.controller.failed.emit(i18n.t('launcherSettings.profileChanged'))
                 return
             self.browser.send({'type': 'profile-action', 'launcher': launcher, 'action': action, 'confirmed': True})
 
@@ -218,10 +222,24 @@ class LauncherApplication:
         dialog.finished.connect(lambda *_:setattr(self,'extensions_dialog',None))
         dialog.show()
 
+    def _install_qt_translations(self):
+        """Translate Qt's own standard buttons (Yes, No, Cancel…) into the chosen language.
+
+        Qt otherwise labels them in the desktop language, which differs from ours whenever the user
+        picked a language in Little Launcher. Uses whichever qtbase catalog the running Qt ships
+        (distro or bundled); if none exists for the language, Qt keeps its default and nothing fails.
+        Returns the translator so it stays alive for the application's lifetime.
+        """
+        translator = QTranslator(self.app)
+        directory = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+        if translator.load(QLocale(i18n.locale()), 'qtbase', '_', directory):
+            self.app.installTranslator(translator)
+        return translator
+
     def request_quit(self):
         if self.extensions_dialog and self.extensions_dialog.job:
             self.extensions_dialog.quit_pending=True
-            self.extensions_dialog.status.setText('Finishing extension preparation before quitting…')
+            self.extensions_dialog.status.setText(i18n.t('webExtensions.finishingBeforeQuit'))
             self.extensions_dialog.job.finished.connect(self.request_quit)
             return
         if self.settings.updates.job:
@@ -231,7 +249,7 @@ class LauncherApplication:
         if self.settings.sync.job:
             self.quit_after_sync = True
             self.settings.sync.cancel()
-            self.settings.sync_status.setText('Finishing the current sync request before quitting…')
+            self.settings.sync_status.setText(i18n.t('syncService.finishingBeforeQuit'))
         else:
             self.browser.request_quit()
 
@@ -263,6 +281,8 @@ def main():
     app.setApplicationName('little-launcher')
     app.setWindowIcon(QIcon(str(ICON)))
     app.setQuitOnLastWindowClosed(False)
+    # Startup errors are shown before the saved choice can be read, so use the desktop languages.
+    i18n.configure(lambda: None, lambda: QLocale.system().uiLanguages())
     lock = QLockFile(str(directory / 'instance.lock'))
     socket_name = str(directory / 'instance.sock')
     if not lock.tryLock(0):
@@ -276,7 +296,7 @@ def main():
     server = QLocalServer()
     server.setSocketOptions(QLocalServer.UserAccessOption)
     if not server.listen(socket_name):
-        QMessageBox.critical(None, 'Little Launcher', 'The private application control socket is unavailable.')
+        QMessageBox.critical(None, 'Little Launcher', i18n.t('linuxDesktop.controlSocketUnavailable'))
         return 1
     registration_error=None
     if not options.no_autostart:
@@ -299,9 +319,9 @@ def main():
         try:
             set_autostart(owner.controller.preferences.data.get('StartAtLogin', True))
         except (OSError,ValueError) as error:
-            QTimer.singleShot(0, lambda message=str(error): QMessageBox.warning(owner.settings, 'Login startup', message))
+            QTimer.singleShot(0, lambda message=str(error): QMessageBox.warning(owner.settings, i18n.t('linuxDesktop.autostartTitle'), message))
     if registration_error:
-        QTimer.singleShot(0,lambda message=registration_error:QMessageBox.warning(owner.settings,'Application menu registration',message))
+        QTimer.singleShot(0,lambda message=registration_error:QMessageBox.warning(owner.settings,i18n.t('linuxDesktop.registrationTitle'),message))
     if not options.background or not owner.controller.launchers:
         owner.show_settings()
     exit_code=app.exec()

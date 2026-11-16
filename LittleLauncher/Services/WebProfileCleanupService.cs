@@ -1,10 +1,12 @@
 // Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Windows;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -74,12 +76,12 @@ internal static class WebProfileCleanupService
     private static string? Describe(string folderName, Dictionary<string, Launcher> byId)
     {
         if (!byId.TryGetValue(folderName, out var launcher))
-            return "a launcher that no longer exists";
+            return UiText.Get("browserData.profileCleanup.deletedLauncher");
 
         // Still private: this is its live profile and its sign-ins.
         if (!launcher.WebSharedProfile) return null;
 
-        return $"{launcher.Name}, which now uses the shared profile";
+        return UiText.Format("browserData.profileCleanup.nowShared", ("launcher", launcher.Name));
     }
 
     /// <summary>Deletes the folders handed to it, and reports how much actually went.</summary>
@@ -147,12 +149,19 @@ internal static class WebProfileCleanupService
     }
 
     /// <summary>Human-readable size, for a button that has to say what it is about to free.</summary>
+    /// <remarks>
+    /// The number is formatted for the OS region before it is placed in the translated unit text,
+    /// matching how regional formatting follows the OS rather than the interface language.
+    /// </remarks>
     internal static string FormatSize(long bytes) => bytes switch
     {
-        >= 1024L * 1024 * 1024 => $"{bytes / (1024.0 * 1024 * 1024):0.#} GB",
-        >= 1024L * 1024 => $"{bytes / (1024.0 * 1024):0} MB",
-        >= 1024 => $"{bytes / 1024.0:0} KB",
-        _ => $"{bytes} bytes",
+        >= 1024L * 1024 * 1024 => UiText.Format("browserData.size.gigabytes",
+            ("size", (bytes / (1024.0 * 1024 * 1024)).ToString("0.#", CultureInfo.CurrentCulture))),
+        >= 1024L * 1024 => UiText.Format("browserData.size.megabytes",
+            ("size", (bytes / (1024.0 * 1024)).ToString("0", CultureInfo.CurrentCulture))),
+        >= 1024 => UiText.Format("browserData.size.kilobytes",
+            ("size", (bytes / 1024.0).ToString("0", CultureInfo.CurrentCulture))),
+        _ => UiText.Plural("browserData.size.bytes", bytes),
     };
 
     private static IEnumerable<string> SafeDirectories(string root)

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LittleLauncher.Localization;
 using LittleLauncher.Shared;
 using System.Runtime.InteropServices;
 
@@ -176,6 +177,10 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        // Wording follows the main app's language choice. No file is read until a message is
+        // actually shown, so the ordinary flyout signal stays free of pin-only work.
+        CompanionLanguage.Configure();
+
         // Ensure cursor coordinates are reported in physical pixels.
         // Without this, a pinned non-MSIX helper can be DPI-virtualized,
         // causing the flyout anchor to be offset on scaled displays.
@@ -277,12 +282,11 @@ static class Program
             if (args.Contains("--repin") && previousState == ExistingPinState.Pinned)
             {
                 string explanation = knownDetails
-                    ? "This launcher is still pinned. Its name, icon or launch details have changed."
-                    : "This launcher is still pinned. Its previous details could not be compared. Cancel to keep the existing pin.";
-                int confirmed = MessageBoxW(0, explanation + "\n\n" +
-                    "Remove its taskbar pin by right-clicking it and choosing \"Unpin from taskbar\". " +
-                    "Click OK when none remain to create a fresh pin, or Cancel to stop.",
-                    "Replace taskbar pin", 0x00010041);
+                    ? UiText.Get("pinning.replace.detailsChanged")
+                    : UiText.Get("pinning.replace.detailsUnknown");
+                int confirmed = MessageBoxW(0,
+                    UiText.Format("pinning.replace.message", ("explanation", explanation)),
+                    UiText.Get("pinning.replace.title"), 0x00010041);
                 if (confirmed != 1) return;
             }
 

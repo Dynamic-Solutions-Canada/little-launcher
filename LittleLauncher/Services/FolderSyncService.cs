@@ -1,4 +1,5 @@
-﻿using LittleLauncher.Classes.Settings;
+﻿using LittleLauncher.Localization;
+using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
 using System.IO;
 
@@ -37,7 +38,7 @@ public static class FolderSyncService
     {
         string folder = SettingsManager.Current.SyncFolderPath;
         if (string.IsNullOrWhiteSpace(folder))
-            return (false, "No sync folder is configured.");
+            return (false, UiText.Get("syncService.folder.notConfigured"));
 
         return await Task.Run(() =>
         {
@@ -53,13 +54,13 @@ public static class FolderSyncService
 
                 string file = Path.Combine(folder, LauncherPayload.FileName);
                 return File.Exists(file)
-                    ? (true, $"Folder is writable. Existing launcher data found ({DescribeAge(file)}).")
-                    : (true, "Folder is writable. No launcher data there yet — upload to create it.");
+                    ? (true, UiText.Format("syncService.folder.writableWithData", ("age", DescribeAge(file))))
+                    : (true, UiText.Get("syncService.folder.writableNoData"));
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"Sync folder test failed for {folder}");
-                return (false, $"Folder not usable: {ex.Message}");
+                return (false, UiText.Format("syncService.folder.notUsable", ("error", ex.Message)));
             }
         });
     }
@@ -71,7 +72,7 @@ public static class FolderSyncService
     {
         string folder = SettingsManager.Current.SyncFolderPath;
         if (string.IsNullOrWhiteSpace(folder))
-            return (false, "No sync folder is configured.");
+            return (false, UiText.Get("syncService.folder.notConfigured"));
 
         try
         {
@@ -87,12 +88,12 @@ public static class FolderSyncService
             });
 
             Logger.Info($"Launchers written to {folder}");
-            return (true, $"Launchers saved to {DescribeTarget()}");
+            return (true, UiText.Format("syncService.folder.saved", ("folder", DescribeTarget())));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to write launchers to {folder}");
-            return (false, $"Upload failed: {ex.Message}");
+            return (false, UiText.Format("syncService.uploadFailed", ("error", ex.Message)));
         }
     }
 
@@ -107,14 +108,14 @@ public static class FolderSyncService
     {
         string folder = SettingsManager.Current.SyncFolderPath;
         if (string.IsNullOrWhiteSpace(folder))
-            return (false, "No sync folder is configured.");
+            return (false, UiText.Get("syncService.folder.notConfigured"));
 
         string file = Path.Combine(folder, LauncherPayload.FileName);
 
         try
         {
             if (!await Task.Run(() => File.Exists(file)))
-                return (false, "No launchers file found in the sync folder.");
+                return (false, UiText.Get("syncService.folder.noLaunchersFile"));
 
             // Read into memory before parsing: on OneDrive and Drive for desktop the file may be
             // a placeholder, and touching it blocks while the client hydrates it.
@@ -123,7 +124,7 @@ public static class FolderSyncService
             using var stream = new MemoryStream(bytes, writable: false);
             var (launchers, remoteTimestamp, extensions) = LauncherPayload.Deserialize(stream);
             if (launchers == null)
-                return (false, "Failed to parse launchers from the sync folder.");
+                return (false, UiText.Get("syncService.folder.parseFailed"));
 
             if (LauncherPayload.ShouldSkipDownload(remoteTimestamp, force, out string reason))
                 return (false, reason);
@@ -131,12 +132,12 @@ public static class FolderSyncService
             await LauncherPayload.ApplyAsync(launchers, extensions);
 
             Logger.Info($"Launchers read from {file}");
-            return (true, $"Launchers loaded from {DescribeTarget()}");
+            return (true, UiText.Format("syncService.folder.loaded", ("folder", DescribeTarget())));
         }
         catch (Exception ex)
         {
             Logger.Error(ex, $"Failed to read launchers from {file}");
-            return (false, $"Download failed: {ex.Message}");
+            return (false, UiText.Format("syncService.downloadFailed", ("error", ex.Message)));
         }
     }
 
@@ -183,14 +184,14 @@ public static class FolderSyncService
         try
         {
             var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(file);
-            if (age < TimeSpan.FromMinutes(1)) return "just now";
-            if (age < TimeSpan.FromHours(1)) return $"{(int)age.TotalMinutes} min ago";
-            if (age < TimeSpan.FromDays(1)) return $"{(int)age.TotalHours} h ago";
-            return $"{(int)age.TotalDays} days ago";
+            if (age < TimeSpan.FromMinutes(1)) return UiText.Get("syncService.age.justNow");
+            if (age < TimeSpan.FromHours(1)) return UiText.Plural("syncService.age.minutes", (int)age.TotalMinutes);
+            if (age < TimeSpan.FromDays(1)) return UiText.Plural("syncService.age.hours", (int)age.TotalHours);
+            return UiText.Plural("syncService.age.days", (int)age.TotalDays);
         }
         catch
         {
-            return "unknown age";
+            return UiText.Get("syncService.age.unknown");
         }
     }
 }

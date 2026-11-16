@@ -1,0 +1,16 @@
+{
+  "home.title": "ホーム",
+  "home.buildType.debug": "（デバッグ）",
+  "home.buildType.msix": "（MSIX）",
+  "home.buildType.portable": "（ポータブル）",
+  "home.update.message": "新しいバージョン（{latest}）を利用できます。現在のバージョンは {current} です。",
+  "home.whatsNew.title": "新機能: Web ランチャー",
+  "home.whatsNew.message": "ランチャーで、ショートカットの一覧の代わりに Web ページを開けるようになりました。Home Assistant のダッシュボードや Web メールなど、どのサイトもトレイアイコンから直接開けます。ログイン状態は保持され、閉じている間はリソースを使いません。",
+  "home.whatsNew.action": "設定する",
+  "home.launchersCard.description": "ランチャーとショートカットを管理",
+  "home.syncCard.description": "OneDrive、Google Drive、ネットワーク共有、SFTP",
+  "home.summary.launchers.one": "ランチャー {count} 個。",
+  "home.summary.launchers.other": "ランチャー {count} 個。",
+  "home.summary.hiddenOnLinux.one": "{count} 個は別の OS 用のため、Linux では無効です。",
+  "home.summary.hiddenOnLinux.other": "{count} 個は別の OS 用のため、Linux では無効です。"
+}

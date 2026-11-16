@@ -1,0 +1,10 @@
+{
+  "appPicker.openContainingFolder": "Abrir pasta do arquivo",
+  "appPicker.title": "Escolha um aplicativo",
+  "appPicker.source.all": "Todos os aplicativos",
+  "appPicker.source.applications": "Aplicativos",
+  "appPicker.source.webApps": "Aplicativos web",
+  "appPicker.openFailed": "Não foi possível abrir o aplicativo",
+  "appPicker.folderFailed.title": "Não foi possível abrir a pasta",
+  "appPicker.folderFailed.message": "O gerenciador de arquivos não conseguiu abrir a pasta deste aplicativo."
+}

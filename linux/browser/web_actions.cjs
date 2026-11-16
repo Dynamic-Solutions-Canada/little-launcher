@@ -6,6 +6,28 @@ const {moreTemplate,zoomLevels,bookmarked,stepZoom} = require('./web_menu.cjs');
 const {tabTemplate} = require('./tab_menu.cjs');
 const {bookmarkVersion} = require('./bookmarks.cjs');
 const {bookmarkDrop} = require('./strip_drag.cjs');
+const {t} = require('./i18n.cjs');
+
+// The keyboard shortcut sheet, in the Windows sheet's groups and order. Key names are not translated.
+const shortcutSheet = [
+  ['webShortcuts.group.tabs', [['Ctrl+Tab', 'webShortcuts.tabNext'], ['Ctrl+Shift+Tab', 'webShortcuts.tabPrevious'],
+    ['Ctrl+T', 'webTabs.newTab'], ['Ctrl+W', 'webShortcuts.tabClose'], ['Ctrl+Shift+T', 'webShortcuts.tabReopen'],
+    ['Ctrl+1 … Ctrl+8', 'webShortcuts.tabJump'], ['Ctrl+9', 'webShortcuts.tabLast']]],
+  ['webShortcuts.group.navigation', [['Alt+Left', 'common.back'], ['Alt+Right', 'common.forward'],
+    ['Ctrl+R', 'webShortcuts.reload', () => 'F5'], ['Ctrl+L', 'webShortcuts.focusAddress'], ['Alt+Home', 'webShortcuts.home']]],
+  ['webShortcuts.group.page', [['Ctrl+Plus', 'webShortcuts.zoomIn', () => 'Ctrl+' + t('webShortcuts.wheelUp')],
+    ['Ctrl+Minus', 'webShortcuts.zoomOut', () => 'Ctrl+' + t('webShortcuts.wheelDown')], ['Ctrl+0', 'webShortcuts.zoomReset'],
+    ['Ctrl+D', 'webShortcuts.bookmark'], ['Ctrl+Shift+O', 'webShortcuts.openInBrowser']]],
+  ['webShortcuts.group.launcher', [['Ctrl+/', 'webShortcuts.showList'], ['Escape', 'webShortcuts.closeFlyout']]],
+];
+
+/** The sheet as plain dialog text: a heading per group, then one "keys  description" line per shortcut. */
+function shortcutText() {
+  return shortcutSheet.map(([group, rows]) => [t(group), ...rows.map(([keys, description, alternative]) => {
+    const shown = alternative ? t('webShortcuts.keysEither', {first: keys, second: alternative()}) : keys;
+    return shown + '    ' + t(description);
+  })].join('\n')).join('\n\n');
+}
 
 /** Trusted browser chrome actions. Page content has neither this preload nor IPC access. */
 module.exports = {
@@ -24,7 +46,7 @@ module.exports = {
     const ticket = this.beginDialog();
     Menu.buildFromTemplate(template).popup({window: this.window, callback: () => this.endDialog(ticket)});
   },
-  moreMenu() { const template=moreTemplate(this);if(this.services.extensions){template.push({type:'separator'},{label:'Extensions',submenu:[...this.services.extensions.menu(this),{label:'Manage extensions…',click:()=>this.emit({type:'extension-settings',id:this.id})}]});}this.menu(template); },
+  moreMenu() { const template=moreTemplate(this);if(this.services.extensions){template.push({type:'separator'},{label:t('webExtensions.extensionsButton'),submenu:[...this.services.extensions.menu(this),{label:t('webExtensions.manage'),click:()=>this.emit({type:'extension-settings',id:this.id})}]});}this.menu(template); },
   reopenClosedTab() {
     const address = this.closedTabs.pop();
     if (validUrl(address)) this.createView(address);
@@ -59,13 +81,13 @@ module.exports = {
       }
     };
     this.menu(tabTemplate(this, tab, action => {
-      void invoke(action).catch(() => {if (!this.window.isDestroyed()) this.emit({type:'warning',message:'The tab action could not be completed.'});});
+      void invoke(action).catch(() => {if (!this.window.isDestroyed()) this.emit({type:'warning',message:t('webTabs.actionFailed')});});
     }));
   },
   showShortcuts() {
     const ticket = this.beginDialog();
-    void dialog.showMessageBox(this.window, {title: 'Keyboard shortcuts', message: 'Keyboard shortcuts',
-      detail: 'Ctrl+L  Address\nCtrl+T  New tab\nCtrl+W  Close tab\nCtrl+Shift+T  Reopen closed tab\nCtrl+Tab / Ctrl+Shift+Tab  Switch tab\nCtrl+1…8 / Ctrl+9  Select tab / last tab\nAlt+Left / Alt+Right  Back / Forward\nAlt+Home  Home\nCtrl+R / F5  Reload\nCtrl+Plus / Minus / 0  Zoom\nCtrl+D  Add/remove bookmark\nCtrl+Shift+O  Open in browser\nCtrl+/  Keyboard shortcuts\nEscape  Hide launcher'}).finally(() => this.endDialog(ticket));
+    const title = t('webMenu.keyboardShortcuts');
+    void dialog.showMessageBox(this.window, {title, message: title, detail: shortcutText(), buttons: [t('common.ok')]}).finally(() => this.endDialog(ticket));
   },
   action(action, value) {
     const contents = this.view?.webContents;
@@ -75,11 +97,11 @@ module.exports = {
         const ticket=this.beginDialog();
         void this.services.request({type:'position-picker',id:this.id}).finally(()=>this.endDialog(ticket));break;
       }
-      case 'extensions': if(this.services.extensions)this.menu([...this.services.extensions.menu(this),{type:'separator'},{label:'Manage extensions…',click:()=>this.emit({type:'extension-settings',id:this.id})}]);break;
-      case 'extension-open': if(typeof value==='string' && this.services.extensions)void this.services.extensions.open(contents?.session,value,this).catch(()=>this.emit({type:'warning',message:'The extension popup could not open.'}));break;
+      case 'extensions': if(this.services.extensions)this.menu([...this.services.extensions.menu(this),{type:'separator'},{label:t('webExtensions.manage'),click:()=>this.emit({type:'extension-settings',id:this.id})}]);break;
+      case 'extension-open': if(typeof value==='string' && this.services.extensions)void this.services.extensions.open(contents?.session,value,this).catch(()=>this.emit({type:'warning',message:t('webExtensions.popupFailed')}));break;
       case 'extension-context': if(typeof value==='string' && this.services.extensions){
         const item=this.services.extensions.presentation(this).find(item=>item.id===value);
-        if(item)this.menu([{label:'Unpin from the header',click:()=>{void this.services.extensions.command({action:'pin',id:item.id,pinned:false},contents.session,this).catch(()=>{});}}]);
+        if(item)this.menu([{label:t('webExtensions.unpinFromHeader'),click:()=>{void this.services.extensions.command({action:'pin',id:item.id,pinned:false},contents.session,this).catch(()=>{});}}]);
         break;
       }
       case 'more': this.moreMenu(); break;

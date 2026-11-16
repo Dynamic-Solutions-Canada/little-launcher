@@ -1,6 +1,7 @@
 ﻿// Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -172,12 +173,12 @@ public sealed partial class WebFlyoutWindow
     {
         // U+E710 is Segoe Fluent's Add glyph, escaped rather than pasted for the reason recorded
         // on the header's back button.
-        _newTabButton = BuildHeaderButton("\uE710", "New tab", (_, _) => OpenNewTab());
+        _newTabButton = BuildHeaderButton("\uE710", UiText.Get("webTabs.newTab"), (_, _) => OpenNewTab());
 
         // Keep the address toggle with the tab controls: a blank tab reveals the bar temporarily,
         // while this button changes the launcher's lasting preference. U+E71B is Segoe Fluent's
         // World glyph, escaped for the same reason as the Add glyph above.
-        _addressBarButton = BuildHeaderButton("\uE71B", "Address bar", (_, _) => ToggleAddressBar());
+        _addressBarButton = BuildHeaderButton("\uE71B", UiText.Get("webTabs.addressBar"), (_, _) => ToggleAddressBar());
 
         var tabButtons = new StackPanel
         {
@@ -422,7 +423,7 @@ public sealed partial class WebFlyoutWindow
             Opacity = 0,
             IsHitTestVisible = false,
         };
-        ToolTipService.SetToolTip(close, "Close tab");
+        ToolTipService.SetToolTip(close, UiText.Get("webTabs.closeTab"));
         close.Click += (_, _) => CloseTab(tab);
 
         // Auto / Star rather than a horizontal StackPanel. A stack gives its children an infinite
@@ -632,15 +633,15 @@ public sealed partial class WebFlyoutWindow
         bool hasUrl = !string.IsNullOrEmpty(url);
         var bookmark = hasUrl ? FindBookmark(url) : null;
 
-        items.Add(Item("Reload", () => ReloadTab(tab), tab.View.CoreWebView2 != null));
-        items.Add(Item("Duplicate", () => _ = OpenLinkTabAsync(url, background: true), hasUrl));
+        items.Add(Item(UiText.Get("web.reload"), () => ReloadTab(tab), tab.View.CoreWebView2 != null));
+        items.Add(Item(UiText.Get("webTabs.duplicate"), () => _ = OpenLinkTabAsync(url, background: true), hasUrl));
 
         Divide();
 
-        items.Add(Item("Copy address", () => CopyToClipboard(url), hasUrl));
-        items.Add(Item("Open in browser", () => OpenExternally(url), hasUrl));
+        items.Add(Item(UiText.Get("webTabs.copyAddress"), () => CopyToClipboard(url), hasUrl));
+        items.Add(Item(UiText.Get("web.openInBrowser"), () => OpenExternally(url), hasUrl));
         items.Add(Item(
-            bookmark != null ? "Remove from bookmarks" : "Add to bookmarks",
+            UiText.Get(bookmark != null ? "web.removeFromBookmarks" : "web.addToBookmarks"),
             () =>
             {
                 if (bookmark != null) RemoveBookmark(bookmark);
@@ -650,9 +651,9 @@ public sealed partial class WebFlyoutWindow
 
         Divide();
 
-        items.Add(Item("Close tab", () => CloseTab(tab)));
-        items.Add(Item("Close other tabs", () => CloseOtherTabs(tab), _tabs.Count > 1));
-        items.Add(Item("Reopen closed tab", ReopenClosedTab, _closedTabUrls.Count > 0));
+        items.Add(Item(UiText.Get("webTabs.closeTab"), () => CloseTab(tab)));
+        items.Add(Item(UiText.Get("webTabs.closeOtherTabs"), () => CloseOtherTabs(tab), _tabs.Count > 1));
+        items.Add(Item(UiText.Get("webTabs.reopenClosedTab"), ReopenClosedTab, _closedTabUrls.Count > 0));
 
         return items;
     }
@@ -821,7 +822,7 @@ public sealed partial class WebFlyoutWindow
         catch (Exception ex) { Logger.Debug(ex, "Reading the source failed for launcher {Name}", _launcher.Name); }
 
         if (string.IsNullOrWhiteSpace(source) || source.Equals("about:blank", StringComparison.OrdinalIgnoreCase))
-            return "New tab";
+            return UiText.Get("webTabs.blankTabCaption");
 
         try { return new Uri(source).Host; }
         catch (UriFormatException) { return source; }
@@ -1125,7 +1126,7 @@ public sealed partial class WebFlyoutWindow
     {
         string id;
         try { id = new Uri(uri).Host; }
-        catch (UriFormatException) { return "Extension"; }
+        catch (UriFormatException) { return UiText.Get("webTabs.extensionFallbackTitle"); }
 
         try
         {
@@ -1144,7 +1145,7 @@ public sealed partial class WebFlyoutWindow
         var stored = Services.BrowserExtensionService.Installed
             .FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
 
-        return stored != null && !string.IsNullOrWhiteSpace(stored.Name) ? stored.Name : "Extension";
+        return stored != null && !string.IsNullOrWhiteSpace(stored.Name) ? stored.Name : UiText.Get("webTabs.extensionFallbackTitle");
     }
 
     /// <summary>

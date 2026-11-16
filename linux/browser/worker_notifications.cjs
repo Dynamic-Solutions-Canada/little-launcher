@@ -2,6 +2,7 @@
 const {Notification,webContents}=require('electron');
 const path=require('node:path'),crypto=require('node:crypto');
 const CHANNEL='little-launcher:worker-notification';
+const {t}=require('./i18n.cjs');
 
 async function notificationClientAction(tasks,worker,origin,method,value){
  const pending=tasks.get(value?.token);
@@ -26,7 +27,7 @@ function installWorkerNotifications(profile,grants,ownerFor,onError=()=>{}){
    if(!worker||worker.isDestroyed())return;
    const token=crypto.randomUUID(),task=worker.startTask();const timer=setTimeout(()=>{tasks.delete(token);try{task.end();}catch{}},10000);timer.unref();
    tasks.set(token,{worker,task,timer,type,origin:record.origin,candidate});worker.send(CHANNEL+'-event',{type,action,notification:record.data,token});
-  }catch{onError('The notification action could not reach its website. Reopen the launcher to continue.');}
+  }catch{onError(t('linuxBrowser.notificationClickFailed'));}
  }
  profile.serviceWorkers.on('running-status-changed',details=>{
   if(details.runningStatus==='stopped'){for(const [scope,worker]of workers)if(worker.versionId===details.versionId)workers.delete(scope);for(const [token,pending]of tasks)if(pending.worker.versionId===details.versionId){tasks.delete(token);clearTimeout(pending.timer);try{pending.task.end();}catch{}}return;}
@@ -58,7 +59,7 @@ function installWorkerNotifications(profile,grants,ownerFor,onError=()=>{}){
    notification.on('close',()=>{if(records.delete(id))void dispatch(record,'notificationclose');});
    await new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>{records.delete(id);reject(Error('Notification backend did not respond.'));},5000);timer.unref();
-    notification.once('show',()=>{clearTimeout(timer);resolve();});notification.once('failed',()=>{clearTimeout(timer);records.delete(id);onError('KDE could not display a website notification. Check desktop notification settings.');reject(Error('Notification backend failed.'));});notification.show();
+    notification.once('show',()=>{clearTimeout(timer);resolve();});notification.once('failed',()=>{clearTimeout(timer);records.delete(id);onError(t('linuxBrowser.notificationDisplayFailed'));reject(Error('Notification backend failed.'));});notification.show();
    });
   });
   worker.ipc.on(CHANNEL+'-done',(event,token)=>{const pending=tasks.get(token);if(pending?.worker!==worker||event.session!==profile||event.serviceWorker!==worker)return;tasks.delete(token);clearTimeout(pending.timer);try{pending.task.end();}catch{}});

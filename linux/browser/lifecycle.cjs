@@ -1,4 +1,5 @@
 'use strict';
+const {t} = require('./i18n.cjs');
 
 /** Own hidden-page lifecycle and conservative interruption protection for one view. */
 class PageLifecycle {
@@ -57,7 +58,7 @@ class PageLifecycle {
         this.frozen = freeze;
       } catch {
         // Failure to freeze is safe: leave the page running and report the limitation.
-        this.emit({type: 'warning', message: 'This page could not be put to sleep.'});
+        this.emit({type: 'warning', message: t('web.sleepFailed')});
       }
     }
     this.emit({type: 'activity', busy: this.busy, audio: this.audio,

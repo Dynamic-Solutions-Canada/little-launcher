@@ -8,6 +8,9 @@ from PySide6.QtWidgets import QApplication
 
 PRESETS={'Pin':('\ue840','pin'),'Star':('\ue734','starred'),'Heart':('\ueb51','emblem-favorite'),
          'Lightning':('\ue945','flash'),'Search':('\ue721','edit-find'),'Globe':('\ue774','globe')}
+# Display names shared with the Windows icon gallery; PRESETS keys stay the saved mode identity.
+PRESET_NAME_KEYS={'Pin':'iconNames.pinned','Star':'iconNames.star','Heart':'iconNames.heart',
+                  'Lightning':'iconNames.lightning','Search':'iconNames.search','Globe':'iconNames.globe'}
 LEGACY=['Blue','Green','Teal','Red','Orange','Purple',*PRESETS,'Custom','Composite']
 
 def canonical_mode(mode):

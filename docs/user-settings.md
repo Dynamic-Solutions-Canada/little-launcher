@@ -391,7 +391,7 @@ Group related properties together with comment headers matching existing style:
 - Sync destination
 - SFTP Sync
 
-`UserSettings` appearance/behaviour properties currently include `AppTheme`, `Startup`, `ShowWebLauncherNotice`, `FlyoutAnimationsEnabled` (default `true`, controls whether `FlyoutWindow` uses animated open/close transitions), and `DisableWebLauncherShortcuts`.
+`UserSettings` appearance/behaviour properties currently include `AppTheme`, `LanguageOverride` (a supported identity such as `fr-CA`, or empty for Match device; device-local, see [localization.md](localization.md)), `Startup`, `ShowWebLauncherNotice`, `FlyoutAnimationsEnabled` (default `true`, controls whether `FlyoutWindow` uses animated open/close transitions), and `DisableWebLauncherShortcuts`.
 
 `DisableWebLauncherShortcuts` (`bool`, default `false` = shortcuts on) controls the per-web-launcher
 Start Menu group that makes them findable from Start search and PowerToys Command Palette. **Stored
@@ -426,7 +426,7 @@ Linux stores the same local identity list in `linux.json`. `LauncherController.s
 
 `web_preferences.py` centrally validates trusted native/chrome changes: Boolean bar, pin, regular-window, reload, link, focus-loss and size-memory flags; bounded integer zoom, hidden policy, idle interval, fixed anchor and dimensions. Size persistence changes width/height in one guarded document transaction. Imported unknown fields and unsupported saved-position values remain intact. Maintenance acts on the committed sign-in profile; controls remain disabled for an unsaved or stale profile preimage. Production forms advance that preimage after each successful completed live edit.
 
-Linux `OneDriveSync` local metadata now includes `SignedIn`, `AccountName`, `Enabled` and `IntervalMinutes` (default 5), alongside the sync baseline/ETag. It never includes account tokens. Wallet checks and successful sign-in/download update the visible account card; failed reauthentication preserves the previous connected account, while a lost/revoked account returns to the signed-out UI. The saved account label survives token refresh. `AppTheme` is a local 0/System, 1/Light, 2/Dark choice sent to Qt's native color-scheme preference; desktop palette changes continue reaching browser chrome.
+Linux `OneDriveSync` local metadata now includes `SignedIn`, `AccountName`, `Enabled` and `IntervalMinutes` (default 5), alongside the sync baseline/ETag. It never includes account tokens. Wallet checks and successful sign-in/download update the visible account card; failed reauthentication preserves the previous connected account, while a lost/revoked account returns to the signed-out UI. The saved account label survives token refresh. `Language` is the local interface language (a supported identity, or empty/absent for Match device). `AppTheme` is a local 0/System, 1/Light, 2/Dark choice sent to Qt's native color-scheme preference; desktop palette changes continue reaching browser chrome.
 
 
 Linux tab restoration lives in separate `web-sessions.json` through `WebSessions`, not in synced Launcher.WebSessionTabs. It contains ordered HTTP(S) addresses and active selection only, with bounded atomic storage and corrupt-file preservation. It never dirties portable settings, sync or exports. Idle unload retains it, while closing the final tab explicitly clears that launcher's session and hides its host. Blank-tab address visibility is transient rather than a WebShowAddressBar write. See [linux.md](linux.md).

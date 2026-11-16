@@ -1,0 +1,15 @@
+{
+  "webTabs.newTab": "Neuer Tab",
+  "webTabs.addressBar": "Adressleiste",
+  "webTabs.blankTabCaption": "Neuer Tab",
+  "webTabs.closeTab": "Tab schließen",
+  "webTabs.closeNamedTab": "{title} schließen",
+  "webTabs.closeBusyTab": "Das Schließen dieses Tabs kann Medien oder Übertragungen unterbrechen.",
+  "webTabs.keepOpen": "Geöffnet lassen",
+  "webTabs.actionFailed": "Die Tab-Aktion konnte nicht abgeschlossen werden.",
+  "webTabs.duplicate": "Duplizieren",
+  "webTabs.copyAddress": "Adresse kopieren",
+  "webTabs.closeOtherTabs": "Andere Tabs schließen",
+  "webTabs.reopenClosedTab": "Geschlossenen Tab wieder öffnen",
+  "webTabs.extensionFallbackTitle": "Erweiterung"
+}

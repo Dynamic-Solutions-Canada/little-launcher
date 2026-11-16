@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QGraphicsOpacityEffect, QMessageBox, QPushButton, QSizePolicy, QStackedWidget, QStyle, QVBoxLayout, QWidget,
 )
 
+from . import i18n
 from .desktop import ICON, application_version, set_autostart
 from .document import validate_document, DocumentError, launcher_hidden, launcher_supported, new_launcher, sync_envelope, web_address
 from .editor import ItemsEditor
@@ -37,14 +38,14 @@ class SettingsWindow(QMainWindow):
         self.page_icon_for = lambda identifier: None
         self.bookmark_actions = BookmarkActions(controller, self)
         self.updates=UpdateController(controller,self)
-        self.setWindowTitle('Little Launcher · Settings')
+        self.setWindowTitle(i18n.t('settings.windowTitle'))
         self.resize(900, 700)
         body = QWidget()
         self.setCentralWidget(body)
         layout = QHBoxLayout(body)
         self.navigation = QListWidget()
         self.navigation.setFrameShape(QFrame.NoFrame)
-        self.navigation.addItems(['Home', 'Launchers', 'Cloud sync', 'System', 'About'])
+        self.navigation.addItems([i18n.t(key) for key in ('home.title', 'launchers.title', 'sync.title', 'settings.nav.system', 'about.title')])
         for index in range(self.navigation.count()):
             self.navigation.item(index).setSizeHint(QSize(150, 40))
         self.navigation.setFixedWidth(180)
@@ -62,7 +63,7 @@ class SettingsWindow(QMainWindow):
         self.controller.changed.connect(self.refresh)
         self.controller.local_changed.connect(self.refresh)
         self.controller.hidden_notice.connect(self.hidden_notice)
-        self.controller.failed.connect(lambda text: QMessageBox.warning(self, 'Changes were not saved', text))
+        self.controller.failed.connect(lambda text: QMessageBox.warning(self, i18n.t('settings.changesNotSaved'), text))
         self.editors = {}
         self.refresh()
 
@@ -105,17 +106,17 @@ class SettingsWindow(QMainWindow):
 
     def hidden_notice(self, text):
         from PySide6.QtCore import Qt
-        box = QMessageBox(QMessageBox.Information, 'Launchers disabled on this system', text, QMessageBox.Ok, self)
+        box = QMessageBox(QMessageBox.Information, i18n.t('launchers.hiddenNotice.title'), text, QMessageBox.Ok, self)
         box.setTextFormat(Qt.PlainText)
         box.exec()
 
     def _home(self):
         layout = self._page('Little Launcher')
-        self._text(layout, 'Home')
-        launchers = LauncherActionRow('Launchers', 'Manage launchers & shortcuts')
+        self._text(layout, i18n.t('home.title'))
+        launchers = LauncherActionRow(i18n.t('launchers.title'), i18n.t('home.launchersCard.description'))
         launchers.clicked.connect(lambda: self.navigation.setCurrentRow(1))
         layout.addWidget(launchers)
-        cloud = LauncherActionRow('Cloud Sync', 'OneDrive, Google Drive, network share or SFTP')
+        cloud = LauncherActionRow(i18n.t('sync.title'), i18n.t('home.syncCard.description'))
         cloud.clicked.connect(lambda: self.navigation.setCurrentRow(2))
         layout.addWidget(cloud)
         self.summary = self._text(layout, '')
@@ -137,26 +138,26 @@ class SettingsWindow(QMainWindow):
         content = QVBoxLayout(self.launcher_content)
         content.setContentsMargins(0, 0, 0, 60)
         content.setSpacing(0)
-        heading = QLabel('Launchers')
+        heading = QLabel(i18n.t('launchers.title'))
         font = QFont(heading.font())
         font.setPixelSize(24)
         font.setWeight(QFont.DemiBold)
         heading.setFont(font)
         content.addWidget(heading)
         content.addSpacing(8)
-        description = QLabel('Each launcher has its own set of launcher items and its own tray icon.')
+        description = QLabel(i18n.t('launchers.description'))
         description.setWordWrap(True)
         font = QFont(description.font())
         font.setPixelSize(13)
         description.setFont(font)
         content.addWidget(description)
         content.addSpacing(20)
-        add = QPushButton('Add Launcher')
+        add = QPushButton(i18n.t('launchers.addButton'))
         add.setObjectName('add-launcher')
         add.setIcon(QIcon.fromTheme('list-add', self.style().standardIcon(QStyle.SP_FileIcon)))
         menu = QMenu(add)
-        menu.addAction('Shortcuts', lambda: self.add(False))
-        menu.addAction('Web page', lambda: self.add(True))
+        menu.addAction(i18n.t('launchers.addMenu.shortcuts'), lambda: self.add(False))
+        menu.addAction(i18n.t('launchers.addMenu.webPage'), lambda: self.add(True))
         add.setMenu(menu)
         content.addWidget(add, 0, Qt.AlignLeft)
         content.addSpacing(20)
@@ -206,21 +207,21 @@ class SettingsWindow(QMainWindow):
         controls.setSpacing(4)
         controls.setContentsMargins(0, 0, 0, 0)
         position = next(index for index, row in enumerate(self.controller.launchers) if row['Id'] == identifier)
-        def action(name, theme, fallback, callback, enabled=True):
+        def action(name, tooltip, accessible, theme, fallback, callback, enabled=True):
             button = QToolButton()
-            button.setObjectName(name.lower().replace(' ', '-') + '-' + identifier)
+            button.setObjectName(name + '-' + identifier)
             button.setAutoRaise(True)
             button.setIcon(QIcon.fromTheme(theme, self.style().standardIcon(fallback)))
             button.setIconSize(QSize(12, 12))
             button.setFixedSize(24, 24)
-            button.setToolTip(name)
-            button.setAccessibleName(name + ' ' + launcher.get('Name', 'Launcher'))
+            button.setToolTip(i18n.t(tooltip))
+            button.setAccessibleName(i18n.t(accessible, launcher=launcher.get('Name', 'Launcher')))
             button.setEnabled(enabled)
             button.clicked.connect(callback)
             controls.addWidget(button)
-        action('Move up', 'go-up', QStyle.SP_ArrowUp, lambda: self.move_launcher(identifier, -1), position > 0)
-        action('Move down', 'go-down', QStyle.SP_ArrowDown, lambda: self.move_launcher(identifier, 1), position < len(self.controller.launchers) - 1)
-        action('Delete launcher', 'edit-delete', QStyle.SP_TrashIcon, lambda: self.remove_launcher(identifier))
+        action('move-up', 'common.moveUp', 'launchers.card.moveUpNamed', 'go-up', QStyle.SP_ArrowUp, lambda: self.move_launcher(identifier, -1), position > 0)
+        action('move-down', 'common.moveDown', 'launchers.card.moveDownNamed', 'go-down', QStyle.SP_ArrowDown, lambda: self.move_launcher(identifier, 1), position < len(self.controller.launchers) - 1)
+        action('delete-launcher', 'launchers.delete.title', 'launchers.card.deleteNamed', 'edit-delete', QStyle.SP_TrashIcon, lambda: self.remove_launcher(identifier))
         header.addWidget(self._enabled_switch(launcher))
         header.addLayout(controls)
         layout.addLayout(header)
@@ -237,10 +238,11 @@ class SettingsWindow(QMainWindow):
                 effect.setOpacity(0.5)
                 widget.setGraphicsEffect(effect)
         address = web_address(launcher)
-        subtitle = (address or 'No web address set') if launcher.get('Kind') == 1 else 'Name, icon, view mode, and more'
+        subtitle = (address or i18n.t('launchers.card.noWebAddress')) if launcher.get('Kind') == 1 else i18n.t('launchers.card.settingsSubtitle')
         if not self.controller.enabled(identifier):
-            subtitle = ('Disabled on Linux · ' + launcher.get('Platform','windows').capitalize() + ' shortcut launcher') if launcher_hidden(launcher) else 'Disabled on this device · ' + subtitle
-        settings = LauncherActionRow('Settings', subtitle)
+            subtitle = (i18n.t('launchers.card.hiddenOnLinux', platform=launcher.get('Platform','windows').capitalize()) if launcher_hidden(launcher)
+                        else i18n.t('launchers.card.disabledOnDevice', subtitle=subtitle))
+        settings = LauncherActionRow(i18n.t('common.settings'), subtitle)
         settings.setObjectName('launcher-settings-' + identifier)
         settings.setEnabled(not launcher_hidden(launcher))
         dim(settings)
@@ -248,15 +250,13 @@ class SettingsWindow(QMainWindow):
         layout.addWidget(settings)
         if launcher.get('Kind', 0) != 1:
             count = self._item_count(launcher.get('Items', []))
-            subtitle = f"{count} item{'s' if count != 1 else ''}"
-            if launcher_hidden(launcher):
-                subtitle += ' · Disabled on Linux'
-            items = LauncherActionRow('Items', subtitle)
+            subtitle = i18n.plural('launchers.card.itemCountHiddenOnLinux' if launcher_hidden(launcher) else 'launchers.itemCount', count)
+            items = LauncherActionRow(i18n.t('launchers.card.items'), subtitle)
             items.setObjectName('launcher-items-' + identifier)
             read_only = launcher.get('IsShared') and not launcher.get('IsSharedOwner') and not launcher.get('SharedTwoWay')
             items.setEnabled(not read_only and not launcher_hidden(launcher))
             dim(items)
-            items.setAccessibleName('Edit items in ' + launcher.get('Name', 'Launcher'))
+            items.setAccessibleName(i18n.t('launchers.card.editItems', launcher=launcher.get('Name', 'Launcher')))
             items.clicked.connect(lambda: self.edit_items(identifier))
             row = QHBoxLayout()
             row.setContentsMargins(0, 0, 0, 0)
@@ -269,16 +269,17 @@ class SettingsWindow(QMainWindow):
             more.setAutoRaise(True)
             more.setText('…')
             more.setFixedSize(40, items.height())
-            more.setToolTip('Item bulk actions')
-            more.setAccessibleName('Item bulk actions for ' + launcher.get('Name', 'Launcher'))
+            bulk_name = i18n.t('launchers.card.bulkActions', launcher=launcher.get('Name', 'Launcher'))
+            more.setToolTip(bulk_name)
+            more.setAccessibleName(bulk_name)
             # A popup callback keeps the ellipsis free of the extra split-menu arrow.
             def bulk_menu():
                 menu = QMenu(more)
-                export = menu.addAction('Export items…', lambda: self.export_items(identifier))
+                export = menu.addAction(i18n.t('launchers.bulk.exportItems'), lambda: self.export_items(identifier))
                 export.setEnabled(bool(launcher.get('Items')))
-                imported = menu.addAction('Import items…', lambda: self.import_items(identifier))
+                imported = menu.addAction(i18n.t('launchers.bulk.importItems'), lambda: self.import_items(identifier))
                 imported.setEnabled(not read_only)
-                bookmarks=menu.addAction('Import browser bookmarks…',lambda:self.import_browser_bookmarks(identifier))
+                bookmarks=menu.addAction(i18n.t('launchers.bulk.importBookmarks'),lambda:self.import_browser_bookmarks(identifier))
                 bookmarks.setEnabled(not read_only)
                 menu.exec(more.mapToGlobal(more.rect().bottomLeft()))
             more.clicked.connect(bulk_menu)
@@ -289,7 +290,7 @@ class SettingsWindow(QMainWindow):
     def _enabled_switch(self, launcher):
         """Header checkbox for "Enabled on this device"; greyed out and off when unsupported here."""
         identifier = launcher['Id']
-        name = 'Enabled on this device: ' + launcher.get('Name', 'Launcher')
+        name = i18n.t('launchers.card.enabledOnDevice', launcher=launcher.get('Name', 'Launcher'))
         box = QCheckBox()
         box.setObjectName('launcher-enabled-' + identifier)
         box.setToolTip(name)
@@ -309,8 +310,7 @@ class SettingsWindow(QMainWindow):
             if box is not None:
                 with QSignalBlocker(box):
                     box.setChecked(self.controller.enabled(identifier))
-        if not enabled and QMessageBox.question(self, 'Disable launcher on this device',
-                'Close this launcher and stop its background page here? Active media or transfers may be interrupted. Configuration stays in sync.',
+        if not enabled and QMessageBox.question(self, i18n.t('launchers.disable.title'), i18n.t('launchers.disable.message'),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
             restore()
             return
@@ -329,12 +329,12 @@ class SettingsWindow(QMainWindow):
         launcher = self.controller.launcher(identifier)
         if not launcher or launcher.get('Kind', 0) == 1:
             return
-        path, _ = QFileDialog.getSaveFileName(self, 'Export Items', 'launcher-items.json', 'JSON files (*.json)')
+        path, _ = QFileDialog.getSaveFileName(self, i18n.t('launchers.bulk.exportItemsTitle'), 'launcher-items.json', i18n.t('launchers.bulk.jsonFiles') + ' (*.json)')
         if path:
             try:
                 atomic_write(Path(path), (json.dumps(launcher.get('Items', []), indent=2) + '\n').encode())
             except OSError as error:
-                QMessageBox.warning(self, 'Export failed', str(error))
+                QMessageBox.warning(self, i18n.t('launchers.bulk.exportFailed'), str(error))
 
     def import_browser_bookmarks(self, identifier):
         from .bookmark_picker import BookmarkPicker
@@ -346,14 +346,14 @@ class SettingsWindow(QMainWindow):
         dialog=BookmarkPicker(self,multiple=True)
         if dialog.exec()==QDialog.Accepted:
             try:append_browser_bookmarks(self.controller,expected,dialog.value())
-            except DocumentError as error:QMessageBox.warning(self,'Import failed',str(error))
+            except DocumentError as error:QMessageBox.warning(self,i18n.t('launchers.bulk.importFailed'),str(error))
 
     def import_items(self, identifier):
         launcher = self.controller.launcher(identifier)
         if not launcher or launcher.get('Kind', 0) == 1:
             return
         expected = deepcopy(launcher)
-        path, _ = QFileDialog.getOpenFileName(self, 'Import Items', '', 'JSON files (*.json)')
+        path, _ = QFileDialog.getOpenFileName(self, i18n.t('launchers.bulk.importItemsTitle'), '', i18n.t('launchers.bulk.jsonFiles') + ' (*.json)')
         if not path:
             return
         try:
@@ -364,10 +364,10 @@ class SettingsWindow(QMainWindow):
             if not imported:
                 return
             choice = QMessageBox(self)
-            choice.setWindowTitle('Import Items')
-            choice.setText(f'Import {self._item_count(imported)} items?')
-            replace = choice.addButton('Replace', QMessageBox.AcceptRole)
-            append = choice.addButton('Append', QMessageBox.ActionRole)
+            choice.setWindowTitle(i18n.t('launchers.bulk.importItemsTitle'))
+            choice.setText(i18n.plural('launchers.bulk.foundItems', self._item_count(imported)))
+            replace = choice.addButton(i18n.t('launchers.bulk.replace'), QMessageBox.AcceptRole)
+            append = choice.addButton(i18n.t('common.add'), QMessageBox.ActionRole)
             choice.addButton(QMessageBox.Cancel)
             choice.exec()
             if choice.clickedButton() is append:
@@ -376,7 +376,7 @@ class SettingsWindow(QMainWindow):
                 return
             self.controller.replace_launcher(candidate, expected)
         except (OSError, ValueError) as error:
-            QMessageBox.warning(self, 'Import failed', str(error))
+            QMessageBox.warning(self, i18n.t('launchers.bulk.importFailed'), str(error))
 
     def _sync(self):
         from .sync import LauncherSync
@@ -387,11 +387,10 @@ class SettingsWindow(QMainWindow):
         self.sync_status = page.notice
         self.auto_sync = page.automatic
         self.sync.upload_review_ready.connect(self._review_upload)
-        self.sync.manual_failed.connect(lambda message:QMessageBox.warning(self,'Sync did not complete',message))
+        self.sync.manual_failed.connect(lambda message:QMessageBox.warning(self,i18n.t('sync.review.failedTitle'),message))
 
     def download_cloud(self):
-        if QMessageBox.question(self, 'Download launchers',
-                'Replace this device’s launcher list with the OneDrive copy? A backup of the current data will be saved locally. Device preferences and browser profiles are kept.',
+        if QMessageBox.question(self, i18n.t('sync.actions.download'), i18n.t('sync.review.downloadConfirm'),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
             self.sync.download()
 
@@ -399,18 +398,18 @@ class SettingsWindow(QMainWindow):
         self.sync.prepare_upload()
 
     def _review_upload(self,review):
-        dialog=QMessageBox(self);dialog.setWindowTitle('Sync conflict' if review['conflict'] else 'Sync launchers');dialog.setTextFormat(Qt.PlainText)
+        dialog=QMessageBox(self);dialog.setWindowTitle(i18n.t('sync.review.conflictTitle' if review['conflict'] else 'sync.review.title'));dialog.setTextFormat(Qt.PlainText)
         download_only=review['action']=='download'
-        dialog.setText('OneDrive has the latest changes. Download them to this device?' if download_only else
-                       'Both copies changed since the last sync. Which copy do you want to keep?' if review['conflict'] else
-                       'Upload this device’s latest launcher and icon changes to OneDrive?')
-        details=f"{review['added']} added, {review['removed']} removed, {review['changed']} changed launchers between the copies."
+        dialog.setText(i18n.t('sync.review.downloadQuestion') if download_only else
+                       i18n.t('sync.review.conflictQuestion') if review['conflict'] else
+                       i18n.t('sync.review.uploadQuestion'))
+        details=i18n.t('sync.review.changes',added=review['added'],removed=review['removed'],changed=review['changed'])
         if review['iconChanges']:
-            details+=f"\n{review['iconChanges']} icon differences: "+', '.join(review['iconNames'])
-        details+='\n\nThe replaced copy will be backed up locally. Cancel keeps both copies.'
+            details+='\n'+i18n.plural('sync.review.iconChanges',review['iconChanges'],names=', '.join(review['iconNames']))
+        details+='\n\n'+i18n.t('sync.review.backupNote')
         dialog.setInformativeText(details)
-        upload=None if download_only else dialog.addButton('Upload this device',QMessageBox.AcceptRole)
-        download=dialog.addButton('Download OneDrive',QMessageBox.ActionRole)if download_only or review['conflict']else None
+        upload=None if download_only else dialog.addButton(i18n.t('sync.review.keepDevice'),QMessageBox.AcceptRole)
+        download=dialog.addButton(i18n.t('sync.review.keepCloud'),QMessageBox.ActionRole)if download_only or review['conflict']else None
         cancel=dialog.addButton(QMessageBox.Cancel);dialog.setDefaultButton(cancel);dialog.setEscapeButton(cancel)
         dialog.exec()
         if upload is not None and dialog.clickedButton()is upload:self.sync.confirm_upload(review['token'])
@@ -425,12 +424,45 @@ class SettingsWindow(QMainWindow):
         content.addWidget(SettingsRow(title, subtitle, control))
         layout.addWidget(card)
 
+    def _language(self, layout):
+        """Add the interface language picker: Match device first, then each language in its own name.
+
+        The choice is device-local (linux.json), never synced. Windows already open keep their
+        text, so the row says a restart finishes the switch; new dialogs use it straight away.
+        """
+        from PySide6.QtWidgets import QComboBox
+        combo = QComboBox()
+        combo.setMinimumWidth(200)
+        combo.addItem(i18n.t('system.language.matchDevice', language=i18n.NATIVE_NAMES[i18n.device_locale()]), '')
+        for identity in i18n.ORDERED:
+            combo.addItem(i18n.NATIVE_NAMES[identity], identity)
+        saved = i18n.normalize_override(self.controller.preferences.data.get('Language')) or ''
+        combo.setCurrentIndex(max(0, combo.findData(saved)))
+        note = QLabel(i18n.t('system.language.restartNote'))
+        note.setWordWrap(True)
+        note.setVisible(False)
+
+        def choose(index):
+            value = combo.itemData(index)
+            if value == (i18n.normalize_override(self.controller.preferences.data.get('Language')) or ''):
+                return
+            try:
+                self.controller.preferences.set('Language', value)
+            except OSError as error:
+                QMessageBox.warning(self, i18n.t('system.language.saveFailed'), str(error))
+                return
+            note.setVisible(True)
+
+        combo.currentIndexChanged.connect(choose)
+        self._settings_row(layout, i18n.t('system.language.title'), i18n.t('system.language.description'), combo)
+        layout.addWidget(note)
+
     def _system(self):
         from PySide6.QtWidgets import QApplication, QComboBox
-        layout = self._page('Settings')
-        self._text(layout, 'Appearance')
+        layout = self._page(i18n.t('common.settings'))
+        self._text(layout, i18n.t('system.appearance'))
         theme = QComboBox()
-        theme.addItems(['System Default', 'Light', 'Dark'])
+        theme.addItems([i18n.t('system.theme.systemDefault'), i18n.t('system.theme.light'), i18n.t('system.theme.dark')])
         theme.setFixedWidth(160)
         current = self.controller.preferences.data.get('AppTheme', 0)
         theme.setCurrentIndex(current if current in (0, 1, 2) else 0)
@@ -441,16 +473,17 @@ class SettingsWindow(QMainWindow):
                 self.controller.preferences.set('AppTheme', value)
         apply_theme(theme.currentIndex(), False)
         theme.currentIndexChanged.connect(apply_theme)
-        self._settings_row(layout, 'App Theme', 'Use the desktop appearance or choose light or dark', theme)
+        self._settings_row(layout, i18n.t('system.theme.title'), i18n.t('system.theme.description'), theme)
+        self._language(layout)
         start = QCheckBox()
         self.startup_control = start
         start.setChecked(self.controller.preferences.data.get('StartAtLogin', True))
         start.toggled.connect(self.autostart)
-        self._settings_row(layout, 'Launch on Startup', 'Start minimized to the system tray', start)
-        launchers = QPushButton('Manage Launchers')
+        self._settings_row(layout, i18n.t('system.startup.title'), i18n.t('system.startup.description'), start)
+        launchers = QPushButton(i18n.t('system.launcherAppearance.manage'))
         launchers.clicked.connect(lambda: self.navigation.setCurrentRow(1))
-        self._settings_row(layout, 'Launcher appearance', 'Change each launcher’s tray icon, layout and behavior on the Launchers page.', launchers)
-        self._text(layout, 'Desktop Integration')
+        self._settings_row(layout, i18n.t('system.launcherAppearance.title'), i18n.t('system.launcherAppearance.description'), launchers)
+        self._text(layout, i18n.t('linuxDesktop.title'))
         placement = QWidget()
         placement_layout = QVBoxLayout(placement)
         placement_layout.setContentsMargins(0, 0, 0, 0)
@@ -458,37 +491,36 @@ class SettingsWindow(QMainWindow):
         self.integration_status = QLabel()
         self.integration_status.setWordWrap(True)
         placement_layout.addWidget(self.integration_status)
-        self.integration_button = QPushButton('Enable tray positioning')
+        self.integration_button = QPushButton(i18n.t('linuxDesktop.enable'))
         self.integration_button.clicked.connect(self.enable_integration)
         placement_layout.addWidget(self.integration_button, 0, Qt.AlignRight)
-        self._settings_row(layout, 'Open launchers beside their tray icons',
-                           'Keep launcher windows next to the icon you click, rather than opening in the middle of the screen.', placement)
-        self._text(layout, 'Browser Extensions')
-        extensions=QPushButton('Manage Extensions…')
+        self._settings_row(layout, i18n.t('linuxDesktop.placement.title'), i18n.t('linuxDesktop.placement.description'), placement)
+        self._text(layout, i18n.t('system.extensions.section'))
+        extensions=QPushButton(i18n.t('webExtensions.manage'))
         extensions.clicked.connect(lambda:self.extensions_requested.emit(''))
-        self._settings_row(layout,'Browser extensions','Add an extension ZIP or folder. Launchers using the same browser profile share extension data.',extensions)
-        self._text(layout, 'Backup & Restore')
+        self._settings_row(layout,i18n.t('system.extensions.title'),i18n.t('system.extensions.manageDescription'),extensions)
+        self._text(layout, i18n.t('system.backup.section'))
         exports = QWidget()
         from .item_toolbar import ActionFlowLayout
         actions = ActionFlowLayout(exports)
-        for label, callback in [('Export Launchers…', self.export_file), ('Import Launchers…', self.import_file)]:
-            button = QPushButton(label)
+        for label, callback in [('system.backup.exportLaunchers', self.export_file), ('system.backup.importLaunchers', self.import_file)]:
+            button = QPushButton(i18n.t(label))
             button.clicked.connect(callback)
             actions.addWidget(button)
-        self._settings_row(layout, 'Export / Import Launchers', 'Portable launcher settings; browser sessions and account tokens stay on this device', exports)
+        self._settings_row(layout, i18n.t('system.backup.launchersTitle'), i18n.t('system.backup.launchersDescription'), exports)
         layout.addStretch()
 
     def _about(self):
-        layout = self._page('About')
+        layout = self._page(i18n.t('about.title'))
         icon = QLabel()
         icon.setPixmap(QIcon(str(ICON)).pixmap(48, 48))
-        self._settings_row(layout, 'Little Launcher', application_version() + ' · A customizable application and website launcher that lives in your desktop tray.', icon)
+        self._settings_row(layout, 'Little Launcher', application_version() + ' · ' + i18n.t('about.trayDescription'), icon)
         built = QLabel('')
-        self._settings_row(layout, 'Built With', 'Qt Widgets · PySide6 · Python · Electron · Chromium', built)
-        repository = QPushButton('GitHub Repository')
+        self._settings_row(layout, i18n.t('about.builtWith'), 'Qt Widgets · PySide6 · Python · Electron · Chromium', built)
+        repository = QPushButton(i18n.t('about.sourceCode.link'))
         repository.clicked.connect(lambda: QDesktopServices.openUrl(QUrl('https://github.com/Dynamic-Solutions-Canada/little-launcher')))
-        self._settings_row(layout, 'Source Code', 'View the project on GitHub', repository)
-        self._settings_row(layout,'Updates','Check for and install verified Linux AppImage releases.',UpdateControls(self.updates))
+        self._settings_row(layout, i18n.t('about.sourceCode.title'), i18n.t('about.sourceCode.description'), repository)
+        self._settings_row(layout,i18n.t('about.update.title'),i18n.t('linuxUpdates.description'),UpdateControls(self.updates))
         layout.addStretch()
 
     def refresh(self):
@@ -501,22 +533,21 @@ class SettingsWindow(QMainWindow):
             hidden += int(launcher_hidden(launcher))
             self.launcher_cards.addWidget(self._launcher_card(launcher))
         if not self.controller.launchers:
-            self._text(self.launcher_cards, 'No launchers yet. Choose Add launcher to create one.')
-        self.summary.setText(f'{len(self.controller.launchers)} launchers. {hidden} disabled on Linux because they belong to another operating system.')
+            self._text(self.launcher_cards, i18n.t('launchers.empty'))
+        self.summary.setText(i18n.plural('home.summary.launchers', len(self.controller.launchers)) + ' ' + i18n.plural('home.summary.hiddenOnLinux', hidden))
         self.integration.refresh()
         kde = 'KDE' in os.environ.get('XDG_CURRENT_DESKTOP', '').upper().split(':')
         preview = bool(os.environ.get('LITTLE_LAUNCHER_PREVIEW_ID'))
         if self.integration.enabled:
-            self.integration_status.setText('On for this preview' if preview else 'On')
-            self.integration_button.setText('Update tray positioning')
+            self.integration_status.setText(i18n.t('linuxDesktop.status.onPreview') if preview else i18n.t('common.on'))
+            self.integration_button.setText(i18n.t('linuxDesktop.update'))
         elif kde:
-            self.integration_status.setText('Off · launchers open as regular windows')
-            self.integration_button.setText('Enable tray positioning')
+            self.integration_status.setText(i18n.t('linuxDesktop.status.off'))
+            self.integration_button.setText(i18n.t('linuxDesktop.enable'))
         else:
-            self.integration_status.setText('Not available on this desktop. Launchers open as regular windows.')
+            self.integration_status.setText(i18n.t('linuxDesktop.status.unavailable'))
         self.integration_button.setEnabled(kde and not preview)
-        self.integration_button.setToolTip('Enable window positioning for your user account. No administrator access is needed.' if kde else
-                                         'Tray positioning is currently available on KDE Plasma.')
+        self.integration_button.setToolTip(i18n.t('linuxDesktop.enableTooltip') if kde else i18n.t('linuxDesktop.kdeOnly'))
 
     def edit_items(self, identifier):
         launcher = self.controller.launcher(identifier)
@@ -526,7 +557,7 @@ class SettingsWindow(QMainWindow):
             self.configure(identifier)
             return
         if launcher.get('IsShared') and not launcher.get('IsSharedOwner') and not launcher.get('SharedTwoWay'):
-            QMessageBox.information(self, 'Read-only launcher', 'This subscribed launcher is managed by its owner.')
+            QMessageBox.information(self, i18n.t('launchers.readOnly.title'), i18n.t('launchers.readOnly.message'))
             return
         existing = self.editors.get(identifier)
         if existing:
@@ -560,7 +591,7 @@ class SettingsWindow(QMainWindow):
                         editor.rebuild()
 
     def add(self, web):
-        launcher = new_launcher('Web launcher' if web else 'Shortcuts', web)
+        launcher = new_launcher(i18n.t('launchers.defaultName.web' if web else 'launchers.defaultName.shortcuts'), web)
         dialog = LauncherDialog(launcher, self)
         if dialog.exec() == QDialog.Accepted:
             value = dialog.value()
@@ -569,7 +600,15 @@ class SettingsWindow(QMainWindow):
 
     def remove_launcher(self, identifier):
         launcher = self.controller.launcher(identifier)
-        if launcher and QMessageBox.question(self, 'Remove launcher', 'Remove this launcher? Local browser sessions are retained.') == QMessageBox.Yes:
+        if launcher is None:
+            return
+        # The name is synced user content, so it must not be interpreted as rich text.
+        box = QMessageBox(QMessageBox.Question, i18n.t('launchers.delete.title'),
+                          i18n.t('launchers.delete.message', launcher=launcher.get('Name', 'Launcher')), QMessageBox.Yes | QMessageBox.No, self)
+        box.setTextFormat(Qt.PlainText)
+        # Linux keeps the launcher's device-local browser sessions; say so, as before.
+        box.setInformativeText(i18n.t('launchers.delete.sessionsKept'))
+        if box.exec() == QMessageBox.Yes:
             self.controller.edit(lambda document: document['Launchers'].remove(launcher))
 
     def add_bookmark(self, identifier, address, title):
@@ -585,21 +624,21 @@ class SettingsWindow(QMainWindow):
             self.controller.replace_launcher(value, original)
 
     def import_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, 'Import launchers', '', 'JSON files (*.json)')
+        path, _ = QFileDialog.getOpenFileName(self, i18n.t('system.backup.importLaunchersTitle'), '', i18n.t('launchers.bulk.jsonFiles') + ' (*.json)')
         if not path:
             return
         try:
             self.controller.import_document(json.loads(Path(path).read_text()))
         except (OSError, ValueError) as error:
-            QMessageBox.warning(self, 'Import failed', str(error))
+            QMessageBox.warning(self, i18n.t('launchers.bulk.importFailed'), str(error))
 
     def export_file(self):
-        path, _ = QFileDialog.getSaveFileName(self, 'Export launchers', 'launchers.json', 'JSON files (*.json)')
+        path, _ = QFileDialog.getSaveFileName(self, i18n.t('system.backup.exportLaunchersTitle'), 'launchers.json', i18n.t('launchers.bulk.jsonFiles') + ' (*.json)')
         if path:
             try:
                 atomic_write(Path(path), (json.dumps(sync_envelope(pack_icons(self.controller.document,LauncherIcons.glyph_png)), indent=2) + '\n').encode())
             except OSError as error:
-                QMessageBox.warning(self, 'Export failed', str(error))
+                QMessageBox.warning(self, i18n.t('launchers.bulk.exportFailed'), str(error))
 
     def autostart(self, enabled):
         previous=self.controller.preferences.data.get('StartAtLogin',True)
@@ -610,11 +649,11 @@ class SettingsWindow(QMainWindow):
             try:set_autostart(previous)
             except (OSError,ValueError):pass
             with QSignalBlocker(self.startup_control):self.startup_control.setChecked(previous)
-            QMessageBox.warning(self,'Login startup was not changed',str(error))
+            QMessageBox.warning(self,i18n.t('linuxDesktop.autostartFailed'),str(error))
 
     def enable_integration(self):
         try:
             self.integration.enable()
         except OSError as error:
-            QMessageBox.warning(self, 'Desktop integration', str(error))
+            QMessageBox.warning(self, i18n.t('linuxDesktop.title'), str(error))
         self.refresh()

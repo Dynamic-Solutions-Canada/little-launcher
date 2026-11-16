@@ -5,6 +5,8 @@ from PySide6.QtCore import QMimeData, QRect, Qt
 from PySide6.QtGui import QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import QWidget
 
+from . import i18n
+
 MIME_TYPE = 'application/x-little-launcher-item'
 
 
@@ -46,7 +48,7 @@ class ItemDrag:
             font.setWeight(QFont.Normal)
             painter.setFont(font)
             painter.drawText(QRect(30, top + 15, width - 36, 13), Qt.AlignVCenter,
-                             f"Group · {count} item{'s' if count != 1 else ''}")
+                             i18n.plural('items.dragGroupCount', count))
         painter.end()
         return image
 
@@ -90,7 +92,7 @@ class ItemDropArea(QWidget):
             self.hovered = True
             sender = event.source()
             if hasattr(sender, 'set_drag_caption'):
-                sender.set_drag_caption('Move to end')
+                sender.set_drag_caption(i18n.t('items.dragToEnd'))
             self.update()
             event.acceptProposedAction()
 

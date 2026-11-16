@@ -4,6 +4,7 @@ from copy import deepcopy
 import hashlib
 from pathlib import Path
 
+from . import i18n
 from .document import DocumentError
 from .storage import atomic_write
 
@@ -12,25 +13,25 @@ MAX_ICON_BYTES = 1024 * 1024
 
 def icon_bytes(value):
     if not isinstance(value, str) or len(value) > 4 * ((MAX_ICON_BYTES + 2) // 3):
-        raise DocumentError('A synced launcher icon is too large or malformed.')
+        raise DocumentError(i18n.t('icons.synced.tooLargeOrMalformed'))
     try:
         raw = base64.b64decode(value, validate=True)
     except ValueError as error:
-        raise DocumentError('A synced launcher icon is malformed.') from error
+        raise DocumentError(i18n.t('icons.synced.malformed')) from error
     if not raw or len(raw) > MAX_ICON_BYTES:
-        raise DocumentError('A synced launcher icon is empty or too large.')
+        raise DocumentError(i18n.t('icons.synced.emptyOrTooLarge'))
     # Raster formats understood on both platforms. No SVG or executable icon containers.
     if not (raw.startswith(b'\x89PNG\r\n\x1a\n') or raw.startswith(b'\x00\x00\x01\x00')
             or raw.startswith(b'\xff\xd8\xff') or raw.startswith((b'GIF87a', b'GIF89a'))
             or raw.startswith(b'BM')):
-        raise DocumentError('A synced launcher icon is not a supported image.')
+        raise DocumentError(i18n.t('icons.synced.unsupported'))
     return raw
 
 
 def preview_bytes(value):
     raw=icon_bytes(value)
     if len(raw)<24 or not raw.startswith(b'\x89PNG\r\n\x1a\n') or not 0<int.from_bytes(raw[16:20],'big')<=1024 or not 0<int.from_bytes(raw[20:24],'big')<=1024:
-        raise DocumentError('A portable glyph preview must be a bounded PNG image.')
+        raise DocumentError(i18n.t('icons.synced.invalidGlyphPreview'))
     return raw
 
 
@@ -52,7 +53,7 @@ def pack_icons(document, render_glyph=None):
         path = Path(launcher.get('CustomTrayIconPath', ''))
         if path.is_file():
             if path.stat().st_size > MAX_ICON_BYTES:
-                raise DocumentError('Choose a custom launcher icon smaller than 1 MiB before uploading.')
+                raise DocumentError(i18n.t('icons.synced.customTooLarge'))
             encoded = base64.b64encode(path.read_bytes()).decode('ascii')
             icon_bytes(encoded)
             launcher['CustomTrayIconData'] = encoded

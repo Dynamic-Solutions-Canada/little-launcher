@@ -1,6 +1,7 @@
 // Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using Microsoft.Web.WebView2.Core;
 using System;
 
@@ -68,8 +69,7 @@ public sealed partial class WebFlyoutWindow
         // setup ends up somewhere it cannot finish.
         Logger.Info("Declined navigation to the browser page {Uri} in launcher {Name}", uri, _launcher.Name);
 
-        ShowNotice("That page belongs to the browser itself, which a launcher does not have. "
-                 + "Open this site in your browser to finish there.");
+        ShowNotice(UiText.Get("webPages.browserPageDeclined"));
         return true;
     }
 

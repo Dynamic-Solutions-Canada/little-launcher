@@ -1,0 +1,17 @@
+{
+  "taskbarPin.title": "In Taskleiste anzeigen",
+  "taskbarPin.description": "Verknüpfung für schnellen Zugriff an die Taskleiste anheften",
+  "taskbarPin.checking": "Anheftung wird geprüft…",
+  "taskbarPin.alreadyPinned": "An die Taskleiste angeheftet.",
+  "taskbarPin.changedHint": "Löse und hefte erneut an, um diese Änderungen zu übernehmen.",
+  "taskbarPin.detailsUnknown": "An die Taskleiste angeheftet. Löse ihn, bevor du ihn erneut anheftest.",
+  "taskbarPin.pin": "An Taskleiste anheften",
+  "taskbarPin.pinAgain": "Erneut anheften",
+  "taskbarPin.pinned": "Angeheftet",
+  "taskbarPin.companionMissing": "Die Begleit-EXE für das Flyout wurde nicht gefunden. Erstelle zuerst das Projekt.",
+  "taskbarPin.helperNotStarted": "Das Anheft-Hilfsprogramm wurde nicht gestartet.",
+  "taskbarPin.statusCheckFailed": "Die Statusprüfung der Taskleiste konnte nicht abgeschlossen werden. Schließe diese Einstellungen und versuche es erneut.",
+  "taskbarPin.unconfirmed": "Windows hat nicht bestätigt, ob dieser Launcher angeheftet wurde. Eine Anheftung kann noch erscheinen.",
+  "taskbarPin.helperFailed": "Das Anheft-Hilfsprogramm konnte die Anfrage nicht abschließen. Details findest du in taskbar-pin.log.",
+  "taskbarPin.failed": "Dieser Launcher konnte nicht angeheftet werden. {reason}"
+}

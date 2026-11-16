@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Services;
 using Microsoft.UI.Xaml;
@@ -564,7 +565,7 @@ public sealed partial class WebFlyoutWindow
 
         if (folder.Children.Count == 0)
         {
-            rows.Add(new MenuFlyoutItem { Text = "Empty", IsEnabled = false });
+            rows.Add(new MenuFlyoutItem { Text = UiText.Get("webBookmarks.emptyFolder"), IsEnabled = false });
             return rows;
         }
 
@@ -614,7 +615,7 @@ public sealed partial class WebFlyoutWindow
     {
         // U+E734 is Segoe Fluent's FavoriteStar and U+E735 its filled twin — the outline/solid
         // pair every browser uses for "not saved" and "saved".
-        var star = BuildHeaderButton("", "Add to the bookmarks bar", (_, _) => ToggleBookmarkForAddress());
+        var star = BuildHeaderButton("", UiText.Get("webBookmarks.addToBar"), (_, _) => ToggleBookmarkForAddress());
         star.Margin = new Thickness(4, 0, 0, 0);
         return star;
     }
@@ -643,7 +644,7 @@ public sealed partial class WebFlyoutWindow
         else glyph.ClearValue(IconElement.ForegroundProperty);
 
         ToolTipService.SetToolTip(_bookmarkStar,
-            saved ? "Remove from the bookmarks bar" : "Add to the bookmarks bar");
+            saved ? UiText.Get("webBookmarks.removeFromBar") : UiText.Get("webBookmarks.addToBar"));
     }
 
     /// <summary>The address the star acts on — whatever the box is showing.</summary>
@@ -738,18 +739,18 @@ public sealed partial class WebFlyoutWindow
             return item;
         }
 
-        items.Add(Item("Rename…", () => _ = RenameFolderAsync(folder)));
-        items.Add(Item("Add bookmark…", () => _ = AddBookmarkToFolderAsync(folder)));
-        items.Add(Item("Add folder…", () => _ = AddFolderAsync(folder)));
+        items.Add(Item(UiText.Get("webBookmarks.renameMenu"), () => _ = RenameFolderAsync(folder)));
+        items.Add(Item(UiText.Get("webBookmarks.addBookmarkMenu"), () => _ = AddBookmarkToFolderAsync(folder)));
+        items.Add(Item(UiText.Get("webBookmarks.addFolderMenu"), () => _ = AddFolderAsync(folder)));
 
         items.Add(new MenuFlyoutSeparator());
 
-        items.Add(Item("Move up", () => MoveBookmark(folder, -1), index > 0));
-        items.Add(Item("Move down", () => MoveBookmark(folder, 1), index < owner.Count - 1));
+        items.Add(Item(UiText.Get("common.moveUp"), () => MoveBookmark(folder, -1), index > 0));
+        items.Add(Item(UiText.Get("common.moveDown"), () => MoveBookmark(folder, 1), index < owner.Count - 1));
 
         items.Add(new MenuFlyoutSeparator());
 
-        items.Add(Item("Remove folder", () => RemoveFolder(folder)));
+        items.Add(Item(UiText.Get("webBookmarks.removeFolder"), () => RemoveFolder(folder)));
 
         return items;
     }
@@ -767,7 +768,7 @@ public sealed partial class WebFlyoutWindow
         {
             if (!bookmark.IsFolder) continue;
 
-            string name = string.IsNullOrWhiteSpace(bookmark.Name) ? "Folder" : bookmark.Name;
+            string name = string.IsNullOrWhiteSpace(bookmark.Name) ? UiText.Get("webBookmarks.defaultFolderName") : bookmark.Name;
             string path = prefix.Length == 0 ? name : prefix + " / " + name;
 
             yield return (bookmark, path);
@@ -780,7 +781,7 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Renames a folder. Unlike a bookmark, an empty name has nothing to fall back to.</summary>
     private async Task RenameFolderAsync(WebBookmark folder)
     {
-        string? renamed = await RunTextPromptAsync("Rename folder", "Name", folder.Name, "Rename");
+        string? renamed = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.renameFolder"), UiText.Get("common.name"), folder.Name, UiText.Get("common.rename"));
         if (string.IsNullOrWhiteSpace(renamed)) return;
 
         folder.Name = renamed.Trim();
@@ -790,7 +791,7 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Adds a folder, either to the bar or inside another folder.</summary>
     private async Task AddFolderAsync(WebBookmark? parent = null)
     {
-        string? name = await RunTextPromptAsync("Add folder", "Name", "", "Add");
+        string? name = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.addFolder"), UiText.Get("common.name"), "", UiText.Get("common.add"));
         if (string.IsNullOrWhiteSpace(name)) return;
 
         var folder = WebBookmark.CreateFolder(name.Trim());
@@ -804,7 +805,7 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Adds a bookmark straight into a folder.</summary>
     private async Task AddBookmarkToFolderAsync(WebBookmark folder)
     {
-        string? entered = await RunTextPromptAsync("Add bookmark", "https://…", "", "Add");
+        string? entered = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.addBookmark"), "https://…", "", UiText.Get("common.add"));
         if (string.IsNullOrWhiteSpace(entered)) return;
 
         string url = NormalizeUrl(entered);
@@ -812,7 +813,7 @@ public sealed partial class WebFlyoutWindow
 
         if (FindBookmark(url) != null)
         {
-            ShowNotice("That page is already in the bookmarks bar.");
+            ShowNotice(UiText.Get("webBookmarks.alreadyInBar"));
             return;
         }
 
@@ -912,7 +913,7 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private Button BuildBookmarkOverflowButton()
     {
-        var button = BuildHeaderButton("", "More bookmarks", (_, _) => ShowBookmarkOverflowMenu());
+        var button = BuildHeaderButton("", UiText.Get("webBookmarks.moreBookmarks"), (_, _) => ShowBookmarkOverflowMenu());
         button.Visibility = Visibility.Collapsed;
         button.VerticalAlignment = VerticalAlignment.Center;
         return button;
@@ -1153,14 +1154,14 @@ public sealed partial class WebFlyoutWindow
         // The two ways to open it lead, as they do on a link's own context menu: the menu is
         // reached by right-clicking the thing you wanted to open, so "open it" belongs at the top
         // rather than below five ways to edit it.
-        items.Add(Item("Open", () => OpenBookmark(bookmark, newTab: false)));
-        items.Add(Item("Open in new tab", () => OpenBookmark(bookmark, newTab: true)));
+        items.Add(Item(UiText.Get("common.open"), () => OpenBookmark(bookmark, newTab: false)));
+        items.Add(Item(UiText.Get("webBookmarks.openInNewTab"), () => OpenBookmark(bookmark, newTab: true)));
 
         Divide();
 
-        items.Add(Item("Rename…", () => _ = RenameBookmarkAsync(bookmark)));
-        items.Add(Item("Edit address…", () => _ = EditBookmarkAddressAsync(bookmark)));
-        items.Add(Item("Copy address", () => CopyToClipboard(bookmark.Url)));
+        items.Add(Item(UiText.Get("webBookmarks.renameMenu"), () => _ = RenameBookmarkAsync(bookmark)));
+        items.Add(Item(UiText.Get("webBookmarks.editAddressMenu"), () => _ = EditBookmarkAddressAsync(bookmark)));
+        items.Add(Item(UiText.Get("webBookmarks.copyAddress"), () => CopyToClipboard(bookmark.Url)));
 
         // Per bookmark, so one long name can be collapsed without flattening the whole bar. Checked
         // rather than a one-way action, and disabled while still checked when the launcher-wide
@@ -1168,7 +1169,7 @@ public sealed partial class WebFlyoutWindow
         // because of this" rather than as an option that does nothing.
         var iconOnly = new ToggleMenuFlyoutItem
         {
-            Text = "Icon only",
+            Text = UiText.Get("webBookmarks.iconOnly"),
             IsChecked = ShowsIconOnly(bookmark),
             IsEnabled = !_launcher.WebBookmarkIconsOnly,
         };
@@ -1178,7 +1179,7 @@ public sealed partial class WebFlyoutWindow
             PersistBookmarks();
         };
         items.Add(iconOnly);
-        items.Add(Item("Open in browser", () => OpenExternally(bookmark.Url)));
+        items.Add(Item(UiText.Get("webBookmarks.openInBrowser"), () => OpenExternally(bookmark.Url)));
 
         Divide();
 
@@ -1194,7 +1195,7 @@ public sealed partial class WebFlyoutWindow
         // or linked in any way: renaming it later, re-addressing it or removing it leaves the home
         // page exactly where it was. This row is a convenient way to type an address the user
         // already has, not a way to make one bookmark special.
-        items.Add(Item("Set as home page", () => SetHomeUrl(bookmark.Url),
+        items.Add(Item(UiText.Get("webBookmarks.setAsHomePage"), () => SetHomeUrl(bookmark.Url),
             !string.Equals(NormalizeUrl(_launcher.WebAddress), NormalizeUrl(bookmark.Url),
                 StringComparison.OrdinalIgnoreCase)));
 
@@ -1203,8 +1204,8 @@ public sealed partial class WebFlyoutWindow
         // "Up/down" inside a folder, "left/right" along the bar: the same move, and naming it for
         // the direction it actually travels is the difference between an instruction and a riddle.
         bool onBar = ReferenceEquals(owner, _launcher.WebBookmarks);
-        items.Add(Item(onBar ? "Move left" : "Move up", () => MoveBookmark(bookmark, -1), index > 0));
-        items.Add(Item(onBar ? "Move right" : "Move down", () => MoveBookmark(bookmark, 1),
+        items.Add(Item(onBar ? UiText.Get("webBookmarks.moveLeft") : UiText.Get("common.moveUp"), () => MoveBookmark(bookmark, -1), index > 0));
+        items.Add(Item(onBar ? UiText.Get("webBookmarks.moveRight") : UiText.Get("common.moveDown"), () => MoveBookmark(bookmark, 1),
             index < owner.Count - 1));
 
         var folders = AllFolders().ToList();
@@ -1212,7 +1213,7 @@ public sealed partial class WebFlyoutWindow
         {
             Divide();
 
-            var into = new MenuFlyoutSubItem { Text = "Move to folder" };
+            var into = new MenuFlyoutSubItem { Text = UiText.Get("webBookmarks.moveToFolder") };
             foreach (var (folder, path) in folders)
             {
                 var captured = folder;
@@ -1224,7 +1225,7 @@ public sealed partial class WebFlyoutWindow
         }
 
         Divide();
-        items.Add(Item("Remove", () => RemoveBookmark(bookmark)));
+        items.Add(Item(UiText.Get("common.remove"), () => RemoveBookmark(bookmark)));
 
         return items;
     }
@@ -1261,10 +1262,10 @@ public sealed partial class WebFlyoutWindow
             return item;
         }
 
-        menu.Items.Add(Item("Add bookmark…", () => _ = AddBookmarkByAddressAsync()));
-        menu.Items.Add(Item("Add from browser…", () => _ = AddBookmarkFromBrowserAsync()));
+        menu.Items.Add(Item(UiText.Get("webBookmarks.addBookmarkMenu"), () => _ = AddBookmarkByAddressAsync()));
+        menu.Items.Add(Item(UiText.Get("webBookmarks.addFromBrowserMenu"), () => _ = AddBookmarkFromBrowserAsync()));
         menu.Items.Add(new MenuFlyoutSeparator());
-        menu.Items.Add(Item("Add folder…", () => _ = AddFolderAsync()));
+        menu.Items.Add(Item(UiText.Get("webBookmarks.addFolderMenu"), () => _ = AddFolderAsync()));
 
         menu.Items.Add(new MenuFlyoutSeparator());
 
@@ -1278,7 +1279,7 @@ public sealed partial class WebFlyoutWindow
         // sizes of the same idea and the two menus can be one right-click apart.
         var iconsOnly = new ToggleMenuFlyoutItem
         {
-            Text = "Icons only",
+            Text = UiText.Get("webBookmarks.iconsOnly"),
             IsChecked = _launcher.WebBookmarkIconsOnly,
         };
         iconsOnly.Click += (_, _) =>
@@ -1313,7 +1314,7 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private async Task AddBookmarkByAddressAsync()
     {
-        string? entered = await RunTextPromptAsync("Add bookmark", "https://…", "", "Add");
+        string? entered = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.addBookmark"), "https://…", "", UiText.Get("common.add"));
         if (string.IsNullOrWhiteSpace(entered)) return;
 
         string url = NormalizeUrl(entered);
@@ -1323,7 +1324,7 @@ public sealed partial class WebFlyoutWindow
         // reads as the prompt having failed.
         if (FindBookmark(url) != null)
         {
-            ShowNotice("That page is already in the bookmarks bar.");
+            ShowNotice(UiText.Get("webBookmarks.alreadyInBar"));
             return;
         }
 
@@ -1347,7 +1348,7 @@ public sealed partial class WebFlyoutWindow
 
         if (FindBookmark(url) != null)
         {
-            ShowNotice("That page is already in the bookmarks bar.");
+            ShowNotice(UiText.Get("webBookmarks.alreadyInBar"));
             return;
         }
 
@@ -1363,7 +1364,7 @@ public sealed partial class WebFlyoutWindow
 
     private async Task RenameBookmarkAsync(WebBookmark bookmark)
     {
-        string? renamed = await RunTextPromptAsync("Rename bookmark", "Name", bookmark.Name, "Rename");
+        string? renamed = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.renameBookmark"), UiText.Get("common.name"), bookmark.Name, UiText.Get("common.rename"));
         if (renamed == null) return;
 
         bookmark.Name = string.IsNullOrWhiteSpace(renamed) ? HostOf(bookmark.Url) : renamed.Trim();
@@ -1380,7 +1381,7 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private async Task EditBookmarkAddressAsync(WebBookmark bookmark)
     {
-        string? entered = await RunTextPromptAsync("Edit address", "https://…", bookmark.Url, "Save");
+        string? entered = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.editAddress"), "https://…", bookmark.Url, UiText.Get("common.save"));
         if (entered == null) return;
 
         string url = NormalizeUrl(entered);
@@ -1585,7 +1586,7 @@ public sealed partial class WebFlyoutWindow
 
             if (e.DragUIOverride != null)
             {
-                e.DragUIOverride.Caption = $"Move into {overFolder.Name}";
+                e.DragUIOverride.Caption = UiText.Format("webBookmarks.moveIntoFolder", ("folder", overFolder.Name));
                 e.DragUIOverride.IsCaptionVisible = true;
             }
 

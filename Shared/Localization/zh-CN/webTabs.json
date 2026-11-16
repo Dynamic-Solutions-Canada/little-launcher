@@ -1,0 +1,15 @@
+{
+  "webTabs.newTab": "新建标签页",
+  "webTabs.addressBar": "地址栏",
+  "webTabs.blankTabCaption": "新标签页",
+  "webTabs.closeTab": "关闭标签页",
+  "webTabs.closeNamedTab": "关闭 {title}",
+  "webTabs.closeBusyTab": "关闭此标签页可能会中断媒体播放或传输。",
+  "webTabs.keepOpen": "保持打开",
+  "webTabs.actionFailed": "无法完成标签页操作。",
+  "webTabs.duplicate": "复制标签页",
+  "webTabs.copyAddress": "复制地址",
+  "webTabs.closeOtherTabs": "关闭其他标签页",
+  "webTabs.reopenClosedTab": "重新打开关闭的标签页",
+  "webTabs.extensionFallbackTitle": "扩展"
+}

@@ -1,0 +1,18 @@
+{
+  "webPosition.moveTo": "Move to",
+  "webPosition.anchor.tray": "Near its tray icon",
+  "webPosition.anchor.lastPosition": "Where you last dragged it",
+  "webPosition.anchor.topLeft": "Top left",
+  "webPosition.anchor.topCenter": "Top centre",
+  "webPosition.anchor.topRight": "Top right",
+  "webPosition.anchor.left": "Left",
+  "webPosition.anchor.center": "Centre",
+  "webPosition.anchor.right": "Right",
+  "webPosition.anchor.bottomLeft": "Bottom left",
+  "webPosition.anchor.bottomCenter": "Bottom centre",
+  "webPosition.anchor.bottomRight": "Bottom right",
+  "webPosition.pickerIntro": "Choose where this launcher opens on the screen holding its tray icon.",
+  "webPosition.pickerNotice": "Dragged positions stay on this device. KDE desktop integration is required.",
+  "webPosition.saveFailed": "The dragged window position could not be saved.",
+  "webPosition.clearFailed": "The previous dragged window position could not be cleared."
+}

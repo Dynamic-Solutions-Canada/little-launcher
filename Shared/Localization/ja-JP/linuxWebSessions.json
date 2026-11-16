@@ -1,0 +1,5 @@
+{
+  "linuxWebSessions.unreadable": "保存されたブラウザーのタブを読み取れません。既存のセッションファイルは保持されています。",
+  "linuxWebSessions.invalid": "ブラウザーから無効なタブのセッションが返されました。",
+  "linuxWebSessions.tooLarge": "保存されたブラウザーのタブがローカルの保存容量の上限を超えています。既存のセッションは保持されています。"
+}

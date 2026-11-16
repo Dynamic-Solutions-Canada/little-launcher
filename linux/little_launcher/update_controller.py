@@ -5,6 +5,7 @@ import subprocess
 import threading
 from PySide6.QtCore import QObject,QThread,QTimer,Signal
 from PySide6.QtWidgets import QMessageBox
+from . import i18n
 from .desktop import application_version
 from .updates import UpdateError,check_release,current_appimage,download_release,sync_directory
 
@@ -20,7 +21,7 @@ class UpdateJob(QThread):
             else:self.result=download_release(self.release,self.destination,architecture=self.architecture,cancelled=self.canceled.is_set,progress=self.report_progress)
             if self.canceled.is_set() and self.result is not None and self.operation=='download':self.result.discard();self.result=None
         except UpdateError as error:self.error=str(error)
-        except Exception:self.error='The update request could not be completed. Your existing AppImage is unchanged.'
+        except Exception:self.error=i18n.t('linuxUpdates.error.requestFailed')
 
     def report_progress(self,done,total):
         percent=int(done*100/total)
@@ -35,7 +36,7 @@ class UpdateController(QObject):
         super().__init__(parent);self.controller=controller;self.version=application_version();self.architecture='arm64' if platform.machine() in ('aarch64','arm64') else 'x64'
         self.image=None if os.environ.get('LITTLE_LAUNCHER_PREVIEW_ID') else current_appimage()
         self.job=None;self.release=None;self.staged=None;self.install_queued=False;self.percent=0
-        self.state='idle';self.status='Check for a newer Linux AppImage.'
+        self.state='idle';self.status=i18n.t('linuxUpdates.status.idle')
         self.periodic=QTimer(self);self.periodic.setInterval(6*60*60*1000);self.periodic.timeout.connect(self.auto_check)
         if self.image:
             self.periodic.start();QTimer.singleShot(15000,self.auto_check)
@@ -43,17 +44,17 @@ class UpdateController(QObject):
     def automatic(self):return self.controller.preferences.data.get('CheckForUpdatesAutomatically',True)
     def set_automatic(self,value):
         try:self.controller.preferences.set('CheckForUpdatesAutomatically',bool(value))
-        except OSError:self.status='The automatic update preference could not be saved.'
+        except OSError:self.status=i18n.t('linuxUpdates.status.preferenceNotSaved')
         self.changed.emit()
     def auto_check(self):
         if self.automatic() and not self.job and not self.staged:self.check()
     def check(self):
         if self.job or self.staged:return
-        self.state='checking';self.status='Checking GitHub for a newer Linux AppImage…'
+        self.state='checking';self.status=i18n.t('about.update.checkingStatus')
         self.start(UpdateJob('check',self.version,self.architecture,parent=self))
     def download(self):
         if self.job or self.staged or not self.release or not self.image:return
-        self.state='downloading';self.status='Downloading and verifying the AppImage…';self.percent=0
+        self.state='downloading';self.status=i18n.t('linuxUpdates.status.downloading');self.percent=0
         self.start(UpdateJob('download',self.version,self.architecture,self.release,self.image,parent=self))
     def start(self,job):
         self.job=job;job.progress.connect(self.update_progress);job.finished.connect(self.complete)
@@ -63,28 +64,28 @@ class UpdateController(QObject):
         job=self.job
         if not job:return
         self.job=None
-        if job.canceled.is_set():self.state='idle';self.status='Update request canceled.'
+        if job.canceled.is_set():self.state='idle';self.status=i18n.t('linuxUpdates.status.canceled')
         elif job.error:self.state='error';self.status=job.error
         elif job.operation=='check':
             self.release=job.result;self.state='available' if self.release else 'current'
-            self.status=f'Version {self.release.version} is available.' if self.release else 'No newer Linux AppImage is available.'
+            self.status=i18n.t('about.update.available',latest=self.release.version,current=self.version) if self.release else i18n.t('about.update.upToDate',current=self.version)
         else:
-            self.staged=job.result;self.state='ready';self.status='Download verified. Install and restart when ready; exiting without installing discards the download.'
+            self.staged=job.result;self.state='ready';self.status=i18n.t('linuxUpdates.status.ready')
         job.deleteLater();self.changed.emit();self.busy_changed.emit(False)
     def cancel(self):
         if self.job:
-            self.job.canceled.set();self.status='Canceling the update request…'
+            self.job.canceled.set();self.status=i18n.t('linuxUpdates.status.canceling')
         elif self.staged:
             try:self.staged.discard()
-            except OSError:self.status='The downloaded update could not be removed.';self.changed.emit();return
-            self.staged=None;self.state='available' if self.release else 'idle';self.status='The downloaded update was discarded.'
+            except OSError:self.status=i18n.t('linuxUpdates.status.discardFailed');self.changed.emit();return
+            self.staged=None;self.state='available' if self.release else 'idle';self.status=i18n.t('linuxUpdates.status.discarded')
         self.install_queued=False;self.changed.emit()
     def request_install(self):
         if not self.staged or self.job or self.install_queued:return
-        self.install_queued=True;self.status='Waiting for sync and webpages to close safely…';self.changed.emit();self.install_requested.emit()
+        self.install_queued=True;self.status=i18n.t('linuxUpdates.status.waitingToRestart');self.changed.emit();self.install_requested.emit()
     def cancel_restart(self):
         self.install_queued=False
-        if self.staged:self.status='Restart canceled. The verified download is ready when you are.'
+        if self.staged:self.status=i18n.t('linuxUpdates.status.restartCanceled')
         self.changed.emit()
     def finish_restart(self,exit_code=0):
         if not self.install_queued or not self.staged:
@@ -102,5 +103,5 @@ class UpdateController(QObject):
             if backup:
                 try:os.replace(backup,self.image);sync_directory(self.image.parent)
                 except OSError:pass
-            QMessageBox.critical(None,'AppImage update could not be installed',str(error)+'\nYour launcher settings and browser profiles were not changed.')
+            QMessageBox.critical(None,i18n.t('linuxUpdates.installFailed.title'),i18n.t('linuxUpdates.installFailed.message',error=str(error)))
             return 1

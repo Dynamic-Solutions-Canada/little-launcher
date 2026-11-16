@@ -1,4 +1,5 @@
 using LittleLauncher.Models;
+using LittleLauncher.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Markup;
@@ -103,27 +104,25 @@ public sealed partial class LauncherItemsView
         {
             string groupName = GetItemDisplayName(target.Group);
             if (target.Zone == LauncherDropGeometry.GroupZone.Before)
-                return FormatDropCaption("LauncherDragBeforeGroup", "Move before {0}", groupName);
+                return UiText.Format("items.dragBeforeGroup", ("group", groupName));
             if (target.Zone == LauncherDropGeometry.GroupZone.After)
-                return FormatDropCaption("LauncherDragAfterGroup", "Move after {0}", groupName);
+                return UiText.Format("items.dragAfterGroup", ("group", groupName));
 
             if (target.Index < target.Group.Children.Count)
-                return FormatDropCaption("LauncherDragIntoGroupBefore", "Into {0}: before {1}",
-                    groupName, GetItemDisplayName(target.Group.Children[target.Index]));
-            return FormatDropCaption("LauncherDragIntoGroupEnd", "Into {0}: at end", groupName);
+                return UiText.Format("items.dragIntoGroupBefore",
+                    ("group", groupName), ("item", GetItemDisplayName(target.Group.Children[target.Index])));
+            return UiText.Format("items.dragIntoGroupEnd", ("group", groupName));
         }
 
         if (target.Index < target.List.Items.Count && target.List.Items[target.Index] is LauncherItem next)
         {
-            return IsGridItemsPanel(target.List.ItemsPanelRoot)
-                ? $"Move before {GetItemDisplayName(next)}"
-                : $"Move above {GetItemDisplayName(next)}";
+            string key = IsGridItemsPanel(target.List.ItemsPanelRoot)
+                ? "items.dragBeforeItem"
+                : "items.dragAboveItem";
+            return UiText.Format(key, ("item", GetItemDisplayName(next)));
         }
-        return "Move to end";
+        return UiText.Get("items.dragToEnd");
     }
-
-    private static string FormatDropCaption(string key, string fallback, params object[] names) =>
-        string.Format(DragPreviewText(key, fallback), names);
 
     /// <summary>Uses a full-width boundary for siblings and a tinted, inset cue for membership.</summary>
     private void ShowDropTarget(ItemDropTarget target)

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using LittleLauncher.Localization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -74,13 +75,16 @@ public sealed class OneDriveFileStore : ICloudFileStore
 
         var result = await OAuthPkceClient.SignInAsync(Endpoint, scopeOverride: null, ct);
         if (result.Tokens is not { } tokens)
-            return (false, $"OneDrive: {result.Message}");
+            return (false, UiText.Format("cloud.providerMessage", ("provider", ProviderName), ("message", result.Message)));
 
         tokens.AccountName = await FetchAccountNameAsync(tokens.AccessToken, ct);
         CloudTokenStore.Save(Provider, tokens);
 
         Logger.Info($"Signed in to OneDrive as {tokens.AccountName}");
-        return (true, $"Signed in to OneDrive{(tokens.AccountName.Length > 0 ? $" as {tokens.AccountName}" : "")}.");
+        string signedIn = tokens.AccountName.Length > 0
+            ? UiText.Format("cloud.signedInAs", ("provider", ProviderName), ("account", tokens.AccountName))
+            : UiText.Format("cloud.signedIn", ("provider", ProviderName));
+        return (true, signedIn);
     }
 
     public void SignOut() => CloudTokenStore.Clear(Provider);
@@ -105,12 +109,12 @@ public sealed class OneDriveFileStore : ICloudFileStore
         if (!IsAvailable)
             return (false, CloudSyncCredentials.NotConfiguredMessage(ProviderName));
         if (HasSharingConsent)
-            return (true, "Already granted.");
+            return (true, UiText.Get("cloud.sharingAlreadyGranted"));
 
         var existing = CloudTokenStore.Load(Provider);
         var result = await OAuthPkceClient.SignInAsync(Endpoint, SharingScope, ct);
         if (result.Tokens is not { } tokens)
-            return (false, $"OneDrive: {result.Message}");
+            return (false, UiText.Format("cloud.providerMessage", ("provider", ProviderName), ("message", result.Message)));
 
         // Belt and braces: a provider can return a narrower grant than was asked for, and
         // storing it as though sharing were enabled would fail later with an opaque error.
@@ -120,14 +124,14 @@ public sealed class OneDriveFileStore : ICloudFileStore
             // wrong" is to see what actually came back, and a stored token is encrypted.
             Logger.Warn($"OneDrive sharing consent insufficient. "
                         + $"Wanted '{SharingScope}', got '{tokens.GrantedScope}'");
-            return (false, "OneDrive granted less than sharing needs. Try again and accept all the permissions.");
+            return (false, UiText.Format("cloud.sharingInsufficient", ("provider", ProviderName)));
         }
 
         tokens.AccountName = existing?.AccountName ?? await FetchAccountNameAsync(tokens.AccessToken, ct);
         CloudTokenStore.Save(Provider, tokens);
 
         Logger.Info($"Sharing consent granted for OneDrive");
-        return (true, "OneDrive sharing permission granted.");
+        return (true, UiText.Format("cloud.sharingGranted", ("provider", ProviderName)));
     }
 
     public async Task<byte[]?> DownloadAsync(CancellationToken ct = default)
@@ -180,7 +184,7 @@ public sealed class OneDriveFileStore : ICloudFileStore
     {
         string? token = await OAuthPkceClient.GetAccessTokenAsync(Provider, Endpoint, ct);
         if (token == null)
-            throw new InvalidOperationException("Not signed in to OneDrive. Sign in again to continue syncing.");
+            throw new InvalidOperationException(UiText.Format("cloud.signInAgainToSync", ("provider", "OneDrive")));
 
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

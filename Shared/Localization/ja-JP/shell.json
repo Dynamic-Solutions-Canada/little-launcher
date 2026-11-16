@@ -1,0 +1,10 @@
+{
+  "shell.jumpList.launcherSettings": "ランチャーの設定",
+  "shell.jumpList.launcherSettingsTooltip": "{launcher} の設定",
+  "shell.jumpList.openInBrowser": "ブラウザーで開く",
+  "shell.jumpList.editItems": "項目を編集",
+  "shell.jumpList.editItemsTooltip": "{launcher} の項目を編集",
+  "shell.jumpList.appSettingsTooltip": "Little Launcher 自体の設定",
+  "shell.startMenu.unnamedWebLauncher": "Web ランチャー",
+  "shell.pinStatusCheckDidNotStop": "タスクバーの状態確認が停止しませんでした。新しいピン留めは開始していません。"
+}

@@ -1,0 +1,8 @@
+{
+  "webFullscreen.enterContentFullscreen": "全屏视频",
+  "webFullscreen.contentFullscreenUnavailable": "此视频无法进入全屏。请尝试使用播放器的全屏控件。",
+  "webFullscreen.maximizeLauncher": "最大化启动器（保持内容全屏）",
+  "webFullscreen.restoreLauncherSize": "还原启动器大小（保持内容全屏）",
+  "webFullscreen.exitButton": "退出全屏",
+  "webFullscreen.exitWithEscape": "退出全屏内容（Esc）"
+}

@@ -1,0 +1,22 @@
+{
+  "about.title": "关于",
+  "about.description": "一款可自定义的应用程序和网站启动器，常驻于 Windows 任务栏。",
+  "about.builtWith": "构建工具",
+  "about.sourceCode.title": "源代码",
+  "about.sourceCode.description": "在 GitHub 上查看此项目",
+  "about.sourceCode.link": "GitHub 存储库",
+  "about.update.title": "更新",
+  "about.update.clickToCheck": "单击以检查更新",
+  "about.update.checkButton": "检查更新",
+  "about.update.checkingButton": "正在检查…",
+  "about.update.checkingStatus": "正在检查更新…",
+  "about.update.storeOpened": "Microsoft Store 已打开“更新和下载”。请在其中查看可用更新。",
+  "about.update.storeOpenFailed": "无法打开 Microsoft Store。",
+  "about.update.unableToCheck": "无法检查更新。请检查你的互联网连接。",
+  "about.update.availableTitle": "有可用更新",
+  "about.update.available": "版本 {latest} 已可用（当前为 {current}）",
+  "about.update.viewRelease": "查看发行版",
+  "about.update.upToDate": "已是最新版本（{current}）",
+  "about.update.failed": "检查更新失败。请稍后重试。",
+  "about.trayDescription": "一款可自定义的应用程序和网站启动器，常驻于桌面托盘。"
+}

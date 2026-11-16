@@ -1,6 +1,7 @@
 ﻿// Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
 using System;
@@ -162,7 +163,8 @@ internal static class StartMenuShortcutService
     private static string ShortcutFileName(Launcher launcher, HashSet<string> taken)
     {
         string safe = SanitizeFileName(launcher.Name);
-        if (safe.Length == 0) safe = "Web Launcher";
+        // Pruning keeps only what should exist, so a language change simply renames this shortcut.
+        if (safe.Length == 0) safe = SanitizeFileName(UiText.Get("shell.startMenu.unnamedWebLauncher"));
 
         string candidate = $"{safe}.lnk";
         for (int suffix = 2; taken.Contains(candidate); suffix++)

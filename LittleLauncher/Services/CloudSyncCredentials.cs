@@ -1,3 +1,5 @@
+using LittleLauncher.Localization;
+
 namespace LittleLauncher.Services;
 
 /// <summary>
@@ -76,6 +78,5 @@ public static class CloudSyncCredentials
     /// Message shown when a provider was selected but this build carries no registration for it.
     /// </summary>
     public static string NotConfiguredMessage(string providerName) =>
-        $"This build has no {providerName} app registration, so sign-in is unavailable. " +
-        $"See docs/sync.md for how to create one.";
+        UiText.Format("cloud.notConfigured", ("provider", providerName));
 }

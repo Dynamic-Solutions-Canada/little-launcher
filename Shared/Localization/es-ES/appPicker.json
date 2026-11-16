@@ -1,0 +1,10 @@
+{
+  "appPicker.openContainingFolder": "Abrir carpeta contenedora",
+  "appPicker.title": "Elegir una aplicación",
+  "appPicker.source.all": "Todas las aplicaciones",
+  "appPicker.source.applications": "Aplicaciones",
+  "appPicker.source.webApps": "Aplicaciones web",
+  "appPicker.openFailed": "No se pudo abrir la aplicación",
+  "appPicker.folderFailed.title": "No se pudo abrir la carpeta",
+  "appPicker.folderFailed.message": "El administrador de archivos no pudo abrir la carpeta de esta aplicación."
+}

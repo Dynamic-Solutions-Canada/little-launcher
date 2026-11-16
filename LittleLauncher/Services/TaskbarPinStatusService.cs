@@ -1,6 +1,7 @@
 // Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -93,7 +94,7 @@ internal static class TaskbarPinStatusService
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or OperationCanceledException)
         {
             Logger.Warn(ex, "The owned read-only taskbar query did not stop");
-            throw new InvalidOperationException("The taskbar status check did not stop. No new pin has been started.", ex);
+            throw new InvalidOperationException(UiText.Get("shell.pinStatusCheckDidNotStop"), ex);
         }
     }
 }

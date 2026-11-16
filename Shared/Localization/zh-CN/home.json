@@ -1,0 +1,16 @@
+{
+  "home.title": "主页",
+  "home.buildType.debug": "（调试）",
+  "home.buildType.msix": "（MSIX）",
+  "home.buildType.portable": "（便携版）",
+  "home.update.message": "新版本（{latest}）已可用。你当前运行的是 {current}。",
+  "home.whatsNew.title": "新功能：网页启动器",
+  "home.whatsNew.message": "启动器现在可以打开网页，而不仅是快捷方式列表：Home Assistant 仪表板、网页邮箱或任何网站，都可直接从托盘图标打开。它会保持登录状态，关闭时不占用任何资源。",
+  "home.whatsNew.action": "立即设置",
+  "home.launchersCard.description": "管理启动器和快捷方式",
+  "home.syncCard.description": "OneDrive、Google Drive、网络共享或 SFTP",
+  "home.summary.launchers.one": "{count} 个启动器。",
+  "home.summary.launchers.other": "{count} 个启动器。",
+  "home.summary.hiddenOnLinux.one": "{count} 个在 Linux 上已禁用，因为它属于其他操作系统。",
+  "home.summary.hiddenOnLinux.other": "{count} 个在 Linux 上已禁用，因为它们属于其他操作系统。"
+}

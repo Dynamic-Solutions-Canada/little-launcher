@@ -1,3 +1,4 @@
+using LittleLauncher.Localization;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using static LauncherShortcut.NativeMethods;
@@ -7,7 +8,6 @@ namespace LauncherShortcut;
 /// <summary>Theme, DPI layout and alpha-icon drawing for the transient native pin card.</summary>
 internal sealed partial class PinWindow
 {
-    private const string PromptReminder = "Look for the Windows pinning prompt.";
     private nint _background;
     private nint _title;
     private nint _description;
@@ -104,7 +104,7 @@ internal sealed partial class PinWindow
             string title = _name.StartsWith(prefix, StringComparison.Ordinal) ? _name[prefix.Length..] : _name;
             _title = CreateWindowExW(0, "STATIC", title, 0x50004080 /* SS_ENDELLIPSIS | SS_NOPREFIX */,
                 0, 0, 1, 1, _hwnd, 0, 0, 0);
-            _description = CreateWindowExW(0, "STATIC", PromptReminder, 0x50000080 /* SS_NOPREFIX */,
+            _description = CreateWindowExW(0, "STATIC", UiText.Get("pinning.promptReminder"), 0x50000080 /* SS_NOPREFIX */,
                 0, 0, 1, 1, _hwnd, 0, 0, 0);
             if (_title == 0 || _description == 0)
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());

@@ -1,0 +1,20 @@
+{
+  "pinning.promptReminder": "Recherchez la demande d’épinglage de Windows.",
+  "pinning.manualInstructions": "{reason}\n\nCliquez avec le bouton droit sur l’icône de ce lanceur dans la barre des tâches et choisissez « Épingler à la barre des tâches ».\n\nCliquez sur OK seulement après l’avoir épinglé, ou sur Annuler pour conserver l’épinglage enregistré tel quel.",
+  "pinning.reason.unavailable": "L’épinglage natif n’est pas disponible.",
+  "pinning.reason.manualRequested": "Épinglez ce lanceur manuellement.",
+  "pinning.reason.prepareFailed": "Windows n’a pas pu préparer l’épinglage natif. Vous pouvez épingler ce lanceur manuellement.",
+  "pinning.reason.packageIdentity": "Windows a démarré cet assistant avec l’identité du package : l’épinglage natif ne peut donc pas cibler ce lanceur en particulier.",
+  "pinning.reason.restrictedAccess": "Cette version de Windows exige un accès restreint pour l’épinglage natif. Vous pouvez épingler ce lanceur manuellement.",
+  "pinning.reason.unsupported": "Cette version de Windows ne prend pas en charge l’épinglage natif depuis les applications de bureau.",
+  "pinning.reason.startFailed": "Windows n’a pas pu démarrer l’épinglage natif.",
+  "pinning.reason.checkFailed": "Windows n’a pas pu vérifier si ce lanceur est épinglé.",
+  "pinning.reason.checkTimedOut": "Windows a mis trop de temps à vérifier ce lanceur. Vous pouvez l’épingler manuellement.",
+  "pinning.reason.needsForeground": "Affichez ce lanceur au premier plan pour l’épingler manuellement.",
+  "pinning.reason.requestBlocked": "Windows n’autorise pas de demande d’épinglage natif pour le moment.",
+  "pinning.reason.offerFailed": "Windows n’a pas pu proposer l’épinglage natif. Vous pouvez épingler ce lanceur manuellement.",
+  "pinning.replace.title": "Remplacer l’épinglage dans la barre des tâches",
+  "pinning.replace.detailsChanged": "Ce lanceur est toujours épinglé. Son nom, son icône ou ses paramètres de lancement ont changé.",
+  "pinning.replace.detailsUnknown": "Ce lanceur est toujours épinglé. Ses anciens paramètres n’ont pas pu être comparés. Cliquez sur Annuler pour conserver l’épinglage existant.",
+  "pinning.replace.message": "{explanation}\n\nRetirez-le de la barre des tâches en cliquant dessus avec le bouton droit et en choisissant « Détacher de la barre des tâches ». Cliquez sur OK lorsqu’il n’en reste plus aucun pour créer un nouvel épinglage, ou sur Annuler pour arrêter."
+}

@@ -1,4 +1,5 @@
 using LittleLauncher.Classes.Settings;
+using LittleLauncher.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -23,15 +24,15 @@ public sealed partial class LauncherSettingsWindow
         // Shared leads, being what a new launcher gets. The order is display only; the value is
         // read off each item's Tag, never off the index.
         var profileCombo = new ComboBox { MinWidth = 200 };
-        profileCombo.Items.Add(new ComboBoxItem { Content = "Shared with other launchers", Tag = true });
-        profileCombo.Items.Add(new ComboBoxItem { Content = "Private to this launcher", Tag = false });
+        profileCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("launcherSettings.signIns.shared"), Tag = true });
+        profileCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("launcherSettings.signIns.private"), Tag = false });
         profileCombo.SelectedIndex = launcher.WebSharedProfile ? 0 : 1;
 
         var clearSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
 
-        void UpdateProfileText() => clearSubtitle.Text = launcher.WebSharedProfile
-            ? "Signs out of the shared profile; every launcher using it"
-            : "Signs out of the page and clears its cookies and cache";
+        void UpdateProfileText() => clearSubtitle.Text = UiText.Get(launcher.WebSharedProfile
+            ? "launcherSettings.browsingData.sharedDescription"
+            : "launcherSettings.browsingData.privateDescription");
 
         profileCombo.SelectionChanged += (_, _) =>
         {
@@ -53,9 +54,8 @@ public sealed partial class LauncherSettingsWindow
             refreshPasswordRow?.Invoke();
         };
 
-        var profileRow = BuildRow("Sign-ins",
-            "Pooled with every launcher set to share, so one sign-in covers them all. Private keeps this "
-            + "launcher's cookies to itself; for a second account on a site another launcher already uses",
+        var profileRow = BuildRow(UiText.Get("launcherSettings.signIns.title"),
+            UiText.Get("launcherSettings.signIns.description"),
             profileCombo);
 
         // ── Saved logins ────────────────────────────────────────
@@ -73,11 +73,9 @@ public sealed partial class LauncherSettingsWindow
 
         var passwordSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
 
-        void UpdatePasswordText() => passwordSubtitle.Text = launcher.WebSharedProfile
-            ? "Offer to save logins and fill them in, for every launcher on the shared profile. Turn off "
-              + "when a password manager extension is doing it, so the two do not compete"
-            : "Offer to save logins and fill them in. Turn off when a password manager extension is "
-              + "doing it, so the two do not compete";
+        void UpdatePasswordText() => passwordSubtitle.Text = UiText.Get(launcher.WebSharedProfile
+            ? "launcherSettings.saveLogins.sharedDescription"
+            : "launcherSettings.saveLogins.privateDescription");
 
         passwordToggle.Toggled += (_, _) =>
         {
@@ -89,7 +87,7 @@ public sealed partial class LauncherSettingsWindow
         };
 
         UpdatePasswordText();
-        var passwordRow = BuildRow("Save Logins", passwordSubtitle, passwordToggle);
+        var passwordRow = BuildRow(UiText.Get("launcherSettings.saveLogins.title"), passwordSubtitle, passwordToggle);
 
         refreshPasswordRow = () =>
         {
@@ -97,7 +95,7 @@ public sealed partial class LauncherSettingsWindow
             passwordToggle.IsOn = WebFlyoutWindow.UsesBuiltInPasswordManager(launcher);
         };
 
-        var forgetLoginsButton = new Button { Content = "Forget" };
+        var forgetLoginsButton = new Button { Content = UiText.Get("launcherSettings.savedLogins.forget") };
         forgetLoginsButton.Click += async (_, _) =>
         {
             forgetLoginsButton.IsEnabled = false;
@@ -105,34 +103,33 @@ public sealed partial class LauncherSettingsWindow
             // All of them, because WebView2 exposes no way to enumerate saved passwords; only to
             // clear the category. The button is named for what it can actually do.
             bool cleared = await WebFlyoutWindow.ClearSavedPasswordsAsync(launcher);
-            forgetLoginsButton.Content = cleared ? "Forgotten" : "Forget";
+            forgetLoginsButton.Content = UiText.Get(cleared ? "launcherSettings.savedLogins.forgotten" : "launcherSettings.savedLogins.forget");
 
             if (!cleared)
-                await ShowErrorAsync("Open this launcher first; its saved logins can only be cleared while its browser is running.");
+                await ShowErrorAsync(UiText.Get("launcherSettings.savedLogins.notRunning"));
 
             forgetLoginsButton.IsEnabled = true;
         };
 
-        var forgetLoginsRow = BuildRow("Saved Logins",
-            "Forget every login and form entry saved for this profile. Logins kept by a password "
-            + "manager extension are not affected",
+        var forgetLoginsRow = BuildRow(UiText.Get("launcherSettings.savedLogins.title"),
+            UiText.Get("launcherSettings.savedLogins.description"),
             forgetLoginsButton);
 
         // ── Sign-out / clear data ───────────────────────────────
-        var clearButton = new Button { Content = "Clear" };
+        var clearButton = new Button { Content = UiText.Get("launcherSettings.browsingData.clear") };
         clearButton.Click += async (_, _) =>
         {
             clearButton.IsEnabled = false;
             try
             {
                 await WebFlyoutWindow.ClearBrowsingDataAsync(launcher);
-                clearButton.Content = "Cleared";
+                clearButton.Content = UiText.Get("launcherSettings.browsingData.cleared");
             }
             catch (Exception ex)
             {
                 NLog.LogManager.GetCurrentClassLogger().Warn(ex, "Clearing web launcher data failed");
-                await ShowErrorAsync("Could not clear this launcher's browsing data. Close its panel and try again.");
-                clearButton.Content = "Clear";
+                await ShowErrorAsync(UiText.Get("launcherSettings.browsingData.clearFailed"));
+                clearButton.Content = UiText.Get("launcherSettings.browsingData.clear");
             }
             finally
             {
@@ -140,19 +137,19 @@ public sealed partial class LauncherSettingsWindow
             }
         };
         UpdateProfileText();
-        var clearRow = BuildRow("Browsing Data", clearSubtitle, clearButton);
+        var clearRow = BuildRow(UiText.Get("launcherSettings.browsingData.title"), clearSubtitle, clearButton);
 
         // ── Reset stored answers ────────────────────────────────
         // Without this, an accidental Block could only be undone by clearing the whole profile,
         // which also signs the launcher out.
         var permissionsSubtitle = new TextBlock
         {
-            Text = "Forget what you have allowed and blocked, so this launcher's pages ask again",
+            Text = UiText.Get("launcherSettings.sitePermissions.description"),
             FontSize = 12,
             Opacity = 0.5,
             TextWrapping = TextWrapping.Wrap,
         };
-        var resetPermissionsButton = new Button { Content = "Reset" };
+        var resetPermissionsButton = new Button { Content = UiText.Get("common.reset") };
         resetPermissionsButton.Click += async (_, _) =>
         {
             resetPermissionsButton.IsEnabled = false;
@@ -162,17 +159,17 @@ public sealed partial class LauncherSettingsWindow
                 // a running browser; so a launcher that is not loaded has this applied when it
                 // next opens, and is told so rather than being shown a false "Reset".
                 bool applied = await WebFlyoutWindow.ResetSitePermissionsAsync(launcher.Id);
-                resetPermissionsButton.Content = "Reset";
-                permissionsSubtitle.Text = applied
-                    ? "Cleared. This launcher's pages will ask again."
-                    : "Will be cleared the next time this launcher opens.";
+                resetPermissionsButton.Content = UiText.Get("common.reset");
+                permissionsSubtitle.Text = UiText.Get(applied
+                    ? "launcherSettings.sitePermissions.cleared"
+                    : "launcherSettings.sitePermissions.pending");
             }
             finally
             {
                 resetPermissionsButton.IsEnabled = true;
             }
         };
-        var resetPermissionsRow = BuildRow("Site Permissions", permissionsSubtitle, resetPermissionsButton);
+        var resetPermissionsRow = BuildRow(UiText.Get("launcherSettings.sitePermissions.title"), permissionsSubtitle, resetPermissionsButton);
 
         return [profileRow, passwordRow, forgetLoginsRow, resetPermissionsRow, clearRow];
     }

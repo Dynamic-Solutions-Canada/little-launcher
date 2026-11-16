@@ -1,6 +1,7 @@
 // Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -39,9 +40,8 @@ internal static class BookmarkPicker
     public static bool AnyBrowsersInstalled => BrowserCatalog.GetInstalledBrowsers().Count > 0;
 
     /// <summary>The sentence every host says when there is nothing to pick from.</summary>
-    public const string NoBrowsersMessage =
-        "No supported browsers were found. Bookmarks can be read from Microsoft Edge, " +
-        "Google Chrome, Brave, Vivaldi, Chromium, Firefox, Zen, Waterfox, and LibreWolf.";
+    /// <remarks>Read on each use, so it is in the interface language current at that moment.</remarks>
+    public static string NoBrowsersMessage => UiText.Get("bookmarkPicker.noBrowsersMessage");
 
     /// <summary>
     /// Shows the picker in a <c>ContentDialog</c>. Returns the chosen bookmark, or null if
@@ -51,7 +51,7 @@ internal static class BookmarkPicker
     {
         if (!AnyBrowsersInstalled)
         {
-            await ShowMessageAsync(xamlRoot, "No Browsers Found", NoBrowsersMessage);
+            await ShowMessageAsync(xamlRoot, UiText.Get("bookmarkPicker.noBrowsersTitle"), NoBrowsersMessage);
             return null;
         }
 
@@ -60,9 +60,9 @@ internal static class BookmarkPicker
         var dialog = new ContentDialog
         {
             XamlRoot = xamlRoot,
-            Title = "Choose a Bookmark",
-            PrimaryButtonText = "Use",
-            CloseButtonText = "Cancel",
+            Title = UiText.Get("bookmarkPicker.title"),
+            PrimaryButtonText = UiText.Get("bookmarkPicker.use"),
+            CloseButtonText = UiText.Get("common.cancel"),
             DefaultButton = ContentDialogButton.Primary,
             IsPrimaryButtonEnabled = false,
             Content = view.Root,
@@ -92,7 +92,7 @@ internal static class BookmarkPicker
             XamlRoot = xamlRoot,
             Title = title,
             Content = message,
-            CloseButtonText = "OK",
+            CloseButtonText = UiText.Get("common.ok"),
         };
         await dialog.ShowAsync();
     }
@@ -133,11 +133,11 @@ internal sealed class BookmarkPickerView
         var browsers = BrowserCatalog.GetInstalledBrowsers();
 
         // ── Source pickers ──────────────────────────────────────────
-        var browserCombo = new ComboBox { PlaceholderText = "Browser", MinWidth = 180 };
+        var browserCombo = new ComboBox { PlaceholderText = UiText.Get("bookmarkPicker.browser"), MinWidth = 180 };
         foreach (var browser in browsers)
             browserCombo.Items.Add(browser.DisplayName);
 
-        var profileCombo = new ComboBox { PlaceholderText = "Profile", MinWidth = 180, IsEnabled = false };
+        var profileCombo = new ComboBox { PlaceholderText = UiText.Get("bookmarkPicker.profile"), MinWidth = 180, IsEnabled = false };
 
         var sourceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         sourceRow.Children.Add(browserCombo);
@@ -146,7 +146,7 @@ internal sealed class BookmarkPickerView
         // ── Search + results ────────────────────────────────────────
         _searchBox = new TextBox
         {
-            PlaceholderText = "Search bookmarks",
+            PlaceholderText = UiText.Get("bookmarkPicker.search"),
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
 
@@ -184,11 +184,22 @@ internal sealed class BookmarkPickerView
             foreach (var match in matches.Take(300))
                 results.Add(match);
 
-            statusText.Text = all.Count == 0
-                ? "No bookmarks in this profile"
-                : matches.Count > results.Count
-                    ? $"{results.Count} of {matches.Count} matches — keep typing to narrow"
-                    : $"{matches.Count} of {all.Count} bookmarks";
+            if (all.Count == 0)
+            {
+                statusText.Text = UiText.Get("bookmarkPicker.noBookmarks");
+            }
+            else if (matches.Count > results.Count)
+            {
+                statusText.Text = UiText.Format("bookmarkPicker.truncatedCount",
+                    ("shown", results.Count),
+                    ("matches", matches.Count));
+            }
+            else
+            {
+                statusText.Text = UiText.Format("bookmarkPicker.matchCount",
+                    ("matches", matches.Count),
+                    ("total", all.Count));
+            }
 
             CanConfirmChanged?.Invoke(Selected != null);
         }
@@ -230,7 +241,7 @@ internal sealed class BookmarkPickerView
                 browsers[browserCombo.SelectedIndex].Engine);
             if (profiles.Count == 0)
             {
-                profileCombo.PlaceholderText = "No profiles found";
+                profileCombo.PlaceholderText = UiText.Get("bookmarkPicker.noProfiles");
                 return;
             }
 

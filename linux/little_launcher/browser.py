@@ -9,6 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QProcess, Qt, Signal
 from PySide6.QtWidgets import QMessageBox
 
+from . import i18n
 from .desktop import ROOT, native_theme
 from .document import DocumentError, normalize_web_address, shows_bookmark_bar, web_address
 from .icons import LauncherIcons
@@ -55,11 +56,13 @@ class BrowserHost(QObject):
         """Use a packaged engine or explicit development path, never an arbitrary shell."""
         engine = os.environ.get('LITTLE_LAUNCHER_ELECTRON', str(ROOT / 'browser/node_modules/electron/dist/electron'))
         if not Path(engine).is_file():
-            self.failed.emit('The packaged Electron engine is missing. Set LITTLE_LAUNCHER_ELECTRON for development.')
+            self.failed.emit(i18n.t('linuxBrowser.engineMissing'))
             self.pending.clear()
             return
         self.process.setProgram(engine)
-        arguments = [str(ROOT / 'browser/main.cjs'), '--launcher-data=' + str(self.directory / 'browser')]
+        arguments = [str(ROOT / 'browser/main.cjs'), '--launcher-data=' + str(self.directory / 'browser'),
+                     # Electron reads the already-resolved catalog; it never matches languages itself.
+                     '--launcher-language=' + self._catalog(), '--launcher-catalogs=' + str(i18n.catalog_directory())]
         if os.environ.get('XDG_SESSION_TYPE') == 'wayland':
             arguments.append('--ozone-platform=wayland')
         if os.environ.get('APPIMAGE'):
@@ -69,6 +72,11 @@ class BrowserHost(QObject):
             arguments.append('--launcher-desktop-id=io.github.RyanEwen.LittleLauncher.Web.Preview.' + preview)
         self.process.setArguments(arguments)
         self.process.start()
+
+    @staticmethod
+    def _catalog():
+        """The wording catalog for the current interface language, as Electron reads it."""
+        return i18n.CATALOGS[i18n.locale()]
 
     def send(self, message):
         """Queue until the browser is ready; all messages originate in trusted native UI."""
@@ -88,7 +96,7 @@ class BrowserHost(QObject):
                 if message['type'] == 'show':
                     self.failed.emit(str(error))
                 return
-            message = {**message, 'presentation': {'homeUrl': address,
+            message = {**message, 'language': self._catalog(), 'presentation': {'homeUrl': address,
                        'windowIcon': window_icon, 'position': self.position_for(launcher['Id']),
                        'positionSupported': self.position_supported(launcher['Id']), 'session': self.sessions.get(launcher['Id']),
                        'showBookmarkBar': shows_bookmark_bar(launcher)}}
@@ -119,7 +127,7 @@ class BrowserHost(QObject):
     def show_shortcut(self, item):
         """Use a stable URL-private Linux session for the portable app-window preference."""
         identifier = 'shortcut-' + hashlib.sha256(item['Path'].encode()).hexdigest()[:32]
-        launcher = {'Id': identifier, 'Name': item.get('Name') or 'Website', 'Kind': 1,
+        launcher = {'Id': identifier, 'Name': item.get('Name') or i18n.t('linuxBrowser.websiteFallbackName'), 'Kind': 1,
                     'WebUrl': item['Path'], 'WebRegularWindow': True, 'WebSharedProfile': False}
         self.show(launcher, None)
 
@@ -144,7 +152,7 @@ class BrowserHost(QObject):
         self.buffer += bytes(self.process.readAllStandardOutput())
         if len(self.buffer) > 2 * 1024 * 1024:
             self.buffer = b''
-            self.failed.emit('The browser sent an oversized response.')
+            self.failed.emit(i18n.t('linuxBrowser.oversizedResponse'))
             return
         while b'\n' in self.buffer:
             line, self.buffer = self.buffer.split(b'\n', 1)
@@ -206,28 +214,18 @@ class BrowserHost(QObject):
         elif kind == 'extension-settings':
             self.extension_settings_requested.emit(message.get('id', ''))
         elif kind == 'permission':
-            label = self.launchers.get(message.get('id'), {}).get('Name', 'Website')
-            permission = message.get('permission', 'unknown permission')
-            explanation = f"{label}\n{message.get('origin', '')}\n\nAllow {permission}?"
-            if permission == 'media':
-                explanation += '\n\nThis page will stay protected from sleep until navigation or reload, even after capture ends.'
-            box = QMessageBox(QMessageBox.Question, 'Website permission', explanation,
-                              QMessageBox.Yes | QMessageBox.No)
-            box.setTextFormat(Qt.PlainText)
-            box.setDefaultButton(QMessageBox.No)
-            allowed = box.exec() == QMessageBox.Yes
-            self.send({'type': 'reply', 'token': message.get('token'), 'allowed': allowed})
+            self.send({'type': 'reply', 'token': message.get('token'), 'allowed': self._ask_permission(message)})
         elif kind == 'close-launcher':
-            box = QMessageBox(QMessageBox.Warning, 'Active website activity',
-                'This launcher was removed. Closing its page may interrupt media or transfers. Close it now?',
+            box = QMessageBox(QMessageBox.Warning, i18n.t('linuxBrowser.activeActivityTitle'),
+                i18n.t('linuxBrowser.closeRemovedLauncher'),
                 QMessageBox.Yes | QMessageBox.No)
             box.setTextFormat(Qt.PlainText)
             box.setDefaultButton(QMessageBox.No)
             self.send({'type': 'reply', 'token': message.get('token'),
                        'allowed': box.exec() == QMessageBox.Yes})
         elif kind == 'quit-blocked':
-            allowed = QMessageBox.warning(None, 'Active website activity',
-                'Quitting may interrupt media, camera/microphone access, sign-in windows, or downloads. Quit anyway?',
+            allowed = QMessageBox.warning(None, i18n.t('linuxBrowser.activeActivityTitle'),
+                i18n.t('linuxBrowser.quitInterrupts'),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes
             if allowed:
                 self.send({'type': 'quit', 'confirmed': True})
@@ -243,7 +241,7 @@ class BrowserHost(QObject):
             except (DocumentError, OSError):
                 if not self.session_warning_shown:
                     self.session_warning_shown = True
-                    self.notice.emit('Browser tabs could not be saved on this device. Existing session data was preserved.')
+                    self.notice.emit(i18n.t('linuxBrowser.sessionSaveFailed'))
         elif kind == 'activity':
             self.activity[message.get('id')] = message.get('busy', False)
         elif kind == 'bookmark-add':
@@ -265,9 +263,50 @@ class BrowserHost(QObject):
             if message.get('token'):
                 self.send({'type': 'reply', 'token': message['token'], 'allowed': True})
         elif kind == 'notice':
-            self.notice.emit(message.get('message', 'Browser settings updated.'))
+            self.notice.emit(message.get('message', i18n.t('linuxBrowser.settingsUpdated')))
         elif kind in ('error', 'warning'):
-            self.failed.emit(message.get('message', 'The browser reported a problem.'))
+            self.failed.emit(message.get('message', i18n.t('linuxBrowser.problemReported')))
+
+    # Electron permission names, with media split by the requested capture types.
+    _PERMISSION_KEYS = {
+        'display-capture': 'webPermissions.request.screen',
+        'notifications': 'webPermissions.request.notifications',
+        'geolocation': 'webPermissions.request.location',
+        'fullscreen': 'webPermissions.request.fullscreen',
+        'clipboard-sanitized-write': 'webPermissions.request.clipboardWrite',
+    }
+
+    @classmethod
+    def _permission_request(cls, message):
+        """The shared Windows sentence for what a site asks; the origin is inserted, never translated."""
+        origin = message.get('origin') or i18n.t('webPermissions.unknownOrigin')
+        permission = message.get('permission')
+        if permission == 'media':
+            types = message.get('mediaTypes') if isinstance(message.get('mediaTypes'), list) else []
+            if 'video' in types and 'audio' not in types:
+                key = 'webPermissions.request.camera'
+            elif 'audio' in types and 'video' not in types:
+                key = 'webPermissions.request.microphone'
+            else:
+                key = 'webPermissions.request.cameraAndMicrophone'
+        else:
+            key = cls._PERMISSION_KEYS.get(permission, 'webPermissions.request.deviceFeature')
+        return i18n.t(key, origin=origin)
+
+    def _ask_permission(self, message):
+        """Ask through a native prompt; anything but an explicit Allow is a denial."""
+        label = self.launchers.get(message.get('id'), {}).get('Name') or i18n.t('linuxBrowser.websiteFallbackName')
+        explanation = label + '\n\n' + self._permission_request(message)
+        if message.get('permission') == 'media':
+            explanation += '\n\n' + i18n.t('webPermissions.mediaKeepsAwake')
+        box = QMessageBox(QMessageBox.Question, i18n.t('webPermissions.title'), explanation,
+                          QMessageBox.Yes | QMessageBox.No)
+        box.setTextFormat(Qt.PlainText)
+        # Standard buttons keep the desktop's order and roles; only their text changes.
+        box.button(QMessageBox.Yes).setText(i18n.t('webPermissions.allow'))
+        box.button(QMessageBox.No).setText(i18n.t('webPermissions.block'))
+        box.setDefaultButton(QMessageBox.No)
+        return box.exec() == QMessageBox.Yes
 
     def _drain_stderr(self):
         # Browser diagnostics can contain private URLs; do not retain them or grow an idle buffer.
@@ -280,11 +319,11 @@ class BrowserHost(QObject):
                 self.quit_ready.emit()
                 return
         if not self.quitting:
-            self.failed.emit('The Electron browser could not be started.')
+            self.failed.emit(i18n.t('linuxBrowser.startFailed'))
 
     def _finished(self, code, status):
         self.ready = False
         if self.quitting:
             self.quit_ready.emit()
         elif code != 0:
-            self.failed.emit('The browser stopped unexpectedly. Local sign-ins have been retained.')
+            self.failed.emit(i18n.t('linuxBrowser.stoppedUnexpectedly'))

@@ -3,6 +3,7 @@ from urllib.parse import urlsplit
 from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QObject, QTimer, QUrl, Qt, Signal, Slot
 from PySide6.QtGui import QImageReader
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
+from . import i18n
 from .document import DocumentError
 
 MAX_BYTES=256*1024
@@ -10,7 +11,7 @@ MAX_BYTES=256*1024
 
 def favicon_url(address):
     if not isinstance(address,str) or len(address)>8192:
-        raise DocumentError('Choose an HTTP or HTTPS website address first.')
+        raise DocumentError(i18n.t('icons.website.needsAddress'))
     try:
         parts=urlsplit(address)
         if parts.scheme not in ('http','https') or not parts.hostname or parts.username is not None or parts.password is not None or any(character.isspace() or ord(character)<32 for character in parts.hostname):raise ValueError()
@@ -20,7 +21,7 @@ def favicon_url(address):
         if not result.isValid():raise ValueError()
         return result
     except ValueError:
-        raise DocumentError('Website icon preview needs an HTTP or HTTPS address without embedded credentials.') from None
+        raise DocumentError(i18n.t('icons.website.invalidAddress')) from None
 
 
 def normalized_png(raw):
@@ -70,7 +71,7 @@ class SiteIconPreview(QObject):
     def read(self,reply):
         if self.reply is not reply:return
         if len(self.raw)+reply.bytesAvailable()>MAX_BYTES:
-            self.cancel();self.failed.emit('The website icon is too large. Your existing icon is unchanged.');return
+            self.cancel();self.failed.emit(i18n.t('icons.website.tooLarge'));return
         self.raw.extend(bytes(reply.readAll()))
 
     @Slot()
@@ -86,13 +87,13 @@ class SiteIconPreview(QObject):
             image=normalized_png(bytes(self.raw)) if valid else None
             self.raw=bytearray()
             if image:self.ready.emit(image)
-            else:self.failed.emit('No supported public website icon was found. Your existing icon is unchanged; you can browse for an image instead.')
+            else:self.failed.emit(i18n.t('icons.website.notFound'))
         finally:
             reply.deleteLater()
 
     def timeout(self):
         if self.reply:
-            self.cancel();self.failed.emit('Website icon preview timed out. Your existing icon is unchanged.')
+            self.cancel();self.failed.emit(i18n.t('icons.website.timedOut'))
 
     def cancel(self):
         self.generation+=1;self.timer.stop();reply=self.reply;self.reply=None;self.raw=bytearray()

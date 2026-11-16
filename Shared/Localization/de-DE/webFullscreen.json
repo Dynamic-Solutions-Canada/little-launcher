@@ -1,0 +1,8 @@
+{
+  "webFullscreen.enterContentFullscreen": "Video im Vollbild",
+  "webFullscreen.contentFullscreenUnavailable": "Dieses Video konnte nicht in den Vollbildmodus wechseln. Versuche die Vollbildsteuerung des Players.",
+  "webFullscreen.maximizeLauncher": "Launcher maximieren (Inhalt bleibt im Vollbild)",
+  "webFullscreen.restoreLauncherSize": "Launchergröße wiederherstellen (Inhalt bleibt im Vollbild)",
+  "webFullscreen.exitButton": "Vollbild beenden",
+  "webFullscreen.exitWithEscape": "Vollbildinhalt beenden (Esc)"
+}

@@ -1,6 +1,7 @@
 // Copyright © 2024-2026 The Little Launcher Authors
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -67,27 +68,29 @@ public sealed partial class WebFlyoutWindow
     private const double BlockWidth = 20;
     private const double BlockHeight = 12;
 
-    /// <summary>The eleven anchors, with the labels the picker and the "Opens at" menu share.</summary>
+    /// <summary>The eleven anchors, with the catalog keys of the labels the picker and the "Opens at" menu share.</summary>
     /// <remarks>
     /// One list, because two would drift: these are the same names for the same places, and a corner
     /// renamed in one and not the other is a mismatch nothing would catch. The list is all the two
     /// surfaces share — the menu writes <see cref="Launcher.WebAnchor"/> with them and offers all
     /// eleven; the picker only moves the window, and offers the nine that are places. See the class
     /// remarks for why the other two are not on it.
+    /// Keys rather than text, resolved each time a surface is built, so a language change reaches
+    /// the next menu or picker without restarting.
     /// </remarks>
-    private static readonly (string Label, int Value)[] AnchorChoices =
+    private static readonly (string LabelKey, int Value)[] AnchorChoices =
     [
-        ("Near its tray icon", WebAnchors.Tray),
-        ("Where you last dragged it", WebAnchors.LastPosition),
-        ("Top left", WebAnchors.TopLeft),
-        ("Top centre", WebAnchors.TopCenter),
-        ("Top right", WebAnchors.TopRight),
-        ("Left", WebAnchors.Left),
-        ("Centre", WebAnchors.Center),
-        ("Right", WebAnchors.Right),
-        ("Bottom left", WebAnchors.BottomLeft),
-        ("Bottom centre", WebAnchors.BottomCenter),
-        ("Bottom right", WebAnchors.BottomRight),
+        ("webPosition.anchor.tray", WebAnchors.Tray),
+        ("webPosition.anchor.lastPosition", WebAnchors.LastPosition),
+        ("webPosition.anchor.topLeft", WebAnchors.TopLeft),
+        ("webPosition.anchor.topCenter", WebAnchors.TopCenter),
+        ("webPosition.anchor.topRight", WebAnchors.TopRight),
+        ("webPosition.anchor.left", WebAnchors.Left),
+        ("webPosition.anchor.center", WebAnchors.Center),
+        ("webPosition.anchor.right", WebAnchors.Right),
+        ("webPosition.anchor.bottomLeft", WebAnchors.BottomLeft),
+        ("webPosition.anchor.bottomCenter", WebAnchors.BottomCenter),
+        ("webPosition.anchor.bottomRight", WebAnchors.BottomRight),
     ];
 
     private Flyout? _positionPicker;
@@ -328,7 +331,7 @@ public sealed partial class WebFlyoutWindow
         // whole promise: nothing here changes where the launcher opens.
         stack.Children.Add(new TextBlock
         {
-            Text = "Move to",
+            Text = UiText.Get("webPosition.moveTo"),
             FontSize = 12,
             Opacity = 0.75,
             Margin = new Thickness(2, 0, 0, 0),
@@ -389,9 +392,9 @@ public sealed partial class WebFlyoutWindow
 
     private static string AnchorLabel(int anchor)
     {
-        foreach (var (label, value) in AnchorChoices)
+        foreach (var (labelKey, value) in AnchorChoices)
         {
-            if (value == anchor) return label;
+            if (value == anchor) return UiText.Get(labelKey);
         }
 
         return "";

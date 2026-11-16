@@ -1,0 +1,53 @@
+# Localization
+
+Little Launcher's Windows and Linux apps share one set of translation catalogs and the same language rules as Persistent.
+
+## Languages
+
+`Shared/SupportedLanguages.cs` is the canonical list, in picker order: `en-US`, `en-CA`, `es-ES`, `fr-FR`, `fr-CA`, `de-DE`, `zh-CN`, `pt-BR`, `ja-JP`. Canadian English reads the `en-US` catalog and Canadian French reads `fr-FR`; their identities stay distinct so a later regional wording needs no migration. `linux/little_launcher/i18n.py` mirrors the list, and a Linux test fails if the two drift.
+
+Match device walks the user's ordered OS display languages, trying an exact identity and then a compatible language/script family. Unsupported languages fall back to English. Traditional Chinese never selects Simplified Chinese. These rules are copied from Persistent's `SupportedLanguages.cs`; keep them identical.
+
+The choice is per device. Windows stores it as `UserSettings.LanguageOverride` (empty means Match device); Linux stores `Language` in the device-local `linux.json`. Neither travels through launcher sync. An unknown saved value means Match device.
+
+Changing the language takes effect for each surface the next time it is built. On Windows, Settings rebuilds itself immediately; the tray menu is built each time it opens; jump lists, Start menu shortcut names and the companion's `language.txt` are rewritten straight away. Web launcher panels stay loaded in the background, so their toolbars keep the old language until the app restarts. On Linux, the long-lived Settings window and tray menus keep their text until restart, while web launcher menus and chrome pick it up the next time a launcher opens. Both pickers therefore show a short restart note after a change. Regional formatting of numbers and dates follows the OS, not the interface language.
+
+## Catalogs
+
+```
+Shared/Localization/<catalog>/<area>.json
+```
+
+Area files prefixed `linux` (for example `linuxUpdates.json`) hold Linux-only concepts; everything else is shared by both platforms, and Linux reuses the Windows key wherever the meaning matches.
+
+`<catalog>` is one of `en-US`, `es-ES`, `fr-FR`, `de-DE`, `zh-CN`, `pt-BR`, `ja-JP`. Each area file is a flat JSON object of key to text. All area files of a catalog merge into one key space, so a key must appear in exactly one area file. `en-US` is the source; every other catalog must have exactly the same keys and the same placeholders.
+
+**Keys** are `area.camelCaseName`, optionally with one more dotted level for grouping (`sync.sftp.hostLabel`). The first segment matches the file name. Keys describe meaning, not English wording, so a later wording change does not rename the key. `common.json` holds the generic words (OK, Cancel, Remove, Browse…); reuse those rather than adding a near-duplicate.
+
+**Placeholders** are `{name}`, replaced once from named values; a value is never itself expanded, so user content containing braces is shown literally. Use a placeholder rather than concatenating fragments, because word order differs between languages. Never split one sentence across keys.
+
+**Plurals** use `key.one` and `key.other`, with `{count}` supplied automatically. French and Portuguese use "one" for 0 and 1; Chinese and Japanese give both forms the same text.
+
+**Not translated:** product and service names (Little Launcher, OneDrive, Google Drive, WebDAV, SFTP, SSH, Nextcloud, Windows, KDE, Microsoft Store, GitHub), launcher and item names, URLs, file paths, anything the user typed, text returned by a server or the OS, log messages, exception messages that only reach the log, settings and JSON property names, automation IDs and keyboard accelerator keys. Pass user and provider content as placeholder values, never as keys.
+
+Translations other than English are machine-produced and have not had native-speaker review.
+
+## Windows
+
+`Shared/UiText.cs` loads the catalogs, which `LittleLauncher.csproj` embeds as resources; it is dependency-free and AOT-safe so the Native AOT companion can compile it too.
+
+- XAML: add `xmlns:l="using:LittleLauncher.Localization"` to the root element, then `Text="{l:Str Key=sync.title}"`. Works for any string or object property (`Text`, `Content`, `Header`, `PlaceholderText`, `ToolTipService.ToolTip`, `AutomationProperties.Name`).
+- C#: `UiText.Get("sync.title")`, `UiText.Format("sync.uploaded", ("provider", name))`, `UiText.Plural("launchers.count", n)`. Add `using LittleLauncher.Localization;`.
+- Text built in code for a window that stays open (a status line, a menu rebuilt on open) reads `UiText` when it is built, so it is in the current language whenever it is rebuilt.
+
+The Native AOT taskbar-pin companion (`LauncherShortcut`) links the same `UiText`, embeds only `pinning` and `common`, and reads the language the main app last wrote to `language.txt` beside it; `MainWindow` rewrites that file whenever the language changes.
+
+The old `Resources/Localization/Dictionary-en-US.xaml` and `Application.Current.Resources` string lookups are retired; do not add string resources there.
+
+## Linux
+
+`linux/little_launcher/i18n.py` reads the same catalogs: from `Shared/Localization` in a source checkout, or the copy `packaging/build.py` bundles into the AppImage. Call `t('sync.title')`, `t('sync.uploaded', provider=name)` and `plural('launchers.count', n)`. Electron's trusted chrome receives its strings from the main process; see [linux.md](linux.md).
+
+## Checks
+
+`linux/tests/test_localization.py` checks that every catalog has exactly the English keys, matching placeholders and no empty values, that each key lives in the area file its prefix names, and that the Python language list matches `SupportedLanguages.cs`. `tests/LauncherSync.Tests` covers the C# resolver, fallback and placeholder filling. These checks do not establish translation quality.

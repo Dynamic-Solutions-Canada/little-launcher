@@ -12,6 +12,8 @@ from dbus_next.constants import PropertyAccess
 from dbus_next.service import ServiceInterface, dbus_property, method, signal
 from PySide6.QtCore import QObject, Signal
 
+from . import i18n
+
 
 class TrayEvents(QObject):
     activated = Signal(str, int, int)
@@ -22,8 +24,9 @@ class TrayEvents(QObject):
 class LauncherMenu(ServiceInterface):
     """Small desktop-owned menu; action IDs retain their meaning across layout reads."""
 
-    ACTIONS = {5: ("Edit Launcher Settings", "launcher-settings"),
-               3: ("App Settings", "settings"), 4: ("Exit", "quit")}
+    # Catalog keys, looked up when the menu is read so labels follow the language in effect.
+    ACTIONS = {5: ("tray.menu.editLauncherSettings", "launcher-settings"),
+               3: ("tray.menu.appSettings", "settings"), 4: ("tray.menu.exit", "quit")}
 
     def __init__(self, identifier, events):
         super().__init__("com.canonical.dbusmenu")
@@ -52,8 +55,8 @@ class LauncherMenu(ServiceInterface):
             return {"children-display": Variant('s', 'submenu')}
         if identifier in (10, 11):
             return {'type': Variant('s', 'separator'), 'visible': Variant('b', True)}
-        label = self.ACTIONS.get(identifier, ("", ""))[0]
-        return {"label": Variant('s', label), "enabled": Variant('b', True),
+        key = self.ACTIONS.get(identifier, ("", ""))[0]
+        return {"label": Variant('s', i18n.t(key) if key else ''), "enabled": Variant('b', True),
                 "visible": Variant('b', True)}
 
     @method()
@@ -211,7 +214,7 @@ class TrayBus:
         try:
             future.result()
         except Exception:
-            self.events.unavailable.emit('Desktop tray unavailable. Open Little Launcher from Applications to manage launchers.')
+            self.events.unavailable.emit(i18n.t('linuxDesktop.trayUnavailable'))
 
     async def _update(self, items):
         async with self.mutex:

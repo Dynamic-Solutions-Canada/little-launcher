@@ -1,0 +1,18 @@
+{
+  "webPosition.moveTo": "移動先",
+  "webPosition.anchor.tray": "トレイアイコンの近く",
+  "webPosition.anchor.lastPosition": "最後にドラッグした位置",
+  "webPosition.anchor.topLeft": "左上",
+  "webPosition.anchor.topCenter": "上中央",
+  "webPosition.anchor.topRight": "右上",
+  "webPosition.anchor.left": "左",
+  "webPosition.anchor.center": "中央",
+  "webPosition.anchor.right": "右",
+  "webPosition.anchor.bottomLeft": "左下",
+  "webPosition.anchor.bottomCenter": "下中央",
+  "webPosition.anchor.bottomRight": "右下",
+  "webPosition.pickerIntro": "トレイアイコンがある画面で、このランチャーを開く位置を選んでください。",
+  "webPosition.pickerNotice": "ドラッグした位置はこのデバイスにのみ保存されます。KDE のデスクトップ統合が必要です。",
+  "webPosition.saveFailed": "ドラッグしたウィンドウの位置を保存できませんでした。",
+  "webPosition.clearFailed": "以前にドラッグしたウィンドウの位置を消去できませんでした。"
+}

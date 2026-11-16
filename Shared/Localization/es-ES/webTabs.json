@@ -1,0 +1,15 @@
+{
+  "webTabs.newTab": "Nueva pestaña",
+  "webTabs.addressBar": "Barra de direcciones",
+  "webTabs.blankTabCaption": "Nueva pestaña",
+  "webTabs.closeTab": "Cerrar pestaña",
+  "webTabs.closeNamedTab": "Cerrar {title}",
+  "webTabs.closeBusyTab": "Cerrar esta pestaña puede interrumpir reproducciones o transferencias.",
+  "webTabs.keepOpen": "Mantener abierta",
+  "webTabs.actionFailed": "No se pudo completar la acción de la pestaña.",
+  "webTabs.duplicate": "Duplicar",
+  "webTabs.copyAddress": "Copiar dirección",
+  "webTabs.closeOtherTabs": "Cerrar las demás pestañas",
+  "webTabs.reopenClosedTab": "Volver a abrir la pestaña cerrada",
+  "webTabs.extensionFallbackTitle": "Extensión"
+}

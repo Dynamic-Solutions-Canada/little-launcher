@@ -1,0 +1,10 @@
+{
+  "appPicker.openContainingFolder": "打开所在文件夹",
+  "appPicker.title": "选择应用程序",
+  "appPicker.source.all": "所有应用",
+  "appPicker.source.applications": "应用程序",
+  "appPicker.source.webApps": "Web 应用",
+  "appPicker.openFailed": "无法打开应用程序",
+  "appPicker.folderFailed.title": "无法打开文件夹",
+  "appPicker.folderFailed.message": "文件管理器无法打开此应用程序的文件夹。"
+}
