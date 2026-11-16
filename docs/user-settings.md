@@ -312,6 +312,8 @@ before this property existed omits it, so the CLR default is what those files re
 to be the transport they were already configured for. Never renumber these constants: they are
 serialized.
 
+`SyncProvider` defaulting to SFTP does **not** switch SFTP on. `EnabledSyncProviders` decides what syncs, and a fresh install starts with it empty; SFTP is never enabled without an `SftpHost`. See the migration rule in [sync.md](sync.md#several-destinations-at-once).
+
 The SFTP fields and `SyncFolderPath` **coexist rather than replace each other**, so switching
 provider and back does not mean re-entering a connection.
 

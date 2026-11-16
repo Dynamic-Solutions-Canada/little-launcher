@@ -35,6 +35,40 @@ try
         Check(!JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>(saved, options)!.Startup);
         return Task.CompletedTask;
     });
+    await Test("no sync destination is switched on until one is set up", () =>
+    {
+        var options = new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault };
+
+        // A fresh install: SyncProvider is SFTP by CLR default, but nothing is configured.
+        var fresh = new LittleLauncher.ViewModels.UserSettings();
+        fresh.CompleteInitialization();
+        Check(fresh.EnabledSyncProviders is { Count: 0 });
+        Check(!fresh.IsSyncProviderEnabled(LittleLauncher.Models.SyncProviders.Sftp));
+
+        // A pre-multi-destination file that really used SFTP keeps it.
+        var legacy = JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>("{\"SftpHost\":\"nas.example\"}", options)!;
+        legacy.CompleteInitialization();
+        Check(legacy.IsSyncProviderEnabled(LittleLauncher.Models.SyncProviders.Sftp));
+
+        // A legacy folder choice without a folder starts empty; a cloud choice is kept.
+        var folder = JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>("{\"SyncProvider\":4}", options)!;
+        folder.CompleteInitialization();
+        Check(folder.EnabledSyncProviders is { Count: 0 });
+        var cloud = JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>("{\"SyncProvider\":1}", options)!;
+        cloud.CompleteInitialization();
+        Check(cloud.IsSyncProviderEnabled(LittleLauncher.Models.SyncProviders.OneDrive));
+
+        // A file already migrated by an earlier build with SFTP seeded but no host drops it,
+        // keeping any other destination.
+        var seeded = JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>("{\"EnabledSyncProviders\":[0,2]}", options)!;
+        seeded.CompleteInitialization();
+        Check(seeded.EnabledSyncProviders!.SequenceEqual([LittleLauncher.Models.SyncProviders.GoogleDrive]));
+
+        // Deliberately everything off stays off and serializes as empty, not absent.
+        string saved = JsonSerializer.Serialize(fresh, options);
+        Check(JsonDocument.Parse(saved).RootElement.GetProperty("EnabledSyncProviders").GetArrayLength() == 0);
+        return Task.CompletedTask;
+    });
     await Test("custom image travels with actual envelope and restores at a different local path", async () =>
     {
         string selected = Path.Combine(root, "chosen.png");

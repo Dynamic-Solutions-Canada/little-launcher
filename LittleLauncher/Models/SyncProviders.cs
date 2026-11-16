@@ -20,7 +20,10 @@
 /// </remarks>
 public static class SyncProviders
 {
-    /// <summary>SSH/SFTP server (the original transport, and the default).</summary>
+    /// <summary>
+    /// SSH/SFTP server, the original transport. It is <see cref="ViewModels.UserSettings.SyncProvider"/>'s
+    /// CLR default, but that does not switch it on: <c>EnabledSyncProviders</c> decides what syncs.
+    /// </summary>
     public const int Sftp = 0;
 
     /// <summary>OneDrive via Microsoft Graph, in the app folder. Personal accounts only.</summary>

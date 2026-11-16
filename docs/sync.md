@@ -85,6 +85,8 @@ existed, and `CompleteInitialization` seeds it from the old exclusive `SyncProvi
 empty must stay distinguishable: empty is a real state, meaning the user switched everything off,
 and treating it as "migrate me again" would switch a destination back on every launch.
 
+The legacy choice is carried forward only when it was actually set up (an SFTP host, a sync folder, or a non-default cloud provider the user picked); otherwise the set starts empty, so a fresh install has no destination switched on. SFTP without a host is also dropped on every load, because earlier builds seeded it for every new install and it can never sync without one.
+
 **`NetworkShare` (3) is no longer selectable.** It and `Folder` (4) are the same transport reading
 the same `SyncFolderPath`, so once several can be enabled at once, offering both would let a user
 switch on two that silently fight over one path. `SyncProviders.Normalize` folds 3 into 4;

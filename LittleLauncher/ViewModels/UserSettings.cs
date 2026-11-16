@@ -461,12 +461,42 @@ public partial class UserSettings : ObservableObject
         }
 
         // ── Sync destination migration ───────────────────────────────
-        // Null means the file predates multiple destinations, so carry the single exclusive
-        // choice forward. Empty is a real state — everything deliberately switched off — and must
-        // not be treated as "migrate me again" on the next load.
-        EnabledSyncProviders ??= [SyncProviders.Normalize(SyncProvider)];
+        // Null means a fresh install or a file that predates multiple destinations. Carry the old
+        // exclusive choice forward only when it was actually set up; otherwise start with nothing
+        // switched on. Empty is a real state (everything deliberately switched off) and must not
+        // be treated as "migrate me again" on the next load.
+        EnabledSyncProviders ??= LegacyEnabledSyncProviders();
+
+        // Earlier builds seeded SFTP for every fresh install, because SyncProvider defaults to it.
+        // SFTP without a host can never sync, so treat it as off rather than leave its toggle on.
+        if (string.IsNullOrWhiteSpace(SftpHost))
+            EnabledSyncProviders.Remove(SyncProviders.Sftp);
 
         _initializing = false;
+    }
+
+    /// <summary>
+    /// The destination set to start from when <see cref="EnabledSyncProviders"/> is absent.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="SyncProvider"/> is SFTP (0) both for a file that chose SFTP and for one that never
+    /// chose anything, because <c>WhenWritingDefault</c> omits 0. Only the settings each transport
+    /// needs can tell them apart. A cloud account provider is non-zero, so it was written only
+    /// because the user picked it; its sign-in lives outside these settings and is kept as chosen.
+    /// </remarks>
+    /// <returns>The legacy provider when it was configured, otherwise an empty list.</returns>
+    private List<int> LegacyEnabledSyncProviders()
+    {
+        int provider = SyncProviders.Normalize(SyncProvider);
+
+        bool configured = provider switch
+        {
+            SyncProviders.Sftp => !string.IsNullOrWhiteSpace(SftpHost),
+            SyncProviders.Folder => !string.IsNullOrWhiteSpace(SyncFolderPath),
+            _ => true,
+        };
+
+        return configured ? [provider] : [];
     }
 
     // ── Change handlers ─────────────────────────────────────────────
