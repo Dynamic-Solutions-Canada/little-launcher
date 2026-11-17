@@ -15,6 +15,7 @@
     <Compile Include="../../LittleLauncher/Services/PortableLauncherIcon.cs" Link="PortableLauncherIcon.cs" />
     <!-- The settings store and its schema steps, exactly as the app compiles them. -->
     <Compile Include="../../LittleLauncher/Classes/Settings/SettingsSchema.cs" Link="SettingsSchema.cs" />
+    <Compile Include="../../LittleLauncher/Classes/Settings/SettingsReset.cs" Link="SettingsReset.cs" />
     <Compile Include="../../external/winui-app-kit/WinUIAppKit/Settings/JsonSettingsStore.cs" Link="JsonSettingsStore.cs" />
     <Compile Include="../../external/winui-app-kit/WinUIAppKit/Settings/AtomicFile.cs" Link="AtomicFile.cs" />
   </ItemGroup>

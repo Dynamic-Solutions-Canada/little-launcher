@@ -12,15 +12,12 @@ using global::Windows.ApplicationModel;
 using global::Windows.Storage.Pickers;
 using WinRT.Interop;
 
-using WinUIAppKit.Startup;
 
 namespace LittleLauncher.Pages;
 
 public partial class SystemPage : Page
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private bool _startupStateInitialized;
-    private bool _updatingStartupSwitch;
 
     private bool _updatingShortcutsSwitch;
 
@@ -36,16 +33,13 @@ public partial class SystemPage : Page
         WebShortcutsToggle.IsOn = !SettingsManager.Current.DisableWebLauncherShortcuts;
         _updatingShortcutsSwitch = false;
 
-        PopulateLanguages();
+        WireSharedRows();
 
-        _ = RefreshStartupStateAsync();
         _ = RefreshProfileCleanupAsync();
         RefreshExtensionList();
     }
 
-    // ── Interface language ─────────────────────────────────────────
-
-    private bool _updatingLanguage;
+    // ── The kit's shared rows ──────────────────────────────────────
 
     /// <summary>
     /// Set once the language has been changed in this run, so the rebuilt page keeps saying that
@@ -54,66 +48,58 @@ public partial class SystemPage : Page
     private static bool _languageChangedThisRun;
 
     /// <summary>
-    /// Fill the language picker: Match device first, then each supported language in its own
-    /// name, with the saved choice selected.
+    /// Connects winui-app-kit's Start with Windows, Language, App theme and Reset settings rows to
+    /// this app's settings. Each row applies a change itself; the handlers only save the choice.
     /// </summary>
-    /// <remarks>
-    /// Match device names the language it currently resolves to, so the user can see what they
-    /// would get without switching. The item's <c>Tag</c> is the saved value; empty is Match device.
-    /// </remarks>
-    private void PopulateLanguages()
+    private void WireSharedRows()
     {
-        _updatingLanguage = true;
-
-        var languages = AppLanguages.Supported;
-        string deviceName = languages.NativeName(UiText.DeviceLocale);
-        LanguageCombo.Items.Add(new ComboBoxItem
+        StartupRow.Registration = App.Startup;
+        StartupRow.StatusChanged += isOn =>
         {
-            Content = UiText.Format("system.language.matchDevice", ("language", deviceName)),
-            Tag = "",
-        });
+            // The row reports the state Windows ended up in, after a change and on its first read.
+            if (SettingsManager.Current.Startup != isOn)
+            {
+                SettingsManager.Current.Startup = isOn;
+                SettingsManager.SaveSettings();
+            }
+        };
 
-        foreach (string locale in languages.Identities)
+        LanguageRow.ChoiceChanged += identity =>
         {
-            LanguageCombo.Items.Add(new ComboBoxItem { Content = languages.NativeName(locale), Tag = locale });
-        }
+            SettingsManager.Current.LanguageOverride = identity ?? "";
+            SettingsManager.SaveSettings();
+            _languageChangedThisRun = true;
 
-        string saved = languages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? "";
-        LanguageCombo.SelectedItem = LanguageCombo.Items
-            .OfType<ComboBoxItem>()
-            .First(item => (string)item.Tag == saved);
+            // This app's XAML text is read when an element is created, so Settings is rebuilt in the
+            // new language. Deferred so this page's own event handler finishes first.
+            DispatcherQueue.TryEnqueue(() => SettingsWindow.ReopenAfterLanguageChange(typeof(SystemPage)));
+        };
+        LanguageRestartBar.IsOpen = _languageChangedThisRun;
 
-        LanguageRestartNote.Visibility = _languageChangedThisRun ? Visibility.Visible : Visibility.Collapsed;
+        // Saving the number runs UserSettings' theme handler, which applies it to every window.
+        ThemeRow.ChoiceChanged += choice => SettingsManager.Current.AppTheme = (int)choice;
 
-        _updatingLanguage = false;
+        ResetRow.Window = SettingsWindow.GetCurrent();
+        ResetRow.KeptNote = () => UiText.Get("system.reset.kept");
+        ResetRow.ResetAsync = ResetPreferencesAsync;
+        ResetRow.ResetCompleted += () => SettingsWindow.ReopenAfterLanguageChange(typeof(SystemPage));
     }
 
     /// <summary>
-    /// Save a new language and rebuild Settings in it. Other windows pick it up as they open.
+    /// The app's half of "Reset settings": preferences back to their defaults, content and setup
+    /// kept (<see cref="SettingsReset"/>), then the reset theme, language and Start Menu shortcuts
+    /// applied. The kit asked first and rebuilds nothing; <c>ResetCompleted</c> reopens Settings.
     /// </summary>
-    private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private static Task ResetPreferencesAsync()
     {
-        if (_updatingLanguage || LanguageCombo.SelectedItem is not ComboBoxItem { Tag: string choice })
-        {
-            return;
-        }
+        SettingsManager.ResetPreferences();
 
-        if (choice == (AppLanguages.Supported.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? ""))
-        {
-            return;
-        }
-
-        SettingsManager.Current.LanguageOverride = choice;
-        SettingsManager.SaveSettings();
-        _languageChangedThisRun = true;
-        // Empty means follow Windows; the kit raises UiText.Changed when the language in use changes.
-        UiText.SetOverride(choice);
-
-        // Deferred so this page's own event handler finishes before its window is replaced.
-        DispatcherQueue.TryEnqueue(() => SettingsWindow.ReopenAfterLanguageChange(typeof(SystemPage)));
+        var settings = SettingsManager.Current;
+        Classes.ThemeManager.SyncFromSettings();
+        UiText.SetOverride(settings.LanguageOverride);
+        Services.StartMenuShortcutService.Sync(settings.Launchers);
+        return Task.CompletedTask;
     }
-
-    // ── Browser extensions ─────────────────────────────────────────
 
     /// <summary>
     /// Lists what is installed, with a way to remove each.
@@ -304,70 +290,6 @@ public partial class SystemPage : Page
         SettingsManager.Current.DisableWebLauncherShortcuts = !WebShortcutsToggle.IsOn;
         SettingsManager.SaveSettings();
     }
-
-    private async void StartupSwitch_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_updatingStartupSwitch || !_startupStateInitialized)
-        {
-            return;
-        }
-
-        await SetStartupAsync(StartupSwitch.IsOn);
-    }
-
-    private async Task RefreshStartupStateAsync()
-    {
-        try
-        {
-            bool isEnabled = await IsStartupEnabledAsync();
-            ApplyStartupSwitchState(isEnabled);
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to read startup state");
-        }
-        finally
-        {
-            _startupStateInitialized = true;
-        }
-    }
-
-    private async Task SetStartupAsync(bool enable)
-    {
-        try
-        {
-            // The kit enables or disables the startup task (packaged) or the Run value, and reports
-            // the state Windows actually ended up in, which a user or policy may have decided.
-            var status = await App.Startup.SetEnabledAsync(enable);
-            if (MainWindow.IsPackaged)
-            {
-                App.Startup.RemoveUnpackagedEntries();
-            }
-
-            ApplyStartupSwitchState(status.IsOn());
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Failed to set startup");
-            ApplyStartupSwitchState(await IsStartupEnabledAsync());
-        }
-    }
-
-    private void ApplyStartupSwitchState(bool isEnabled)
-    {
-        try
-        {
-            _updatingStartupSwitch = true;
-            StartupSwitch.IsOn = isEnabled;
-            SettingsManager.Current.Startup = isEnabled;
-        }
-        finally
-        {
-            _updatingStartupSwitch = false;
-        }
-    }
-
-    private static async Task<bool> IsStartupEnabledAsync() => (await App.Startup.GetStatusAsync()).IsOn();
 
     private void ExportButton_Click(object sender, RoutedEventArgs e)
     {

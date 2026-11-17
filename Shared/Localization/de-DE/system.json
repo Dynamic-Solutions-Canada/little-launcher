@@ -48,5 +48,6 @@
   "system.backup.exportLaunchers": "Launcher exportieren…",
   "system.backup.importLaunchers": "Launcher importieren…",
   "system.backup.exportLaunchersTitle": "Launcher exportieren",
-  "system.backup.importLaunchersTitle": "Launcher importieren"
+  "system.backup.importLaunchersTitle": "Launcher importieren",
+  "system.reset.kept": "Deine Launcher mit ihren Elementen und Lesezeichen, deine Synchronisierungsziele, Browsererweiterungen und der Start mit Windows bleiben unverändert."
 }

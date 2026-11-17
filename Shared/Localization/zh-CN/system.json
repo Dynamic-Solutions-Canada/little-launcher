@@ -48,5 +48,6 @@
   "system.backup.exportLaunchers": "导出启动器…",
   "system.backup.importLaunchers": "导入启动器…",
   "system.backup.exportLaunchersTitle": "导出启动器",
-  "system.backup.importLaunchersTitle": "导入启动器"
+  "system.backup.importLaunchersTitle": "导入启动器",
+  "system.reset.kept": "你的启动器及其项目和书签、同步目标、浏览器扩展以及随 Windows 启动设置都会保持不变。"
 }

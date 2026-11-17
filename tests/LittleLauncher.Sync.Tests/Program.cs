@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using LittleLauncher;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
@@ -92,6 +93,45 @@ try
         var newer = store.Load();
         Check(newer.Outcome == WinUIAppKit.Settings.SettingsLoadOutcome.NewerVersion && newer.Settings.AppTheme == 2);
         Check(File.Exists(path + ".v7.bak") && !newer.NeedsResetNotice);
+        return Task.CompletedTask;
+    });
+    await Test("Reset settings classifies every saved setting once and keeps content", () =>
+    {
+        var options = WinUIAppKit.Settings.JsonSettingsStore<LittleLauncher.ViewModels.UserSettings>.DefaultOptions;
+        var current = SettingsFixtures.EverySettingChanged();
+        var saved = JsonSerializer.SerializeToNode(current, options)!.AsObject().Select(pair => pair.Key).ToHashSet();
+        var kept = SettingsReset.Kept.ToHashSet();
+        var reset = SettingsReset.Reset.ToHashSet();
+
+        // Every saved property is in exactly one list, so a new setting cannot be wiped by default.
+        Check(kept.Overlaps(reset) == false);
+        Check(saved.SetEquals(kept.Union(reset)));
+
+        var defaults = new LittleLauncher.ViewModels.UserSettings();
+        var after = JsonSerializer.SerializeToNode(SettingsReset.CarryOver(current, defaults), options)!.AsObject();
+        var before = JsonSerializer.SerializeToNode(current, options)!.AsObject();
+        var fresh = JsonSerializer.SerializeToNode(defaults, options)!.AsObject();
+        foreach (string name in kept)
+        {
+            Check(JsonNode.DeepEquals(after[name], before[name]));
+        }
+
+        foreach (string name in reset)
+        {
+            Check(JsonNode.DeepEquals(after[name], fresh[name]));
+        }
+
+        // The fixture really did change every reset preference, so the comparison above means something.
+        Check(reset.All(name => !JsonNode.DeepEquals(before[name], fresh[name])));
+
+        // Named content and setup survive, whatever the lists say, and named preferences reset.
+        var carried = SettingsReset.CarryOver(current, new LittleLauncher.ViewModels.UserSettings());
+        Check(carried.Launchers.Count == current.Launchers.Count && carried.Launchers[0].Id == current.Launchers[0].Id);
+        Check(carried.Launchers[0].Items.Count == current.Launchers[0].Items.Count);
+        Check(carried.DisabledLauncherIds.SequenceEqual(current.DisabledLauncherIds));
+        Check(carried.SyncProvider == current.SyncProvider && carried.SftpHost == current.SftpHost && carried.WebDavUrl == current.WebDavUrl);
+        Check(carried.BrowserExtensions!.Single().Id == "ext" && carried.Startup && carried.LastRunVersion == current.LastRunVersion);
+        Check(carried.AppTheme == 0 && carried.LanguageOverride == "" && carried.FlyoutAnimationsEnabled && !carried.DisableWebLauncherShortcuts);
         return Task.CompletedTask;
     });
     await Test("interface language matches Persistent's rules and falls back to English", () =>
@@ -331,6 +371,40 @@ static class SettingsFixtures
         node["Startup"] = false;
         node["FlyoutAnimationsEnabled"] = false;
         yield return ("non-defaults", node.ToJsonString(Version0Options));
+    }
+
+    /// <summary>Settings with every saved value changed from its default, for the reset test.</summary>
+    public static LittleLauncher.ViewModels.UserSettings EverySettingChanged()
+    {
+        var settings = JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>(Version0().Last().Json, Version0Options)!;
+        settings.Startup = true;
+        settings.ProfilesWithoutPasswordManager = ["Shared"];
+        settings.PinnedBrowserExtensions = ["ext"];
+        settings.BrowserExtensions = [new LittleLauncher.Models.BrowserExtension { Id = "ext", Name = "Extension" }];
+        settings.BrowserExtensionFolders = [@"D:\\ext"];
+        settings.TaskbarWidgetEnabled = true;
+        settings.TaskbarWidgetSelectedMonitor = 2;
+        settings.TaskbarWidgetPosition = 1;
+        settings.TaskbarWidgetPadding = true;
+        settings.TaskbarWidgetManualPadding = 12;
+        settings.SettingsWindowX = 10;
+        settings.SettingsWindowY = 20;
+        settings.SettingsWindowWidth = 900;
+        settings.SettingsWindowHeight = 700;
+        settings.SettingsWindowMaximized = true;
+        settings.NIconHide = true;
+        settings.TrayIconMode = 3;
+        settings.CustomTrayIconPath = @"C:\\icon.png";
+        settings.DisabledLauncherIds = ["work"];
+        settings.LaunchersModifiedUtc = new DateTime(2026, 11, 1, 12, 0, 0, DateTimeKind.Utc);
+        settings.SftpAutoSync = true;
+        settings.SftpAutoSyncInterval = 15;
+        settings.SftpUsername = "me";
+        settings.SftpPrivateKeyPath = @"C:\\key";
+        settings.WebDavUrl = "https://dav.example";
+        settings.WebDavUsername = "me";
+        settings.LastKnownVersion = "v1.43.0";
+        return settings;
     }
 
     /// <summary>What a schema 0 copy loaded from <paramref name="json"/>: absent Startup meant off.</summary>

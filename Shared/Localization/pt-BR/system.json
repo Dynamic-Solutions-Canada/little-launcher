@@ -48,5 +48,6 @@
   "system.backup.exportLaunchers": "Exportar inicializadores…",
   "system.backup.importLaunchers": "Importar inicializadores…",
   "system.backup.exportLaunchersTitle": "Exportar inicializadores",
-  "system.backup.importLaunchersTitle": "Importar inicializadores"
+  "system.backup.importLaunchersTitle": "Importar inicializadores",
+  "system.reset.kept": "Seus inicializadores com os itens e favoritos, seus destinos de sincronização, as extensões do navegador e a inicialização com o Windows continuam como estão."
 }

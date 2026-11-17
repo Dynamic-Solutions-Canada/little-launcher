@@ -48,5 +48,6 @@
   "system.backup.exportLaunchers": "ランチャーをエクスポート…",
   "system.backup.importLaunchers": "ランチャーをインポート…",
   "system.backup.exportLaunchersTitle": "ランチャーのエクスポート",
-  "system.backup.importLaunchersTitle": "ランチャーのインポート"
+  "system.backup.importLaunchersTitle": "ランチャーのインポート",
+  "system.reset.kept": "ランチャーとその項目やブックマーク、同期先、ブラウザー拡張機能、Windows の起動時の設定はそのまま残ります。"
 }

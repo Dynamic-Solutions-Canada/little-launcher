@@ -36,6 +36,8 @@ settings.json is loaded and saved by winui-app-kit's `JsonSettingsStore` (`Setti
 
 **Schema 1 (from the release after 1.43.0) writes every value, defaults included**, and omits only nulls. A setting may now default to `true` or any number and still be turned off. Import reads the chosen file through a private copy, so the file itself is never rewritten, and keeps the current settings when the file cannot be read. Export writes the same format, `SchemaVersion` included.
 
+**Reset settings** (CONF-4, the last card on the Settings page, winui-app-kit's `ResetSetting`) resets preferences only. `Classes/Settings/SettingsReset.cs` lists every saved setting exactly once: `Kept` holds the user's content and setup (launchers with their items and bookmarks, launchers switched off on this device, sync destinations, browser extensions, Start with Windows and the version stamps), and `Reset` holds the preferences that return to their defaults. **A new setting goes in one of the two lists**, in `Kept` if the user would have to rebuild it by hand; the Sync harness fails when a saved property is in neither or both, and checks named content survives. The previous file stays beside the new one as `settings.json.<UTC time>.reset`, and credentials are untouched.
+
 **Adding a step:** append to `SettingsSchema.Migrations`, never edit, remove or reorder a shipped one, and name properties by their stored spelling. Changing a default or inverting a flag is a step, because older files hold the old meaning. The Sync harness under `tests/` runs every step against real version 0 files.
 
 ### Schema 0: the `WhenWritingDefault` rule the existing model was shaped by

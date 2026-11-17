@@ -48,5 +48,6 @@
   "system.backup.exportLaunchers": "Exportar lanzadores…",
   "system.backup.importLaunchers": "Importar lanzadores…",
   "system.backup.exportLaunchersTitle": "Exportar lanzadores",
-  "system.backup.importLaunchersTitle": "Importar lanzadores"
+  "system.backup.importLaunchersTitle": "Importar lanzadores",
+  "system.reset.kept": "Tus lanzadores con sus elementos y marcadores, tus destinos de sincronización, las extensiones del navegador y el inicio con Windows se mantienen como están."
 }

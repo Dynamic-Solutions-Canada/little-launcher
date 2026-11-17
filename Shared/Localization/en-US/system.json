@@ -48,5 +48,6 @@
   "system.backup.exportLaunchers": "Export Launchers…",
   "system.backup.importLaunchers": "Import Launchers…",
   "system.backup.exportLaunchersTitle": "Export launchers",
-  "system.backup.importLaunchersTitle": "Import launchers"
+  "system.backup.importLaunchersTitle": "Import launchers",
+  "system.reset.kept": "Your launchers with their items and bookmarks, your sync destinations, browser extensions and Start with Windows stay as they are."
 }

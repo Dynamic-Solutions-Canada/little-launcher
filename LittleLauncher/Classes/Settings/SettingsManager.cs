@@ -248,6 +248,23 @@ public static class SettingsManager
         Saved?.Invoke();
     }
 
+    /// <summary>
+    /// "Reset settings" (CONF-4): preferences go back to their defaults and the user's content and
+    /// setup carry over (<see cref="SettingsReset"/>). The previous file is kept beside the new one as
+    /// <c>settings.json.&lt;UTC time&gt;.reset</c>; credentials and Windows' startup state are untouched.
+    /// </summary>
+    /// <remarks>
+    /// Data only: the caller applies the reset theme and language and rebuilds what shows them.
+    /// </remarks>
+    public static void ResetPreferences()
+    {
+        var before = _current;
+        var defaults = Store.Reset();
+        Adopt(SettingsReset.CarryOver(before, defaults.Settings), existingFile: false);
+        SaveSettings();
+        Logger.Info($"Settings reset to defaults; previous file kept as {Path.GetFileName(defaults.BackupPath ?? "(none)")}");
+    }
+
     /// <summary>Writes the current settings to a file the user chose, in the settings file format.</summary>
     public static void ExportSettings(string path) =>
         new JsonSettingsStore<UserSettings>(path, SettingsSchema.Migrations).Save(_current);
