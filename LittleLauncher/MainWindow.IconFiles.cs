@@ -229,18 +229,8 @@ public sealed partial class MainWindow
         entry.Icon = ResolveTrayIcon(launcher);
         if (entry.IsAdded)
         {
-            var data = new NOTIFYICONDATA
-            {
-                cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
-                hWnd = _hwnd,
-                uID = entry.Uid,
-                uFlags = NIF_ICON | NIF_GUID,
-                hIcon = entry.Icon?.Handle ?? IntPtr.Zero,
-                szTip = "",
-                szInfo = "",
-                szInfoTitle = "",
-                guidItem = entry.Guid,
-            };
+            var data = IconData(entry, NIF_ICON);
+            data.hIcon = entry.Icon?.Handle ?? IntPtr.Zero;
             Shell_NotifyIcon(NIM_MODIFY, ref data);
         }
         SaveResolvedIconToAppData(launcher);

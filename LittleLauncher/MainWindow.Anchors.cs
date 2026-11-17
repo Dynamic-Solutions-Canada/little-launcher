@@ -41,7 +41,9 @@ public sealed partial class MainWindow
             cbSize = (uint)Marshal.SizeOf<NOTIFYICONIDENTIFIER>(),
             hWnd = _hwnd,
             uID = entry.Uid,
-            guidItem = entry.Guid,
+
+            // Empty unless Windows knows the icon by GUID; then it finds it by window and number.
+            guidItem = entry.UsesGuid ? entry.Guid : Guid.Empty,
         };
         int result = Shell_NotifyIconGetRect(ref identifier, out var iconRect);
         if (result != 0 || iconRect.Right <= iconRect.Left || iconRect.Bottom <= iconRect.Top)

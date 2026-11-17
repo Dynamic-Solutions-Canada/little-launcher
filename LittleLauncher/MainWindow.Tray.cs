@@ -29,7 +29,33 @@ public sealed partial class MainWindow
         public Guid Guid;
         public System.Drawing.Icon? Icon;
         public bool IsAdded; // false when NIconHide=true (NIM_DELETE called)
+
+        /// <summary>
+        /// Whether Windows knows this icon by its GUID. False after Windows refused the GUID, as
+        /// Windows 10 was seen to after an in-place package update (the GUID is tied to the exe path,
+        /// and every update installs to a new folder); the icon is then known by window and number
+        /// for the rest of the session. Kept as insurance on Windows 11, which this app requires.
+        /// </summary>
+        public bool UsesGuid = true;
     }
+
+    /// <summary>
+    /// Tray data that identifies <paramref name="entry"/> the way Windows knows it: by GUID, or by
+    /// window and number once the GUID was refused. Every Shell_NotifyIcon call builds on this.
+    /// </summary>
+    /// <param name="entry">The launcher's tray icon.</param>
+    /// <param name="flags">The NIF_ flags for the fields the caller sets; NIF_GUID is added here.</param>
+    private NOTIFYICONDATA IconData(TrayIconEntry entry, uint flags) => new()
+    {
+        cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
+        hWnd = _hwnd,
+        uID = entry.Uid,
+        uFlags = entry.UsesGuid ? flags | NIF_GUID : flags,
+        guidItem = entry.UsesGuid ? entry.Guid : Guid.Empty,
+        szTip = "",
+        szInfo = "",
+        szInfoTitle = "",
+    };
 
     private void SetupTrayIcons()
     {
@@ -110,36 +136,33 @@ public sealed partial class MainWindow
             tip = tip[..127];
         }
 
-        var data = new NOTIFYICONDATA
+        var data = IconData(entry, NIF_MESSAGE | NIF_ICON | NIF_TIP);
+        data.uCallbackMessage = (uint)_wmTrayCallback;
+        data.hIcon = entry.Icon?.Handle ?? IntPtr.Zero;
+        data.szTip = tip;
+        if (!Shell_NotifyIcon(NIM_ADD, ref data) && entry.UsesGuid)
         {
-            cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
-            hWnd = _hwnd,
-            uID = entry.Uid,
-            uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID,
-            uCallbackMessage = (uint)_wmTrayCallback,
-            hIcon = entry.Icon?.Handle ?? IntPtr.Zero,
-            szTip = tip,
-            szInfo = "",
-            szInfoTitle = "",
-            guidItem = entry.Guid,
-        };
-        Shell_NotifyIcon(NIM_ADD, ref data);
+            // Windows can refuse a GUID it recorded for the previous install's exe path (seen on
+            // Windows 10). Add the icon by window and number instead, so the launcher keeps its tray
+            // icon after an update.
+            Logger.Warn("Tray icon GUID refused for {Tip}; using window and number this session", tip);
+            entry.UsesGuid = false;
+            data = IconData(entry, NIF_MESSAGE | NIF_ICON | NIF_TIP);
+            data.uCallbackMessage = (uint)_wmTrayCallback;
+            data.hIcon = entry.Icon?.Handle ?? IntPtr.Zero;
+            data.szTip = tip;
+            if (!Shell_NotifyIcon(NIM_ADD, ref data))
+            {
+                Logger.Warn("Tray icon could not be added for {Tip}", tip);
+            }
+        }
+
         entry.IsAdded = true;
     }
 
     private void RemoveNativeIcon(TrayIconEntry entry)
     {
-        var data = new NOTIFYICONDATA
-        {
-            cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
-            hWnd = _hwnd,
-            uID = entry.Uid,
-            uFlags = NIF_GUID,
-            szTip = "",
-            szInfo = "",
-            szInfoTitle = "",
-            guidItem = entry.Guid,
-        };
+        var data = IconData(entry, 0);
         Shell_NotifyIcon(NIM_DELETE, ref data);
         entry.IsAdded = false;
     }
@@ -289,17 +312,8 @@ public sealed partial class MainWindow
             tip = tip[..127];
         }
 
-        var data = new NOTIFYICONDATA
-        {
-            cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
-            hWnd = _hwnd,
-            uID = entry.Uid,
-            uFlags = NIF_TIP | NIF_GUID,
-            szTip = tip,
-            szInfo = "",
-            szInfoTitle = "",
-            guidItem = entry.Guid,
-        };
+        var data = IconData(entry, NIF_TIP);
+        data.szTip = tip;
         Shell_NotifyIcon(NIM_MODIFY, ref data);
     }
 
