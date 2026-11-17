@@ -68,8 +68,9 @@ jobs:
       price_tier: Tier1012
       # No steps of its own: the MSIX images are committed.
       pre_build: ''
-      # The gate run first, on Linux (CI-4); this is the default.
-      gate_command: 'npm run validate'
+      # The gate run first, on Linux (CI-4). The Node tests load the Linux browser's packages,
+      # which the kit's gate job does not install, so install them from the lockfile first.
+      gate_command: 'npm ci --prefix linux/browser --no-audit --no-fund && npm run validate'
       # The Google Drive desktop OAuth client secret is compiled in from this build property
       # (Directory.Build.props); the kit sets it from BUILD_SECRET for packaging only.
       build_secret_env_name: 'GoogleClientSecret'

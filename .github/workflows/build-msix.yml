@@ -46,8 +46,13 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          # The root package.json only wraps scripts and has no lockfile (CI-6).
-          package-manager-cache: false
+          cache: npm
+          cache-dependency-path: linux/browser/package-lock.json
+
+      # The Linux browser modules the Node tests load (electron, from the lockfile). Electron's
+      # engine binary downloads lazily, so this installs only the small packages.
+      - name: Install the Linux browser packages
+        run: npm ci --prefix linux/browser --no-audit --no-fund
 
       - name: Validate
         run: npm run validate

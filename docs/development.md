@@ -4,7 +4,7 @@ Little Launcher has separate native Windows and Linux hosts. The Windows workflo
 
 ## Setup
 
-Clone with submodules (`--recurse-submodules`, or `git submodule update --init` afterwards), then run `lefthook install` once so the git hooks in `lefthook.yml` block signing material, credentials, settings files and large files from being committed. Install [lefthook](https://lefthook.dev) first if it is missing.
+Clone with submodules (`--recurse-submodules`, or `git submodule update --init` afterwards), run `npm ci --prefix linux/browser` (the Linux browser's packages, which the Node tests load), then run `lefthook install` once so the git hooks in `lefthook.yml` block signing material, credentials, settings files and large files from being committed. Install [lefthook](https://lefthook.dev) first if it is missing.
 
 ## Windows prerequisites
 

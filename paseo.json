@@ -2,6 +2,7 @@
   "worktree": {
     "setup": [
       "git submodule update --init --recursive",
+      "npm ci --prefix linux/browser --no-audit --no-fund",
       "lefthook install"
     ],
     "teardown": "git submodule deinit --all --force"
