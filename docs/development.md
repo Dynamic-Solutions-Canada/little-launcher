@@ -59,7 +59,7 @@ See [docs/architecture.md](architecture.md) for detailed flows: launch modes, se
 
 | Package | Version | Purpose |
 |---|---|---|
-| [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) | 1.8.260209005 | WinUI 3 controls, Mica, NavigationView |
+| [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) | 1.8.260921001 (1.8.12, from winui-app-kit; the manifest requires runtime 8000.994.2142.0 or later) | WinUI 3 controls, Mica, NavigationView |
 | [H.NotifyIcon.WinUI](https://github.com/HavenDV/H.NotifyIcon) | 2.4.1 | System tray icon |
 | [WinUI App Kit](https://github.com/Dynamic-Solutions-Canada/winui-app-kit) | submodule `external/winui-app-kit` | Shared build configuration, package versions and logging config |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | 8.4.0 | Source-gen `[ObservableProperty]`, `RelayCommand` |
