@@ -1,6 +1,6 @@
 # LittleLauncher/Services
 
-`UpdateService.cs` checks GitHub releases for portable builds and opens the Microsoft Store updates page for packaged builds. When changing update, install, or packaging behavior, follow the packaging conventions:
+The update check is winui-app-kit's `UpdateService`, built in `Classes/AboutContent.cs`: it checks GitHub Releases for portable builds and opens the Microsoft Store updates page for packaged builds. When changing update, install, or packaging behavior, follow the packaging conventions:
 
 Read and follow [installer.md](../../docs/installer.md) before changing the code described above.
 

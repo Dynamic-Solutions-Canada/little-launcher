@@ -1,5 +1,5 @@
 > **Scope:** Use when changing how Little Launcher is packaged, installed or updated. Covers Microsoft Store MSIX delivery (and the retired portable ZIP), Linux AppImage delivery, desktop shortcut integration, and the update flow for each.
-> **Governs:** `**/UpdateService.cs`, `**/build-msix.ps1`, `**/Package.appxmanifest`.
+> **Governs:** `**/AboutContent.cs` (the kit `UpdateService` it builds), `**/build-msix.ps1`, `**/Package.appxmanifest`.
 
 # Packaging and updates
 

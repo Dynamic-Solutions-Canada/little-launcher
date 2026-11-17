@@ -1,3 +1,5 @@
+using WinUIAppKit.Updates;
+
 namespace LittleLauncher.Classes;
 
 /// <summary>
@@ -24,4 +26,10 @@ internal static class AboutContent
 
     /// <summary>The product's registered privacy policy (DOCS-8). Permanent once shipped (BRAND-11).</summary>
     public static Uri PrivacyPolicy { get; } = new("https://www.dynamic-solutions.ca/privacy/little-launcher");
+
+    /// <summary>
+    /// "Check for updates" (DIST-6): the Store's updates page when packaged, this repo's GitHub
+    /// Releases otherwise. Built from the one definition of the repository above.
+    /// </summary>
+    public static UpdateService Updates { get; } = new(RepoOwner, RepoName);
 }

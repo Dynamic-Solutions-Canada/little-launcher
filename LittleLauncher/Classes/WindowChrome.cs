@@ -41,48 +41,23 @@ internal static class WindowChrome
     }
 
     /// <summary>
-    /// Sets the window icon for the title bar, taskbar and Alt-Tab.
+    /// Sets the window icon for the title bar, taskbar and Alt-Tab: the app's own icon unless
+    /// <paramref name="icoPath"/> names another.
     /// </summary>
     /// <remarks>
-    /// Both paths are needed: <c>WM_SETICON</c> drives the HWND (taskbar/Alt-Tab) and
-    /// <c>AppWindow.SetIcon</c> drives the WinUI title bar. The HICONs are destroyed after
-    /// <c>SetIcon</c> copies them; the <c>WM_SETICON</c> handles are intentionally leaked for
-    /// the window's lifetime, as the shell keeps referencing them.
+    /// winui-app-kit's <c>WindowIcon.Apply</c> does the work, loading the icon at the window's own DPI
+    /// so it stays sharp at any scaling, and keeping the handles alive for the window's lifetime.
+    /// A missing icon file is cosmetic only and leaves the window as it is.
     /// </remarks>
-    internal static void ApplyIcon(IntPtr hwnd, string? icoPath = null)
+    internal static void ApplyIcon(Window window, string? icoPath = null)
     {
         icoPath ??= ResolveAppIconPath();
-        if (icoPath == null || hwnd == IntPtr.Zero)
+        if (icoPath == null)
         {
             return;
         }
 
-        try
-        {
-            var small = LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
-            var big = LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-            if (small != IntPtr.Zero)
-            {
-                SendMessage(hwnd, WM_SETICON, ICON_SMALL, small);
-            }
-
-            if (big != IntPtr.Zero)
-            {
-                SendMessage(hwnd, WM_SETICON, ICON_BIG, big);
-            }
-
-            var appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(hwnd));
-            if (appWindow != null)
-            {
-                var native = LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
-                if (native != IntPtr.Zero)
-                {
-                    try { appWindow.SetIcon(Win32Interop.GetIconIdFromIcon(native)); }
-                    finally { DestroyIcon(native); }
-                }
-            }
-        }
-        catch { /* a missing icon is cosmetic only */ }
+        WinUIAppKit.Windowing.WindowIcon.Apply(window, icoPath);
     }
 
     /// <summary>

@@ -256,7 +256,7 @@ filtering. `AppPickerRowActions` gives each recycled list container a full-targe
 a keyboard-accessible menu: Open uses the shared item launch path immediately, including for
 uninstallers, and Open containing folder is disabled for virtual targets or missing parents.
 
-All three share `WindowChrome` for the app icon and a themed custom title bar (a default WinUI
+All three share `WindowChrome` for the app icon (set through the kit's DPI-aware `WindowIcon`) and a themed custom title bar (a default WinUI
 title bar does not follow `RequestedTheme`). The flyout **drops its always-on-top flag** while
 one is open, owner relationship alone does not beat a topmost owner, and closes any open
 editor when edit mode ends, so an orphaned window cannot commit into a launcher the user has
@@ -273,7 +273,7 @@ By default, launching the app opens the Settings window. Silent mode (tray icon 
 | Companion exe cold-start | `LittleLauncher.exe --silent` | No |
 | Second instance (app already running) | Signals first instance via `PostMessage` → shows Settings | Yes |
 
-`SystemPage` manages startup through the install-type-specific mechanism: unpackaged builds write the HKCU Run key, packaged builds use the manifest `StartupTask`, and packaged startup cleanup removes any stale unpackaged Run entry so the Store app wins after install-type switches.
+`SystemPage` manages startup through winui-app-kit's `StartupRegistration` (`App.Startup`), with the permanent task ID `LittleLauncherStartup` and Run value `Little Launcher`: unpackaged builds write the HKCU Run key, packaged builds use the manifest `StartupTask`, and packaged startup cleanup removes any stale unpackaged Run entry so the Store app wins after install-type switches. Single instance is the kit's `SingleInstance` on the permanent mutex `LittleLauncher`, claimed first in `OnLaunched`; a second launch signals the running host window to open Settings, unless it was a silent startup launch.
 
 ## Settings persistence
 
@@ -412,10 +412,10 @@ Windows have already authenticated the folder before it is visible.
 
 ## Theme system
 
-`ThemeManager` controls the app theme via WinUI 3's `ElementTheme` system:
-- Sets `RequestedTheme` on the root `FrameworkElement` of each window.
-- `IsDarkTheme()` reads the system foreground colour from a cached `UISettings` instance to detect light/dark mode.
-- Theme 0 = system default, 1 = Light, 2 = Dark.
+`ThemeManager` connects the saved choice to winui-app-kit's `AppTheme`, which applies it to every tracked window and keeps them in step when it changes:
+- `ApplySavedTheme(window)` applies the saved choice and tracks the window until it closes.
+- `IsDarkTheme()` reads the Windows foreground colour, not the app's choice, because tray and jump-list artwork follow Windows.
+- Theme 0 = system default, 1 = Light, 2 = Dark (the kit's `AppThemeChoice` values).
 
 ## Backdrop
 

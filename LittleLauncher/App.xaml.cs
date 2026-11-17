@@ -24,8 +24,41 @@ public partial class App : Application
         InitializeComponent();
     }
 
+    /// <summary>The single-instance mutex. Permanent (KIT-2): changing it lets two copies run.</summary>
+    internal const string MutexName = "LittleLauncher";
+
+    /// <summary>
+    /// The hidden host window's title, which a second launch and the companion look for. Permanent;
+    /// it must match MainWindow.xaml's Title and LauncherShortcut's FindWindow call.
+    /// </summary>
+    internal const string HostWindowTitle = "Little Launcher Host";
+
+    /// <summary>
+    /// Start with Windows (TRAY-10): the manifest's startup task when packaged, the "Little Launcher"
+    /// Run value when not. Both names are permanent (KIT-2).
+    /// </summary>
+    internal static readonly WinUIAppKit.Startup.StartupRegistration Startup = new("LittleLauncherStartup", "Little Launcher");
+
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        // One running copy, claimed before settings load so a second launch exits without touching
+        // the settings file (winui-app-kit gotcha).
+        if (!WinUIAppKit.SingleInstance.TryClaim(MutexName))
+        {
+            // Default: show settings (Start Menu, double-click exe, etc.). The companion exe signals
+            // flyouts itself and never starts a second LittleLauncher.exe while one is running.
+            // A --silent second launch (login startup) just exits.
+            string[] commandLine = Environment.GetCommandLineArgs();
+            bool isSilent = commandLine.Length > 1
+                && commandLine[1].Equals("--silent", StringComparison.OrdinalIgnoreCase);
+            if (!isSilent)
+            {
+                WinUIAppKit.SingleInstance.SignalRunningInstance(HostWindowTitle, "LittleLauncher_ShowSettings");
+            }
+
+            Environment.Exit(0);
+        }
+
         MainDispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         // Must happen on the UI thread, before any WebView2 exists. WinUI 3 only calls

@@ -11,12 +11,13 @@ using global::Windows.ApplicationModel;
 using global::Windows.Storage.Pickers;
 using WinRT.Interop;
 
+using WinUIAppKit.Startup;
+
 namespace LittleLauncher.Pages;
 
 public partial class SystemPage : Page
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    private const string StartupTaskId = "LittleLauncherStartup";
     private bool _startupStateInitialized;
     private bool _updatingStartupSwitch;
 
@@ -332,19 +333,15 @@ public partial class SystemPage : Page
     {
         try
         {
-            bool isEnabled;
+            // The kit enables or disables the startup task (packaged) or the Run value, and reports
+            // the state Windows actually ended up in, which a user or policy may have decided.
+            var status = await App.Startup.SetEnabledAsync(enable);
             if (MainWindow.IsPackaged)
             {
-                isEnabled = await SetPackagedStartupAsync(enable);
-                MainWindow.RemoveStartupRegistryEntry();
-            }
-            else
-            {
-                SetUnpackagedStartup(enable);
-                isEnabled = await IsStartupEnabledAsync();
+                App.Startup.RemoveUnpackagedEntries();
             }
 
-            ApplyStartupSwitchState(isEnabled);
+            ApplyStartupSwitchState(status.IsOn());
         }
         catch (Exception ex)
         {
@@ -367,66 +364,7 @@ public partial class SystemPage : Page
         }
     }
 
-    private static async Task<bool> IsStartupEnabledAsync()
-    {
-        if (MainWindow.IsPackaged)
-        {
-            var startupTask = await StartupTask.GetAsync(StartupTaskId);
-            return startupTask.State is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy;
-        }
-
-        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", false);
-        return key?.GetValue("Little Launcher") is string currentValue && !string.IsNullOrWhiteSpace(currentValue);
-    }
-
-    private static async Task<bool> SetPackagedStartupAsync(bool enable)
-    {
-        var startupTask = await StartupTask.GetAsync(StartupTaskId);
-
-        if (!enable)
-        {
-            startupTask.Disable();
-            return false;
-        }
-
-        if (startupTask.State is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy)
-        {
-            return true;
-        }
-
-        StartupTaskState result = await startupTask.RequestEnableAsync();
-        return result is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy;
-    }
-
-    private static void SetUnpackagedStartup(bool enable)
-    {
-        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-        if (key == null)
-        {
-            return;
-        }
-
-        const string appName = "Little Launcher";
-        string executablePath = Environment.ProcessPath ?? string.Empty;
-
-        if (enable)
-        {
-            if (File.Exists(executablePath))
-            {
-                key.SetValue(appName, $"\"{executablePath}\" --silent");
-            }
-            else
-            {
-                throw new FileNotFoundException("Application executable not found.");
-            }
-        }
-        else if (key.GetValue(appName) != null)
-        {
-            key.DeleteValue(appName, false);
-        }
-    }
+    private static async Task<bool> IsStartupEnabledAsync() => (await App.Startup.GetStatusAsync()).IsOn();
 
     private void ExportButton_Click(object sender, RoutedEventArgs e)
     {

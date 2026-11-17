@@ -19,7 +19,7 @@ public partial class HomePage : Page
 
     internal UserSettings Settings => SettingsManager.Current;
 
-    private UpdateService.UpdateCheckResult? _updateResult;
+    private WinUIAppKit.Updates.UpdateCheckResult? _updateResult;
 
     public HomePage()
     {
@@ -106,8 +106,8 @@ public partial class HomePage : Page
         try
         {
             // Use the cached startup result if available; otherwise check now.
-            var result = UpdateService.LatestResult ?? await UpdateService.CheckForUpdateAsync();
-            if (result is { UpdateAvailable: true })
+            var result = MainWindow.StartupUpdateResult ?? await Classes.AboutContent.Updates.CheckGitHubAsync();
+            if (result.Outcome == WinUIAppKit.Updates.UpdateCheckOutcome.UpdateAvailable)
             {
                 _updateResult = result;
                 UpdateInfoBar.Message = UiText.Format("home.update.message",
@@ -126,9 +126,9 @@ public partial class HomePage : Page
 
     private void UpdateAction_Click(object sender, RoutedEventArgs e)
     {
-        if (_updateResult?.ReleaseUrl is { Length: > 0 } url)
+        if (_updateResult is not null)
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            WinUIAppKit.Updates.UpdateService.OpenReleasePage(_updateResult);
         }
     }
 

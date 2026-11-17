@@ -99,8 +99,7 @@ LittleLauncher/              # WinUI 3 application project
 ├── Services/
 │   ├── AutoSyncService.cs     # Automatic sync triggers
 │   ├── FaviconService.cs      # Website favicon & title fetching
-│   ├── SftpSyncService.cs     # SSH/SFTP upload/download/test + shared sync
-│   └── UpdateService.cs       # Update checking
+│   └── SftpSyncService.cs     # SSH/SFTP upload/download/test + shared sync
 ├── ViewModels/
 │   └── UserSettings.cs        # Observable settings (CommunityToolkit.Mvvm)
 ├── Windows/

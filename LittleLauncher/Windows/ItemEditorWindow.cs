@@ -110,7 +110,7 @@ public sealed class ItemEditorWindow : Window
 
         Content = root;
         ThemeManager.ApplySavedTheme(this);
-        WindowChrome.ApplyIcon(_hwnd);
+        WindowChrome.ApplyIcon(this);
 
         SizeAndCentre();
         Closed += (_, _) =>

@@ -138,7 +138,7 @@ public sealed class TextPromptWindow : Window
 
         Content = root;
         ThemeManager.ApplySavedTheme(this);
-        WindowChrome.ApplyIcon(_hwnd);
+        WindowChrome.ApplyIcon(this);
 
         SizeAndCentre();
         Activated += OnFirstActivated;

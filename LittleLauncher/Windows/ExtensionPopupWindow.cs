@@ -160,7 +160,7 @@ public sealed class ExtensionPopupWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(titleBar);
-        WindowChrome.ApplyIcon(_hwnd);
+        WindowChrome.ApplyIcon(this);
 
         var presenter = OverlappedPresenter.CreateForDialog();
         presenter.IsResizable = true;

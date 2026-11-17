@@ -148,7 +148,7 @@ public sealed class ShortcutsWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(titleBar);
-        WindowChrome.ApplyIcon(_hwnd);
+        WindowChrome.ApplyIcon(this);
 
         var presenter = OverlappedPresenter.CreateForDialog();
         presenter.IsResizable = false;

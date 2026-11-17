@@ -1,6 +1,6 @@
 using LittleLauncher.Classes;
 using LittleLauncher.Localization;
-using LittleLauncher.Services;
+using WinUIAppKit.Updates;
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,7 +10,7 @@ namespace LittleLauncher.Pages;
 public partial class AboutPage : Page
 {
     private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-    private UpdateService.UpdateCheckResult? _updateResult;
+    private UpdateCheckResult? _updateResult;
 
     public AboutPage()
     {
@@ -42,12 +42,13 @@ public partial class AboutPage : Page
 
         try
         {
-            var result = await UpdateService.CheckForUpdateAsync();
-            if (result == null)
+            // Never throws: network, rate-limit and parse failures come back as Failed.
+            var result = await AboutContent.Updates.CheckGitHubAsync();
+            if (result.Outcome == UpdateCheckOutcome.Failed)
             {
                 UpdateStatusText.Text = UiText.Get("about.update.unableToCheck");
             }
-            else if (result.UpdateAvailable)
+            else if (result.Outcome == UpdateCheckOutcome.UpdateAvailable)
             {
                 _updateResult = result;
                 UpdateStatusText.Text = UiText.Format("about.update.available",
@@ -76,9 +77,9 @@ public partial class AboutPage : Page
 
     private void ViewRelease_Click(object sender, RoutedEventArgs e)
     {
-        if (_updateResult?.ReleaseUrl is { Length: > 0 } url)
+        if (_updateResult is not null)
         {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            UpdateService.OpenReleasePage(_updateResult);
         }
     }
 

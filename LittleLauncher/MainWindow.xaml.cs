@@ -25,7 +25,7 @@ namespace LittleLauncher;
 /// Architecture notes:
 ///   - This window is never actually displayed.
 ///   - Its sole purpose is to own the tray icon.
-///   - A Mutex ("LittleLauncher") prevents multiple instances.
+///   - App.OnLaunched claims the "LittleLauncher" single-instance mutex (winui-app-kit) first.
 ///   - A registered window message lets a second instance or LauncherShortcut
 ///     signal the first to show the flyout via PostMessage.
 /// </summary>
@@ -119,8 +119,6 @@ public sealed partial class MainWindow : Window
         public bool IsAdded; // false when NIconHide=true (NIM_DELETE called)
     }
 
-    private static readonly Mutex Singleton = new(true, "LittleLauncher");
-
     /// <summary>Per-launcher registered window message IDs (key = Launcher.Id).</summary>
     private readonly Dictionary<string, int> _wmShowFlyoutPerLauncher = new();
 
@@ -156,33 +154,7 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
-        // ── Singleton check ─────────────────────────────────────────
-        if (!Singleton.WaitOne(TimeSpan.Zero, true))
-        {
-            // Another instance is running — signal it and exit.
-            IntPtr target = FindWindow(null, "Little Launcher Host");
-
-            string[] args = Environment.GetCommandLineArgs();
-            bool isSilent = args.Length > 1 &&
-                args[1].Equals("--silent", StringComparison.OrdinalIgnoreCase);
-
-            if (!isSilent)
-            {
-                // Default: show settings (Start Menu, double-click exe, etc.).
-                // The companion exe handles flyout signaling itself via
-                // PostMessage and never launches a second LittleLauncher.exe
-                // when the app is already running.
-                int msg = RegisterWindowMessage("LittleLauncher_ShowSettings");
-                if (target != IntPtr.Zero && msg != 0)
-                {
-                    PostMessage(target, msg, IntPtr.Zero, IntPtr.Zero);
-                }
-            }
-            // --silent second instance: just exit quietly
-
-            Environment.Exit(0);
-        }
-
+        // The single instance is claimed in App.OnLaunched, before settings load.
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
         Current = this;
@@ -420,34 +392,9 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        try
-        {
-            if (IsPackaged)
-            {
-                var task = await global::Windows.ApplicationModel.StartupTask.GetAsync("LittleLauncherStartup");
-                // Never override DisabledByUser or policy. The manifest supplies the fresh default.
-                if (task.State == global::Windows.ApplicationModel.StartupTaskState.Disabled)
-                {
-                    await task.RequestEnableAsync();
-                }
-            }
-            else
-            {
-                string? executable = Environment.ProcessPath;
-                if (string.IsNullOrEmpty(executable) || !File.Exists(executable))
-                {
-                    return;
-                }
-
-                using var run = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
-                    @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
-                if (run.GetValue("Little Launcher") is null)
-                {
-                    run.SetValue("Little Launcher", $"\"{executable}\" --silent");
-                }
-            }
-        }
-        catch (Exception error) { Logger.Warn(error, "Default login startup could not be registered"); }
+        // Enables the startup task only from its initial Disabled state (never DisabledByUser or
+        // policy); unpackaged, writes the Run value with --silent. Failures are logged by the kit.
+        await App.Startup.RegisterOnFirstRunAsync();
     }
 
     private void SetupTrayIcons()
@@ -1658,6 +1605,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>The startup check's result, cached so the Home page does not check again.</summary>
+    internal static WinUIAppKit.Updates.UpdateCheckResult? StartupUpdateResult { get; private set; }
+
     /// <summary>
     /// Checks GitHub releases on startup for portable builds and shows a toast when newer.
     /// The result is cached for the Home page to consume.
@@ -1671,8 +1621,9 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            var result = await UpdateService.CheckForUpdateAsync();
-            if (result is not { UpdateAvailable: true })
+            var result = await Classes.AboutContent.Updates.CheckGitHubAsync();
+            StartupUpdateResult = result;
+            if (result.Outcome != WinUIAppKit.Updates.UpdateCheckOutcome.UpdateAvailable)
             {
                 return;
             }
@@ -1783,54 +1734,21 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Ensures existing Windows startup registry entry includes --silent.
-    /// Old versions registered LittleLauncher.exe without the flag, which caused
-    /// the Settings window to appear on login. This ensures entries from before v1.7
-    /// (when --silent was added) are fixed regardless of the in-app Startup setting.
+    /// Keep the startup entry pointing at this copy. Packaged: remove Run values left by an earlier
+    /// unpackaged build, which would start a second, stale copy at sign-in. Unpackaged: re-point an
+    /// existing Run value at this executable with --silent, which also fixes entries from before v1.7
+    /// that lacked the flag; it never creates one or overrides the user turning startup off.
     /// </summary>
     private static void MigrateStartupRegistryEntry()
     {
-        try
+        if (IsPackaged)
         {
-            if (IsPackaged)
-            {
-                RemoveStartupRegistryEntry();
-                return;
-            }
-
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-            if (key == null)
-            {
-                return;
-            }
-
-            const string appName = "Little Launcher";
-            var currentValue = key.GetValue(appName) as string;
-            if (currentValue != null && !currentValue.Contains("--silent", StringComparison.OrdinalIgnoreCase))
-            {
-                var executablePath = Environment.ProcessPath;
-                if (!string.IsNullOrEmpty(executablePath) && File.Exists(executablePath))
-                {
-                    key.SetValue(appName, $"\"{executablePath}\" --silent");
-                }
-            }
+            App.Startup.RemoveUnpackagedEntries();
         }
-        catch { /* best-effort migration */ }
-    }
-
-    internal static void RemoveStartupRegistryEntry()
-    {
-        try
+        else
         {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-            if (key?.GetValue("Little Launcher") != null)
-            {
-                key.DeleteValue("Little Launcher", false);
-            }
+            App.Startup.RepointRunEntry();
         }
-        catch { /* best-effort cleanup */ }
     }
 
     /// <summary>

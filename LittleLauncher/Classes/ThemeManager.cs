@@ -1,62 +1,47 @@
 using LittleLauncher.Classes.Settings;
 using Microsoft.UI.Xaml;
+using WinUIAppKit.Theming;
 
 namespace LittleLauncher.Classes;
 
 /// <summary>
-/// Manages the application theme settings and applies the selected theme (WinUI 3).
+/// Connects the saved theme choice to winui-app-kit's <see cref="AppTheme"/>, which applies it to every
+/// tracked window and keeps them in step when it changes. Also answers whether Windows itself is in
+/// dark app mode, for icon artwork that follows Windows rather than the app's own choice.
 /// </summary>
 internal static class ThemeManager
 {
+    /// <summary>
+    /// Apply the saved choice to <paramref name="window"/> now, and whenever the choice changes,
+    /// until the window closes.
+    /// </summary>
     public static void ApplySavedTheme(Window window)
     {
-        ApplyTheme(SettingsManager.Current.AppTheme, window);
+        SyncFromSettings();
+        AppTheme.Track(window);
     }
 
+    /// <summary>Make the kit's current choice match the loaded settings (after a load or import).</summary>
+    public static void SyncFromSettings() => AppTheme.Set((AppThemeChoice)SettingsManager.Current.AppTheme);
+
+    /// <summary>
+    /// Save a new choice (0 system, 1 light, 2 dark; the same numbers <see cref="AppThemeChoice"/>
+    /// uses) and apply it to every tracked window.
+    /// </summary>
     public static void ApplyAndSaveTheme(int theme)
     {
         SettingsManager.Current.AppTheme = theme;
         SettingsManager.SaveSettings();
-
-        if ((Application.Current as App)?.m_window is MainWindow mw)
-        {
-            ApplyTheme(theme, mw);
-        }
-    }
-
-    private static void ApplyTheme(int theme, Window window)
-    {
-        var requestedTheme = theme switch
-        {
-            1 => ElementTheme.Light,
-            2 => ElementTheme.Dark,
-            _ => ElementTheme.Default
-        };
-
-        if (window.Content is FrameworkElement fe)
-        {
-            fe.RequestedTheme = requestedTheme;
-        }
-
-        // Apply to settings window too
-        var settingsWindow = SettingsWindow.GetCurrent();
-        if (settingsWindow?.Content is FrameworkElement sfe)
-        {
-            sfe.RequestedTheme = requestedTheme;
-        }
-
-        Windows.LauncherItemsEditorWindow.ApplyTheme(requestedTheme);
-
-        // Apply to flyout window too
-        var flyout = Windows.FlyoutWindow.GetCurrent();
-        if (flyout?.Content is FrameworkElement ffe)
-        {
-            ffe.RequestedTheme = requestedTheme;
-        }
+        AppTheme.Set((AppThemeChoice)theme);
     }
 
     private static readonly global::Windows.UI.ViewManagement.UISettings UiSettings = new();
 
+    /// <summary>
+    /// True when Windows is in dark app mode, whatever the app's own theme choice. Tray and jump-list
+    /// artwork use this, so it is deliberately not <see cref="AppTheme.IsDark"/>, which honours the
+    /// app's choice.
+    /// </summary>
     public static bool IsDarkTheme()
     {
         var fg = UiSettings.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.Foreground);

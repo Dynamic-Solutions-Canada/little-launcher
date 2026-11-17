@@ -164,7 +164,7 @@ public sealed partial class LauncherSettingsWindow : Window
 
         Content = root;
         ThemeManager.ApplySavedTheme(this);
-        WindowChrome.ApplyIcon(_hwnd);
+        WindowChrome.ApplyIcon(this);
 
         SizeAndCentre();
 

@@ -154,7 +154,7 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
 
             Content = root;
             ThemeManager.ApplySavedTheme(this);
-            WindowChrome.ApplyIcon(_hwnd);
+            WindowChrome.ApplyIcon(this);
             SizeAndCentre(ownerHwnd, setupBounds);
             UpdateContentExtent();
             _windowOwner.AppWindow.Closing += Owner_Closing;
@@ -291,17 +291,6 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
         if (Instances.TryGetValue(launcherId, out var window))
         {
             window.Close();
-        }
-    }
-
-    internal static void ApplyTheme(ElementTheme theme)
-    {
-        foreach (var window in Instances.Values)
-        {
-            if (window.Content is FrameworkElement root)
-            {
-                root.RequestedTheme = theme;
-            }
         }
     }
 

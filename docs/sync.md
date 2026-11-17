@@ -218,7 +218,8 @@ behavior unless evidence justifies a configuration change. See Google's
 and Microsoft's [localhost redirect rules](https://learn.microsoft.com/en-us/entra/identity-platform/reply-url#localhost-exceptions).
 
 `ProtectedStore` keeps every sync credential, OAuth tokens and the WebDAV password, in
-`%AppData%\LittleLauncher\cloud-{name}.dat`, encrypted with DPAPI to the current Windows user.
+`%AppData%\LittleLauncher\cloud-{name}.dat`, encrypted with DPAPI to the current Windows user,
+through winui-app-kit's `ProtectedStore`. The folder, file pattern and entropy are permanent.
 `CloudTokenStore` is a thin typed wrapper over it. **They must never go in settings.json**: that file is
 exported, imported, backed up, and *uploaded by this very feature*, so a refresh token in it would
 be copied to every machine and into whatever server or folder is configured.
