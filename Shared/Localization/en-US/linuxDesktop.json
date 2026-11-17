@@ -1,5 +1,5 @@
 {
-  "linuxDesktop.title": "Desktop Integration",
+  "linuxDesktop.title": "Desktop integration",
   "linuxDesktop.placement.title": "Open launchers beside their tray icons",
   "linuxDesktop.placement.description": "Keep launcher windows next to the icon you click, rather than opening in the middle of the screen.",
   "linuxDesktop.enable": "Enable tray positioning",

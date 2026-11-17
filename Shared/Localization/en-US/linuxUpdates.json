@@ -1,8 +1,8 @@
 {
   "linuxUpdates.description": "Check for and install verified Linux AppImage releases.",
-  "linuxUpdates.download": "Download Update",
-  "linuxUpdates.install": "Install and Restart",
-  "linuxUpdates.discard": "Discard Download",
+  "linuxUpdates.download": "Download update",
+  "linuxUpdates.install": "Install and restart",
+  "linuxUpdates.discard": "Discard download",
   "linuxUpdates.automatic": "Check for updates automatically",
   "linuxUpdates.notice": "Self-update is available when running a writable AppImage. Downloads are verified before installation; settings and browser sign-ins stay in their existing folders.",
   "linuxUpdates.status.idle": "Check for a newer Linux AppImage.",

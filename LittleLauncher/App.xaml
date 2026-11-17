@@ -9,6 +9,18 @@
                 <!-- The family's page and card styles (UI-3), also used by the promo page. -->
                 <ResourceDictionary Source="ms-appx:///WinUIAppKit/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- A card that opens another page (Home's cards): a real button, so it takes keyboard
+                 focus and announces its label, drawn with the card fill, stroke, radius and padding
+                 of the kit's CardBorderStyle. -->
+            <Style x:Key="NavigationCardButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Padding" Value="16,14" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

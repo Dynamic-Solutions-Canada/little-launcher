@@ -24,6 +24,8 @@ Area files prefixed `linux` (for example `linuxUpdates.json`) hold Linux-only co
 
 **Keys** are `area.camelCaseName`, optionally with one more dotted level for grouping (`sync.sftp.hostLabel`). The first segment matches the file name. Keys describe meaning, not English wording, so a later wording change does not rename the key. `common.json` holds the generic words (OK, Cancel, Remove, Browse…); reuse those rather than adding a near-duplicate.
 
+**Labels are sentence case** in every catalog: titles, headers, buttons and menu items capitalize only their first word ("Launcher settings", "Add launcher"). Product names, Windows features (File Explorer, Task Manager, the Start menu), proper nouns and acronyms keep their capitals. A sentence that names a control quotes its label as written ("Choose Add launcher").
+
 **Placeholders** are `{{name}}` (double braces, the winui-app-kit form), replaced once from named values; a value is never itself expanded, so user content containing braces is shown literally. Use a placeholder rather than concatenating fragments, because word order differs between languages. Never split one sentence across keys.
 
 **Plurals** use `key.one` and `key.other`, with `{{count}}` supplied automatically. French and Portuguese use "one" for 0 and 1; Chinese and Japanese give both forms the same text.

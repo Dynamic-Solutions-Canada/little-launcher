@@ -1,16 +1,16 @@
 {
   "about.title": "About",
   "about.description": "A customizable application and website launcher that lives in your Windows taskbar.",
-  "about.builtWith": "Built With",
-  "about.sourceCode.title": "Source Code",
+  "about.builtWith": "Built with",
+  "about.sourceCode.title": "Source code",
   "about.sourceCode.description": "View the project on GitHub",
-  "about.sourceCode.link": "GitHub Repository",
+  "about.sourceCode.link": "GitHub repository",
   "about.update.title": "Updates",
-  "about.update.checkButton": "Check for Updates",
+  "about.update.checkButton": "Check for updates",
   "about.update.checkingStatus": "Checking for updates…",
-  "about.update.availableTitle": "Update Available",
+  "about.update.availableTitle": "Update available",
   "about.update.available": "Version {{latest}} is available (you have {{current}})",
-  "about.update.viewRelease": "View Release",
+  "about.update.viewRelease": "View release",
   "about.update.upToDate": "You're up to date ({{current}})",
   "about.trayDescription": "A customizable application and website launcher that lives in your desktop tray."
 }

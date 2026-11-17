@@ -91,6 +91,35 @@ public sealed partial class LaunchersPage : Page
     }
 
     /// <summary>
+    /// A small glyph-only button in a launcher card's header. Named and tooltipped from
+    /// <paramref name="name"/>, since a glyph gives screen readers nothing to announce (UI-14).
+    /// </summary>
+    /// <param name="glyph">The Segoe Fluent Icons glyph.</param>
+    /// <param name="launcher">The card's launcher, passed to the handler as the button's <c>Tag</c>.</param>
+    /// <param name="name">The action's name in the current language.</param>
+    /// <param name="click">The handler.</param>
+    /// <param name="isEnabled">False to show the action unavailable (for example moving the first card up).</param>
+    private static Button CreateHeaderIconButton(string glyph, Launcher launcher, string name, RoutedEventHandler click, bool isEnabled = true)
+    {
+        var button = new Button
+        {
+            Content = new FontIcon { Glyph = glyph, FontSize = 12 },
+            Tag = launcher,
+            Padding = new Thickness(6, 4, 6, 4),
+            MinWidth = 0,
+            MinHeight = 0,
+            VerticalAlignment = VerticalAlignment.Center,
+            Background = (Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
+            BorderThickness = new Thickness(0),
+            IsEnabled = isEnabled,
+        };
+        AutomationProperties.SetName(button, name);
+        ToolTipService.SetToolTip(button, name);
+        button.Click += click;
+        return button;
+    }
+
+    /// <summary>
     /// Builds a launcher-card drill-in button with a label, subtitle and matching chevron.
     /// The optional action name supplies a descriptive tooltip and accessibility label.
     /// </summary>
@@ -184,18 +213,7 @@ public sealed partial class LaunchersPage : Page
         }
 
         // ── Delete button (in header bar) ──────────────────────────
-        var deleteBtn = new Button
-        {
-            Content = new FontIcon { Glyph = "\uE74D", FontSize = 12 },
-            Tag = launcher,
-            Padding = new Thickness(6, 4, 6, 4),
-            MinWidth = 0,
-            MinHeight = 0,
-            VerticalAlignment = VerticalAlignment.Center,
-            Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
-            BorderThickness = new Thickness(0),
-        };
-        deleteBtn.Click += DeleteLauncher_Click;
+        var deleteBtn = CreateHeaderIconButton("\uE74D", launcher, UiText.Get("common.delete"), DeleteLauncher_Click);
 
         // ── Settings row (opens settings dialog) ────────────────
         string settingsSubtitle = isWeb
@@ -273,53 +291,17 @@ public sealed partial class LaunchersPage : Page
 
         if (launcher.IsShared)
         {
-            var syncBtn = new Button
-            {
-                Content = new FontIcon { Glyph = "\uE895", FontSize = 12 },
-                Tag = launcher,
-                Padding = new Thickness(6, 4, 6, 4),
-                MinWidth = 0,
-                MinHeight = 0,
-                VerticalAlignment = VerticalAlignment.Center,
-                Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
-                BorderThickness = new Thickness(0),
-            };
-            ToolTipService.SetToolTip(syncBtn, UiText.Get("launchers.card.syncNow"));
-            syncBtn.Click += SyncSharedLauncher_Click;
+            var syncBtn = CreateHeaderIconButton("\uE895", launcher, UiText.Get("launchers.card.syncNow"), SyncSharedLauncher_Click);
             headerButtons.Children.Add(syncBtn);
 
-            var settingsBtn = new Button
-            {
-                Content = new FontIcon { Glyph = "\uE713", FontSize = 12 },
-                Tag = launcher,
-                Padding = new Thickness(6, 4, 6, 4),
-                MinWidth = 0,
-                MinHeight = 0,
-                VerticalAlignment = VerticalAlignment.Center,
-                Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
-                BorderThickness = new Thickness(0),
-            };
-            ToolTipService.SetToolTip(settingsBtn, UiText.Get("launchers.card.sharingSettings"));
-            settingsBtn.Click += ShareLauncher_Click;
+            var settingsBtn = CreateHeaderIconButton("\uE713", launcher, UiText.Get("launchers.card.sharingSettings"), ShareLauncher_Click);
             headerButtons.Children.Add(settingsBtn);
         }
 
         // Sharing publishes a launcher's items, of which a web launcher has none.
         if (!launcher.IsShared && !isWeb)
         {
-            var shareBtn = new Button
-            {
-                Content = new FontIcon { Glyph = "\uE72D", FontSize = 12 },
-                Tag = launcher,
-                Padding = new Thickness(6, 4, 6, 4),
-                MinWidth = 0,
-                MinHeight = 0,
-                VerticalAlignment = VerticalAlignment.Center,
-                Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
-                BorderThickness = new Thickness(0),
-            };
-            ToolTipService.SetToolTip(shareBtn, UiText.Get("launchers.card.share"));
-            shareBtn.Click += ShareLauncher_Click;
+            var shareBtn = CreateHeaderIconButton("\uE72D", launcher, UiText.Get("launchers.card.share"), ShareLauncher_Click);
             headerButtons.Children.Add(shareBtn);
         }
 
@@ -327,36 +309,10 @@ public sealed partial class LaunchersPage : Page
         var launchers = SettingsManager.Current.Launchers;
         int launcherIndex = launchers.IndexOf(launcher);
 
-        var moveUpBtn = new Button
-        {
-            Content = new FontIcon { Glyph = "\uE70E", FontSize = 12 },
-            Tag = launcher,
-            Padding = new Thickness(6, 4, 6, 4),
-            MinWidth = 0,
-            MinHeight = 0,
-            VerticalAlignment = VerticalAlignment.Center,
-            Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
-            BorderThickness = new Thickness(0),
-            IsEnabled = launcherIndex > 0,
-        };
-        ToolTipService.SetToolTip(moveUpBtn, UiText.Get("common.moveUp"));
-        moveUpBtn.Click += MoveLauncherUp_Click;
+        var moveUpBtn = CreateHeaderIconButton("\uE70E", launcher, UiText.Get("common.moveUp"), MoveLauncherUp_Click, isEnabled: launcherIndex > 0);
         headerButtons.Children.Add(moveUpBtn);
 
-        var moveDownBtn = new Button
-        {
-            Content = new FontIcon { Glyph = "\uE70D", FontSize = 12 },
-            Tag = launcher,
-            Padding = new Thickness(6, 4, 6, 4),
-            MinWidth = 0,
-            MinHeight = 0,
-            VerticalAlignment = VerticalAlignment.Center,
-            Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
-            BorderThickness = new Thickness(0),
-            IsEnabled = launcherIndex < launchers.Count - 1,
-        };
-        ToolTipService.SetToolTip(moveDownBtn, UiText.Get("common.moveDown"));
-        moveDownBtn.Click += MoveLauncherDown_Click;
+        var moveDownBtn = CreateHeaderIconButton("\uE70D", launcher, UiText.Get("common.moveDown"), MoveLauncherDown_Click, isEnabled: launcherIndex < launchers.Count - 1);
         headerButtons.Children.Add(moveDownBtn);
 
         headerButtons.Children.Add(deleteBtn);
@@ -389,14 +345,10 @@ public sealed partial class LaunchersPage : Page
         });
         innerStack.Children.Add(content);
 
+        // The family card (UI-3); the cards panel spaces them.
         var card = new Border
         {
-            Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
-            BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"],
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(4),
-            Padding = new Thickness(16),
-            Margin = new Thickness(0, 0, 0, 8),
+            Style = (Style)Application.Current.Resources["CardBorderStyle"],
             Child = innerStack,
             Tag = launcher,
         };

@@ -1,6 +1,6 @@
 {
-  "bookmarkPicker.title": "Choose a Bookmark",
-  "bookmarkPicker.noBrowsersTitle": "No Browsers Found",
+  "bookmarkPicker.title": "Choose a bookmark",
+  "bookmarkPicker.noBrowsersTitle": "No browsers found",
   "bookmarkPicker.noBrowsersMessage": "No supported browsers were found. Bookmarks can be read from Microsoft Edge, Google Chrome, Brave, Vivaldi, Chromium, Firefox, Zen, Waterfox, and LibreWolf.",
   "bookmarkPicker.browser": "Browser",
   "bookmarkPicker.profile": "Profile",

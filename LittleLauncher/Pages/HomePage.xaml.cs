@@ -8,8 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace LittleLauncher.Pages;
 
@@ -24,9 +22,6 @@ public partial class HomePage : Page
     public HomePage()
     {
         InitializeComponent();
-        LoadAppIcon();
-        VersionTextBlock.Text = SettingsManager.Current.LastKnownVersion;
-        BuildTypeTextBlock.Text = GetBuildTypeLabel();
         WhatsNewInfoBar.IsOpen = SettingsManager.Current.ShowWebLauncherNotice;
         ShowResetNoticeIfPending();
         _ = CheckForUpdateAsync();
@@ -74,43 +69,6 @@ public partial class HomePage : Page
         SettingsManager.SaveSettings();
     }
 
-    private static string GetBuildTypeLabel()
-    {
-#if DEBUG
-        return UiText.Get("home.buildType.debug");
-#else
-        return MainWindow.IsPackaged
-            ? UiText.Get("home.buildType.msix")
-            : UiText.Get("home.buildType.portable");
-#endif
-    }
-
-    private void LoadAppIcon()
-    {
-        // Prefer the source PNG/image for crisp rendering — BitmapImage handles PNG
-        // much better than ICO on high-DPI (WIC's ICO decoder may pick a low-res frame).
-        string? source = ResolveAppIconSource();
-        if (source == null)
-        {
-            return;
-        }
-
-        var bmp = new BitmapImage();
-        bmp.DecodePixelWidth = 256;
-        bmp.DecodePixelHeight = 256;
-        bmp.UriSource = new Uri(source);
-        AppIcon.Source = bmp;
-    }
-
-    /// <summary>
-    /// Returns the app icon source path — always the blue rocket PNG (app identity).
-    /// </summary>
-    private static string? ResolveAppIconSource()
-    {
-        string png = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcons", "Blue.png");
-        return File.Exists(png) ? png : null;
-    }
-
     private async Task CheckForUpdateAsync()
     {
         if (MainWindow.IsPackaged)
@@ -147,33 +105,14 @@ public partial class HomePage : Page
         }
     }
 
-    private void LauncherItems_Click(object sender, PointerRoutedEventArgs e)
+    private void LauncherItems_Click(object sender, RoutedEventArgs e)
     {
         SettingsWindow.GetCurrent()?.NavigateTo(typeof(LaunchersPage));
     }
 
-    private void SyncSettings_Click(object sender, PointerRoutedEventArgs e)
+    private void SyncSettings_Click(object sender, RoutedEventArgs e)
     {
         SettingsWindow.GetCurrent()?.NavigateTo(typeof(SyncPage));
     }
 
-    private void DashboardCard_PointerEntered(object sender, PointerRoutedEventArgs e)
-    {
-        if (sender is Border border)
-        {
-            border.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundFillColorSecondaryBrush"];
-            this.ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Hand);
-        }
-    }
-
-    private void DashboardCard_PointerExited(object sender, PointerRoutedEventArgs e)
-    {
-        if (sender is Border border)
-        {
-            border.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"];
-            this.ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
-        }
-    }
-
-    private void TrayIconSwitch_Toggled(object sender, RoutedEventArgs e) { }
 }

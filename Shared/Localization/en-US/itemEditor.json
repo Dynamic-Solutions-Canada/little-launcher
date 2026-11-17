@@ -1,6 +1,6 @@
 {
-  "itemEditor.addTitle": "Add Item",
-  "itemEditor.editTitle": "Edit Item",
+  "itemEditor.addTitle": "Add item",
+  "itemEditor.editTitle": "Edit item",
   "itemEditor.tab.apps": "Apps & web apps",
   "itemEditor.tab.fileOrLink": "File or link",
   "itemEditor.loadingApps": "Loading apps…",
