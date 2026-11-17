@@ -956,6 +956,13 @@ public sealed partial class LaunchersPage : Page
         launcher.SharedSftpPrivateKeyPath = keyBox.Text.Trim();
 
         bool isTwoWay = directionCombo.SelectedIndex == 0;
+
+        // A 1-way OneDrive share has a view-only link, which cannot carry 2-way edits. When its
+        // owner switches it to 2-way, drop the old link so the push below mints an editable one.
+        bool replacesOneDriveLink = NeedsNewOneDriveLink(launcher, mode, isTwoWay);
+        if (replacesOneDriveLink)
+            launcher.SharedLinkUrl = "";
+
         launcher.SharedTwoWay = isTwoWay;
         launcher.IsShared = true;
         if (!isTwoWay)
@@ -974,11 +981,27 @@ public sealed partial class LaunchersPage : Page
         if (!ok)
             await ShowErrorDialog(msg);
         else if (launcher.IsOneDriveSync && launcher.SharedLinkUrl.Length > 0)
-            await ShowShareLinkDialog(launcher);
+            await ShowShareLinkDialog(launcher, replacesOneDriveLink);
 
         SettingsManager.SaveSettings();
         RebuildLauncherCards();
     }
+
+    /// <summary>
+    /// True when saving the share dialog switches an owner's existing 1-way OneDrive share to
+    /// 2-way, which needs a new, editable link in place of its view-only one.
+    /// </summary>
+    /// <param name="launcher">The launcher as it was before the dialog's changes are applied.</param>
+    /// <param name="newMode">The sharing mode chosen in the dialog.</param>
+    /// <param name="newTwoWay">The direction chosen in the dialog.</param>
+    private static bool NeedsNewOneDriveLink(Launcher launcher, int newMode, bool newTwoWay) =>
+        newTwoWay
+        && newMode == SharedSyncModes.OneDrive
+        && launcher.IsShared
+        && launcher.IsOneDriveSync
+        && launcher.IsSharedOwner
+        && !launcher.SharedTwoWay
+        && launcher.SharedLinkUrl.Length > 0;
 
     /// <summary>
     /// Show the link a cloud share just produced, ready to send.
@@ -988,7 +1011,9 @@ public sealed partial class LaunchersPage : Page
     /// than being buried in a settings dialog the owner would have to go looking for. Selectable
     /// and copyable, because the alternative is retyping a hundred-character URL by hand.
     /// </remarks>
-    private async Task ShowShareLinkDialog(Launcher launcher)
+    /// <param name="launcher">The shared launcher whose link is shown.</param>
+    /// <param name="linkReplaced">True when this link replaces an earlier one, so the owner is told to resend it.</param>
+    private async Task ShowShareLinkDialog(Launcher launcher, bool linkReplaced = false)
     {
         var linkBox = new TextBox
         {
@@ -1011,7 +1036,8 @@ public sealed partial class LaunchersPage : Page
         var panel = new StackPanel { Spacing = 4, MinWidth = 420 };
         panel.Children.Add(new TextBlock
         {
-            Text = UiText.Get("launchers.shareLink.send") + "\n\n"
+            Text = (linkReplaced ? UiText.Get("launchers.shareLink.replaced") + "\n\n" : "")
+                 + UiText.Get("launchers.shareLink.send") + "\n\n"
                  + SharingDirectionText(launcher.SharedTwoWay) + "\n\n"
                  + UiText.Get("launchers.sharing.oneDriveFileWarning"),
             TextWrapping = TextWrapping.Wrap,
@@ -1337,6 +1363,10 @@ public sealed partial class LaunchersPage : Page
             directionCaption.Text = isSubscribing
                 ? UiText.Get("launchers.sharing.subscriberDirection")
                 : SharingDirectionText(directionCombo.SelectedIndex == 0);
+
+            // Say before saving that the link will change, not only afterwards.
+            if (!isSubscribing && NeedsNewOneDriveLink(launcher, mode, directionCombo.SelectedIndex == 0))
+                directionCaption.Text += "\n\n" + UiText.Get("launchers.sharing.oneDriveLinkWillChange");
 
             oneDriveNote.Text = UiText.Get("launchers.sharing.oneDriveFileWarning");
             oneDriveNote.Visibility = isOneDrive ? Visibility.Visible : Visibility.Collapsed;

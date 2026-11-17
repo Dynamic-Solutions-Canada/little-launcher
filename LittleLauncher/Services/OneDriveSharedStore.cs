@@ -14,7 +14,7 @@ namespace LittleLauncher.Services;
 /// <para><b>Why not the app folder the global sync uses:</b> it is private per-user storage with
 /// no mechanism to grant another person access, so a launcher published there would be invisible
 /// to the person it was shared with. Sharing therefore writes to an ordinary Drive folder and
-/// mints an anonymous editable link — which is exactly why it needs
+/// mints an anonymous link (view-only for a 1-way share, editable for 2-way), which is exactly why it needs
 /// <see cref="OneDriveFileStore.SharingScope"/> and why that is requested only when someone first
 /// shares this way, never at ordinary sign-in.</para>
 /// <para><b>The two sides are asymmetric and that is the point.</b> The owner knows a file; the
@@ -92,13 +92,15 @@ public static class OneDriveSharedStore
     }
 
     /// <summary>
-    /// Mint an editable, anonymous link to the published file.
+    /// Mint an anonymous link to the published file: view-only for a 1-way share, editable for 2-way.
     /// </summary>
     /// <remarks>
-    /// <c>type: "edit"</c> because 2-way sharing needs subscribers to write back; a view link
-    /// would silently make every push from a subscriber fail. <c>scope: "anonymous"</c> keeps the
-    /// link usable without the owner having to name each person — the link *is* the credential,
-    /// which is worth being explicit about in the UI.
+    /// <c>type: "edit"</c> only for 2-way sharing, where subscribers write back; a 1-way share gets
+    /// <c>type: "view"</c>, so the link cannot change the file outside Little Launcher either.
+    /// Switching a share to 2-way therefore needs a new link (the share dialog clears the old one
+    /// so the next push mints it). Links minted by earlier versions were always editable and stay
+    /// so. <c>scope: "anonymous"</c> keeps the link usable without the owner having to name each
+    /// person; the link *is* the credential, which is worth being explicit about in the UI.
     /// </remarks>
     private static async Task<(bool Success, string Result)> CreateLinkAsync(Launcher launcher)
     {
@@ -106,8 +108,9 @@ public static class OneDriveSharedStore
             HttpMethod.Post,
             $"{GraphRoot}/drives/{launcher.SharedDriveId}/items/{launcher.SharedItemId}/createLink");
 
+        string linkType = launcher.SharedTwoWay ? "edit" : "view";
         request.Content = new StringContent(
-            """{"type":"edit","scope":"anonymous"}""", Encoding.UTF8, "application/json");
+            $$"""{"type":"{{linkType}}","scope":"anonymous"}""", Encoding.UTF8, "application/json");
 
         using var response = await Http.SendAsync(request);
         if (!response.IsSuccessStatusCode)

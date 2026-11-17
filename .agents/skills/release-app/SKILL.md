@@ -22,4 +22,4 @@ the [rebuild workflow](../rebuild-desktop/SKILL.md) and is not a public release.
 
 ## Pending for the next release
 
-- The first release after v1.43.0 stops sending website hostnames to Google's favicon service (FIX-061). When it ships, tell the standards session so the website privacy page is updated to match. Remove this line once that is done.
+- The first release after v1.43.0 stops sending website hostnames to Google's favicon service (FIX-061). It also makes new 1-way OneDrive share links view-only instead of editable. When it ships, tell the standards session so the website privacy page is updated to match both. Remove this line once that is done.
