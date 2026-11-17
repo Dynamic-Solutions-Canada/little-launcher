@@ -1,11 +1,42 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
+
+# Weekly, grouped updates (HYG-8). Every directory with a manifest is listed: the app and the two
+# test harnesses that have package references (the helper and the third harness have none), the Linux
+# browser engine's npm packages, and the workflows.
+
 updates:
-  - package-ecosystem: "nuget"
-    directory: "/LittleLauncher/"
+  - package-ecosystem: nuget
+    directories:
+      - "/LittleLauncher"
+      - "/tests/LauncherItemReorder.Tests"
+      - "/tests/LauncherSync.Tests"
     schedule:
-      interval: "daily"
+      interval: weekly
+    groups:
+      nuget:
+        patterns: ["*"]
+    ignore:
+      # Shared with winui-app-kit (PLAT-5): an app never moves ahead of the kit's version.
+      - dependency-name: Microsoft.WindowsAppSDK
+      - dependency-name: NLog
+      - dependency-name: CommunityToolkit.Mvvm
+
+  - package-ecosystem: npm
+    directory: "/linux/browser"
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+    ignore:
+      # A new Electron major needs the Linux browser qualification first; take it as its own change.
+      - dependency-name: electron
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]

@@ -2,10 +2,14 @@
 
 Little Launcher has separate native Windows and Linux hosts. The Windows workflow is documented below; Linux uses Qt/PySide6 with a sandboxed Electron web engine. Start with [the Linux development guide](../linux/README.md) for source runs, verification and x64 AppImage packaging.
 
+## Setup
+
+Clone with submodules (`--recurse-submodules`, or `git submodule update --init` afterwards), then run `lefthook install` once so the git hooks in `lefthook.yml` block signing material, credentials, settings files and large files from being committed. Install [lefthook](https://lefthook.dev) first if it is missing.
+
 ## Windows prerequisites
 
 - Windows 10/11 (build 22000+)
-- [.NET SDK 10.0.403 or a later 10.0.4xx patch](https://dotnet.microsoft.com/download/dotnet/10.0), selected by `global.json` (stable SDKs only).
+- [.NET SDK 10.0.403 or a later .NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), selected by `global.json` (stable SDKs only).
 
 Builds select the SDK's latest .NET runtime patch, at least 10.0.14, including the NativeAOT shortcut helper and self-contained Store output. Portable builds require that patched shared runtime or later. Explicit runtime overrides below 10.0.14 fail before runtime-pack resolution. See [the build security floor](windows-development.md#net-build-security-floor).
 

@@ -25,7 +25,7 @@ The build host's architecture is the default platform. `verify:desktop` compiles
 
 ## .NET build security floor
 
-`global.json` requires stable SDK 10.0.403 or a later patch in the 10.0.4xx feature band. Both release workflows install that SDK from the same file. The shared Windows bridge copies these root build files into disposable staging, so local builds and the nested NativeAOT publish use the same policy. Install the required SDK on the build machine through its normal maintenance process if it is missing; the build does not install one.
+`global.json` requires stable SDK 10.0.403 or later within .NET 10 (`rollForward: latestFeature`, so a later 10.0 feature band also qualifies; PLAT-2). Both release workflows install that SDK from the same file. The shared Windows bridge copies these root build files into disposable staging, so local builds and the nested NativeAOT publish use the same policy. Install the required SDK on the build machine through its normal maintenance process if it is missing; the build does not install one.
 
 `Directory.Build.props` sets `TargetLatestRuntimePatch=true`. With the selected SDK, this selects runtime 10.0.14 or later for self-contained output and raises the shared runtime requirement in framework-dependent output. `Directory.Build.targets` rejects explicit .NET 10 runtime versions below 10.0.14 and rejects disabling latest-patch selection without an explicit patched runtime. SDK feature-band upgrades should update `global.json` and recheck runtime and NativeAOT compiler-pack versions together.
 
