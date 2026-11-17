@@ -18,5 +18,13 @@
   "about.update.viewRelease": "Release ansehen",
   "about.update.upToDate": "Du bist auf dem neuesten Stand ({current})",
   "about.update.failed": "Die Updateprüfung ist fehlgeschlagen. Versuche es später erneut.",
-  "about.trayDescription": "Ein anpassbarer Launcher für Anwendungen und Websites, der im Tray deines Desktops wohnt."
+  "about.trayDescription": "Ein anpassbarer Launcher für Anwendungen und Websites, der im Tray deines Desktops wohnt.",
+  "about.privacy.title": "Datenschutzrichtlinie",
+  "about.privacy.description": "Wie Little Launcher mit deinen Daten umgeht",
+  "about.privacy.link": "Datenschutzrichtlinie lesen",
+  "about.support.title": "Support",
+  "about.support.description": "Melde ein Problem oder stelle eine Frage auf GitHub",
+  "about.support.link": "GitHub-Issues öffnen",
+  "about.diagnostics.description": "Protokolldateien helfen bei der Diagnose eines Problems. Lies eine, bevor du sie teilst: Sie kann Dateipfade sowie die Namen und Adressen deiner Launcher enthalten.",
+  "about.diagnostics.title": "Diagnose"
 }

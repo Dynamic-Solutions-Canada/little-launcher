@@ -525,7 +525,7 @@ Icon files (`app-icon.ico`, `settings-icon.ico`) and the companion exe (`LittleL
 
 `MainWindow.GetPhysicalAppDataDir()` returns the **real filesystem path** that external processes can see:
 
-- **MSIX**: `ApplicationData.Current.RoamingFolder.Path` → resolves to the `LocalCache\Roaming` path
+- **MSIX**: `ApplicationData.Current.RoamingFolder.Path`, the package's `RoamingState` folder, which the shell and external processes can read. It is not where redirected `%AppData%` writes land: settings.json and the logs are in `LocalCache\Roaming\LittleLauncher` (checked on an installed copy), so "Open logs folder" opens that path instead (`AppDiagnostics`)
 - **Unpackaged (portable)**: `Environment.GetFolderPath(ApplicationData)` → standard `%AppData%` (no redirection)
 
 ### Rules

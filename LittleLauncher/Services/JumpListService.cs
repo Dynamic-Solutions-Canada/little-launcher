@@ -350,9 +350,9 @@ internal static class JumpListService
                 UiText.Format("shell.jumpList.editItemsTooltip", ("launcher", launcher.Name)), "\uE70F");
         }
 
-        // "App Settings" is what the tray menu calls it, and one name for one window matters more
-        // than a name that reads well in isolation.
-        Add(LauncherActions.AppSettings, UiText.Get("tray.menu.appSettings"),
+        // The same label as the tray menu's item for this window ("Settings", TRAY-5): one name for
+        // one window matters more than a name that reads well in isolation.
+        Add(LauncherActions.AppSettings, UiText.Get("tray.menu.settings"),
             UiText.Get("shell.jumpList.appSettingsTooltip"), "\uE115");
 
         return actions;

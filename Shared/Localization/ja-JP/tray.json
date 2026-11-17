@@ -1,6 +1,7 @@
 {
   "tray.menu.editLauncherSettings": "ランチャーの設定を編集",
-  "tray.menu.appSettings": "アプリの設定",
+  "tray.menu.settings": "設定",
+  "tray.menu.openLogsFolder": "ログ フォルダーを開く",
   "tray.menu.exit": "終了",
   "tray.whatsNew.message": "ランチャーで、ダッシュボードや Web メールなどの Web ページをトレイアイコンから直接開けるようになりました。",
   "tray.update.message": "Little Launcher {latest} を利用できます。現在のバージョンは {current} です。"

@@ -26,7 +26,7 @@ class LauncherMenu(ServiceInterface):
 
     # Catalog keys, looked up when the menu is read so labels follow the language in effect.
     ACTIONS = {5: ("tray.menu.editLauncherSettings", "launcher-settings"),
-               3: ("tray.menu.appSettings", "settings"), 4: ("tray.menu.exit", "quit")}
+               3: ("tray.menu.settings", "settings"), 4: ("tray.menu.exit", "quit")}
 
     def __init__(self, identifier, events):
         super().__init__("com.canonical.dbusmenu")

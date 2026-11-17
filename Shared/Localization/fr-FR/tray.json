@@ -1,6 +1,7 @@
 {
   "tray.menu.editLauncherSettings": "Modifier les paramètres du lanceur",
-  "tray.menu.appSettings": "Paramètres de l’application",
+  "tray.menu.settings": "Paramètres",
+  "tray.menu.openLogsFolder": "Ouvrir le dossier des journaux",
   "tray.menu.exit": "Quitter",
   "tray.whatsNew.message": "Un lanceur peut désormais ouvrir une page web (un tableau de bord, une messagerie web ou n’importe quel site) directement depuis son icône dans la zone de notification.",
   "tray.update.message": "Little Launcher {latest} est disponible. Vous utilisez la {current}."

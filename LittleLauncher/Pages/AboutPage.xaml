@@ -79,6 +79,64 @@
                 <Button x:Name="CheckUpdateButton" Grid.Column="2" Content="{l:Str Key=about.update.checkButton}" Click="CheckForUpdates_Click" VerticalAlignment="Center"/>
             </Grid>
         </Border>
+
+        <!-- BRAND-8 links and diagnostics. Package 13 moves the whole page onto winui-app-kit's shared About page. -->
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="4" Padding="16" Margin="0,0,0,8">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="&#xE72E;" FontSize="24" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{l:Str Key=about.privacy.title}" FontSize="14" FontWeight="Medium"/>
+                    <TextBlock TextWrapping="Wrap" Text="{l:Str Key=about.privacy.description}" FontSize="12" Opacity="0.5"/>
+                </StackPanel>
+                <HyperlinkButton x:Name="PrivacyPolicyLink" Grid.Column="2" Content="{l:Str Key=about.privacy.link}"
+                                 VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="4" Padding="16" Margin="0,0,0,8">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="&#xE897;" FontSize="24" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{l:Str Key=about.support.title}" FontSize="14" FontWeight="Medium"/>
+                    <TextBlock TextWrapping="Wrap" Text="{l:Str Key=about.support.description}" FontSize="12" Opacity="0.5"/>
+                </StackPanel>
+                <HyperlinkButton x:Name="SupportLink" Grid.Column="2" Content="{l:Str Key=about.support.link}"
+                                 VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="4" Padding="16" Margin="0,0,0,8">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="&#xE9D9;" FontSize="24" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{l:Str Key=about.diagnostics.title}" FontSize="14" FontWeight="Medium"/>
+                    <TextBlock TextWrapping="Wrap" Text="{l:Str Key=about.diagnostics.description}" FontSize="12" Opacity="0.5"/>
+                </StackPanel>
+                <Button Grid.Column="2" Content="{l:Str Key=tray.menu.openLogsFolder}" Click="OpenLogsFolder_Click"
+                        VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
     </StackPanel>
     </Grid>
     </ScrollViewer>

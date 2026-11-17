@@ -1,6 +1,7 @@
 {
   "tray.menu.editLauncherSettings": "编辑启动器设置",
-  "tray.menu.appSettings": "应用设置",
+  "tray.menu.settings": "设置",
+  "tray.menu.openLogsFolder": "打开日志文件夹",
   "tray.menu.exit": "退出",
   "tray.whatsNew.message": "启动器现在可以直接从托盘图标打开网页（仪表板、网页邮箱或任何网站）。",
   "tray.update.message": "Little Launcher {latest} 已可用。你当前运行的是 {current}。"

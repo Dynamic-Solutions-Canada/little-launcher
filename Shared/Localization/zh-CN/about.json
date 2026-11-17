@@ -18,5 +18,13 @@
   "about.update.viewRelease": "查看发行版",
   "about.update.upToDate": "已是最新版本（{current}）",
   "about.update.failed": "检查更新失败。请稍后重试。",
-  "about.trayDescription": "一款可自定义的应用程序和网站启动器，常驻于桌面托盘。"
+  "about.trayDescription": "一款可自定义的应用程序和网站启动器，常驻于桌面托盘。",
+  "about.privacy.title": "隐私策略",
+  "about.privacy.description": "Little Launcher 如何处理你的数据",
+  "about.privacy.link": "阅读隐私策略",
+  "about.support.title": "支持",
+  "about.support.description": "在 GitHub 上报告问题或提问",
+  "about.support.link": "打开 GitHub 问题",
+  "about.diagnostics.description": "日志文件有助于诊断问题。分享前请先查看：其中可能包含文件路径以及启动器的名称和地址。",
+  "about.diagnostics.title": "诊断"
 }

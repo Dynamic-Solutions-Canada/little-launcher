@@ -18,7 +18,12 @@ public partial class AboutPage : Page
 
         // Built from the one definition of the repository (BRAND-5), not retyped in XAML.
         SourceCodeLink.NavigateUri = AboutContent.SourceCode;
+        PrivacyPolicyLink.NavigateUri = AboutContent.PrivacyPolicy;
+        SupportLink.NavigateUri = AboutContent.Support;
     }
+
+    /// <summary>Opens the folder holding the log files (LOG-8), the same action as the tray menu's.</summary>
+    private void OpenLogsFolder_Click(object sender, RoutedEventArgs e) => AppDiagnostics.OpenLogsFolder();
 
     /// <summary>Checks GitHub releases for a portable build, or opens Store updates for MSIX.</summary>
     private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)

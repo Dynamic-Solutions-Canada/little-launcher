@@ -598,9 +598,13 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        var settingsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.appSettings") };
+        // TRAY-5 order: app actions, Settings, Open logs folder, separator, Exit.
+        var settingsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.settings") };
         settingsItem.Click += (s, e) => SettingsWindow.ShowInstance(this);
         popup.Items.Add(settingsItem);
+        var logsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.openLogsFolder") };
+        logsItem.Click += (s, e) => Classes.AppDiagnostics.OpenLogsFolder();
+        popup.Items.Add(logsItem);
         popup.Items.Add(new H.NotifyIcon.Core.PopupMenuSeparator());
         var exitItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.exit") };
         exitItem.Click += (s, e) =>

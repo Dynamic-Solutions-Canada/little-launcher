@@ -18,5 +18,13 @@
   "about.update.viewRelease": "Voir la version",
   "about.update.upToDate": "Vous êtes à jour ({current})",
   "about.update.failed": "La recherche de mises à jour a échoué. Réessayez plus tard.",
-  "about.trayDescription": "Un lanceur d’applications et de sites web personnalisable, intégré à la zone de notification de votre bureau."
+  "about.trayDescription": "Un lanceur d’applications et de sites web personnalisable, intégré à la zone de notification de votre bureau.",
+  "about.privacy.title": "Politique de confidentialité",
+  "about.privacy.description": "Comment Little Launcher traite vos données",
+  "about.privacy.link": "Lire la politique de confidentialité",
+  "about.support.title": "Assistance",
+  "about.support.description": "Signalez un problème ou posez une question sur GitHub",
+  "about.support.link": "Ouvrir les tickets GitHub",
+  "about.diagnostics.description": "Les fichiers journaux aident à diagnostiquer un problème. Lisez-en un avant de le partager : il peut contenir des chemins de fichiers ainsi que les noms et adresses de vos lanceurs.",
+  "about.diagnostics.title": "Diagnostics"
 }

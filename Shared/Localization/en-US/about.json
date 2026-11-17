@@ -18,5 +18,13 @@
   "about.update.viewRelease": "View Release",
   "about.update.upToDate": "You're up to date ({current})",
   "about.update.failed": "Update check failed. Try again later.",
-  "about.trayDescription": "A customizable application and website launcher that lives in your desktop tray."
+  "about.trayDescription": "A customizable application and website launcher that lives in your desktop tray.",
+  "about.privacy.title": "Privacy policy",
+  "about.privacy.description": "How Little Launcher handles your data",
+  "about.privacy.link": "Read the privacy policy",
+  "about.support.title": "Support",
+  "about.support.description": "Report a problem or ask a question on GitHub",
+  "about.support.link": "Open GitHub issues",
+  "about.diagnostics.description": "Log files help diagnose a problem. Read one before you share it: it can contain file paths and the names and addresses of your launchers.",
+  "about.diagnostics.title": "Diagnostics"
 }
