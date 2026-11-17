@@ -97,6 +97,13 @@ public static class OAuthPkceClient
 
             phase = SignInPhase.Callback;
             callback = await WaitForCodeAsync(listener, state, callbackTimeout, ct);
+
+            // CodeQL cs/user-controlled-bypass flags the branch below; it is reviewed and not a bypass.
+            // The callback is already authenticated by WaitForCodeAsync: it must carry this attempt's
+            // 32-byte random state, which exists only in the URL just opened, and exactly one of code
+            // or error. A request that sets error can only turn this attempt into a failed sign-in;
+            // it cannot reach the token exchange, which also needs the PKCE verifier that never leaves
+            // this process, and the provider validates the code itself.
             string? error = callback.Request.QueryString["error"];
             if (error != null)
             {
