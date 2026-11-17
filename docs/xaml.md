@@ -27,6 +27,7 @@ Read [localization.md](localization.md). In short:
 - The settings window hosts winui-app-kit's `SettingsShell`; `SettingsWindow` adds the app's own menu items and maps each tag to a page type (`PageFor`). The footer (Our other apps, About, Settings) belongs to the shell.
 - About is the kit's shared `AboutPage`, filled from `Classes/AboutContent.Create`; product-specific content goes in its `ExtraCards`, never in a copy of the page
 - Page and card styles come from the kit's `Styles.xaml`, merged in `App.xaml` (UI-3)
+- Accessible names (UI-14): every control needs a name a screen reader can announce. Text content names itself; an icon-only button, a card button with composite content, or a field labelled by a separate TextBlock or only by placeholder text gets `AutomationProperties.Name` (`l10n:Localize.Name` or `AutomationProperties.SetName` in code), from the same catalog key as its label or tooltip. Launcher settings rows get it from their title in `BuildRow`.
 - Dialogs (UI-6): a yes/no question goes through winui-app-kit's `ConfirmDialog.ConfirmAsync`, with Cancel the default and the confirm button naming the action; a one-button notice goes through `Classes/MessageDialog`. Build a `ContentDialog` directly only for one with its own content (a form, a picker, a choice of three)
 - No MVVM routing framework: direct page type references
 

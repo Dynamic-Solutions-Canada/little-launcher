@@ -127,6 +127,10 @@ internal sealed class BookmarkPickerView
 
         var profileCombo = new ComboBox { PlaceholderText = UiText.Get("bookmarkPicker.profile"), MinWidth = 180, IsEnabled = false };
 
+        // Placeholder text vanishes once a choice is made, so the same words are the names (UI-14).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(browserCombo, UiText.Get("bookmarkPicker.browser"));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(profileCombo, UiText.Get("bookmarkPicker.profile"));
+
         var sourceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         sourceRow.Children.Add(browserCombo);
         sourceRow.Children.Add(profileCombo);
@@ -137,6 +141,7 @@ internal sealed class BookmarkPickerView
             PlaceholderText = UiText.Get("bookmarkPicker.search"),
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_searchBox, UiText.Get("bookmarkPicker.search"));
 
         var results = new ObservableCollection<FlatBookmark>();
         _list = new ListView

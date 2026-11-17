@@ -445,6 +445,8 @@ public sealed partial class WebFlyoutWindow
             IsHitTestVisible = false,
         };
         ToolTipService.SetToolTip(close, UiText.Get("webTabs.closeTab"));
+        // The glyph gives screen readers nothing to announce (UI-14).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(close, UiText.Get("webTabs.closeTab"));
         close.Click += (_, _) => CloseTab(tab);
 
         // Auto / Star rather than a horizontal StackPanel. A stack gives its children an infinite

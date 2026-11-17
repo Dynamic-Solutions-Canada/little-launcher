@@ -1070,6 +1070,8 @@ public sealed partial class LaunchersPage : Page
             MaxHeight = 90,
         };
 
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(linkBox, UiText.Get("launchers.share.shareLink"));
+
         var copyButton = new Button { Content = UiText.Get("launchers.shareLink.copy"), Margin = new Thickness(0, 8, 0, 0) };
         copyButton.Click += (_, _) =>
         {
@@ -1113,6 +1115,9 @@ public sealed partial class LaunchersPage : Page
             Text = UiText.Get("launchers.defaultName.shared"),
             Margin = new Thickness(0, 0, 0, 12),
         };
+
+        // A placeholder vanishes once there is text, so the same words are the name (UI-14).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(nameBox, UiText.Get("launchers.addShared.namePlaceholder"));
 
         var tempLauncher = new Launcher();
         var (formPanel, modeCombo, pathBox, hostBox, portBox, userBox, keyBox, directionCombo,
@@ -1346,6 +1351,9 @@ public sealed partial class LaunchersPage : Page
         void AddField(StackPanel target, string label, UIElement element)
         {
             target.Children.Add(new TextBlock { Text = label, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0) });
+
+            // The label above is a separate TextBlock, so the field takes it as its name (UI-14).
+            AutomationProperties.SetName(element, label);
             target.Children.Add(element);
         }
 
@@ -1472,6 +1480,7 @@ public sealed partial class LaunchersPage : Page
     private async Task<string?> ShowPasswordPrompt()
     {
         var passwordBox = new PasswordBox { PlaceholderText = UiText.Get("launchers.auth.placeholder") };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(passwordBox, UiText.Get("launchers.auth.placeholder"));
 
         var dialog = new ContentDialog
         {

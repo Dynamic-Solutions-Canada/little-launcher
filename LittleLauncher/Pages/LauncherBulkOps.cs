@@ -263,6 +263,10 @@ internal static class LauncherBulkOps
             IsEnabled = false
         };
 
+        // Placeholder text vanishes once a choice is made, so the same words are the names (UI-14).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(browserCombo, UiText.Get("launchers.bookmarks.selectBrowser"));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(profileCombo, UiText.Get("launchers.bookmarks.selectProfile"));
+
         List<BrowserProfile> currentProfiles = [];
 
         var dialog = new ContentDialog
@@ -397,6 +401,7 @@ internal static class LauncherBulkOps
             PlaceholderText = UiText.Get("bookmarkPicker.search"),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(searchBox, UiText.Get("bookmarkPicker.search"));
 
         var selectedCountText = new TextBlock
         {

@@ -175,6 +175,8 @@ public sealed partial class LauncherItemsView
             IsHitTestVisible = false,
         };
         ToolTipService.SetToolTip(_editPencil, UiText.Get("items.editItems"));
+        // The glyph gives screen readers nothing to announce (UI-14).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_editPencil, UiText.Get("items.editItems"));
         _editPencil.SetValue(Canvas.ZIndexProperty, 11);
         _editPencil.Click += (_, _) => EnterEditMode();
         RootGrid.Children.Add(_editPencil);
@@ -767,6 +769,8 @@ public sealed partial class LauncherItemsView
             Margin = new Thickness(2, 0, 0, 0),
         };
         ToolTipService.SetToolTip(remove, UiText.Get("items.removeColumn"));
+        // The glyph gives screen readers nothing to announce (UI-14).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(remove, UiText.Get("items.removeColumn"));
         int captured = columnIndex;
         remove.Click += (_, _) => RemoveColumnAt(captured);
 

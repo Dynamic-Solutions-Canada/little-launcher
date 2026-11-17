@@ -815,8 +815,21 @@ public sealed partial class LauncherSettingsWindow : Window
     /// wrapped text and stretched the box down the full height of it. Giving the control the whole
     /// width sidesteps the competition rather than trying to balance it.
     /// </remarks>
+    /// <summary>
+    /// Gives a row's control its title as the accessible name, unless the caller named it already. A
+    /// switch or box beside a TextBlock is otherwise announced with no label (UI-14).
+    /// </summary>
+    private static void NameFromTitle(FrameworkElement control, string title)
+    {
+        if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(control)))
+        {
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(control, title);
+        }
+    }
+
     private static FrameworkElement BuildStackedRow(string title, string subtitle, FrameworkElement control)
     {
+        NameFromTitle(control, title);
         var panel = new StackPanel { Spacing = 2 };
         panel.Children.Add(new TextBlock { Text = title, FontSize = 14 });
         panel.Children.Add(new TextBlock
@@ -848,6 +861,7 @@ public sealed partial class LauncherSettingsWindow : Window
     /// </summary>
     private static Grid BuildRow(string title, TextBlock subtitle, FrameworkElement control)
     {
+        NameFromTitle(control, title);
         var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

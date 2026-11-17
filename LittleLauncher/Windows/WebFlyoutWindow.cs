@@ -505,6 +505,7 @@ public sealed partial class WebFlyoutWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_addressBox, UiText.Get("common.address"));
         _addressBox.KeyDown += AddressBox_KeyDown;
         // Clicking in selects the whole address, as every browser does — the common reasons to
         // come here are replacing it and copying it, and both want it selected.

@@ -71,6 +71,9 @@ public sealed class TextPromptWindow : Window
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
 
+        // The prompt's title names the box; a placeholder vanishes once there is text (UI-14).
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(textBox, title);
+
         var accept = new Button
         {
             Content = acceptText,
