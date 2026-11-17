@@ -8,4 +8,6 @@ Read [drag-drop.md](../docs/drag-drop.md) before changing drag policy or these s
 
 `LittleLauncher.Sync.Tests` links production launcher models, global payload and portable custom-icon IO. Read [sync.md](../docs/sync.md) and [icons.md](../docs/icons.md); its [README](LittleLauncher.Sync.Tests/README.md) documents adapted native boundaries and qualification limits. Use only disposable files and fake dispatch/service adapters; never real credentials or launcher settings.
 
+`LittleLauncher.OAuth.Tests` links the production `OAuthPkceClient` and drives its loopback sign-in with real local HTTP requests and a fake token endpoint; see its [README](LittleLauncher.OAuth.Tests/README.md). Keep it free of real provider endpoints and credentials.
+
 The guarded native suite that drives the installed app lives outside this folder, in [tests-native/](../tests-native/AGENTS.md), so `npm test` never runs it.

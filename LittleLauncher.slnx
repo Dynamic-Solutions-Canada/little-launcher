@@ -7,6 +7,7 @@
   <Project Path="LauncherShortcut/LauncherShortcut.csproj" />
   <Folder Name="/tests/">
     <Project Path="tests/LittleLauncher.ItemReorder.Tests/LittleLauncher.ItemReorder.Tests.csproj" />
+    <Project Path="tests/LittleLauncher.OAuth.Tests/LittleLauncher.OAuth.Tests.csproj" />
     <Project Path="tests/LittleLauncher.Sync.Tests/LittleLauncher.Sync.Tests.csproj" />
     <Project Path="tests/LittleLauncher.PageIconChoice.Tests/LittleLauncher.PageIconChoice.Tests.csproj" />
   </Folder>

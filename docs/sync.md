@@ -449,7 +449,7 @@ until a change is separately verified; an unexplained sign-in failure is not evi
 rotate it. Client IDs live in source; the Google secret follows the private build-input policy
 below. That policy only keeps the secret out of the public source: anyone with the shipped app
 can extract it, which Google's installed-app model assumes, so it is not a confidentiality control.
-PKCE and callback correlation protect the authorization flow.
+PKCE and callback correlation protect the authorization flow. `tests/LittleLauncher.OAuth.Tests` checks both with real loopback requests.
 
 ### OneDrive: Microsoft Entra
 
