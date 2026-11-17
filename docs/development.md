@@ -47,7 +47,7 @@ Or open `LittleLauncher.slnx` in Visual Studio / Rider and press F5.
 |---|---|
 | `MainWindow` | Invisible host window. Owns the system-tray icon (`H.NotifyIcon`). Enforces single-instance via Mutex. Cross-process IPC via registered window messages. |
 | `FlyoutWindow` | A popup window that displays launcher items in list view, icon grid view, or a compact tray-sized small-icon grid, positioned above the taskbar. Dismissed on focus loss or Escape. Supports direct drag-and-drop reordering, item right-click move/edit/remove actions, and icon-grid edge resizing. |
-| `SettingsWindow` | WinUI 3 window with `MicaBackdrop` and `NavigationView`: pages for Home, Launchers, Launcher Items, Cloud Sync, Settings, and About. |
+| `SettingsWindow` | winui-app-kit's `SettingsShell` (Mica, title bar, navigation with a fixed footer): pages for Home, Launchers, Cloud Sync, Settings, Our other apps and the kit's About page. |
 | `SftpSyncService` | Static async methods for upload/download/test-connection using SSH.NET (`Renci.SshNet`). Also handles per-launcher shared sync (file or SFTP). Supports private-key and password auth. |
 | `AutoSyncService` | Manages automatic sync: startup download, debounced upload, periodic download, and shared launcher sync. |
 | `SettingsManager` | Fully static. Serialises `UserSettings` to `%AppData%\LittleLauncher\settings.json` via `System.Text.Json`. Migrates from legacy `settings.xml` on first load. |
@@ -95,7 +95,6 @@ LittleLauncher/              # WinUI 3 application project
 │   ├── LauncherBulkOps.cs       # Item export/import + bookmark import
 │   ├── SyncPage.xaml/.cs
 │   ├── SystemPage.xaml/.cs
-│   └── AboutPage.xaml/.cs
 ├── Services/
 │   ├── AutoSyncService.cs     # Automatic sync triggers
 │   ├── FaviconService.cs      # Website favicon & title fetching

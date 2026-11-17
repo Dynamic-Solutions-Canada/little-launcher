@@ -17,8 +17,8 @@ chooser, automatic page-icon adoption, and pin snapshot/lifetime behavior are un
 |---|---|---|
 | **System tray (per launcher)** | `ResolveTrayIcon(Launcher)` → preset PNG, glyph, composite, or custom image | Yes (`Launcher.TrayIconMode`) |
 | **Pinned taskbar shortcut** | Immutable `app-icon-{id}-pin{stamp}.ico` in physical AppData via snapshot shortcut or legacy relaunch metadata | Yes (per launcher `TrayIconMode`) |
-| **Settings window titlebar** | `settings-icon.ico` (blue rocket + gear overlay) | No; always Blue rocket |
-| **Settings window taskbar entry** | `settings-icon.ico` via `WM_SETICON` + `AppWindow.SetIcon(IconId)` | No; always Blue rocket |
+| **Settings window titlebar** | `Resources/LittleLauncher.png`, the 256 px app icon, in the kit shell's title bar | No; always Blue rocket |
+| **Settings window taskbar entry** | `settings-icon.ico` via winui-app-kit's `WindowIcon.Apply` (`WM_SETICON` + `AppWindow.SetIcon`, at the window's DPI) | No; always Blue rocket |
 | **Settings window Alt-Tab** | `settings-icon.ico` via `AppWindow.SetIcon(IconId)` | No; always Blue rocket |
 | **Regular item editor** | Packaged app icon via `WindowChrome.ApplyIcon` (`WM_SETICON` + `AppWindow.SetIcon`) | No, normal app identity; no launcher pin/relaunch identity |
 | **Home page app icon** | `Resources/AppIcons/Blue.png` loaded directly | No; always Blue rocket |
@@ -106,7 +106,7 @@ All icon surfaces derive from a single source of truth: `ResolveBaseIconBitmap(L
 4. `UpdateTrayIcon(Launcher)` calls `SaveResolvedIconToAppData(Launcher)` → writes `app-icon-{id}.ico` (and `app-icon.ico` for first launcher)
 5. `UpdateTrayIcon(Launcher)` calls `CleanUpStaleIconFiles()` to remove legacy versioned copies while preserving every pin icon snapshot
 6. `UpdateTrayIcon(Launcher)` calls `SaveSettingsIconToAppData()` → first launcher's bitmap + gear overlay → `BitmapToIcon()` → writes `settings-icon.ico`
-7. `SettingsWindow.RefreshIcon()` reloads `settings-icon.ico` into titlebar, taskbar, and overlay
+7. `SettingsWindow.RefreshIcon()` reapplies `settings-icon.ico` to the window (taskbar and Alt-Tab) through the kit's `WindowIcon.Apply`
 
 **`RefreshLauncherIcon` is where a *window* icon is re-read too**, alongside the tray HICON and the
 `.ico` write. It is the one method every trigger runs through: a mode or custom-image change, a web

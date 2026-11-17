@@ -23,12 +23,13 @@ App.xaml  →  MainWindow (invisible, owns tray icon)
                 ├── LauncherPanels (routes a tray click by Launcher.Kind)
                 │     ├── FlyoutWindow (launcher popup: items)
                 │     └── WebFlyoutWindow (WebView2 popup: a web page)
-                └── SettingsWindow (WinUI 3 + NavigationView)
+                └── SettingsWindow (winui-app-kit's SettingsShell)
                       ├── HomePage
                       ├── LaunchersPage
                       ├── SyncPage
-                      ├── SystemPage
-                      └── AboutPage
+                      ├── SystemPage (the shell's Settings item)
+                      ├── PromotedAppsPage (apps-promo, "Our other apps")
+                      └── the kit's AboutPage (AboutContent.Create)
 ```
 
 ## Item-name tooltips

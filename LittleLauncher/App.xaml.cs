@@ -33,6 +33,9 @@ public partial class App : Application
     /// </summary>
     internal const string HostWindowTitle = "Little Launcher Host";
 
+    /// <summary>The app's 256 px PNG icon, for the settings title bar and the About page.</summary>
+    internal static string IconPngPath => Path.Combine(AppContext.BaseDirectory, "Resources", "LittleLauncher.png");
+
     /// <summary>
     /// Start with Windows (TRAY-10): the manifest's startup task when packaged, the "Little Launcher"
     /// Run value when not. Both names are permanent (KIT-2).

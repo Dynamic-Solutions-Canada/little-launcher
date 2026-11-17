@@ -29,4 +29,5 @@ Report: the version, the commit and tag, who approved the notes, each CI run's r
 ## Pending for the next release
 
 - The first release after v1.43.0 stops sending website hostnames to Google's favicon service (FIX-061). It also makes new 1-way OneDrive share links view-only instead of editable. When it ships, tell the maintainer so the website privacy page is updated to match both. Remove this line once that is done.
+- It is the first release on winui-app-kit's settings shell and shared About page (package 13), so the Store screenshots must be recaptured from the installed app on the Windows test VM, with synthetic data, and the captions in `store-assets/microsoft/listings.json` updated to match (UI-3, LIST-8). Do not tag until that is done.
 - It is also the first release with no Windows portable ZIP (D-020) and with notes in `release-notes/` and their six translations. Check the Release carries only the AppImage and `SHA256SUMS`.

@@ -14,5 +14,8 @@
     "product_name": "Little Launcher",
     "catalog_dir": "Shared/Localization",
     "catalog_layout": "folders"
+  },
+  "notices": {
+    "about_source": "LittleLauncher/Classes/AboutContent.cs"
   }
 }

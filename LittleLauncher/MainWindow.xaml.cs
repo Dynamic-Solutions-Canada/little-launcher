@@ -552,7 +552,7 @@ public sealed partial class MainWindow : Window
         settingsItem.Click += (s, e) => SettingsWindow.ShowInstance(this);
         popup.Items.Add(settingsItem);
         var logsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.openLogsFolder") };
-        logsItem.Click += (s, e) => Classes.AppDiagnostics.OpenLogsFolder();
+        logsItem.Click += (s, e) => WinUIAppKit.Logging.AppLogging.OpenLogsFolder();
         popup.Items.Add(logsItem);
         popup.Items.Add(new H.NotifyIcon.Core.PopupMenuSeparator());
         var exitItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.exit") };

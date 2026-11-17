@@ -812,7 +812,7 @@ Four things follow, each a guard rather than a convention:
     `WM_SETICON` for the taskbar button, `AppWindow.SetIcon` for the switcher.
   - **The old pair is destroyed after the new pair is on the window**, never before. `SendMessage`
     is synchronous, so by then the window carries the replacement; freeing first, which is what
-    `SettingsWindow.ApplyWindowIcon` does, leaves the window pointing at a destroyed icon for the
+    the settings window's old icon code did, leaves the window pointing at a destroyed icon for the
     length of the load. A load that fails leaves the previous icon in place, because a stale icon
     beats the blank placeholder a clear-then-set would produce.
 

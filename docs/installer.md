@@ -143,6 +143,10 @@ documents the signer, certificate trust, cleanup and container transport policy;
 the Store-signed copy. The shared helper stops on a conflicting development
 publisher and never removes packages or forces a downgrade.
 
+## Third-party notices
+
+`LittleLauncher/THIRD-PARTY-NOTICES.txt` lists every NuGet package the app ships, with its licence, and ships in the package (HYG-3). winui-app-kit's generator writes it from the restore graph: run `npm run generate:notices` after any package change and commit the file with the change. `npm run check:notices`, part of `validate`, fails when it is stale or when the About page's link (`AboutContent.NoticesPath`) names another path. A Dependabot NuGet PR leaves the file stale, so redo the bump on `main` with the regenerated file and close the PR (see the kit README's "Third-party notices").
+
 ## Toast notifications in MSIX
 
 Packaged builds register for notifications like unpackaged ones. This needs two manifest

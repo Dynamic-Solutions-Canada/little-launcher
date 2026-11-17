@@ -19,12 +19,14 @@ Read [localization.md](localization.md). In short:
 - XAML: `xmlns:l="using:LittleLauncher.Localization"` on the root, then `Text="{l:Str Key=area.name}"`.
 - Code: `UiText.Get("area.name")`, `UiText.Format(...)` and `UiText.Plural(...)`.
 - Add every new English key to `en-US` and the same key, translated, to every other catalog.
-- Leave room for longer languages: German, Spanish and Portuguese often run 30 to 80 percent longer than English. Give secondary and description text `TextWrapping="Wrap"`, cap the width of controls whose content is translated, and do not size panes for the English labels; Settings sizes its navigation pane from the measured labels.
+- Leave room for longer languages: German, Spanish and Portuguese often run 30 to 80 percent longer than English. Give secondary and description text `TextWrapping="Wrap"`, cap the width of controls whose content is translated, and do not size panes for the English labels. The settings shell's 240 px pane fits the longest label in every catalog.
 
 ## Pages
 
 - Pages are `Page` objects (not `UserControl`)
-- Navigation via WinUI 3 `NavigationView` with `TargetPageType` in XAML
+- The settings window hosts winui-app-kit's `SettingsShell`; `SettingsWindow` adds the app's own menu items and maps each tag to a page type (`PageFor`). The footer (Our other apps, About, Settings) belongs to the shell.
+- About is the kit's shared `AboutPage`, filled from `Classes/AboutContent.Create`; product-specific content goes in its `ExtraCards`, never in a copy of the page
+- Page and card styles come from the kit's `Styles.xaml`, merged in `App.xaml` (UI-3)
 - No MVVM routing framework: direct page type references
 
 ## Controls

@@ -24,7 +24,7 @@ This repo follows the shared standards at https://github.com/Dynamic-Solutions-C
 
 - Use `[ObservableProperty]` from CommunityToolkit.Mvvm for every bindable setting. Partial `On<Property>Changed` methods in `UserSettings` handle side effects; the `_initializing` flag suppresses them during deserialization.
 - P/Invoke declarations live in `NativeMethods.cs`, imported with `using static LittleLauncher.Classes.NativeMethods;`. New declarations use `[LibraryImport]`; existing ones use `[DllImport]`.
-- Pages are WinUI 3 `Page` objects navigated through `NavigationView` with `TargetPageType` in XAML; there is no MVVM routing framework. Commands use `CommunityToolkit.Mvvm.Input.RelayCommand`.
+- Pages are WinUI 3 `Page` objects in winui-app-kit's `SettingsShell`, which `SettingsWindow` maps from menu tags to page types; About is the kit's shared page. There is no MVVM routing framework. Commands use `CommunityToolkit.Mvvm.Input.RelayCommand`.
 - All UI text lives in the shared catalogs under `Shared/Localization/`, for both Windows and Linux: XAML uses `{l:Str Key=area.name}`, C# uses `UiText`, Python uses `i18n.t`. Every new key goes into all seven catalogs; see [docs/localization.md](docs/localization.md).
 - **MSIX VFS rule:** any path read by another process (shell `.lnk` files, the companion helper) uses `MainWindow.GetPhysicalAppDataDir()`, never `Environment.GetFolderPath(ApplicationData)`, which is redirected inside the package. See [docs/icons.md](docs/icons.md).
 - A new launcher item feature extends `LauncherItem` and the shared `LauncherItemsView` renderer, so the tray flyout and the regular editor both get it; use the `add-launcher-feature` skill.
@@ -44,7 +44,8 @@ Source is authoritative in WSL, with submodules initialised (`git submodule upda
 | `npm run test:linux` | The Linux portable checks and Node suites pass | Native Qt behaviour, which is skipped without PySide6 |
 | `npm run check:l10n` | Catalogs have the English keys and placeholders | Translation quality |
 | `npm run check:listing` | Listing source and current notes fit Store limits | That the listing is live |
-| `npm run validate` | The Linux gate: `format:check`, `check:gitignore`, `check:l10n`, `check:listing`, then `npm test` | A Windows compile; also run `verify:desktop` |
+| `npm run check:notices` | `LittleLauncher/THIRD-PARTY-NOTICES.txt` matches the restore graph and the About link | That the licences are reviewed; run `generate:notices` after a package change |
+| `npm run validate` | The Linux gate: `format:check`, `check:notices`, `check:gitignore`, `check:l10n`, `check:listing`, then `npm test` | A Windows compile; also run `verify:desktop` |
 
 Before finishing a change, run `npm run validate` and `npm run verify:desktop`. `tests-native/` drives a real desktop and never runs from these commands.
 

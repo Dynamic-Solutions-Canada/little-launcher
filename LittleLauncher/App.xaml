@@ -6,11 +6,9 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <!-- The family's page and card styles (UI-3), also used by the promo page. -->
+                <ResourceDictionary Source="ms-appx:///WinUIAppKit/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
-
-            <!-- Override default NavigationView background to transparent -->
-            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
-            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

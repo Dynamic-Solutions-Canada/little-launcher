@@ -331,7 +331,7 @@ public sealed partial class WebFlyoutWindow
     /// </para>
     /// <para>The previous pair is destroyed <em>after</em> the new pair is on the window, never
     /// before. <c>SendMessage</c> is synchronous, so by then the window is already carrying the
-    /// replacement; freeing first — which is what <c>SettingsWindow.ApplyWindowIcon</c> does —
+    /// replacement; freeing first — which is what the settings window's icon code used to do —
     /// leaves the window pointing at a destroyed icon for the length of the load.</para>
     /// </remarks>
     private void LoadWindowIcon()

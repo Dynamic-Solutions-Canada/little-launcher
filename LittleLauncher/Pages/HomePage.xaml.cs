@@ -28,7 +28,22 @@ public partial class HomePage : Page
         VersionTextBlock.Text = SettingsManager.Current.LastKnownVersion;
         BuildTypeTextBlock.Text = GetBuildTypeLabel();
         WhatsNewInfoBar.IsOpen = SettingsManager.Current.ShowWebLauncherNotice;
+        ShowResetNoticeIfPending();
         _ = CheckForUpdateAsync();
+    }
+
+    /// <summary>
+    /// Shows winui-app-kit's "settings were reset" bar at the top of this page when this launch
+    /// replaced an unreadable settings file (CONF-2, UI-15). Home is the page Settings opens on, and
+    /// the launch that needs the notice opens Settings even when silent. Shown once: the defaults are
+    /// already saved.
+    /// </summary>
+    private void ShowResetNoticeIfPending()
+    {
+        if (SettingsManager.TakeResetNotice(out string? backupPath))
+        {
+            PageContent.Children.Insert(0, WinUIAppKit.Settings.SettingsResetNotice.Create(backupPath));
+        }
     }
 
     /// <summary>
