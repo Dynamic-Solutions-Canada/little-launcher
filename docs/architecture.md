@@ -552,7 +552,7 @@ flattened as the flyout flattens them, or its bookmarks for a web launcher.
 
 ## Distribution
 
-Root `global.json`, `Directory.Build.props`, and `Directory.Build.targets` share the .NET SDK/runtime security floor across the main app, the NativeAOT companion, both release workflows, and disposable Windows build staging. See [the build security floor](windows-development.md#net-build-security-floor) for versions and artifact verification requirements.
+Root `global.json`, `Directory.Build.props`, and `Directory.Build.targets` (importing winui-app-kit's shared build files) share the .NET SDK/runtime security floor across the main app, the NativeAOT companion, both release workflows, and disposable Windows build staging. See [the build security floor](windows-development.md#net-build-security-floor) for versions and artifact verification requirements.
 
 The Windows app ships through the **Microsoft Store MSIX**. A portable zip was attached to GitHub releases up to 1.43.0; later releases attach no Windows build, because a free download from the public repo would undercut the paid listing (DIST-5, D-020). Existing portable copies keep working, and their update check opens the release page, which points to the Store. A per-user WiX MSI was retired at v1.35.1. On Windows, only the Store build installs its own updates. The Linux app uses only AppImage, with explicit in-app download, install and restart controls. See [docs/installer.md](installer.md).
 

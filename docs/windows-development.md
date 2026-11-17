@@ -1,5 +1,5 @@
 > **Scope:** Use when building, verifying, packaging or installing the Windows app from WSL, or changing the .NET build floor.
-> **Governs:** `windows-build.json`, `package.json`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`.
+> **Governs:** `windows-build.json`, `package.json`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`, `Directory.Packages.props`.
 
 # Windows desktop workflow
 
@@ -28,7 +28,7 @@ The build host's architecture is the default platform. `verify:desktop` compiles
 
 `global.json` requires stable SDK 10.0.403 or later within .NET 10 (`rollForward: latestFeature`, so a later 10.0 feature band also qualifies; PLAT-2). Both release workflows install that SDK from the same file. The shared Windows bridge copies these root build files into disposable staging, so local builds and the nested NativeAOT publish use the same policy. Install the required SDK on the build machine through its normal maintenance process if it is missing; the build does not install one.
 
-`Directory.Build.props` sets `TargetLatestRuntimePatch=true`. With the selected SDK, this selects runtime 10.0.14 or later for self-contained output and raises the shared runtime requirement in framework-dependent output. `Directory.Build.targets` rejects explicit .NET 10 runtime versions below 10.0.14 and rejects disabling latest-patch selection without an explicit patched runtime. SDK feature-band upgrades should update `global.json` and recheck runtime and NativeAOT compiler-pack versions together.
+The floors come from winui-app-kit's shared build files (KIT-9), imported by `Directory.Build.props` and `Directory.Build.targets`: the build fails below SDK 10.0.403, and a self-contained build (the app and the Native AOT helper) fails if a runtime pack below 10.0.14 resolves. The kit raises both in one place when a .NET security release moves them; the app takes the change with a pin bump. The same files turn on the .NET analyzers and code style in the build, and warnings fail Release and CI builds. Package versions are central (`Directory.Packages.props`): the Windows App SDK, NLog and CommunityToolkit.Mvvm come from the kit, and the app adds only its own packages. SDK feature-band upgrades should update `global.json` and recheck runtime and NativeAOT compiler-pack versions together.
 
 This floor follows [Microsoft's CVE-2026-111497 advisory](https://github.com/dotnet/runtime/security/advisories/GHSA-p3jp-9v83-76w9). The [v1.41.1 release build](https://github.com/Dynamic-Solutions-Canada/little-launcher/actions/runs/39680937971) used SDK 10.0.402/runtime 10.0.13 for both architectures. Its published x64 NativeAOT helper also contains the 10.0.13 runtime marker. No direct Brotli decompression or automatic HTTP decompression was found in the application source; decoder reachability through shipped binaries and transitive dependencies remains unconfirmed. A patched build floor is not evidence of an exploitable application path or a remediated installed copy.
 

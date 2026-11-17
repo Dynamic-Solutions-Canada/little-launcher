@@ -18,6 +18,9 @@ public partial class App : Application
 
     public App()
     {
+        // Name the data folder for the kit's shared NLog config before anything logs (LOG-1).
+        // Permanent: it is the folder settings.json and the logs have always been in (KIT-2).
+        WinUIAppKit.Logging.AppLogging.UseDataFolder("LittleLauncher");
         InitializeComponent();
     }
 
@@ -61,6 +64,10 @@ public partial class App : Application
         Localization.UiText.Configure(
             () => SettingsManager.Current.LanguageOverride,
             () => global::Windows.System.UserProfile.GlobalizationPreferences.Languages);
+
+        // The "Our other apps" page translates its own text and follows the app's language (PROMO-7).
+        TechnicallyReal.Promo.PromoLocalization.LocaleProvider = () => Localization.UiText.Locale;
+        Localization.UiText.Changed += TechnicallyReal.Promo.PromoLocalization.Refresh;
 
         m_window = new MainWindow();
         m_window.Activate();

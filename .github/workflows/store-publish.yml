@@ -61,7 +61,7 @@ concurrency:
 
 jobs:
   publish:
-    uses: Dynamic-Solutions-Canada/winui-app-kit/.github/workflows/store-publish.yml@v1.18.1
+    uses: Dynamic-Solutions-Canada/winui-app-kit/.github/workflows/store-publish.yml@v1.19.1
     with:
       store_product_id: 9P3ZZBDQ6PJF
       # Paid, US $0.99: the tier verified with Partner Center (see docs/installer.md).
@@ -82,9 +82,9 @@ jobs:
       submit_draft: ${{ inputs.submit_draft || '' }}
       replace_failed_draft: ${{ inputs.replace_failed_draft || '' }}
       failed_upload: ${{ inputs.failed_upload || '' }}
-      # The kit accepts hold_publication only with submit_draft, so it is passed only then; the
-      # input's default of true therefore applies to submissions and to nothing else.
-      hold_publication: ${{ github.event_name == 'workflow_dispatch' && inputs.submit_draft != '' && inputs.hold_publication }}
+      # The kit applies hold_publication only to submit_draft runs and ignores it on dry runs,
+      # repairs and drafts, so the input's default of true is safe to pass straight through.
+      hold_publication: ${{ github.event_name == 'workflow_dispatch' && inputs.hold_publication }}
       inspect_draft: ${{ inputs.inspect_draft || '' }}
     # Explicit, not inherit: the reusable workflow gets exactly the Store credentials (CI-11) and the
     # one build secret.

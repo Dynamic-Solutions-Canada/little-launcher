@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Microsoft.WindowsAppSDK, NLog and CommunityToolkit.Mvvm come from the kit (PLAT-5): the app
+       never moves ahead of the kit's versions. -->
+  <Import Project="$(MSBuildThisFileDirectory)external/winui-app-kit/build/WinUIAppKit.Packages.props" />
+
+  <!-- This app's own packages. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.4.1" />
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
+  </ItemGroup>
+</Project>

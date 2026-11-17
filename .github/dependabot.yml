@@ -7,6 +7,8 @@ version: 2
 updates:
   - package-ecosystem: nuget
     directories:
+      # Versions are central in the root Directory.Packages.props; the projects list the packages.
+      - "/"
       - "/LittleLauncher"
       - "/tests/LittleLauncher.ItemReorder.Tests"
       - "/tests/LittleLauncher.Sync.Tests"

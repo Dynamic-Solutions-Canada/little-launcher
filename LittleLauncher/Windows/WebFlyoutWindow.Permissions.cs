@@ -134,15 +134,6 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private const long PageCloseGraceMs = 30_000;
 
-    /// <summary>Notifications currently on screen, so a toast click can be reported back to the page.</summary>
-    /// <remarks>
-    /// Entries leave on a click or when the page withdraws the notification, but a toast the user
-    /// simply ignores reports nothing at all — so this is capped rather than trusted to drain. The
-    /// cap is what a click can still reach; older toasts just open the launcher without telling the
-    /// page they were clicked.
-    /// </remarks>
-    private static int _notificationSequence;
-
     /// <summary>True while the flyout is asking something. Pins it open, like an owned window.</summary>
     private bool IsPromptOpen => _promptBar?.Visibility == Visibility.Visible;
 
@@ -1086,7 +1077,7 @@ public sealed partial class WebFlyoutWindow
     }
 
     /// <summary>Tells the page what became of one of its notifications.</summary>
-    private void PostNotificationEvent(string kind, string tag)
+    private void PostNotificationEvent(string kind, string? tag)
     {
         var core = _webView?.CoreWebView2;
         if (core == null)

@@ -12,8 +12,8 @@
     "check:l10n": "PYTHONPATH=linux python3 -m unittest -v linux.tests.test_localization",
     "check:gitignore": "external/winui-app-kit/scripts/check-gitignore .",
     "check:listing": "python3 external/winui-app-kit/scripts/check-listing.py",
-    "format": "scripts/format",
-    "format:check": "scripts/format --check",
+    "format": "external/winui-app-kit/scripts/format",
+    "format:check": "external/winui-app-kit/scripts/format --check",
     "validate": "npm run format:check && npm run check:gitignore && npm run check:l10n && npm run check:listing && npm test",
     "start:linux": "linux/bin/little-launcher",
     "package:linux": "python3 linux/packaging/build.py"

@@ -1228,7 +1228,8 @@ public sealed class ItemEditorWindow : Window
             var args = finalIsPwa ? "" : argsBox.Text.Trim();
             var glyph = customGlyph ?? (finalIsWebsite || finalIsPwa ? "" : "");
 
-            if (isEdit)
+            // isEdit is existingItem != null; the pattern lets the compiler see that too.
+            if (existingItem is not null)
             {
                 existingItem.Name = name;
                 existingItem.Path = finalPath;

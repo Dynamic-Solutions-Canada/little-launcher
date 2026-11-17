@@ -25,7 +25,7 @@ The commands build for the build host's architecture by default. [windows-develo
 
 `npm run validate` is the Linux gate, run before finishing any change together with `npm run verify:desktop`. In order, it runs:
 
-- `npm run format:check`: every C# project outside `external/` matches the root `.editorconfig`, which is winui-app-kit's file copied unchanged; `npm run format` rewrites the files.
+- `npm run format:check`: every C# project outside `external/` matches the root `.editorconfig`, which is winui-app-kit's file copied unchanged; `npm run format` (winui-app-kit's `scripts/format`) rewrites the files, repeating until they settle.
 - `npm run check:gitignore`: `.gitignore` ends with winui-app-kit's shared block, unchanged.
 - `npm run check:l10n`: the catalog checks in [localization.md](localization.md#checks).
 - `npm run check:listing`: winui-app-kit's Store listing check: `store-assets/microsoft/listings.json` and the current version's `release-notes/` files fit the Store's limits, and the README tagline is the first sentence of the `en-US` short description.
@@ -61,9 +61,10 @@ See [docs/architecture.md](architecture.md) for detailed flows: launch modes, se
 |---|---|---|
 | [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) | 1.8.260209005 | WinUI 3 controls, Mica, NavigationView |
 | [H.NotifyIcon.WinUI](https://github.com/HavenDV/H.NotifyIcon) | 2.4.1 | System tray icon |
+| [WinUI App Kit](https://github.com/Dynamic-Solutions-Canada/winui-app-kit) | submodule `external/winui-app-kit` | Shared build configuration, package versions and logging config |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | 8.4.0 | Source-gen `[ObservableProperty]`, `RelayCommand` |
 | [SSH.NET](https://github.com/sshnet/SSH.NET) | 2026.0.0 | SFTP sync |
-| [NLog](https://nlog-project.org/) | 6.1.1 | Logging |
+| [NLog](https://nlog-project.org/) | 6.2.2 | Logging, with winui-app-kit's shared config (one file per launch beside `settings.json`) |
 | [Microsoft.Data.Sqlite](https://learn.microsoft.com/dotnet/standard/data/sqlite/) | 10.0.13 | Firefox bookmark import from `places.sqlite` |
 
 - `Microsoft.WindowsDesktop.App` is a framework reference, for `System.Windows.Automation` taskbar button detection.
