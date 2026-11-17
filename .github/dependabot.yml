@@ -8,8 +8,8 @@ updates:
   - package-ecosystem: nuget
     directories:
       - "/LittleLauncher"
-      - "/tests/LauncherItemReorder.Tests"
-      - "/tests/LauncherSync.Tests"
+      - "/tests/LittleLauncher.ItemReorder.Tests"
+      - "/tests/LittleLauncher.Sync.Tests"
     schedule:
       interval: weekly
     groups:

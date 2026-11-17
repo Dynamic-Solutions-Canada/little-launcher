@@ -1,6 +1,6 @@
 # Launcher sync regressions
 
-Run `dotnet run --project tests/LauncherSync.Tests` with .NET 10. This links the real Windows observable launcher/item/bookmark models, `LauncherPayload` and `PortableLauncherIcon`. Only native dispatch, window invalidation, logging and unrelated network/service boundaries are adapted. Temporary image files exercise actual capture, serialization, materialization and in-place merge across different device paths. It does not open windows, read personal settings, contact an account or qualify the full WinUI build.
+Run `dotnet run --project tests/LittleLauncher.Sync.Tests` with .NET 10. This links the real Windows observable launcher/item/bookmark models, `LauncherPayload` and `PortableLauncherIcon`. Only native dispatch, window invalidation, logging and unrelated network/service boundaries are adapted. Temporary image files exercise actual capture, serialization, materialization and in-place merge across different device paths. It does not open windows, read personal settings, contact an account or qualify the full WinUI build.
 
 Read [docs/sync.md](../../docs/sync.md) and [icons.md](../../docs/icons.md) before changing it.
 

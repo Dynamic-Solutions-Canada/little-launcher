@@ -3,7 +3,7 @@
 Run from the repository root with .NET 10:
 
 ```sh
-dotnet run --project tests/LauncherItemReorder.Tests
+dotnet run --project tests/LittleLauncher.ItemReorder.Tests
 ```
 
 The executable returns nonzero on any failure and prints each case. It compiles the actual LauncherItem model, production LauncherItemReorder policy and LauncherDropGeometry group-boundary classifier, with the same observable-model generator version as the app. It has no test framework dependency and does not read user settings, open windows or contact sync services.
@@ -11,7 +11,7 @@ The executable returns nonzero on any failure and prints each case. It compiles 
 On Linux without a host SDK, use the existing isolated SDK image:
 
 ```sh
-docker run --rm --user "$(id -u):$(id -g)" -e DOTNET_CLI_HOME=/tmp/dotnet-home -e NUGET_PACKAGES=/tmp/nuget -v "$PWD:/src" -w /src mcr.microsoft.com/dotnet/sdk:10.0.402 dotnet run --project tests/LauncherItemReorder.Tests
+docker run --rm --user "$(id -u):$(id -g)" -e DOTNET_CLI_HOME=/tmp/dotnet-home -e NUGET_PACKAGES=/tmp/nuget -v "$PWD:/src" -w /src mcr.microsoft.com/dotnet/sdk:10.0.402 dotnet run --project tests/LittleLauncher.ItemReorder.Tests
 ```
 
 Coverage includes same/cross-column moves, children into/out of/between groups, whole-group identity, empty targets, invalid nesting, synthetic-wrapper behavior, stale source/target collections and item references, duplicate destination membership, cancellation before mutation, no-op drops, insertion bounds and flatten/save/reload behavior.

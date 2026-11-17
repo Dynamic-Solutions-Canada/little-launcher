@@ -50,4 +50,4 @@ The old `Resources/Localization/Dictionary-en-US.xaml` and `Application.Current.
 
 ## Checks
 
-`linux/tests/test_localization.py` checks that every catalog has exactly the English keys, matching placeholders and no empty values, that each key lives in the area file its prefix names, and that the Python language list matches `SupportedLanguages.cs`. `tests/LauncherSync.Tests` covers the C# resolver, fallback and placeholder filling. These checks do not establish translation quality.
+`linux/tests/test_localization.py` checks that every catalog has exactly the English keys, matching placeholders and no empty values, that each key lives in the area file its prefix names, and that the Python language list matches `SupportedLanguages.cs`. `tests/LittleLauncher.Sync.Tests` covers the C# resolver, fallback and placeholder filling. These checks do not establish translation quality.

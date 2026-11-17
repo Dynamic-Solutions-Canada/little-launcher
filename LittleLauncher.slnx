@@ -6,8 +6,8 @@
   <Project Path="LittleLauncher/LittleLauncher.csproj" />
   <Project Path="LauncherShortcut/LauncherShortcut.csproj" />
   <Folder Name="/tests/">
-    <Project Path="tests/LauncherItemReorder.Tests/LauncherItemReorder.Tests.csproj" />
-    <Project Path="tests/LauncherSync.Tests/LauncherSync.Tests.csproj" />
-    <Project Path="tests/PageIconChoiceRegression/PageIconChoiceRegression.csproj" />
+    <Project Path="tests/LittleLauncher.ItemReorder.Tests/LittleLauncher.ItemReorder.Tests.csproj" />
+    <Project Path="tests/LittleLauncher.Sync.Tests/LittleLauncher.Sync.Tests.csproj" />
+    <Project Path="tests/LittleLauncher.PageIconChoice.Tests/LittleLauncher.PageIconChoice.Tests.csproj" />
   </Folder>
 </Solution>
