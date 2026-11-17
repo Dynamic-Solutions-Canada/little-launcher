@@ -33,26 +33,20 @@ public partial class UserSettings : ObservableObject
     public partial string LanguageOverride { get; set; }
 
     /// <summary>Start minimized to tray when Windows starts.</summary>
+    /// <remarks>
+    /// Defaults to on. Settings files from before schema version 1 that leave it out meant off;
+    /// <see cref="Classes.Settings.SettingsSchema"/> carries that forward.
+    /// </remarks>
     [ObservableProperty]
-    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public partial bool Startup { get; set; }
 
     /// <summary>Animate launcher flyouts when they open and close.</summary>
     /// <remarks>
-    /// <para><c>JsonIgnoreCondition.Never</c> is load-bearing, not decoration. This setting
-    /// defaults to <c>true</c>, and <see cref="SettingsManager.JsonOptions"/>
-    /// serialises with <c>DefaultIgnoreCondition = WhenWritingDefault</c> — which drops any
-    /// property holding the *CLR* default. Turning animations off therefore wrote <c>false</c>…
-    /// by omitting the key entirely, and the constructor put <c>true</c> back on the next load.
-    /// The setting could not be turned off at all: verified by toggling it off, closing the
-    /// settings window, and finding no <c>FlyoutAnimationsEnabled</c> key in settings.json.</para>
-    /// <para>Any future setting whose default is <c>true</c> (or any non-zero number) needs this
-    /// attribute, or the phrasing inverted so <c>false</c> is the default behaviour — the approach
-    /// the launcher's <c>Web*</c> properties take. See
-    /// <see href="../../docs/user-settings.md">user-settings.md</see>.</para>
+    /// Defaults to on. Since schema version 1 every value is written, so a setting may default to
+    /// <c>true</c> or any number and still be turned off; see
+    /// <see href="../../docs/user-settings.md">user-settings.md</see>.
     /// </remarks>
     [ObservableProperty]
-    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public partial bool FlyoutAnimationsEnabled { get; set; }
 
     /// <summary>
@@ -61,7 +55,7 @@ public partial class UserSettings : ObservableObject
     /// <remarks>
     /// <para>Stored in the negative and shown in the positive ("Start Menu Shortcuts", on by
     /// default) — the same bargain <c>Launcher.WebLockSize</c> makes, and for the same reason: a
-    /// bool defaulting to <c>true</c> cannot be turned off under <c>WhenWritingDefault</c>. Invert
+    /// bool defaulting to <c>true</c> could not be turned off under schema 0's <c>WhenWritingDefault</c>. Invert
     /// it in the one line that builds the toggle, never in the model.</para>
     /// <para>Shortcuts are what let a web launcher be opened from Start search, PowerToys Command
     /// Palette and anything else that indexes the Start Menu. Turning this off deletes the group
@@ -100,8 +94,8 @@ public partial class UserSettings : ObservableObject
     /// </summary>
     /// <remarks>
     /// Defaults to <c>false</c> and is switched *on* by the upgrade check, which is what makes it
-    /// safe under this file's <c>WhenWritingDefault</c> policy: dismissing writes <c>false</c>,
-    /// the key is dropped, and the notice stays gone. A flag phrased the other way round could
+    /// safe under schema 0's <c>WhenWritingDefault</c> policy: dismissing wrote <c>false</c>,
+    /// the key was dropped, and the notice stayed gone. A flag phrased the other way round could
     /// never be dismissed. See the docs on defaults in user-settings.md.
     /// </remarks>
     [ObservableProperty]
@@ -219,8 +213,8 @@ public partial class UserSettings : ObservableObject
     /// back does not mean re-entering them.
     /// </summary>
     /// <remarks>
-    /// <see cref="SyncProviders.Sftp"/> is 0 on purpose: <c>WhenWritingDefault</c> drops the key
-    /// when the value is the CLR default, so 0 has to mean the behaviour every settings file
+    /// <see cref="SyncProviders.Sftp"/> is 0 on purpose: schema 0's <c>WhenWritingDefault</c> dropped the key
+    /// when the value was the CLR default, so 0 has to mean the behaviour every settings file
     /// written before this setting existed was configured for. See
     /// <see href="../../docs/user-settings.md">user-settings.md</see>.
     /// </remarks>
@@ -266,8 +260,8 @@ public partial class UserSettings : ObservableObject
     /// profile gets its own. The platform scopes it neither way
     /// (<c>IsPasswordAutosaveEnabled</c> is per browser instance), so this is what decides.</para>
     /// <para>A set of the profiles where it is <em>off</em>, rather than a flag per profile, so the
-    /// default — on, as it has always been — is the absent case and stays absent under
-    /// <c>WhenWritingDefault</c>.</para>
+    /// default — on, as it has always been — is the absent case and stays absent, since nulls are never
+    /// written.</para>
     /// <para>Read when a browser is created, so it takes effect for a launcher the next time its
     /// browser starts rather than retroactively for one already running.</para>
     /// </remarks>
@@ -276,8 +270,8 @@ public partial class UserSettings : ObservableObject
     /// <summary>Extensions promoted to a button in the flyout header.</summary>
     /// <remarks>
     /// Keyed by store id, or by name for one added from a folder — the same fallback the rest of
-    /// the feature uses. Absent means none pinned, which is the default and stays absent under
-    /// <c>WhenWritingDefault</c>.
+    /// the feature uses. Absent means none pinned, which is the default and stays absent, since nulls are never
+    /// written.
     /// </remarks>
     public List<string>? PinnedBrowserExtensions { get; set; }
 
@@ -286,7 +280,7 @@ public partial class UserSettings : ObservableObject
     /// App-wide rather than per launcher, because extensions belong to a <em>profile</em> and most
     /// launchers share one — an app-wide list installed onto whichever profile is starting is the
     /// arrangement that matches how WebView2 actually scopes them. Nullable so an absent key stays
-    /// absent under <c>WhenWritingDefault</c>; <c>BrowserExtensionService.Installed</c> creates it
+    /// absent (nulls are never written); <c>BrowserExtensionService.Installed</c> creates it
     /// on first use.
     /// <para>Only the id and the name of each are synced — see <see cref="Models.BrowserExtension"/>.
     /// </para>
@@ -499,7 +493,7 @@ public partial class UserSettings : ObservableObject
     /// </summary>
     /// <remarks>
     /// <see cref="SyncProvider"/> is SFTP (0) both for a file that chose SFTP and for one that never
-    /// chose anything, because <c>WhenWritingDefault</c> omits 0. Only the settings each transport
+    /// chose anything, because schema 0 files (<c>WhenWritingDefault</c>) omitted 0. Only the settings each transport
     /// needs can tell them apart. A cloud account provider is non-zero, so it was written only
     /// because the user picked it; its sign-in lives outside these settings and is kept as chosen.
     /// </remarks>

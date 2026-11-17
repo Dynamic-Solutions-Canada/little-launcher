@@ -29,8 +29,8 @@ public partial class SystemPage : Page
         DataContext = SettingsManager.Current;
 
         // Shown in the positive, stored in the negative. The inversion lives here rather than in
-        // the model because a bool defaulting to true cannot be turned off under
-        // WhenWritingDefault — see user-settings.md.
+        // the model because a bool defaulting to true could not be turned off under
+        // schema 0's WhenWritingDefault; see user-settings.md.
         _updatingShortcutsSwitch = true;
         WebShortcutsToggle.IsOn = !SettingsManager.Current.DisableWebLauncherShortcuts;
         _updatingShortcutsSwitch = false;
@@ -383,7 +383,7 @@ public partial class SystemPage : Page
         {
             try
             {
-                SettingsManager.SaveSettings(file.Path);
+                SettingsManager.ExportSettings(file.Path);
             }
             catch (Exception ex)
             {
@@ -407,8 +407,12 @@ public partial class SystemPage : Page
         {
             try
             {
-                SettingsManager.RestoreSettings(file.Path);
-                SettingsManager.SaveSettings();
+                // A file that cannot be read leaves the current settings as they are, and the
+                // app keeps running rather than restarting into them.
+                if (!SettingsManager.ImportSettings(file.Path))
+                {
+                    return;
+                }
 
                 // Restart to apply imported settings
                 var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;

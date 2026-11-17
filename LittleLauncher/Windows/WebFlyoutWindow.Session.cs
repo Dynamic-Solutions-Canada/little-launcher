@@ -84,8 +84,8 @@ public sealed partial class WebFlyoutWindow
 
         int active = _activeTab == null ? 0 : Math.Max(0, _tabs.IndexOf(_activeTab));
 
-        // Nothing to say is said as nothing: an empty list under WhenWritingDefault leaves the key
-        // out entirely, so a launcher that has never been opened carries no session at all. Only
+        // Nothing to say is said as nothing: no addresses is stored as null, which is never
+        // written, so a launcher that has never been opened carries no session at all. Only
         // reachable now for tabs that exist but have no address yet, never for a teardown.
         var stored = urls.Count == 0 ? null : urls;
 

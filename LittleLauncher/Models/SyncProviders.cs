@@ -5,9 +5,9 @@ namespace LittleLauncher.Models;
 /// Stored as an int in <see cref="ViewModels.UserSettings.SyncProvider"/>.
 /// </summary>
 /// <remarks>
-/// <para><see cref="Sftp"/> is 0 deliberately. <c>SettingsManager.JsonOptions</c> uses
-/// <c>WhenWritingDefault</c>, so the CLR default is the value that is written by omission —
-/// which must stay the transport every existing settings file was configured for.</para>
+/// <para><see cref="Sftp"/> is 0 deliberately. Settings schema 0 used
+/// <c>WhenWritingDefault</c>, so the CLR default was the value written by omission, which
+/// must stay the transport every existing settings file was configured for.</para>
 /// <para>There are three kinds of transport here, not two: SFTP, the API-backed cloud accounts
 /// (<see cref="Services.CloudSyncService"/>), and plain folders
 /// (<see cref="Services.FolderSyncService"/>). OneDrive and Google Drive sign in and talk to

@@ -2391,7 +2391,7 @@ created shared**: several launchers onto one system otherwise means signing in t
 per launcher, and again every time a session expires. Private is still there for the case that
 argued for isolation originally: two launchers as two accounts on the same site.
 
-**It is `true` at creation, never a model default.** `WhenWritingDefault` omits a property holding
+**It is `true` at creation, never a model default.** Settings schema 0 (`WhenWritingDefault`) omitted a property holding
 the CLR default, so a `= true` initialiser would read as `true` for every launcher that never stored
 the field. That is not a cosmetic mistake here: it decides which folder a launcher's cookies live in,
 so it would silently move every existing launcher onto a profile it had never signed in to, and
@@ -2432,8 +2432,8 @@ when the flyout is loaded, and deletes the folder when it is not.
 
 ## Settings that must default to zero / false
 
-`settings.json` is written with `DefaultIgnoreCondition = WhenWritingDefault`, so a property holding
-the CLR default is **omitted from the file**. Two consequences shape these properties:
+Settings schema 0 wrote `settings.json` with `DefaultIgnoreCondition = WhenWritingDefault`, so a property holding
+the CLR default was **omitted from the file**, and those files are still loaded. Two consequences shape these properties (see [user-settings.md](user-settings.md#the-settings-file-schema-versions-and-written-defaults)):
 
 - Numeric settings (`WebFlyoutWidth`, `WebFlyoutHeight`, `WebZoomPercent`, `WebIdleUnloadMinutes`)
   store `0` for "unset" and resolve their real defaults through the `Resolved*` properties on

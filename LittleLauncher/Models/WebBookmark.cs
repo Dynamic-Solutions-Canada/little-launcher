@@ -41,8 +41,8 @@ public partial class WebBookmark : ObservableObject
     /// <para>The launcher-wide setting wins where they disagree. It is the blunter instrument and
     /// the one the user reached for last; a bookmark left un-collapsed under "icons only" would be
     /// the setting quietly failing to do what it says.</para>
-    /// <para>Off by default, which is both the shipped behaviour and the direction that survives
-    /// <c>WhenWritingDefault</c>.</para>
+    /// <para>Off by default, which is both the shipped behaviour and the direction that survived
+    /// schema 0's <c>WhenWritingDefault</c>.</para>
     /// </remarks>
     [ObservableProperty]
     public partial bool IconsOnly { get; set; }

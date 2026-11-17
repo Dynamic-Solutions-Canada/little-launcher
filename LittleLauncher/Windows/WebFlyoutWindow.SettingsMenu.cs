@@ -86,7 +86,7 @@ public sealed partial class WebFlyoutWindow
         // right place for it rather than two windows away. "Where you last dragged it" is one of the
         // Opens at values, because remembering a position and choosing one are the same question.
         // WebLockSize is the inverse of what is shown, because this one is on by default and a
-        // bool defaulting to true cannot be turned off under WhenWritingDefault. Inverted here, in
+        // bool defaulting to true could not be turned off under schema 0's WhenWritingDefault. Inverted here, in
         // the line that builds the item; never in the model.
         submenu.Items.Add(Toggle(UiText.Get("webMenu.rememberSize"), !_launcher.WebLockSize, on =>
         {

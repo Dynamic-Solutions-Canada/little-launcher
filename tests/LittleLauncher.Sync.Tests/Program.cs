@@ -24,15 +24,74 @@ try
         Console.WriteLine("Production C# payload round-trip complete");
         return;
     }
-    await Test("login startup defaults on and explicit off survives actual model JSON", () =>
+    await Test("version 0 settings files load through the store exactly as the old reader read them", () =>
     {
-        var options = new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault };
+        foreach (var (name, json) in SettingsFixtures.Version0())
+        {
+            string folder = Path.Combine(root, "settings-" + name);
+            Directory.CreateDirectory(folder);
+            string path = Path.Combine(folder, "settings.json");
+            File.WriteAllText(path, json);
+
+            var result = new WinUIAppKit.Settings.JsonSettingsStore<LittleLauncher.ViewModels.UserSettings>(path, SettingsSchema.Migrations).Load();
+            Check(result.Outcome == WinUIAppKit.Settings.SettingsLoadOutcome.Migrated && result.FileSchemaVersion == 0);
+            Check(File.ReadAllText(path + ".v0.bak") == json);
+            Check(SettingsFixtures.Canonical(result.Settings) == SettingsFixtures.Canonical(SettingsFixtures.ReadAsVersion0(json)));
+
+            // The upgraded file is schema 1, version first, and loads back unchanged.
+            using (var saved = JsonDocument.Parse(File.ReadAllText(path)))
+            {
+                var first = saved.RootElement.EnumerateObject().First();
+                Check(first.Name == "SchemaVersion" && first.Value.GetInt32() == 1);
+                Check(saved.RootElement.TryGetProperty("Startup", out _));
+            }
+
+            var again = new WinUIAppKit.Settings.JsonSettingsStore<LittleLauncher.ViewModels.UserSettings>(path, SettingsSchema.Migrations).Load();
+            Check(again.Outcome == WinUIAppKit.Settings.SettingsLoadOutcome.Loaded);
+            Check(SettingsFixtures.Canonical(again.Settings) == SettingsFixtures.Canonical(result.Settings));
+        }
+
+        return Task.CompletedTask;
+    });
+    await Test("schema 1 writes defaults, so settings that default on can be turned off", () =>
+    {
+        string path = Path.Combine(root, "settings-written", "settings.json");
+        var store = new WinUIAppKit.Settings.JsonSettingsStore<LittleLauncher.ViewModels.UserSettings>(path, SettingsSchema.Migrations);
         var settings = new LittleLauncher.ViewModels.UserSettings();
-        Check(settings.Startup);
+        Check(settings.Startup && settings.FlyoutAnimationsEnabled);
         settings.Startup = false;
-        string saved = JsonSerializer.Serialize(settings, options);
-        Check(JsonDocument.Parse(saved).RootElement.GetProperty("Startup").GetBoolean() == false);
-        Check(!JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>(saved, options)!.Startup);
+        settings.FlyoutAnimationsEnabled = false;
+        store.Save(settings);
+
+        using (var saved = JsonDocument.Parse(File.ReadAllText(path)))
+        {
+            Check(!saved.RootElement.GetProperty("Startup").GetBoolean());
+            Check(!saved.RootElement.GetProperty("FlyoutAnimationsEnabled").GetBoolean());
+            Check(saved.RootElement.GetProperty("AppTheme").GetInt32() == 0);
+        }
+
+        var loaded = store.Load();
+        Check(loaded.Outcome == WinUIAppKit.Settings.SettingsLoadOutcome.Loaded);
+        Check(!loaded.Settings.Startup && !loaded.Settings.FlyoutAnimationsEnabled);
+        return Task.CompletedTask;
+    });
+    await Test("an unreadable or newer settings file is kept, never silently lost", () =>
+    {
+        string folder = Path.Combine(root, "settings-damaged");
+        Directory.CreateDirectory(folder);
+        string path = Path.Combine(folder, "settings.json");
+        var store = new WinUIAppKit.Settings.JsonSettingsStore<LittleLauncher.ViewModels.UserSettings>(path, SettingsSchema.Migrations);
+
+        File.WriteAllText(path, "{\"AppTheme\": ");
+        var damaged = store.Load();
+        Check(damaged.Outcome == WinUIAppKit.Settings.SettingsLoadOutcome.Unreadable && damaged.NeedsResetNotice);
+        Check(File.ReadAllText(path + ".bad") == "{\"AppTheme\": ");
+        Check(store.Load().Outcome == WinUIAppKit.Settings.SettingsLoadOutcome.Loaded);
+
+        File.WriteAllText(path, "{\"SchemaVersion\": 7, \"AppTheme\": 2, \"FutureSetting\": true}");
+        var newer = store.Load();
+        Check(newer.Outcome == WinUIAppKit.Settings.SettingsLoadOutcome.NewerVersion && newer.Settings.AppTheme == 2);
+        Check(File.Exists(path + ".v7.bak") && !newer.NeedsResetNotice);
         return Task.CompletedTask;
     });
     await Test("interface language matches Persistent's rules and falls back to English", () =>
@@ -223,4 +282,67 @@ finally { Directory.Delete(root, recursive: true); }
 sealed class LanguageScope : IDisposable
 {
     public void Dispose() => LittleLauncher.Localization.UiText.Configure(() => null, () => [System.Globalization.CultureInfo.CurrentUICulture.Name]);
+}
+
+/// <summary>
+/// Settings files as installed copies wrote them before schema versions (schema 0), and the
+/// reader those copies used, so the store's upgrade can be compared against it.
+/// </summary>
+static class SettingsFixtures
+{
+    /// <summary>The serializer options of schema 0: defaults omitted.</summary>
+    private static readonly JsonSerializerOptions Version0Options = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault,
+    };
+
+    /// <summary>
+    /// Real schema 0 shapes: <c>Startup</c> absent (written before it was always written, so off),
+    /// <c>Startup</c> on with a few values, and non-default values throughout, written the way
+    /// 1.43.0 wrote them (<c>Startup</c> and <c>FlyoutAnimationsEnabled</c> always present).
+    /// </summary>
+    public static IEnumerable<(string Name, string Json)> Version0()
+    {
+        yield return ("startup-absent", "{\"LanguageOverride\": \"fr-CA\", \"SftpHost\": \"nas.example\"}");
+        yield return ("startup-on", "{\"Startup\": true, \"FlyoutAnimationsEnabled\": false, \"AppTheme\": 2}");
+
+        var full = new LittleLauncher.ViewModels.UserSettings
+        {
+            AppTheme = 1,
+            LanguageOverride = "ja-JP",
+            DisableWebLauncherShortcuts = true,
+            ShowWebLauncherNotice = true,
+            LastRunVersion = "1.43.0",
+            SyncProvider = LittleLauncher.Models.SyncProviders.Folder,
+            EnabledSyncProviders = [],
+            SyncFolderPath = "D:\\Sync",
+            SftpHost = "nas.example",
+            SftpPort = 2222,
+            SftpRemotePath = "",
+        };
+        full.Launchers.Add(new Launcher { Id = "work", Name = "Work", WebLockSize = true, WebZoomPercent = 125, Platform = "windows" });
+        full.Launchers[0].Items.Add(new LauncherItem("Notepad", "notepad.exe", "Notepad24"));
+        var node = JsonSerializer.SerializeToNode(full, Version0Options)!.AsObject();
+        node["Startup"] = false;
+        node["FlyoutAnimationsEnabled"] = false;
+        yield return ("non-defaults", node.ToJsonString(Version0Options));
+    }
+
+    /// <summary>What a schema 0 copy loaded from <paramref name="json"/>: absent Startup meant off.</summary>
+    public static LittleLauncher.ViewModels.UserSettings ReadAsVersion0(string json)
+    {
+        var settings = JsonSerializer.Deserialize<LittleLauncher.ViewModels.UserSettings>(json, Version0Options)!;
+        using var saved = JsonDocument.Parse(json);
+        if (!saved.RootElement.TryGetProperty("Startup", out _))
+        {
+            settings.Startup = false;
+        }
+
+        return settings;
+    }
+
+    /// <summary>Every value of <paramref name="settings"/>, defaults included, for comparison.</summary>
+    public static string Canonical(LittleLauncher.ViewModels.UserSettings settings) =>
+        JsonSerializer.Serialize(settings, WinUIAppKit.Settings.JsonSettingsStore<LittleLauncher.ViewModels.UserSettings>.DefaultOptions);
 }

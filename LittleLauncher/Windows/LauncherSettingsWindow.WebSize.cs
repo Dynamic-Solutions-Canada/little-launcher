@@ -155,7 +155,7 @@ public sealed partial class LauncherSettingsWindow
 
         // ── Remember size ───────────────────────────────────────
         // Stored inverted (WebLockSize) because this one is ON by default, and a bool defaulting
-        // to true cannot be turned off under WhenWritingDefault.
+        // to true could not be turned off under schema 0's WhenWritingDefault.
         var rememberSizeToggle = new ToggleSwitch { IsOn = !launcher.WebLockSize, OnContent = "", OffContent = "", MinWidth = 0 };
         rememberSizeToggle.Toggled += (_, _) =>
         {

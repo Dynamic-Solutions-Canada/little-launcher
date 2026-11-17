@@ -229,7 +229,9 @@ public sealed partial class MainWindow : Window
         _lastDarkTheme = Classes.ThemeManager.IsDarkTheme();
         _uiSettings.ColorValuesChanged += OnSystemThemeChanged;
 
-        if (!IsSilentLaunch())
+        // A launch that had to reset unreadable settings opens Settings even when silent, so the
+        // notice is seen: the defaults are now saved, and the next launch could not tell.
+        if (!IsSilentLaunch() || SettingsManager.HasPendingResetNotice)
         {
             SettingsWindow.ShowInstance(this);
         }

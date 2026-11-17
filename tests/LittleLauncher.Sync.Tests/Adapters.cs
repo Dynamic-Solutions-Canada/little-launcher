@@ -17,8 +17,12 @@ namespace NLog
     public class Logger
     {
         public void Info(string message) { }
+        public void Info(string message, params object?[] args) { }
         public void Debug(Exception exception, string message) { }
         public void Warn(Exception exception, string message) { }
+        public void Warn(Exception exception, string message, params object?[] args) { }
+        public void Warn(string message, params object?[] args) { }
+        public void Error(Exception exception, string message, params object?[] args) { }
     }
     public static class LogManager { public static Logger GetCurrentClassLogger() => new(); }
 }

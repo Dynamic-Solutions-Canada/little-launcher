@@ -25,37 +25,32 @@
   }
   ```
 
-## Defaults vs. `WhenWritingDefault`: the trap that eats settings
+## The settings file: schema versions and written defaults
 
-`SettingsManager.JsonOptions` sets `DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault`,
-which omits any property currently holding **the CLR default for its type**: `false`, `0`, `null`.
-Combine that with a field initialiser or constructor assignment that sets a *non*-CLR-default value
-and the setting becomes impossible to change:
+settings.json is loaded and saved by winui-app-kit's `JsonSettingsStore` (`SettingsManager.Store`), with the steps in `Classes/Settings/SettingsSchema.cs` (CONF-3). Saves are atomic. The file carries an integer `SchemaVersion`, written first; a file without one is version 0. On load the store:
 
-> The user picks the CLR-default value → the key is omitted on save → the initialiser puts the old
-> value back on load. The setting silently reverts, forever.
+- upgrades an older file one step at a time, after copying it to `settings.json.v<old version>.bak`;
+- loads a file from a newer version as far as this version understands it, after copying it to `settings.json.v<its version>.bak`;
+- keeps an unreadable file as `settings.json.bad`, writes defaults, and the next Settings window shows the kit's "settings were reset" bar (Settings opens for it even on a silent launch);
+- on a first run, writes defaults.
 
-This is not hypothetical. `FlyoutAnimationsEnabled` defaulted to `true`, so turning animations
-**off** wrote nothing at all and they were on again after the next restart. Verified by toggling it
-off, closing the settings window, and finding no `FlyoutAnimationsEnabled` key in settings.json.
+**Schema 1 (from the release after 1.43.0) writes every value, defaults included**, and omits only nulls. A setting may now default to `true` or any number and still be turned off. Import reads the chosen file through a private copy, so the file itself is never rewritten, and keeps the current settings when the file cannot be read. Export writes the same format, `SchemaVersion` included.
 
-### Fixing it
+**Adding a step:** append to `SettingsSchema.Migrations`, never edit, remove or reorder a shipped one, and name properties by their stored spelling. Changing a default or inverting a flag is a step, because older files hold the old meaning. The Sync harness under `tests/` runs every step against real version 0 files.
 
-Pick one, in this order of preference:
+### Schema 0: the `WhenWritingDefault` rule the existing model was shaped by
 
-1. **Phrase the property so `false` / `0` is the default behaviour.** `WebPinFlyout` rather than an
-   auto-hide flag; `WebHiddenPolicies.UnloadWhenIdle == 0`. Nothing to remember later.
-2. **Treat `0` as "unset" and resolve the real default in a `[JsonIgnore]` `Resolved*` property.**
-   What `WebFlyoutWidth` / `WebZoomPercent` / `WebIdleUnloadMinutes` do.
-3. **Opt the property out of the policy** with `[JsonIgnore(Condition = JsonIgnoreCondition.Never)]`,
-   which forces it to be written even at its default. Used on `FlyoutAnimationsEnabled`, where
-   renaming the key would have orphaned every existing settings file for no user-visible gain.
+Up to schema 0, `SettingsManager.JsonOptions` used `DefaultIgnoreCondition = WhenWritingDefault`, which omitted any property holding **the CLR default for its type**: `false`, `0`, `null`. With a field initialiser that set a *non*-CLR-default value, the setting became impossible to change: the user picked the CLR-default value, the key was omitted on save, and the initialiser put the old value back on load. `FlyoutAnimationsEnabled` defaulted to `true`, so turning animations off wrote nothing and they were on again after the next restart.
 
-Never leave a `bool` that defaults to `true` un-annotated.
+The model was shaped around that, and **the shapes stay**, because version 0 files are still loaded and a missing key in them still means what it meant then:
+
+1. **Properties phrased so `false` / `0` is the default behaviour.** `WebPinFlyout` rather than an auto-hide flag; `WebHiddenPolicies.UnloadWhenIdle == 0`; `DisableWebLauncherShortcuts` and `WebLockSize` stored inverted and shown in the positive.
+2. **`0` meaning "unset"**, with the real default resolved in a `[JsonIgnore]` `Resolved*` property: `WebFlyoutWidth`, `WebZoomPercent`, `WebIdleUnloadMinutes`.
+3. **`Startup` and `FlyoutAnimationsEnabled`**, which were always written once a forced-write attribute was added. Version 0 files written before that leave `Startup` out to mean off; the schema 1 step writes it as `false`.
 
 ### Audit: the remaining non-CLR-default initialisers
 
-These share the shape but not the bug, because the CLR default is not a value the UI can produce
+These shared the shape but not the bug under schema 0, because the CLR default is not a value the UI can produce
 or a configuration that would work:
 
 | Property | Default | Why it is safe |
@@ -78,7 +73,7 @@ model default, which would have flipped it on for every existing launcher.
 - Properties marked `[JsonIgnore]` are excluded from settings.json
 - `ObservableCollection<T>` properties serialize as JSON arrays
 - Default values in field initializers are used when the property is missing from JSON
-- `DefaultIgnoreCondition = WhenWritingDefault` omits default-valued properties from the output
+- Every value is written, defaults included; only nulls are omitted (schema 1, above)
 - After deserialization, `CompleteInitialization()` is called to finalize state
 
 ## Non-Serialized Model Properties
@@ -89,7 +84,7 @@ model default, which would have flipped it on for every existing launcher.
 
 - `IconGlyph` (`[ObservableProperty]`, `string`): Unicode glyph character (Segoe Fluent Icons PUA or emoji). Default `""` (Segoe Fluent "open" glyph, code point U+E8E5).
 - `IconPath` (`[ObservableProperty]`, `string`): Local file path to a cached favicon or custom image. Takes priority over `IconGlyph` when set.
-- `IconColor` (`[ObservableProperty]`, `string`): Optional hex color for the glyph (e.g. `"#FF0000"`). Empty string means default theme color. Only affects glyph rendering (no effect when `IconPath` image is used). Serialized to JSON; omitted when empty (`DefaultIgnoreCondition = WhenWritingDefault`).
+- `IconColor` (`[ObservableProperty]`, `string`): Optional hex color for the glyph (e.g. `"#FF0000"`). Empty string means default theme color. Only affects glyph rendering (no effect when `IconPath` image is used). Serialized to JSON, as an empty string when unset.
 
 ## Launchers Collection
 
@@ -115,7 +110,7 @@ model default, which would have flipped it on for every existing launcher.
   nesting of its own reads them. `CopyInto` copies the collection wholesale, so nesting travels
   without further work
 - `WebShowBookmarkBar` (`bool?`): **nullable on purpose**, because three states are needed and a
-  `bool` has two: on, off, and never chosen. `WhenWritingDefault` omits only `null`, so an explicit
+  `bool` has two: on, off, and never chosen. Only `null` is ever omitted, so an explicit
   `false` is written and survives, and `null` falls back to the old rule (a second bookmark shows the
   bar). Read it through `Launcher.ShowsBookmarkBar`, never directly. **A plain `bool` plus a
   one-time seeding pass was tried first and is the thing this replaces**: the seed ran where the
@@ -307,7 +302,7 @@ copied to every machine and into whatever server or folder is configured. They l
 Windows user). A URL and a username are ordinary settings and do belong here; only the secret
 does not.
 
-**`Sftp` is 0 because of the `WhenWritingDefault` policy above.** Every settings file written
+**`Sftp` is 0 because of the schema 0 `WhenWritingDefault` rule above.** Every settings file written
 before this property existed omits it, so the CLR default is what those files resolve to: it has
 to be the transport they were already configured for. Never renumber these constants: they are
 serialized.
@@ -367,13 +362,11 @@ if (IsOlderThan(previousVersion, WebLauncherVersion))
     _current.ShowWebLauncherNotice = true;
 ```
 
-`RestoreSettings` calls it from the JSON and legacy-XML paths only: the two that found an
-existing file. The defaults path deliberately does not.
+`SettingsManager` calls it only for a file that already existed (loaded, migrated, written by a newer version, imported, or the legacy XML). First run and the defaults written after an unreadable file deliberately do not.
 
 The flag itself defaults to `false` and is switched *on* by the upgrade check. That direction is
-what makes it dismissible at all: dismissing writes `false`, `WhenWritingDefault` drops the key,
-and the notice stays gone. Phrased the other way round it could never be turned off: see the
-`WhenWritingDefault` section above.
+what made it dismissible under schema 0: dismissing wrote `false`, `WhenWritingDefault` dropped the key,
+and the notice stayed gone. See the schema 0 section above.
 
 Verified across all three paths: upgrading from 1.24.2 raises it, a second launch on 1.25.0 does
 not re-raise it, and a fresh install with no settings file never sees it.

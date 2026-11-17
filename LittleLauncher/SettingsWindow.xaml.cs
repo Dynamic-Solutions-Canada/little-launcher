@@ -40,6 +40,7 @@ public sealed partial class SettingsWindow : Window
         _owner = owner;
         InitializeComponent();
         _instance = this;
+        ShowResetNoticeIfPending();
         // Only clear our own registration: after a language change the replacement registers
         // itself before this window's Closed event necessarily arrives.
         Closed += (s, e) =>
@@ -144,6 +145,26 @@ public sealed partial class SettingsWindow : Window
         };
 
         Closed += SettingsWindow_Closed;
+    }
+
+    /// <summary>
+    /// Shows winui-app-kit's "settings were reset" bar above the pages when this launch replaced
+    /// an unreadable settings file (CONF-2, UI-15). Shown once: the defaults are already saved.
+    /// </summary>
+    /// <remarks>
+    /// The kit labels the bar from its own shared catalogs. Until this app moves to the kit's
+    /// language classes those read in English whatever the interface language.
+    /// </remarks>
+    private void ShowResetNoticeIfPending()
+    {
+        if (!SettingsManager.TakeResetNotice(out string? backupPath))
+        {
+            return;
+        }
+
+        var notice = WinUIAppKit.Settings.SettingsResetNotice.Create(backupPath);
+        notice.Margin = new Thickness(16, 0, 16, 8);
+        NoticeHost.Children.Add(notice);
     }
 
     /// <summary>

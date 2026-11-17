@@ -14,6 +14,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="48" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -29,7 +30,10 @@
                        VerticalAlignment="Center" Style="{StaticResource CaptionTextBlockStyle}" />
         </Grid>
 
-        <NavigationView x:Name="RootNavigation" Grid.Row="1"
+        <!-- Standing notices for the whole window, such as settings having been reset (CONF-2). -->
+        <StackPanel x:Name="NoticeHost" Grid.Row="1" />
+
+        <NavigationView x:Name="RootNavigation" Grid.Row="2"
                         PaneDisplayMode="Left"
                         IsPaneToggleButtonVisible="True"
                         OpenPaneLength="180"

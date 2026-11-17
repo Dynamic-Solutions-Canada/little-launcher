@@ -4,14 +4,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Xml.Serialization;
+using WinUIAppKit.Settings;
 
 namespace LittleLauncher.Classes.Settings;
 
 /// <summary>
-/// Manages the application settings and saves them to a file in \AppData\LittleLauncher.
-/// On first load, migrates from settings.xml (XmlSerializer) to settings.json (System.Text.Json).
+/// Manages the application settings, kept in settings.json in %AppData%\LittleLauncher through
+/// winui-app-kit's versioned <see cref="JsonSettingsStore{T}"/>. On first load, migrates from the
+/// legacy settings.xml (XmlSerializer).
 /// </summary>
 public static class SettingsManager
 {
@@ -26,12 +27,23 @@ public static class SettingsManager
     /// <summary>Legacy XML settings path — used for one-time migration only.</summary>
     private static string LegacyXmlPath => Path.Combine(SettingsDir, "settings.xml");
 
-    internal static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
-        PropertyNamingPolicy = null, // PascalCase to match property names
-    };
+    /// <summary>
+    /// The settings file's serializer options: winui-app-kit's, which write every value, defaults
+    /// included, and omit only nulls. Also used for the item export, so it reads the same way.
+    /// </summary>
+    internal static JsonSerializerOptions JsonOptions => JsonSettingsStore<UserSettings>.DefaultOptions;
+
+    /// <summary>
+    /// settings.json, versioned by <see cref="SettingsSchema"/> (CONF-3). The path is unchanged
+    /// from before the kit: the redirected %AppData% folder in a packaged install.
+    /// </summary>
+    private static readonly JsonSettingsStore<UserSettings> Store = new(SettingsFilePath, SettingsSchema.Migrations);
+
+    /// <summary>Set when this launch replaced an unreadable file; see <see cref="TakeResetNotice"/>.</summary>
+    private static bool _pendingResetNotice;
+
+    /// <summary>Where the unreadable file was kept, for the reset notice.</summary>
+    private static string? _resetBackupPath;
 
     /// <summary>Raised after settings have been written to disk.</summary>
     /// <remarks>
@@ -143,111 +155,177 @@ public static class SettingsManager
     }
 
     /// <summary>
-    /// Restores the settings <see cref="Current"/> from the settings file.
-    /// Migrates from legacy XML format if the JSON file doesn't exist.
+    /// Loads <see cref="Current"/> at startup: the legacy XML file once if it is all there is,
+    /// otherwise settings.json through the versioned store, which migrates older files (after
+    /// backing them up) and replaces an unreadable one with defaults (keeping it as <c>.bad</c>).
     /// </summary>
-    public static UserSettings RestoreSettings(string? filePath = null)
+    public static UserSettings RestoreSettings()
     {
-        filePath ??= SettingsFilePath;
-        IsFirstRun = !File.Exists(filePath) && !File.Exists(LegacyXmlPath);
+        bool hasLegacyXml = File.Exists(LegacyXmlPath);
 
-        try
+        // Before the store: with no settings.json the store would report a first run and write
+        // defaults, burying an install that only ever had the XML file.
+        if (!File.Exists(SettingsFilePath) && hasLegacyXml && TryMigrateLegacyXml())
         {
-            // ── Try JSON first ──────────────────────────────────────────
-            if (File.Exists(filePath))
-            {
-                string json = File.ReadAllText(filePath);
-                var deserialized = JsonSerializer.Deserialize<UserSettings>(json, JsonOptions);
-                if (deserialized != null)
-                {
-                    // Older false defaults were omitted from JSON. Preserve those existing
-                    // opt-outs; new files always write Startup, including an explicit false.
-                    using var saved = JsonDocument.Parse(json);
-                    if (!saved.RootElement.TryGetProperty(nameof(UserSettings.Startup), out _))
-                    {
-                        deserialized.Startup = false;
-                    }
-
-                    _current = deserialized;
-                    _current.CompleteInitialization();
-                    NormalizeAllGlyphs();
-                    // Before StampVersion, which replaces the value being compared against.
-                    RaiseUpgradeNotices(_current.LastRunVersion);
-                    StampVersion();
-                    Logger.Info("Settings successfully restored");
-                    return _current;
-                }
-            }
-
-            // ── Migrate from legacy XML ─────────────────────────────────
-            if (File.Exists(LegacyXmlPath))
-            {
-                Logger.Info("Migrating settings from XML to JSON");
-                using (StreamReader reader = new StreamReader(LegacyXmlPath))
-                {
-                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(UserSettings));
-                    if (xmlSerializer.Deserialize(reader) is UserSettings xmlSettings)
-                    {
-                        _current = xmlSettings;
-                        _current.CompleteInitialization();
-                        NormalizeAllGlyphs();
-                        RaiseUpgradeNotices(_current.LastRunVersion);
-                        StampVersion();
-
-                        // Save in new JSON format and rename old file
-                        SaveSettings();
-                        try { File.Move(LegacyXmlPath, LegacyXmlPath + ".bak", overwrite: true); } catch { }
-
-                        Logger.Info("Settings migrated from XML to JSON");
-                        return _current;
-                    }
-                }
-            }
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Logger.Error(ex, "No permission to read settings file");
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error restoring settings");
+            IsFirstRun = false;
+            return _current;
         }
 
-        // if the settings file not found or cannot be read
-        Logger.Warn("Settings file not found or cannot be read, loading default settings");
-        _current = new UserSettings();
-        _current.CompleteInitialization();
-        StampVersion();
+        var result = Store.Load();
+        IsFirstRun = result.Outcome == SettingsLoadOutcome.FirstRun && !hasLegacyXml;
+
+        if (result.NeedsResetNotice)
+        {
+            // Settings opens on this launch, even a silent one, to say so (CONF-2, UI-15).
+            _pendingResetNotice = true;
+            _resetBackupPath = result.BackupPath;
+        }
+
+        // Upgrade notices are for an existing file only: a fresh or reset install has never seen
+        // the old behaviour being announced.
+        bool existingFile = result.Outcome is SettingsLoadOutcome.Loaded
+            or SettingsLoadOutcome.Migrated
+            or SettingsLoadOutcome.NewerVersion;
+        Adopt(result.Settings, existingFile);
+        Logger.Info($"Settings restored ({result.Outcome})");
         return _current;
     }
 
     /// <summary>
-    /// Saves the app settings to the settings file.
+    /// Replaces <see cref="Current"/> with a settings file the user chose, and saves it.
     /// </summary>
-    public static void SaveSettings(string? filePath = null)
+    /// <returns>False, with the current settings untouched, when the file cannot be read.</returns>
+    /// <remarks>
+    /// The store is pointed at a private copy, never the chosen file: loading migrates and
+    /// rewrites the file it reads and leaves backups beside it, which must not happen to a file
+    /// the user only meant to read. Defaults are never adopted in place of an unreadable file.
+    /// </remarks>
+    public static bool ImportSettings(string path)
     {
-        filePath ??= SettingsFilePath;
-
+        string folder = Path.Combine(Path.GetTempPath(), "LittleLauncher-import-" + Guid.NewGuid().ToString("N"));
         try
         {
-            string? directory = Path.GetDirectoryName(filePath);
-            if (directory != null && !Directory.Exists(directory))
+            Directory.CreateDirectory(folder);
+            string copy = Path.Combine(folder, "settings.json");
+            File.Copy(path, copy);
+
+            var result = new JsonSettingsStore<UserSettings>(copy, SettingsSchema.Migrations).Load();
+            if (result.Outcome is not (SettingsLoadOutcome.Loaded or SettingsLoadOutcome.Migrated or SettingsLoadOutcome.NewerVersion))
             {
-                Directory.CreateDirectory(directory);
+                Logger.Warn($"Imported settings file could not be read ({result.Outcome}); current settings kept");
+                return false;
             }
 
-            string json = JsonSerializer.Serialize(_current, JsonOptions);
-            File.WriteAllText(filePath, json);
-
-            Saved?.Invoke();
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            Logger.Error(ex, "No permission to write in settings file");
+            Adopt(result.Settings, existingFile: true);
+            SaveSettings();
+            return true;
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error saving settings");
+            Logger.Error(ex, "Error importing settings; current settings kept");
+            return false;
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Could not delete the import folder");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Saves the app settings to settings.json, atomically, and raises <see cref="Saved"/>.
+    /// Failures are logged by the store, not thrown.
+    /// </summary>
+    public static void SaveSettings()
+    {
+        Store.Save(_current);
+        Saved?.Invoke();
+    }
+
+    /// <summary>Writes the current settings to a file the user chose, in the settings file format.</summary>
+    public static void ExportSettings(string path) =>
+        new JsonSettingsStore<UserSettings>(path, SettingsSchema.Migrations).Save(_current);
+
+    /// <summary>
+    /// True once, on the launch that replaced an unreadable settings file with defaults, and gives
+    /// the backup's path for the notice. Later calls return false, so the notice is shown once.
+    /// </summary>
+    internal static bool TakeResetNotice(out string? backupPath)
+    {
+        backupPath = _resetBackupPath;
+        bool pending = _pendingResetNotice;
+        _pendingResetNotice = false;
+        return pending;
+    }
+
+    /// <summary>Whether this launch must open Settings to show the reset notice.</summary>
+    internal static bool HasPendingResetNotice => _pendingResetNotice;
+
+    /// <summary>
+    /// Makes loaded settings current and runs the post-load steps every load path shares.
+    /// </summary>
+    /// <param name="settings">The settings just read.</param>
+    /// <param name="existingFile">True when they came from a file this app wrote before, which
+    /// is what earns one-time upgrade notices.</param>
+    private static void Adopt(UserSettings settings, bool existingFile)
+    {
+        _current = settings;
+        _current.CompleteInitialization();
+        NormalizeAllGlyphs();
+        if (existingFile)
+        {
+            // Before StampVersion, which replaces the value being compared against.
+            RaiseUpgradeNotices(_current.LastRunVersion);
+        }
+
+        StampVersion();
+    }
+
+    /// <summary>
+    /// Converts the settings.xml written by early versions, saves it as settings.json
+    /// and renames the XML file to <c>.bak</c>.
+    /// </summary>
+    /// <returns>False when the XML file cannot be read; the caller then loads settings.json as usual.</returns>
+    private static bool TryMigrateLegacyXml()
+    {
+        try
+        {
+            Logger.Info("Migrating settings from XML to JSON");
+            UserSettings? xmlSettings;
+            using (var reader = new StreamReader(LegacyXmlPath))
+            {
+                xmlSettings = new XmlSerializer(typeof(UserSettings)).Deserialize(reader) as UserSettings;
+            }
+
+            if (xmlSettings == null)
+            {
+                return false;
+            }
+
+            Adopt(xmlSettings, existingFile: true);
+            SaveSettings();
+            try
+            {
+                File.Move(LegacyXmlPath, LegacyXmlPath + ".bak", overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Could not rename the legacy XML settings file");
+            }
+
+            Logger.Info("Settings migrated from XML to JSON");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Could not migrate the legacy XML settings file");
+            return false;
         }
     }
 

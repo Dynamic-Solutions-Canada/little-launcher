@@ -13,6 +13,10 @@
     <Compile Include="../../LittleLauncher/Models/BrowserExtension.cs" Link="BrowserExtension.cs" />
     <Compile Include="../../LittleLauncher/Services/LauncherPayload.cs" Link="LauncherPayload.cs" />
     <Compile Include="../../LittleLauncher/Services/PortableLauncherIcon.cs" Link="PortableLauncherIcon.cs" />
+    <!-- The settings store and its schema steps, exactly as the app compiles them. -->
+    <Compile Include="../../LittleLauncher/Classes/Settings/SettingsSchema.cs" Link="SettingsSchema.cs" />
+    <Compile Include="../../external/winui-app-kit/WinUIAppKit/Settings/JsonSettingsStore.cs" Link="JsonSettingsStore.cs" />
+    <Compile Include="../../external/winui-app-kit/WinUIAppKit/Settings/AtomicFile.cs" Link="AtomicFile.cs" />
   </ItemGroup>
   <!-- The real language layer and catalogs, embedded exactly as LittleLauncher.csproj does. -->
   <ItemGroup>

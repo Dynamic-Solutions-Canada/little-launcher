@@ -115,7 +115,7 @@ public static class LauncherKinds
 /// The default is deliberately the cheapest option: a web flyout exists to be looked at for a
 /// few seconds, and a Home Assistant dashboard full of camera cards keeps decoding video for
 /// as long as its renderer lives. Ordered so that the value that costs the least when hidden
-/// is <c>0</c> — <c>WhenWritingDefault</c> omits it from settings.json entirely.
+/// is <c>0</c>, which schema 0 files (<c>WhenWritingDefault</c>) left out of settings.json.
 /// </remarks>
 public static class WebHiddenPolicies
 {
@@ -141,7 +141,7 @@ public static class WebHiddenPolicies
 /// </summary>
 /// <remarks>
 /// <see cref="Tray"/> is <c>0</c> so the tray-relative placement every web launcher shipped with
-/// is what <c>WhenWritingDefault</c> leaves in the file — which is to say, nothing.
+/// is what a schema 0 file (<c>WhenWritingDefault</c>) left in it, which is to say, nothing.
 /// </remarks>
 public static class WebAnchors
 {
@@ -231,8 +231,8 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     public const int MaxIconModeIconsPerRow = 12;
 
     // ── Web flyout geometry ──────────────────────────────────────────
-    // Zero means "unset" for every one of these, because WhenWritingDefault omits a 0 from
-    // settings.json — so the resolvers below, not the field initialisers, hold the defaults.
+    // Zero means "unset" for every one of these, because schema 0 files (WhenWritingDefault) omitted a 0
+    // from settings.json, so the resolvers below, not the field initialisers, hold the defaults.
 
     public const int DefaultWebFlyoutWidth = 480;
     public const int DefaultWebFlyoutHeight = 720;
@@ -449,7 +449,7 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// Phrased as "show" rather than "hide" so the default behaviour is <c>false</c>: a flyout is
     /// a small window and the address is chrome most launchers do not want standing in for page.
     /// With it off the bar is still reachable — the header carries a button that reveals it for
-    /// as long as the flyout stays open. Same <c>WhenWritingDefault</c> constraint as
+    /// as long as the flyout stays open. Same schema 0 <c>WhenWritingDefault</c> constraint as
     /// <see cref="WebPinFlyout"/>: a bool defaulting to <c>true</c> could not be turned off.
     /// </remarks>
     [ObservableProperty]
@@ -470,9 +470,9 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// </summary>
     /// <remarks>
     /// Phrased as "keep open" rather than "auto-hide" so the default behaviour is <c>false</c>:
-    /// a bool that defaults to <c>true</c> cannot be turned off in this settings file, because
-    /// <c>WhenWritingDefault</c> drops <c>false</c> on write and the field initialiser puts it
-    /// back on load.
+    /// a bool that defaulted to <c>true</c> could not be turned off in a schema 0 settings file,
+    /// because <c>WhenWritingDefault</c> dropped <c>false</c> on write and the field initialiser
+    /// put it back on load.
     /// </remarks>
     [ObservableProperty]
     public partial bool WebPinFlyout { get; set; }
@@ -493,7 +493,7 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// rather than a "show in taskbar" toggle: the two are the same switch, so the honest thing is
     /// to name the window kind rather than a symptom of it.</para>
     /// <para>Defaults <c>false</c>, which is both the flyout behaviour that shipped first and the
-    /// only direction that survives <c>WhenWritingDefault</c>.</para>
+    /// only direction that survived schema 0's <c>WhenWritingDefault</c>.</para>
     /// </remarks>
     [ObservableProperty]
     public partial bool WebRegularWindow { get; set; }
@@ -561,9 +561,9 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// opposite case — two launchers as two accounts on the same site.
     /// <para><b>The model default stays <c>false</c>, and new launchers are given <c>true</c> at
     /// creation</b> (<c>LaunchersPage.AddLauncherButton_Click</c> and its web twin). It cannot be a
-    /// model default: <c>WhenWritingDefault</c> omits a property holding the CLR default, so a
-    /// <c>= true</c> initialiser would read as <c>true</c> for every launcher that never stored the
-    /// field — silently moving existing launchers onto a profile they were never signed in to, and
+    /// model default: schema 0 files (<c>WhenWritingDefault</c>) omitted a property holding the CLR
+    /// default, so a <c>= true</c> initialiser would read as <c>true</c> for every launcher that
+    /// never stored the field — silently moving existing launchers onto a profile they were never signed in to, and
     /// making <c>false</c> impossible to persist. Same reason <c>ShowTitle</c> is set at creation.
     /// </para>
     /// </remarks>
@@ -600,8 +600,8 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// Empty means it has never been moved and should anchor to the tray as usual.
     /// </summary>
     /// <remarks>
-    /// A string rather than two ints because empty is the only honest "unset" under
-    /// <c>WhenWritingDefault</c> — 0,0 is a real screen position, so a numeric pair could not
+    /// A string rather than two ints because empty was the only honest "unset" under
+    /// schema 0's <c>WhenWritingDefault</c>: 0,0 is a real screen position, so a numeric pair could not
     /// tell "top-left corner" from "never moved".
     /// </remarks>
     [ObservableProperty]
@@ -612,9 +612,9 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// </summary>
     /// <remarks>
     /// <para>Surfaced as <b>Remember Size</b>, which is <b>on</b> by default — so this property is
-    /// its inverse, and off means locked. A bool that defaults to <c>true</c> cannot be turned off
-    /// in this settings file: <c>WhenWritingDefault</c> drops <c>false</c> on save and the field
-    /// initialiser puts <c>true</c> back on load. See
+    /// its inverse, and off means locked. A bool that defaulted to <c>true</c> could not be turned
+    /// off in a schema 0 settings file: <c>WhenWritingDefault</c> dropped <c>false</c> on save and
+    /// the field initialiser put <c>true</c> back on load. See
     /// <c>docs/user-settings.md</c>.</para>
     /// <para>Locking is how a size is pinned down: set the width and height you want, turn Remember
     /// Size off, and dragging the edges then only lasts as long as the flyout is open. It is the
@@ -636,7 +636,7 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// all. On restores the behaviour web launchers shipped with: the link leaves for the real
     /// browser and the flyout stays on its one page.</para>
     /// <para>Phrased as "in the browser" rather than "in tabs" so <c>false</c> is the default
-    /// behaviour, per the <c>WhenWritingDefault</c> rule.</para>
+    /// behaviour, per schema 0's <c>WhenWritingDefault</c> rule.</para>
     /// </remarks>
     [ObservableProperty]
     public partial bool WebLinksInBrowser { get; set; }
@@ -704,8 +704,8 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// <summary>Shows the bookmark bar, or null to fall back to the old rule.</summary>
     /// <remarks>
     /// <para><b>Nullable, and that is what makes it safe to add.</b> Three states are needed and a
-    /// <c>bool</c> only has two: on, off, and <em>never chosen</em>. Under
-    /// <c>WhenWritingDefault</c> only <c>null</c> is omitted, so an explicit <c>false</c> is
+    /// <c>bool</c> only has two: on, off, and <em>never chosen</em>. Only <c>null</c>
+    /// is ever omitted, so an explicit <c>false</c> is
     /// written and survives - which a plain <c>bool</c> could not manage in either direction here.
     /// </para>
     /// <para><b>It replaces a migration, and a bug that came with it.</b> Seeding a plain
@@ -779,7 +779,7 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// <remarks>
     /// Empty <see cref="WebHomeUrl"/> falls back to the first bookmark, which is what every
     /// settings file written before this existed relies on: the CLR default is what those files
-    /// resolve to, so they keep opening exactly where they did. See the WhenWritingDefault note in
+    /// resolve to, so they keep opening exactly where they did. See the schema 0 note in
     /// user-settings.md.
     /// </remarks>
     [JsonIgnore]

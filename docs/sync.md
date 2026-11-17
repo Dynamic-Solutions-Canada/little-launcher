@@ -97,10 +97,10 @@ the OAuth providers, same payload, same guard, same `ICloudFileStore`, but `Sign
 a URL/username/password the user entered instead of opening a browser, so `SyncPage` gives it a
 form rather than a Sign in button.
 
-**SFTP is 0 deliberately.** `SettingsManager.JsonOptions` uses `WhenWritingDefault`, so the CLR
+**SFTP is 0 deliberately.** Settings schema 0 omitted CLR defaults (`WhenWritingDefault`), so the CLR
 default is what every settings file written before this setting existed resolves to: it has to be
 the behaviour those files were configured for. See
-[user-settings.md](user-settings.md#defaults-vs-whenwritingdefault--the-trap-that-eats-settings).
+[user-settings.md](user-settings.md#the-settings-file-schema-versions-and-written-defaults).
 
 **Switching a destination off does not clear its settings.** SFTP fields, `SyncFolderPath`,
 WebDAV details and the stored cloud tokens all coexist and survive being switched off, so turning
@@ -528,8 +528,8 @@ LITTLELAUNCHER_GOOGLE_CLIENT_SECRET
    the adapters. If you find yourself editing it, the abstraction is in the wrong place.
    The adapter must supply a `GetRemoteModifiedAsync` that returns null rather than throwing, or
    an unreachable destination will break every download instead of just its own.
-5. Add settings to `UserSettings` under **Sync destination**, minding the `WhenWritingDefault`
-   trap. Tokens are the exception: they go in `CloudTokenStore`, never in settings.json.
+5. Add settings to `UserSettings` under **Sync destination**, minding the schema rules in
+   [user-settings.md](user-settings.md#the-settings-file-schema-versions-and-written-defaults). Tokens are the exception: they go in `CloudTokenStore`, never in settings.json.
 6. Add the panel and the `ComboBoxItem` to `SyncPage`: the combo binds `SelectedIndex` directly
    to the provider int, so **item order is the constant order**.
 7. `AutoSyncService` should need no change. If it does, the abstraction is in the wrong place.
