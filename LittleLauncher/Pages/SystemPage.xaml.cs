@@ -334,14 +334,8 @@ public partial class SystemPage : Page
                     return;
                 }
 
-                // Restart to apply imported settings
-                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
-                if (exePath != null)
-                {
-                    System.Diagnostics.Process.Start(exePath);
-                }
-
-                Environment.Exit(0);
+                // Restart to apply imported settings.
+                Classes.AppRestart.Restart();
             }
             catch (Exception ex)
             {

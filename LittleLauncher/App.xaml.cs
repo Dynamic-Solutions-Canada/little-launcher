@@ -44,6 +44,10 @@ public partial class App : Application
 
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        // A copy started by Classes.AppRestart waits for the one that started it to end first, so the
+        // single-instance check below does not hand over to the copy that is exiting.
+        Classes.AppRestart.WaitForPreviousInstance(Environment.GetCommandLineArgs());
+
         // One running copy, claimed before settings load so a second launch exits without touching
         // the settings file (winui-app-kit gotcha).
         if (!WinUIAppKit.SingleInstance.TryClaim(MutexName))
