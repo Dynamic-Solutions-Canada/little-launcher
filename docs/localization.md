@@ -30,7 +30,23 @@ Area files prefixed `linux` (for example `linuxUpdates.json`) hold Linux-only co
 
 **Not translated:** product and service names (Little Launcher, OneDrive, Google Drive, WebDAV, SFTP, SSH, Nextcloud, Windows, KDE, Microsoft Store, GitHub), launcher and item names, URLs, file paths, anything the user typed, text returned by a server or the OS, log messages, exception messages that only reach the log, settings and JSON property names, automation IDs and keyboard accelerator keys. Pass user and provider content as placeholder values, never as keys.
 
-Translations other than English are machine-produced and have not had native-speaker review.
+### Review status (LOC-12)
+
+| Wording catalog | Interface | Store listing and release notes | Native-speaker review |
+| --- | --- | --- | --- |
+| `en-US` | Source | Source | Not applicable |
+| `es-ES` | AI-drafted | AI-drafted | None yet |
+| `fr-FR` | AI-drafted | AI-drafted | None yet |
+| `de-DE` | AI-drafted | AI-drafted | None yet |
+| `zh-CN` | AI-drafted | AI-drafted | None yet |
+| `pt-BR` | AI-drafted | AI-drafted | None yet |
+| `ja-JP` | AI-drafted | AI-drafted | None yet |
+
+Update the row when a review happens. The Store listing is `store-assets/microsoft/listings.json`; see [its companion](../store-assets/microsoft/listings.md).
+
+### Product terms
+
+Listing text and interface text use the same word for each of these, taken from the catalogs: launcher (`es-ES` lanzador, `fr-FR` lanceur, `de-DE` Launcher, `zh-CN` 启动器, `pt-BR` inicializador, `ja-JP` ランチャー), flyout (`es-ES` ventana emergente, `fr-FR` panneau, `de-DE` Flyout, `zh-CN` 浮出窗口, `pt-BR` painel suspenso, `ja-JP` フライアウト), and the view modes, shortcuts and Cloud Sync labels as the `launcherSettings` and `sync` areas name them. Product and service names stay in English.
 
 ## Windows
 

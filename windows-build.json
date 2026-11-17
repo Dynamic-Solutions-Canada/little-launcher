@@ -6,5 +6,10 @@
   "version_file": "Directory.Build.props",
   "dev_identity": "27766TechnicallyReal.LittleLauncher",
   "trusted_certificate": true,
-  "signing": "shared-dev"
+  "signing": "shared-dev",
+  "listing": {
+    "product_name": "Little Launcher",
+    "catalog_dir": "Shared/Localization",
+    "catalog_layout": "folders"
+  }
 }

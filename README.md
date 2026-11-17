@@ -5,7 +5,7 @@
 <h1 align="center">Little Launcher</h1>
 
 <p align="center">
-  A tray launcher for apps and websites, with settings sync. Available for Windows and Linux.
+  A tray launcher for apps and websites, with settings sync.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
   <img src="store-assets/web/screenshots/11-web-launcher-video-dark.png" alt="Web launcher: a video site in the flyout" width="250">
 </p>
 
-Little Launcher puts named launchers in your system tray. Click one and a flyout opens with your app and website shortcuts, or with a web page of its own, such as a dashboard, webmail or a chat app, one click away and signed in. It is for anyone who keeps reaching for the same handful of apps and sites and wants them a click from the taskbar on every PC they use.
+Little Launcher puts named launchers in your system tray. Click one and a flyout opens with your app and website shortcuts, or with a web page of its own, such as a dashboard, webmail or a chat app, one click away and signed in. It is for anyone who keeps reaching for the same handful of apps and sites and wants them a click from the taskbar on every PC they use. It is available for Windows and Linux.
 
 ## Features
 

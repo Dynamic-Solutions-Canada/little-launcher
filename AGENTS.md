@@ -36,17 +36,17 @@ Source is authoritative in WSL, with submodules initialised (`git submodule upda
 
 | Command | Proves | Does not prove |
 | --- | --- | --- |
-| `npm run verify:desktop` | The Windows app and helper compile (Debug), XAML included | That it packages or runs; the `tests/` harnesses are not compiled |
+| `npm run verify:desktop` | The app and helper compile (Debug), XAML included | That it packages or runs |
 | `npm run package:desktop:dev` | A signed dev package builds | That it installs or runs |
-| `npm run install:desktop` | The dev package updates the installed copy in place and launches | Behaviour; check it in the running app |
+| `npm run install:desktop` | The dev package updates the installed copy and launches | Behaviour |
 | `npm run package:desktop` | An unsigned Store package builds | Signing; that it runs |
-| `npm test` | Every .NET harness under `tests/` (found by winui-app-kit's `run-tests`) and `test:linux` pass, on Linux | What needs a window, the installed package or the shell (see each harness README) |
+| `npm test` | Every .NET harness under `tests/` and `test:linux` pass, on Linux | Anything needing a window or the installed package (see each harness README) |
 | `npm run test:linux` | The Linux portable checks and Node suites pass | Native Qt behaviour, which is skipped without PySide6 |
-| `npm run check:l10n` | Every catalog has the English keys and placeholders, and the language lists agree | Translation quality |
-| `npm run validate` | The Linux gate: `format:check`, `check:gitignore`, `check:l10n`, then `npm test` | A Windows compile; also run `verify:desktop` |
-| `npm run format` | Rewrites C# outside `external/` to the root `.editorconfig` | Behaviour |
+| `npm run check:l10n` | Catalogs have the English keys and placeholders | Translation quality |
+| `npm run check:listing` | Listing source and current notes fit Store limits | That the listing is live |
+| `npm run validate` | The Linux gate: `format:check`, `check:gitignore`, `check:l10n`, `check:listing`, then `npm test` | A Windows compile; also run `verify:desktop` |
 
-Before finishing a change, run `npm run validate` and `npm run verify:desktop`. The native suite under `tests-native/` drives a real desktop and never runs from these commands; see [tests-native/AGENTS.md](tests-native/AGENTS.md).
+Before finishing a change, run `npm run validate` and `npm run verify:desktop`. `tests-native/` drives a real desktop and never runs from these commands.
 
 Local verification uses the sideloaded Release MSIX through the `desktop` skill, updating the installed package in place so its settings and sign-ins survive. Use a debug or unpackaged build only when asked for one.
 
@@ -65,15 +65,16 @@ Local verification uses the sideloaded Release MSIX through the `desktop` skill,
 | [docs/linux.md](docs/linux.md) and [linux/README.md](linux/README.md) | Native Linux UI, the browser boundary, desktop integration, packages, Linux dependencies, and `start:linux` / `package:linux` | `linux/**` |
 | [docs/pinvoke.md](docs/pinvoke.md) | P/Invoke, Win32 interop, native signatures | `Classes/NativeMethods.cs` |
 | [docs/user-settings.md](docs/user-settings.md) | Observable settings, the Launcher model, serialization | `ViewModels/UserSettings*.cs`, `Models/Launcher.cs` |
-| [docs/drag-drop.md](docs/drag-drop.md) | Shared launcher drag-and-drop, edit mode and hosts | `Controls/LauncherItemsView*`, `Controls/ILauncherItemsHost.cs`, `Windows/FlyoutWindow*.cs`, `Windows/LauncherItemsEditorWindow.cs`, `SettingsWindow.ItemEditing.cs` |
+| [docs/drag-drop.md](docs/drag-drop.md) | Shared launcher drag-and-drop, edit mode and hosts | `Controls/LauncherItemsView*`, `Windows/FlyoutWindow*.cs` and the item editors |
 | [docs/web-launchers.md](docs/web-launchers.md) | Web launchers, the WebView2 flyout, its resource policy | `Windows/WebFlyoutWindow.cs`, `Windows/LauncherPanels.cs` |
-| [docs/sync.md](docs/sync.md) | Global sync, sync providers, shared launchers, adding a transport | `Services/*SyncService.cs`, `Services/*SharedStore.cs`, `Services/LauncherPayload.cs`, `Services/CloudFolderService.cs`, `Pages/SyncPage.xaml*` |
+| [docs/sync.md](docs/sync.md) | Global sync, sync providers, shared launchers, adding a transport | `Services/*Sync*.cs`, `Services/*SharedStore.cs`, `Services/LauncherPayload.cs`, `Pages/SyncPage.xaml*` |
 | [docs/xaml.md](docs/xaml.md) | WinUI 3 XAML, controls, backdrops | `**/*.xaml`, `SettingsWindow.ItemEditing.cs` |
-| [docs/localization.md](docs/localization.md) | Interface language, catalogs, adding UI text | `Shared/Localization/**`, `Shared/UiText.cs`, `Shared/SupportedLanguages.cs`, `LittleLauncher/Localization/**`, `linux/little_launcher/i18n.py` |
-| [docs/icons.md](docs/icons.md) | App, tray, shortcut and window icons, the icon gallery, website icons | `MainWindow.xaml.cs`, `SettingsWindow.xaml.cs`, `LaunchersPage.xaml*`, `HomePage.xaml.cs`, `FlyoutConverters.cs`, `FlyoutWindow.xaml*`, `IconGallery.cs`, `FaviconService*.cs`, `LauncherShortcut/**` |
+| [docs/localization.md](docs/localization.md) | Interface language, catalogs, adding UI text | `Shared/**`, `LittleLauncher/Localization/**`, `linux/little_launcher/i18n.py` |
+| [docs/icons.md](docs/icons.md) | App, tray, shortcut and window icons, the icon gallery, website icons | Icon surfaces, `IconGallery.cs`, `FaviconService*.cs`, `LauncherShortcut/**` |
 | [docs/installer.md](docs/installer.md) | Packaging, install and upgrade, update flows, uninstall cleanup | `UpdateService.cs`, `build-msix.ps1`, `Package.appxmanifest`, `cleanup-uninstall.ps1` |
 | [docs/versioning.md](docs/versioning.md) | Version bumps and releases | `Directory.Build.props`, `release-notes/**`, `Package.appxmanifest`, `build-msix.ps1`, `.github/workflows/**` |
 | [tests/AGENTS.md](tests/AGENTS.md), [tests-native/AGENTS.md](tests-native/AGENTS.md) | Changing a harness or the native suite | `tests/**`, `tests-native/**` |
+| [store-assets/microsoft/listings.md](store-assets/microsoft/listings.md) | Changing Store listing text, or anything a listing claim depends on | `store-assets/microsoft/**` |
 | `desktop` skill | Building, verifying, packaging or installing the Windows app locally | Local Windows builds |
 | `add-setting`, `add-settings-page`, `add-launcher-feature` skills | Adding a setting, a Settings page or a launcher item feature | The files each names |
 | `audit-docs` skill | Before a release, or after a batch of changes | Every guide, nested `AGENTS.md` and skill |
@@ -99,4 +100,5 @@ A task is not done until its docs are updated. Read a guide before deciding it n
 | A dependency added, removed or updated | The tech stack in `docs/development.md` (Windows) or `linux/README.md` (Linux) |
 | An npm command | The Commands table above, `docs/windows-development.md`, the `desktop` skill, `paseo.json` |
 | A guide or skill added, moved or removed | The guidance map above, `docs/README.md`, the nested `AGENTS.md` that should link it, and every skill that names it |
+| A feature, requirement, language or privacy behaviour users can see | `README.md`, `store-assets/microsoft/listings.json` and the claims in `listings.md` |
 | Any structural change | `docs/architecture.md`, and `README.md` if users would notice |

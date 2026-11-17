@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "locales": {
+    "en-US": {
+      "title": "Little Launcher",
+      "shortDescription": "A tray launcher for apps and websites, with settings sync. Available for Windows and Linux.",
+      "fullDescription": "Little Launcher puts your apps, websites and web pages one click away, in a flyout that opens from the system tray or the taskbar.\n\nDefine as many launchers as you like, each with its own tray icon and its own set of shortcuts. Click one and its flyout appears above the taskbar, ready to go.\n\nWHAT GOES IN A LAUNCHER\n\nApplications, chosen from a searchable list of everything installed\nWebsites, opened in your browser or in their own app window\nProgressive web apps, detected automatically with their real icons\nHeadings, groups and columns, so a large launcher stays organised\nWEB LAUNCHERS\n\nPoint a launcher at a web page instead of a list of shortcuts, and its tray icon opens that page itself. A Home Assistant dashboard, a webmail inbox, a status board: one click away and still signed in. Give it a bookmark bar and a single tray icon holds several pages.\n\nWhile a web launcher is closed it costs nothing. The page is suspended and then unloaded completely, so a hidden dashboard uses no CPU, no network and no memory.\n\nSYNC ACROSS YOUR PCs\n\nKeep your launchers identical everywhere. Little Launcher syncs through OneDrive, Google Drive, WebDAV (Nextcloud, ownCloud or a NAS), a network share, any folder, or your own SSH/SFTP server.\n\nSwitch on as many destinations as you like at once. Every change uploads to all of them, and a download always takes the newest copy, so one server being offline never costs you an edit.\n\nOneDrive and Google Drive sign in through your browser, so no sync client has to be installed and an upload is confirmed by the service rather than handed to a background app. Each is granted a private folder of its own. Nothing else in your drive is ever visible to Little Launcher.\n\nSHARE A LAUNCHER WITH SOMEONE\n\nShare a single launcher with a colleague or family member: create a OneDrive link to send, publish it to a WebDAV server, or drop it in a folder you already share. You choose whether they can edit it or only receive it, and that choice travels with the share, so there is nothing for them to work out.\n\nMAKING IT YOURS\n\nIcons from Fluent glyphs, emoji, bundled artwork, your own images, or the selfh.st catalog\nList view, icon grid, or a compact grid of small icons with no labels\nDrag files, folders and links straight in from File Explorer or the desktop, names and icons included\nReorder by dragging in the live flyout; right-click any item to move, edit or remove it\nImport bookmarks from Chrome, Edge or Firefox\nPin a launcher to the taskbar so one click opens it\nExport and import your whole setup as JSON",
+      "features": [
+        "Multiple launchers: define multiple named launchers, each with its own icon and items.",
+        "Application & website shortcuts: launch any executable or URL with one click from the flyout.",
+        "View modes: choose list view (icon + name), an icon grid, or a compact grid of small icons for each launcher.",
+        "Groups & columns: organise items into groups and multi-column layouts.",
+        "System-tray icons: a tray icon that opens a flyout popup for shortcuts.",
+        "Taskbar icons: pin a launcher to the taskbar so one click opens its flyout, without looking for the tray icon.",
+        "Shared launchers: share a launcher through a file or folder, SFTP, OneDrive or WebDAV, read-only or two-way. The owner chooses, and the choice travels with the share.",
+        "Export & import: back up and restore items locally.",
+        "Bookmark import: import bookmarks directly from Chrome, Edge, Firefox, or any browser's exported HTML bookmarks file into a launcher.",
+        "Web launchers: point a launcher at a web page instead of a list of shortcuts, and its tray icon opens that page itself: a Home Assistant dashboard, webmail, a status board, a music player.",
+        "Nothing running in the background: the page is suspended the moment you close the flyout and unloaded entirely after a few minutes idle, so a hidden dashboard uses no CPU, no network and no memory.",
+        "Stays signed in: each web launcher keeps its own browser profile, so logins survive restarts. Passkeys and Windows Hello work.",
+        "Sized and placed the way you want: drag the flyout's edges to resize it, pin it open when you want it to stay, and set page zoom per launcher.",
+        "Sync through OneDrive or Google Drive by signing in with your browser. No sync client needed.",
+        "Sync through WebDAV: Nextcloud, ownCloud, or any NAS that speaks it.",
+        "Sync through SSH/SFTP.",
+        "Use several sync destinations at once. The newest copy always wins, so nothing gets lost.",
+        "Share a single launcher with someone by link, through a WebDAV server, or via a shared folder.",
+        "Cloud accounts get a private app folder only. Little Launcher never sees the rest of your drive.",
+        "Tabs, bookmark bars, and Chrome extension support in Web Launchers"
+      ],
+      "keywords": [
+        "App shortcut launcher",
+        "Taskbar launcher",
+        "Quick app launcher",
+        "Tray launcher",
+        "Start Menu",
+        "PWA",
+        "Bookmarks"
+      ],
+      "screenshotCaptions": [
+        "Icon mode",
+        "List mode",
+        "Multiple columns (icon mode)",
+        "Multiple columns (list mode)",
+        "Launcher management",
+        "Launcher settings"
+      ]
+    },
+    "en-CA": {
+      "copyFrom": "en-US"
+    },
+    "es-ES": {
+      "title": "Little Launcher",
+      "shortDescription": "Un lanzador en la bandeja para aplicaciones y sitios web, con sincronización de la configuración. Disponible para Windows y Linux.",
+      "fullDescription": "Little Launcher pone tus aplicaciones, sitios web y páginas web a un clic, en una ventana emergente que se abre desde la bandeja del sistema o la barra de tareas.\n\nCrea todos los lanzadores que quieras, cada uno con su propio icono en la bandeja y su propio conjunto de accesos directos. Haz clic en uno y su ventana emergente aparece sobre la barra de tareas, lista para usar.\n\nQUÉ VA EN UN LANZADOR\n\nAplicaciones, elegidas de una lista con búsqueda de todo lo instalado\nSitios web, abiertos en tu navegador o en su propia ventana de aplicación\nAplicaciones web progresivas, detectadas automáticamente con sus iconos reales\nEncabezados, grupos y columnas, para que un lanzador grande siga ordenado\nLANZADORES WEB\n\nHaz que un lanzador apunte a una página web en lugar de a una lista de accesos directos, y su icono de la bandeja abrirá esa página directamente. Un panel de Home Assistant, una bandeja de correo web, un tablero de estado: a un clic y con la sesión iniciada. Añádele una barra de marcadores y un solo icono de la bandeja reunirá varias páginas.\n\nMientras un lanzador web está cerrado, no consume nada. La página se suspende y luego se descarga por completo, así que un panel oculto no usa CPU, red ni memoria.\n\nSINCRONIZACIÓN ENTRE TUS PC\n\nMantén tus lanzadores idénticos en todas partes. Little Launcher sincroniza mediante OneDrive, Google Drive, WebDAV (Nextcloud, ownCloud o un NAS), una carpeta de red, cualquier carpeta o tu propio servidor SSH/SFTP.\n\nActiva a la vez todos los destinos que quieras. Cada cambio se sube a todos ellos y una descarga siempre toma la copia más reciente, así que un servidor sin conexión nunca te cuesta un cambio.\n\nOneDrive y Google Drive inician sesión a través de tu navegador, así que no hace falta instalar ningún cliente de sincronización y es el propio servicio quien confirma cada subida, no una aplicación en segundo plano. Cada uno recibe una carpeta privada propia. Little Launcher nunca ve nada más de tu unidad.\n\nCOMPARTIR UN LANZADOR CON OTRA PERSONA\n\nComparte un solo lanzador con un compañero o un familiar: crea un vínculo de OneDrive para enviarlo, publícalo en un servidor WebDAV o déjalo en una carpeta que ya compartáis. Tú eliges si puede editarlo o solo recibirlo, y esa elección viaja con lo compartido, así que no tiene nada que averiguar.\n\nPERSONALÍZALO\n\nIconos de glifos Fluent, emojis, ilustraciones incluidas, tus propias imágenes o el catálogo de selfh.st\nVista de lista, cuadrícula de iconos o una cuadrícula compacta de iconos pequeños sin etiquetas\nArrastra archivos, carpetas y vínculos directamente desde el Explorador de archivos o el escritorio, con nombres e iconos incluidos\nReordena arrastrando en la ventana emergente; haz clic derecho en cualquier elemento para moverlo, editarlo o quitarlo\nImporta marcadores de Chrome, Edge o Firefox\nAncla un lanzador a la barra de tareas para abrirlo con un clic\nExporta e importa toda tu configuración como JSON",
+      "features": [
+        "Varios lanzadores: crea varios lanzadores con nombre, cada uno con su propio icono y elementos.",
+        "Accesos directos a aplicaciones y sitios web: abre cualquier ejecutable o URL con un clic desde la ventana emergente.",
+        "Modos de vista: elige para cada lanzador vista de lista (icono y nombre), cuadrícula de iconos o una cuadrícula compacta de iconos pequeños.",
+        "Grupos y columnas: organiza los elementos en grupos y diseños de varias columnas.",
+        "Iconos en la bandeja del sistema: un icono en la bandeja que abre una ventana emergente con los accesos directos.",
+        "Iconos en la barra de tareas: ancla un lanzador a la barra de tareas para abrir su ventana emergente con un clic, sin buscar el icono en la bandeja.",
+        "Lanzadores compartidos: comparte un lanzador mediante un archivo o carpeta, SFTP, OneDrive o WebDAV, de solo lectura o bidireccional. Lo elige el propietario.",
+        "Exportar e importar: haz copias de seguridad de los elementos y restáuralas localmente.",
+        "Importación de marcadores: importa marcadores de Chrome, Edge, Firefox o del archivo HTML exportado por cualquier navegador.",
+        "Lanzadores web: apunta un lanzador a una página web y su icono de la bandeja la abre: un panel de Home Assistant, correo web, un tablero de estado, un reproductor de música.",
+        "Nada en segundo plano: la página se suspende al cerrar la ventana emergente y se descarga tras unos minutos inactiva, así que un panel oculto no usa CPU, red ni memoria.",
+        "Sesión siempre iniciada: cada lanzador web tiene su propio perfil del navegador, así que los inicios de sesión sobreviven a los reinicios. Funcionan las claves de acceso y Windows Hello.",
+        "Tamaño y posición a tu gusto: arrastra los bordes para cambiar el tamaño, fíjala para que no se cierre y ajusta el zoom de la página para cada lanzador.",
+        "Sincroniza mediante OneDrive o Google Drive iniciando sesión con tu navegador. Sin cliente de sincronización.",
+        "Sincroniza mediante WebDAV: Nextcloud, ownCloud o cualquier NAS compatible.",
+        "Sincroniza mediante SSH/SFTP.",
+        "Usa varios destinos de sincronización a la vez. Siempre gana la copia más reciente, así que no se pierde nada.",
+        "Comparte un solo lanzador con alguien mediante un vínculo, un servidor WebDAV o una carpeta compartida.",
+        "Las cuentas en la nube solo reciben una carpeta privada de la aplicación. Little Launcher nunca ve el resto de tu unidad.",
+        "Pestañas, barras de marcadores y compatibilidad con extensiones de Chrome en los lanzadores web"
+      ],
+      "keywords": [
+        "Lanzador de aplicaciones",
+        "Lanzador en la barra de tareas",
+        "Lanzador rápido",
+        "Lanzador en la bandeja",
+        "Menú Inicio",
+        "PWA",
+        "Marcadores"
+      ],
+      "screenshotCaptions": [
+        "Modo de iconos",
+        "Modo de lista",
+        "Varias columnas (modo de iconos)",
+        "Varias columnas (modo de lista)",
+        "Gestión de lanzadores",
+        "Configuración del lanzador"
+      ]
+    },
+    "fr-FR": {
+      "title": "Little Launcher",
+      "shortDescription": "Un lanceur dans la zone de notification pour vos applications et sites web, avec synchronisation des paramètres. Disponible pour Windows et Linux.",
+      "fullDescription": "Little Launcher met vos applications, sites web et pages web à un clic, dans un panneau qui s’ouvre depuis la zone de notification ou la barre des tâches.\n\nCréez autant de lanceurs que vous le souhaitez, chacun avec sa propre icône dans la zone de notification et son propre ensemble de raccourcis. Cliquez sur l’un d’eux et son panneau apparaît au-dessus de la barre des tâches, prêt à l’emploi.\n\nCE QUE CONTIENT UN LANCEUR\n\nDes applications, choisies dans une liste consultable de tout ce qui est installé\nDes sites web, ouverts dans votre navigateur ou dans leur propre fenêtre d’application\nDes applications web progressives, détectées automatiquement avec leurs vraies icônes\nDes titres, des groupes et des colonnes, pour qu’un grand lanceur reste organisé\nLANCEURS WEB\n\nFaites pointer un lanceur vers une page web plutôt que vers une liste de raccourcis : son icône ouvre alors directement cette page. Un tableau de bord Home Assistant, une messagerie web, un tableau d’état : à un clic et toujours connecté. Ajoutez une barre de favoris et une seule icône regroupe plusieurs pages.\n\nTant qu’un lanceur web est fermé, il ne coûte rien. La page est suspendue puis entièrement déchargée : un tableau de bord masqué n’utilise ni processeur, ni réseau, ni mémoire.\n\nSYNCHRONISATION ENTRE VOS PC\n\nGardez vos lanceurs identiques partout. Little Launcher se synchronise via OneDrive, Google Drive, WebDAV (Nextcloud, ownCloud ou un NAS), un partage réseau, n’importe quel dossier ou votre propre serveur SSH/SFTP.\n\nActivez autant de destinations que vous le souhaitez en même temps. Chaque modification est envoyée à toutes, et un téléchargement prend toujours la copie la plus récente : un serveur hors ligne ne vous fait jamais perdre une modification.\n\nOneDrive et Google Drive se connectent via votre navigateur : aucun client de synchronisation n’est à installer, et chaque envoi est confirmé par le service plutôt que confié à une application en arrière-plan. Chacun obtient un dossier privé qui lui est propre. Little Launcher ne voit jamais rien d’autre de votre espace.\n\nPARTAGER UN LANCEUR\n\nPartagez un seul lanceur avec un collègue ou un proche : créez un lien OneDrive à envoyer, publiez-le sur un serveur WebDAV ou déposez-le dans un dossier que vous partagez déjà. Vous choisissez s’il peut le modifier ou seulement le recevoir, et ce choix accompagne le partage : il n’a rien à deviner.\n\nÀ VOTRE IMAGE\n\nIcônes issues des glyphes Fluent, d’émojis, d’illustrations fournies, de vos propres images ou du catalogue selfh.st\nAffichage en liste, grille d’icônes ou grille compacte de petites icônes sans libellés\nFaites glisser fichiers, dossiers et liens directement depuis l’Explorateur de fichiers ou le bureau, noms et icônes compris\nRéorganisez par glisser-déposer dans le panneau ouvert ; cliquez droit sur un élément pour le déplacer, le modifier ou le supprimer\nImportez vos favoris depuis Chrome, Edge ou Firefox\nÉpinglez un lanceur à la barre des tâches pour l’ouvrir en un clic\nExportez et importez toute votre configuration au format JSON",
+      "features": [
+        "Plusieurs lanceurs : créez plusieurs lanceurs nommés, chacun avec sa propre icône et ses éléments.",
+        "Raccourcis vers applications et sites web : lancez n’importe quel exécutable ou URL en un clic depuis le panneau.",
+        "Modes d’affichage : choisissez pour chaque lanceur une liste (icône et nom), une grille d’icônes ou une grille compacte de petites icônes.",
+        "Groupes et colonnes : organisez les éléments en groupes et en dispositions sur plusieurs colonnes.",
+        "Icônes dans la zone de notification : une icône qui ouvre un panneau de raccourcis.",
+        "Icônes dans la barre des tâches : épinglez un lanceur à la barre des tâches pour ouvrir son panneau en un clic, sans chercher l’icône de notification.",
+        "Lanceurs partagés : partagez un lanceur via un fichier ou dossier, SFTP, OneDrive ou WebDAV, en lecture seule ou bidirectionnel. Le propriétaire choisit.",
+        "Exporter et importer : sauvegardez et restaurez vos éléments localement.",
+        "Import de favoris : importez les favoris de Chrome, Edge, Firefox ou du fichier HTML exporté par n’importe quel navigateur.",
+        "Lanceurs web : faites pointer un lanceur vers une page web et son icône l’ouvre : tableau de bord Home Assistant, messagerie web, tableau d’état, lecteur de musique.",
+        "Rien en arrière-plan : la page est suspendue dès la fermeture du panneau et déchargée après quelques minutes d’inactivité, sans processeur, réseau ni mémoire.",
+        "Toujours connecté : chaque lanceur web garde son propre profil de navigateur, donc les connexions survivent aux redémarrages. Les clés d’accès et Windows Hello fonctionnent.",
+        "Taille et position à votre goût : faites glisser les bords pour redimensionner, épinglez le panneau ouvert et réglez le zoom de la page pour chaque lanceur.",
+        "Synchronisation via OneDrive ou Google Drive en vous connectant avec votre navigateur. Aucun client de synchronisation.",
+        "Synchronisation via WebDAV : Nextcloud, ownCloud ou tout NAS compatible.",
+        "Synchronisation via SSH/SFTP.",
+        "Plusieurs destinations de synchronisation à la fois. La copie la plus récente l’emporte toujours, donc rien ne se perd.",
+        "Partagez un seul lanceur par lien, via un serveur WebDAV ou un dossier partagé.",
+        "Les comptes cloud n’obtiennent qu’un dossier d’application privé. Little Launcher ne voit jamais le reste de votre espace.",
+        "Onglets, barres de favoris et prise en charge des extensions Chrome dans les lanceurs web"
+      ],
+      "keywords": [
+        "Lanceur d’applications",
+        "Lanceur barre des tâches",
+        "Lanceur rapide",
+        "Lanceur zone de notification",
+        "Menu Démarrer",
+        "PWA",
+        "Favoris"
+      ],
+      "screenshotCaptions": [
+        "Mode icônes",
+        "Mode liste",
+        "Plusieurs colonnes (mode icônes)",
+        "Plusieurs colonnes (mode liste)",
+        "Gestion des lanceurs",
+        "Paramètres du lanceur"
+      ]
+    },
+    "fr-CA": {
+      "copyFrom": "fr-FR"
+    },
+    "de-DE": {
+      "title": "Little Launcher",
+      "shortDescription": "Ein Launcher im Infobereich für Apps und Websites, mit Synchronisierung der Einstellungen. Verfügbar für Windows und Linux.",
+      "fullDescription": "Little Launcher bringt deine Apps, Websites und Webseiten auf einen Klick nah, in einem Flyout, das sich aus dem Infobereich oder der Taskleiste öffnet.\n\nLege so viele Launcher an, wie du möchtest, jeden mit eigenem Symbol im Infobereich und eigenen Verknüpfungen. Klick auf einen, und sein Flyout erscheint über der Taskleiste, sofort einsatzbereit.\n\nWAS IN EINEN LAUNCHER GEHÖRT\n\nApps, ausgewählt aus einer durchsuchbaren Liste aller installierten Programme\nWebsites, geöffnet in deinem Browser oder in einem eigenen App-Fenster\nProgressive Web-Apps, automatisch erkannt, mit ihren echten Symbolen\nÜberschriften, Gruppen und Spalten, damit auch ein großer Launcher übersichtlich bleibt\nWEB-LAUNCHER\n\nLass einen Launcher auf eine Webseite statt auf eine Liste von Verknüpfungen zeigen, und sein Symbol im Infobereich öffnet genau diese Seite. Ein Home Assistant-Dashboard, ein Webmail-Postfach, eine Statusübersicht: einen Klick entfernt und weiterhin angemeldet. Mit einer Lesezeichenleiste bündelt ein einziges Symbol mehrere Seiten.\n\nSolange ein Web-Launcher geschlossen ist, kostet er nichts. Die Seite wird angehalten und danach vollständig entladen, sodass ein verborgenes Dashboard weder CPU noch Netzwerk noch Arbeitsspeicher belegt.\n\nSYNCHRONISIERUNG ÜBER ALLE DEINE PCS\n\nHalte deine Launcher überall identisch. Little Launcher synchronisiert über OneDrive, Google Drive, WebDAV (Nextcloud, ownCloud oder ein NAS), eine Netzwerkfreigabe, einen beliebigen Ordner oder deinen eigenen SSH/SFTP-Server.\n\nSchalte so viele Ziele gleichzeitig ein, wie du möchtest. Jede Änderung wird an alle hochgeladen, und ein Download nimmt immer die neueste Kopie, sodass ein offline gegangener Server dich nie eine Änderung kostet.\n\nOneDrive und Google Drive melden sich über deinen Browser an, also muss kein Synchronisierungsprogramm installiert werden, und jeder Upload wird vom Dienst selbst bestätigt statt an eine Hintergrund-App übergeben. Jeder Dienst erhält einen eigenen privaten Ordner. Den Rest deines Speichers sieht Little Launcher nie.\n\nEINEN LAUNCHER MIT ANDEREN TEILEN\n\nTeile einen einzelnen Launcher mit Kollegen oder Familie: Erstelle einen OneDrive-Link zum Versenden, veröffentliche ihn auf einem WebDAV-Server oder lege ihn in einen bereits geteilten Ordner. Du entscheidest, ob sie ihn bearbeiten oder nur erhalten können, und diese Wahl reist mit der Freigabe mit, sodass sie nichts herausfinden müssen.\n\nGANZ NACH DEINEM GESCHMACK\n\nSymbole aus Fluent-Glyphen, Emojis, mitgelieferten Grafiken, eigenen Bildern oder dem selfh.st-Katalog\nListenansicht, Symbolraster oder ein kompaktes Raster kleiner Symbole ohne Beschriftung\nDateien, Ordner und Links direkt aus dem Explorer oder vom Desktop hineinziehen, samt Namen und Symbolen\nPer Ziehen im geöffneten Flyout umsortieren; Rechtsklick auf einen Eintrag zum Verschieben, Bearbeiten oder Entfernen\nLesezeichen aus Chrome, Edge oder Firefox importieren\nEinen Launcher an die Taskleiste anheften, damit er sich mit einem Klick öffnet\nDie gesamte Einrichtung als JSON exportieren und importieren",
+      "features": [
+        "Mehrere Launcher: Lege mehrere benannte Launcher an, jeden mit eigenem Symbol und eigenen Einträgen.",
+        "Verknüpfungen zu Apps und Websites: Starte jede ausführbare Datei oder URL mit einem Klick aus dem Flyout.",
+        "Ansichtsmodi: Wähle für jeden Launcher Listenansicht (Symbol und Name), Symbolraster oder ein kompaktes Raster kleiner Symbole.",
+        "Gruppen und Spalten: Ordne Einträge in Gruppen und mehrspaltigen Layouts an.",
+        "Symbole im Infobereich: Ein Symbol im Infobereich öffnet ein Flyout mit Verknüpfungen.",
+        "Symbole in der Taskleiste: Hefte einen Launcher an die Taskleiste, damit ein Klick sein Flyout öffnet, ohne das Infobereichssymbol zu suchen.",
+        "Geteilte Launcher: Teile einen Launcher über eine Datei oder einen Ordner, SFTP, OneDrive oder WebDAV, schreibgeschützt oder beidseitig. Der Besitzer entscheidet.",
+        "Export und Import: Sichere Einträge lokal und stelle sie wieder her.",
+        "Lesezeichenimport: Importiere Lesezeichen aus Chrome, Edge, Firefox oder aus der exportierten HTML-Lesezeichendatei eines beliebigen Browsers.",
+        "Web-Launcher: Lass einen Launcher auf eine Webseite zeigen, und sein Symbol öffnet sie: ein Home Assistant-Dashboard, Webmail, eine Statusübersicht, ein Musikplayer.",
+        "Nichts läuft im Hintergrund: Die Seite wird beim Schließen des Flyouts angehalten und nach wenigen Minuten entladen, ohne CPU, Netzwerk oder Arbeitsspeicher zu belegen.",
+        "Bleibt angemeldet: Jeder Web-Launcher hat ein eigenes Browserprofil, Anmeldungen überstehen also Neustarts. Passkeys und Windows Hello funktionieren.",
+        "Größe und Position nach Wunsch: Ziehe die Ränder zum Ändern der Größe, hefte das Flyout an und stelle den Seitenzoom pro Launcher ein.",
+        "Synchronisierung über OneDrive oder Google Drive per Anmeldung im Browser. Kein Sync-Programm nötig.",
+        "Synchronisierung über WebDAV: Nextcloud, ownCloud oder jedes kompatible NAS.",
+        "Synchronisierung über SSH/SFTP.",
+        "Mehrere Synchronisierungsziele gleichzeitig. Die neueste Kopie gewinnt immer, so geht nichts verloren.",
+        "Teile einen einzelnen Launcher per Link, über einen WebDAV-Server oder einen geteilten Ordner.",
+        "Cloud-Konten erhalten nur einen privaten App-Ordner. Den Rest deines Speichers sieht Little Launcher nie.",
+        "Tabs, Lesezeichenleisten und Unterstützung für Chrome-Erweiterungen in Web-Launchern"
+      ],
+      "keywords": [
+        "App-Launcher",
+        "Taskleisten-Launcher",
+        "Schnellstart",
+        "Infobereich-Launcher",
+        "Startmenü",
+        "PWA",
+        "Lesezeichen"
+      ],
+      "screenshotCaptions": [
+        "Symbolmodus",
+        "Listenmodus",
+        "Mehrere Spalten (Symbolmodus)",
+        "Mehrere Spalten (Listenmodus)",
+        "Launcher-Verwaltung",
+        "Launcher-Einstellungen"
+      ]
+    },
+    "zh-CN": {
+      "title": "Little Launcher",
+      "shortDescription": "一款位于系统托盘的应用和网站启动器，支持设置同步。适用于 Windows 和 Linux。",
+      "fullDescription": "Little Launcher 让你的应用、网站和网页一键可达：从系统托盘或任务栏打开一个浮出窗口即可使用。\n\n你可以创建任意多个启动器，每个都有自己的托盘图标和一组快捷方式。单击一个，它的浮出窗口就会出现在任务栏上方，随时可用。\n\n启动器里可以放什么\n\n应用：从已安装程序的可搜索列表中选择\n网站：在浏览器中或在独立的应用窗口中打开\n渐进式 Web 应用：自动检测，并显示其真实图标\n标题、分组和分栏：让大型启动器依然井井有条\n网页启动器\n\n让启动器指向一个网页，而不是一组快捷方式，它的托盘图标就会直接打开该网页。Home Assistant 仪表板、网页邮箱、状态面板：一键打开，且保持登录。为它添加书签栏，一个托盘图标就能容纳多个网页。\n\n网页启动器关闭时不占用任何资源。网页会先被挂起，然后完全卸载，因此隐藏的仪表板不占用 CPU、网络和内存。\n\n在多台电脑间同步\n\n让你的启动器在每台电脑上都保持一致。Little Launcher 可通过 OneDrive、Google Drive、WebDAV（Nextcloud、ownCloud 或 NAS）、网络共享、任意文件夹或你自己的 SSH/SFTP 服务器进行同步。\n\n可以同时启用任意多个同步目标。每次更改都会上传到所有目标，下载时总是取最新的副本，因此某台服务器离线也不会让你丢失任何更改。\n\nOneDrive 和 Google Drive 通过浏览器登录，无需安装同步客户端，每次上传都由服务本身确认，而不是交给后台应用处理。每个服务只获得一个专属的私有文件夹，Little Launcher 永远看不到你云盘中的其他内容。\n\n与他人共享启动器\n\n与同事或家人共享单个启动器：创建一个 OneDrive 链接发给对方、发布到 WebDAV 服务器，或放进你们已共享的文件夹。由你决定对方能否编辑还是只能接收，这一选择会随共享一起传递，对方无需自行判断。\n\n打造你的专属风格\n\n图标可来自 Fluent 字形、表情符号、内置图标、你自己的图片或 selfh.st 图标库\n列表视图、图标网格，或不带标签的紧凑小图标网格\n直接从文件资源管理器或桌面拖入文件、文件夹和链接，名称和图标一并带入\n在打开的浮出窗口中拖动即可重新排序；右键单击任意项目即可移动、编辑或删除\n从 Chrome、Edge 或 Firefox 导入书签\n将启动器固定到任务栏，一键打开\n将整套配置导出或导入为 JSON",
+      "features": [
+        "多个启动器：创建多个命名的启动器，每个都有自己的图标和项目。",
+        "应用和网站快捷方式：从浮出窗口一键启动任意可执行文件或网址。",
+        "视图模式：为每个启动器选择列表视图（图标加名称）、图标网格或紧凑的小图标网格。",
+        "分组和分栏：将项目整理为分组和多栏布局。",
+        "系统托盘图标：托盘图标可打开包含快捷方式的浮出窗口。",
+        "任务栏图标：将启动器固定到任务栏，一键打开其浮出窗口，无需寻找托盘图标。",
+        "共享启动器：通过文件或文件夹、SFTP、OneDrive 或 WebDAV 共享启动器，可设为只读或双向。由所有者选择，该选择随共享一起传递。",
+        "导出和导入：在本地备份和恢复项目。",
+        "书签导入：从 Chrome、Edge、Firefox 或任意浏览器导出的 HTML 书签文件直接导入书签到启动器。",
+        "网页启动器：让启动器指向网页，其托盘图标会直接打开该网页：Home Assistant 仪表板、网页邮箱、状态面板、音乐播放器。",
+        "后台不运行：关闭浮出窗口后网页立即挂起，空闲几分钟后完全卸载，因此隐藏的仪表板不占用 CPU、网络和内存。",
+        "保持登录：每个网页启动器都有自己的浏览器配置文件，重启后登录状态依然保留。支持通行密钥和 Windows Hello。",
+        "大小和位置随心设置：拖动浮出窗口边缘调整大小，固定使其保持打开，并为每个启动器设置网页缩放。",
+        "通过浏览器登录 OneDrive 或 Google Drive 进行同步，无需同步客户端。",
+        "通过 WebDAV 同步：Nextcloud、ownCloud 或任何支持 WebDAV 的 NAS。",
+        "通过 SSH/SFTP 同步。",
+        "同时使用多个同步目标。始终以最新副本为准，不会丢失任何内容。",
+        "通过链接、WebDAV 服务器或共享文件夹与他人共享单个启动器。",
+        "云账户只获得一个私有的应用文件夹。Little Launcher 永远看不到你云盘中的其他内容。",
+        "网页启动器支持标签页、书签栏和 Chrome 扩展"
+      ],
+      "keywords": [
+        "应用快捷启动器",
+        "任务栏启动器",
+        "快速启动器",
+        "托盘启动器",
+        "开始菜单",
+        "PWA",
+        "书签"
+      ],
+      "screenshotCaptions": [
+        "图标模式",
+        "列表模式",
+        "多栏（图标模式）",
+        "多栏（列表模式）",
+        "启动器管理",
+        "启动器设置"
+      ]
+    },
+    "pt-BR": {
+      "title": "Little Launcher",
+      "shortDescription": "Um inicializador na bandeja para aplicativos e sites, com sincronização das configurações. Disponível para Windows e Linux.",
+      "fullDescription": "O Little Launcher deixa seus aplicativos, sites e páginas web a um clique, em um painel suspenso que abre pela bandeja do sistema ou pela barra de tarefas.\n\nCrie quantos inicializadores quiser, cada um com seu próprio ícone na bandeja e seu próprio conjunto de atalhos. Clique em um e o painel suspenso aparece acima da barra de tarefas, pronto para usar.\n\nO QUE CABE EM UM INICIALIZADOR\n\nAplicativos, escolhidos em uma lista pesquisável de tudo o que está instalado\nSites, abertos no seu navegador ou em uma janela de aplicativo própria\nAplicativos web progressivos, detectados automaticamente com seus ícones reais\nTítulos, grupos e colunas, para que um inicializador grande continue organizado\nINICIALIZADORES WEB\n\nAponte um inicializador para uma página web em vez de uma lista de atalhos, e o ícone dele na bandeja abre essa página diretamente. Um painel do Home Assistant, uma caixa de e-mail web, um quadro de status: a um clique e com a sessão iniciada. Adicione uma barra de favoritos e um único ícone na bandeja reúne várias páginas.\n\nEnquanto um inicializador web está fechado, ele não consome nada. A página é suspensa e depois totalmente descarregada, então um painel oculto não usa CPU, rede nem memória.\n\nSINCRONIZAÇÃO ENTRE SEUS PCS\n\nMantenha seus inicializadores iguais em todo lugar. O Little Launcher sincroniza pelo OneDrive, Google Drive, WebDAV (Nextcloud, ownCloud ou um NAS), um compartilhamento de rede, qualquer pasta ou seu próprio servidor SSH/SFTP.\n\nAtive quantos destinos quiser ao mesmo tempo. Cada alteração é enviada a todos eles e um download sempre pega a cópia mais recente, então um servidor offline nunca faz você perder uma alteração.\n\nO OneDrive e o Google Drive fazem login pelo seu navegador, então não é preciso instalar nenhum cliente de sincronização, e cada envio é confirmado pelo próprio serviço, não entregue a um aplicativo em segundo plano. Cada um recebe uma pasta privada só sua. O Little Launcher nunca vê mais nada do seu drive.\n\nCOMPARTILHE UM INICIALIZADOR\n\nCompartilhe um único inicializador com um colega ou familiar: crie um link do OneDrive para enviar, publique em um servidor WebDAV ou coloque em uma pasta que vocês já compartilham. Você escolhe se a pessoa pode editar ou só receber, e essa escolha acompanha o compartilhamento, então ela não precisa descobrir nada.\n\nDO SEU JEITO\n\nÍcones de glifos Fluent, emojis, ilustrações incluídas, suas próprias imagens ou o catálogo selfh.st\nVisualização em lista, grade de ícones ou uma grade compacta de ícones pequenos sem rótulos\nArraste arquivos, pastas e links direto do Explorador de Arquivos ou da área de trabalho, com nomes e ícones\nReorganize arrastando no painel aberto; clique com o botão direito em qualquer item para mover, editar ou remover\nImporte favoritos do Chrome, Edge ou Firefox\nFixe um inicializador na barra de tarefas para abri-lo com um clique\nExporte e importe toda a sua configuração em JSON",
+      "features": [
+        "Vários inicializadores: crie vários inicializadores com nome, cada um com seu próprio ícone e itens.",
+        "Atalhos para aplicativos e sites: abra qualquer executável ou URL com um clique no painel suspenso.",
+        "Modos de exibição: escolha para cada inicializador lista (ícone e nome), grade de ícones ou uma grade compacta de ícones pequenos.",
+        "Grupos e colunas: organize os itens em grupos e layouts de várias colunas.",
+        "Ícones na bandeja do sistema: um ícone na bandeja que abre um painel suspenso com atalhos.",
+        "Ícones na barra de tarefas: fixe um inicializador na barra de tarefas para abrir o painel com um clique, sem procurar o ícone na bandeja.",
+        "Inicializadores compartilhados: compartilhe por arquivo ou pasta, SFTP, OneDrive ou WebDAV, somente leitura ou bidirecional. O proprietário escolhe.",
+        "Exportar e importar: faça backup e restaure os itens localmente.",
+        "Importação de favoritos: importe favoritos do Chrome, Edge, Firefox ou do arquivo HTML exportado por qualquer navegador.",
+        "Inicializadores web: aponte um inicializador para uma página e o ícone na bandeja a abre: um painel do Home Assistant, e-mail web, quadro de status, player de música.",
+        "Nada em segundo plano: a página é suspensa ao fechar o painel e descarregada após alguns minutos ociosa, sem usar CPU, rede ou memória.",
+        "Sessão sempre ativa: cada inicializador web tem seu próprio perfil de navegador, então os logins sobrevivem a reinicializações. Chaves de acesso e Windows Hello funcionam.",
+        "Tamanho e posição do seu jeito: arraste as bordas para redimensionar, fixe o painel aberto e ajuste o zoom da página para cada inicializador.",
+        "Sincronize pelo OneDrive ou Google Drive entrando com o navegador. Sem cliente de sincronização.",
+        "Sincronize por WebDAV: Nextcloud, ownCloud ou qualquer NAS compatível.",
+        "Sincronize por SSH/SFTP.",
+        "Use vários destinos de sincronização ao mesmo tempo. A cópia mais recente sempre vence, então nada se perde.",
+        "Compartilhe um único inicializador por link, servidor WebDAV ou pasta compartilhada.",
+        "Contas na nuvem recebem apenas uma pasta privada do aplicativo. O Little Launcher nunca vê o resto do seu drive.",
+        "Abas, barras de favoritos e suporte a extensões do Chrome nos inicializadores web"
+      ],
+      "keywords": [
+        "Inicializador de aplicativos",
+        "Inicializador na barra de tarefas",
+        "Inicializador rápido",
+        "Inicializador na bandeja",
+        "Menu Iniciar",
+        "PWA",
+        "Favoritos"
+      ],
+      "screenshotCaptions": [
+        "Modo de ícones",
+        "Modo de lista",
+        "Várias colunas (modo de ícones)",
+        "Várias colunas (modo de lista)",
+        "Gerenciamento de inicializadores",
+        "Configurações do inicializador"
+      ]
+    },
+    "ja-JP": {
+      "title": "Little Launcher",
+      "shortDescription": "アプリと Web サイトのためのトレイ ランチャー。設定の同期にも対応。Windows と Linux で利用できます。",
+      "fullDescription": "Little Launcher は、アプリ、Web サイト、Web ページをワンクリックで開ける場所に置きます。システム トレイやタスク バーからフライアウトが開きます。\n\nランチャーはいくつでも作成でき、それぞれに専用のトレイ アイコンとショートカットのセットがあります。クリックするとタスク バーの上にフライアウトが現れ、すぐに使えます。\n\nランチャーに入れられるもの\n\nアプリ: インストール済みのすべてを検索できる一覧から選択\nWeb サイト: ブラウザーまたは専用のアプリ ウィンドウで開く\nプログレッシブ Web アプリ: 自動検出され、本来のアイコンで表示\n見出し、グループ、列: 大きなランチャーも整理された状態に\nWeb ランチャー\n\nショートカットの一覧ではなく Web ページをランチャーに指定すると、そのトレイ アイコンからページを直接開けます。Home Assistant のダッシュボード、Web メールの受信トレイ、ステータス ボード: ワンクリックで、ログインしたまま開けます。ブックマーク バーを追加すれば、1 つのトレイ アイコンで複数のページをまとめられます。\n\nWeb ランチャーは閉じている間、何も消費しません。ページは一時停止され、その後完全にアンロードされるため、非表示のダッシュボードは CPU、ネットワーク、メモリを使いません。\n\n複数の PC で同期\n\nすべての PC でランチャーを同じ状態に保てます。Little Launcher は OneDrive、Google Drive、WebDAV (Nextcloud、ownCloud、NAS)、ネットワーク共有、任意のフォルダー、または自分の SSH/SFTP サーバーで同期します。\n\n同期先は同時にいくつでも有効にできます。変更はすべての同期先にアップロードされ、ダウンロードでは常に最新のコピーが使われるため、1 台のサーバーがオフラインでも変更が失われることはありません。\n\nOneDrive と Google Drive はブラウザーでサインインするため、同期クライアントをインストールする必要はなく、アップロードはバックグラウンド アプリに任せずサービス自体が確認します。それぞれに専用のプライベート フォルダーだけが割り当てられ、Little Launcher がドライブのほかの内容を見ることはありません。\n\nランチャーを共有する\n\n1 つのランチャーを同僚や家族と共有できます。送る OneDrive リンクを作成する、WebDAV サーバーに公開する、またはすでに共有しているフォルダーに置くだけです。相手が編集できるか受け取るだけかはあなたが選び、その選択は共有と一緒に伝わるので、相手が判断する必要はありません。\n\n自分好みに\n\nアイコンは Fluent のグリフ、絵文字、付属のアートワーク、自分の画像、selfh.st カタログから選択\n一覧表示、アイコンのグリッド、またはラベルなしの小さいアイコンのコンパクトなグリッド\nエクスプローラーやデスクトップからファイル、フォルダー、リンクをそのままドラッグして追加、名前とアイコンも一緒に\n開いたフライアウトでドラッグして並べ替え。項目を右クリックして移動、編集、削除\nChrome、Edge、Firefox からブックマークをインポート\nランチャーをタスク バーにピン留めしてワンクリックで開く\n設定全体を JSON としてエクスポートおよびインポート",
+      "features": [
+        "複数のランチャー: 名前付きのランチャーを複数作成でき、それぞれに独自のアイコンと項目があります。",
+        "アプリと Web サイトのショートカット: 任意の実行ファイルや URL をフライアウトからワンクリックで起動します。",
+        "表示モード: ランチャーごとに一覧表示 (アイコンと名前)、アイコンのグリッド、小さいアイコンのコンパクトなグリッドを選べます。",
+        "グループと列: 項目をグループや複数列のレイアウトに整理できます。",
+        "システム トレイ アイコン: ショートカットのフライアウトを開くトレイ アイコン。",
+        "タスク バー アイコン: ランチャーをタスク バーにピン留めすれば、トレイ アイコンを探さずにワンクリックでフライアウトを開けます。",
+        "共有ランチャー: ファイルやフォルダー、SFTP、OneDrive、WebDAV でランチャーを共有。読み取り専用か双方向かは所有者が選び、その選択は共有と一緒に伝わります。",
+        "エクスポートとインポート: 項目をローカルにバックアップして復元できます。",
+        "ブックマークのインポート: Chrome、Edge、Firefox、または任意のブラウザーでエクスポートした HTML ブックマーク ファイルから直接インポートできます。",
+        "Web ランチャー: ランチャーに Web ページを指定すると、トレイ アイコンからそのページが開きます。Home Assistant のダッシュボード、Web メール、ステータス ボード、音楽プレーヤーなど。",
+        "バックグラウンドで何も動かない: フライアウトを閉じるとページは一時停止し、数分後に完全にアンロードされるため、CPU、ネットワーク、メモリを使いません。",
+        "ログインを維持: Web ランチャーごとに専用のブラウザー プロファイルがあり、再起動後もログイン状態が保たれます。パスキーと Windows Hello にも対応。",
+        "サイズと位置を自由に: 端をドラッグしてサイズを変え、ピン留めで開いたままにし、ランチャーごとにページのズームを設定できます。",
+        "ブラウザーでサインインして OneDrive や Google Drive で同期。同期クライアントは不要です。",
+        "WebDAV で同期: Nextcloud、ownCloud、または対応する任意の NAS。",
+        "SSH/SFTP で同期。",
+        "複数の同期先を同時に使用。常に最新のコピーが優先されるので、何も失われません。",
+        "リンク、WebDAV サーバー、または共有フォルダーで 1 つのランチャーを共有できます。",
+        "クラウド アカウントにはプライベートなアプリ フォルダーだけが割り当てられます。Little Launcher がドライブのほかの内容を見ることはありません。",
+        "Web ランチャーでのタブ、ブックマーク バー、Chrome 拡張機能のサポート"
+      ],
+      "keywords": [
+        "アプリ ランチャー",
+        "タスク バー ランチャー",
+        "クイック ランチャー",
+        "トレイ ランチャー",
+        "スタート メニュー",
+        "PWA",
+        "ブックマーク"
+      ],
+      "screenshotCaptions": [
+        "アイコン モード",
+        "一覧モード",
+        "複数列 (アイコン モード)",
+        "複数列 (一覧モード)",
+        "ランチャーの管理",
+        "ランチャーの設定"
+      ]
+    }
+  }
+}
