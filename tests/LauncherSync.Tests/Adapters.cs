@@ -1,4 +1,7 @@
 // Only native/service boundaries are adapted. Model, payload, merge and icon IO are production code.
+// The stand-ins below sit in production namespaces on purpose; without this, dotnet format's
+// namespace-matches-folder fix (IDE0130) tries to move the file and crashes.
+#pragma warning disable IDE0130
 using System.Collections.ObjectModel;
 using LittleLauncher.Models;
 namespace Microsoft.UI.Dispatching
@@ -67,3 +70,4 @@ namespace LittleLauncher.Services {
  public static class AutoSyncService { public static void RestartPeriodicTimer() { } }
  public static class StartMenuShortcutService { public static void Sync(ObservableCollection<Launcher> launchers) { } }
 }
+#pragma warning restore IDE0130

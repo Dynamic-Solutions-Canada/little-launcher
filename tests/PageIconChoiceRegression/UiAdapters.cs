@@ -1,5 +1,8 @@
 // These adapters exercise production async/persistence code without loading WinUI on Linux.
 // Image rendering remains a Windows acceptance check.
+// The stand-ins below sit in production namespaces on purpose; without this, dotnet format's
+// namespace-matches-folder fix (IDE0130) tries to move the file and crashes.
+#pragma warning disable IDE0130
 namespace Microsoft.UI.Xaml
 {
     internal enum Visibility { Visible, Collapsed }
@@ -139,3 +142,4 @@ namespace NLog
         internal void Debug(Exception exception, string message) { }
     }
 }
+#pragma warning restore IDE0130
