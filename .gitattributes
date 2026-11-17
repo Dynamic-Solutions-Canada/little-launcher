@@ -62,7 +62,6 @@
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
 
-Website/output.css linguist-generated
 
 
 scripts/windows-build text eol=lf

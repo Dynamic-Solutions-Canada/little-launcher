@@ -16,6 +16,10 @@ The Fedora development fixture uses `Dockerfile.fedora`, `launch-fedora.sh`, and
 
 `dev/preview_desktop.py` is an explicitly authorized real-desktop preview, distinct from the private fixture. It uses disposable data, disables machine-setup controls and does not install the KWin helper or change autostart. Its sample links open in isolated app windows. An optional --temporary-integration flag requires separate explicit authorization. It loads only a scoped copy for unique preview Qt/Electron identities and the current launcher IDs, writes no installed helper or kwinrc preference, and unloads on normal preview quit. Live startup, physical tray behavior, user visual approval and anchored placement are separate evidence gates.
 
+## Permanent application ID
+
+The Linux application ID `io.github.RyanEwen.LittleLauncher`, and `io.github.RyanEwen.LittleLauncher.Web` for the browser process, never change, although they predate the move to the Dynamic Solutions organisation. The menu and autostart `.desktop` file names, `StartupWMClass`, the KWin helper's window matching and the OneDrive wallet entry's attribute are all keyed to them, so a rename would orphan installed menu entries and the stored OneDrive sign-in. They are recorded as permanent identifiers in the shared standards' BRAND-10 registry, like the Windows package identity.
+
 ## Interface language
 
 `i18n.py` reads the catalogs shared with Windows and applies the same language rules; see [localization.md](localization.md). The device-local `Language` preference (empty for Match device) is chosen on the System page and read when each window is built. The long-lived Settings window, tray menus and flyouts keep their text until the app restarts, so the picker says a restart finishes the switch. `packaging/build.py` bundles the catalogs as `localization/` beside the package. Qt's own standard dialog buttons follow the same choice through the running Qt's `qtbase` translations, when it ships one for that language.

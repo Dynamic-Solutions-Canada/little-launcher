@@ -1,0 +1,7 @@
+# Scan only this repo's own shipped code. The submodules are checked out so calls into them resolve
+# during extraction, but apps-promo (and winui-app-kit once added) are scanned in their own repos.
+# The vendored extension compatibility source under linux/browser/vendor/ ships in the Linux app, so
+# it stays in scope. docs/prototypes/ holds throwaway proof-of-concept code that never ships.
+paths-ignore:
+  - external/**
+  - docs/prototypes/**

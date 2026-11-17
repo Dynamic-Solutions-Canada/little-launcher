@@ -1,4 +1,4 @@
-﻿namespace LittleLauncher.Services;
+namespace LittleLauncher.Services;
 
 /// <summary>
 /// One provider's OAuth tokens, as persisted.

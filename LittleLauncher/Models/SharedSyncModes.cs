@@ -1,4 +1,4 @@
-﻿namespace LittleLauncher.Models;
+namespace LittleLauncher.Models;
 
 /// <summary>
 /// How one shared launcher's items travel between the people sharing it.

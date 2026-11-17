@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using LittleLauncher.Localization;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;

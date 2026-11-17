@@ -1,4 +1,4 @@
-﻿using LittleLauncher.Classes.Settings;
+using LittleLauncher.Classes.Settings;
 
 namespace LittleLauncher.Services;
 

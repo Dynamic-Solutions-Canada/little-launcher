@@ -1,4 +1,4 @@
-﻿<p align="center">
+<p align="center">
   <img src="LittleLauncher/Resources/AppIcons/Blue.png" alt="Little Launcher" width="128">
 </p>
 

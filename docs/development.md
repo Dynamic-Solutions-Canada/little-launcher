@@ -23,7 +23,7 @@ npm run verify:desktop
 npm run install:desktop
 ```
 
-Or open `LittleLauncher.sln` in Visual Studio / Rider and press F5.
+Or open `LittleLauncher.slnx` in Visual Studio / Rider and press F5.
 
 ## Windows architecture
 

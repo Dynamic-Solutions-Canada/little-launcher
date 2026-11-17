@@ -1,4 +1,4 @@
-﻿using LittleLauncher.Localization;
+using LittleLauncher.Localization;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Models;
 using System.IO;

@@ -1,4 +1,4 @@
-﻿using LittleLauncher.Localization;
+using LittleLauncher.Localization;
 using LittleLauncher.Models;
 using System.Net;
 using System.Net.Http.Headers;

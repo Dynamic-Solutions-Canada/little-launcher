@@ -25,11 +25,11 @@
 
 .EXAMPLE
     .\set-store-secrets.ps1
-    .\set-store-secrets.ps1 -Repo RyanEwen/LittleLauncher
+    .\set-store-secrets.ps1 -Repo Dynamic-Solutions-Canada/little-launcher
     .\set-store-secrets.ps1 -Only AZURE_AD_APPLICATION_SECRET   # rotate just the secret
 #>
 param(
-    [string]$Repo = "RyanEwen/LittleLauncher",
+    [string]$Repo = "Dynamic-Solutions-Canada/little-launcher",
 
     # Set only these secrets instead of all four (handy for rotating the client secret).
     [ValidateSet("AZURE_AD_TENANT_ID", "AZURE_AD_APPLICATION_CLIENT_ID",

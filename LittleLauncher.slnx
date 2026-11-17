@@ -1,0 +1,13 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="LittleLauncher/LittleLauncher.csproj" />
+  <Project Path="LauncherShortcut/LauncherShortcut.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/LauncherItemReorder.Tests/LauncherItemReorder.Tests.csproj" />
+    <Project Path="tests/LauncherSync.Tests/LauncherSync.Tests.csproj" />
+    <Project Path="tests/PageIconChoiceRegression/PageIconChoiceRegression.csproj" />
+  </Folder>
+</Solution>

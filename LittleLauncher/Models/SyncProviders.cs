@@ -1,4 +1,4 @@
-﻿namespace LittleLauncher.Models;
+namespace LittleLauncher.Models;
 
 /// <summary>
 /// Where the global launcher sync reads and writes <c>launchers.json</c>.

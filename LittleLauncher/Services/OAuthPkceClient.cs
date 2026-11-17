@@ -1,4 +1,4 @@
-﻿using LittleLauncher.Localization;
+using LittleLauncher.Localization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
