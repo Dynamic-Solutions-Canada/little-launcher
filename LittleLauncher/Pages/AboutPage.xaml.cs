@@ -1,3 +1,4 @@
+using LittleLauncher.Classes;
 using LittleLauncher.Localization;
 using LittleLauncher.Services;
 using System.Diagnostics;
@@ -14,6 +15,9 @@ public partial class AboutPage : Page
     public AboutPage()
     {
         InitializeComponent();
+
+        // Built from the one definition of the repository (BRAND-5), not retyped in XAML.
+        SourceCodeLink.NavigateUri = AboutContent.SourceCode;
     }
 
     /// <summary>Checks GitHub releases for a portable build, or opens Store updates for MSIX.</summary>

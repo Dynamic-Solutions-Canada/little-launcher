@@ -23,6 +23,7 @@ from .icons import LauncherIcons
 from .launcher_card import LauncherActionRow, LauncherCard, LauncherCardsColumn
 from .update_controller import UpdateController
 from .update_page import UpdateControls
+from .updates import REPOSITORY
 
 
 class SettingsWindow(QMainWindow):
@@ -518,7 +519,7 @@ class SettingsWindow(QMainWindow):
         built = QLabel('')
         self._settings_row(layout, i18n.t('about.builtWith'), 'Qt Widgets · PySide6 · Python · Electron · Chromium', built)
         repository = QPushButton(i18n.t('about.sourceCode.link'))
-        repository.clicked.connect(lambda: QDesktopServices.openUrl(QUrl('https://github.com/Dynamic-Solutions-Canada/little-launcher')))
+        repository.clicked.connect(lambda: QDesktopServices.openUrl(QUrl('https://github.com/'+REPOSITORY)))
         self._settings_row(layout, i18n.t('about.sourceCode.title'), i18n.t('about.sourceCode.description'), repository)
         self._settings_row(layout,i18n.t('about.update.title'),i18n.t('linuxUpdates.description'),UpdateControls(self.updates))
         layout.addStretch()

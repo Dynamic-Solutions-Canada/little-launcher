@@ -244,20 +244,33 @@ Write-Host "  Layout ready: $layoutDir"
 # ── Step 4: Generate resources.pri ────────────────────────────────────────────
 Write-Host "`n=== Generating resources.pri ===" -ForegroundColor Cyan
 
-# Remove any existing resources.pri from dotnet publish (we regenerate it to
+# Remove any resources*.pri from dotnet publish or an earlier run (we regenerate it to
 # include the image assets copied into the layout).
+Get-ChildItem $layoutDir -Filter "resources*.pri" | Remove-Item -Force
 $existingPri = Join-Path $layoutDir "resources.pri"
-if (Test-Path $existingPri) { Remove-Item $existingPri -Force }
 
 $priconfigFile = Join-Path $layoutDir "priconfig.xml"
 & $makepri createconfig /cf $priconfigFile /dq en-US /o
 if ($LASTEXITCODE -ne 0) { Write-Error "makepri createconfig failed"; exit 1 }
+
+# The default config splits languages and scales into resources.<qualifier>.pri files, which only
+# take effect as resource packs in a bundle. This is a single package, so keep every candidate in
+# one resources.pri covering every declared language (DIST-1). Same fix as winui-app-kit's script.
+$priConfig = [xml](Get-Content $priconfigFile -Raw)
+foreach ($node in @($priConfig.SelectNodes("//packaging"))) { [void]$node.ParentNode.RemoveChild($node) }
+$priConfig.Save($priconfigFile)
 
 & $makepri new /pr $layoutDir /cf $priconfigFile /mn (Join-Path $layoutDir "AppxManifest.xml") /of $existingPri /o
 if ($LASTEXITCODE -ne 0) { Write-Error "makepri new failed"; exit 1 }
 
 # Clean up priconfig from layout
 Remove-Item $priconfigFile -Force -ErrorAction SilentlyContinue
+
+$splitFiles = @(Get-ChildItem $layoutDir -Filter "resources.*.pri")
+if ($splitFiles.Count -gt 0) {
+    Write-Error "makepri split resources into $($splitFiles.Name -join ', '); a single package needs one resources.pri."
+    exit 1
+}
 
 # ── Step 5b: Sign embedded executables (before packaging) ────────────────────
 # Smart App Control requires Authenticode signatures on all PE files from a

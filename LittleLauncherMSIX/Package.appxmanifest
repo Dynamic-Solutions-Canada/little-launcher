@@ -25,8 +25,17 @@
     <PackageDependency Name="Microsoft.WindowsAppRuntime.1.8" MinVersion="8000.770.947.0" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
   </Dependencies>
 
+  <!-- The nine interface languages, in the standard order with en-US first (LOC-1, LOC-10). -->
   <Resources>
     <Resource Language="en-US" />
+    <Resource Language="en-CA" />
+    <Resource Language="es-ES" />
+    <Resource Language="fr-FR" />
+    <Resource Language="fr-CA" />
+    <Resource Language="de-DE" />
+    <Resource Language="zh-CN" />
+    <Resource Language="pt-BR" />
+    <Resource Language="ja-JP" />
   </Resources>
 
   <Applications>
