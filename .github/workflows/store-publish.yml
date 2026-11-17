@@ -82,7 +82,9 @@ jobs:
       submit_draft: ${{ inputs.submit_draft || '' }}
       replace_failed_draft: ${{ inputs.replace_failed_draft || '' }}
       failed_upload: ${{ inputs.failed_upload || '' }}
-      hold_publication: ${{ github.event_name == 'workflow_dispatch' && inputs.hold_publication }}
+      # The kit accepts hold_publication only with submit_draft, so it is passed only then; the
+      # input's default of true therefore applies to submissions and to nothing else.
+      hold_publication: ${{ github.event_name == 'workflow_dispatch' && inputs.submit_draft != '' && inputs.hold_publication }}
       inspect_draft: ${{ inputs.inspect_draft || '' }}
     # Explicit, not inherit: the reusable workflow gets exactly the Store credentials (CI-11) and the
     # one build secret.
