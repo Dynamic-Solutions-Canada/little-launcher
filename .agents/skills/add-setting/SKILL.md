@@ -1,25 +1,16 @@
 ---
-name: "add-setting"
-description: "Add a new observable setting property to UserSettings with serialization, change handler, and optional UI binding."
+name: add-setting
+description: Add an observable setting to UserSettings with its serialization, change handler and optional Settings UI. Use when a new user preference or persisted option is needed.
 ---
 
 # Add a setting
 
-Add a new setting property to the Little Launcher application.
+Goal: a new setting that saves, restores and, if it has UI, shows translated text in every language.
 
-## Steps
+1. In `LittleLauncher/ViewModels/UserSettings.cs`, add an `[ObservableProperty]` field in the matching category section. If changing it needs a side effect, implement `partial void On{PropertyName}Changed` guarded by `_initializing`. Follow [docs/user-settings.md](../../../docs/user-settings.md) for defaults and serialization.
+2. If it needs UI, add the control to the relevant settings page and bind it to `SettingsManager.Current.{PropertyName}` with `Mode=TwoWay`.
+3. Add its text to the shared catalogs as described in [docs/localization.md](../../../docs/localization.md): the key in `Shared/Localization/en-US/<area>.json` and all six other catalogs, used from XAML with `{l:Str Key=...}`.
+4. If Linux has the same setting, mirror it there (see [docs/linux.md](../../../docs/linux.md)).
+5. Run `npm run verify:linux` for the catalog checks, then build with the `desktop` skill.
 
-1. In `LittleLauncher/ViewModels/UserSettings.cs`:
-   - Add an `[ObservableProperty]` field in the appropriate category section
-   - If the setting needs a side-effect, implement `partial void On{PropertyName}Changed` with `_initializing` guard
-
-2. The property auto-serializes to `settings.json` — no additional serialization code needed
-
-3. If the setting needs UI:
-   - Add a control in the relevant settings page XAML
-   - Bind to `SettingsManager.Current.{PropertyName}` with `Mode=TwoWay`
-   - Add localization string keys to `Resources/Localization/Dictionary-en-US.xaml`
-
-4. Build and verify through the [sideloaded Release MSIX workflow](../rebuild-desktop/SKILL.md)
-
-See [docs/user-settings.md](../../../docs/user-settings.md) for the full UserSettings conventions.
+Report: the setting's name and default, where its UI is, and the build and check results.

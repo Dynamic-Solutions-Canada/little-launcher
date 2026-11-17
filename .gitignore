@@ -413,6 +413,9 @@ local.secrets.props
 /docs/releases/*
 !/docs/releases/*.md
 
+# The template's [Rr]elease/ build-output rule would otherwise hide the release skill (AI-7).
+!/.agents/skills/release/
+
 # Shared block (HYG-6), from winui-app-kit build/shared.gitignore. Paste it unchanged as the last part
 # of every repo's .gitignore, so no earlier line can un-ignore what it covers. Change it in the kit.
 /.artifacts/

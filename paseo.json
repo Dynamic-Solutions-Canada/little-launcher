@@ -1,0 +1,25 @@
+{
+  "worktree": {
+    "setup": [
+      "git submodule update --init --recursive"
+    ],
+    "teardown": "git submodule deinit --all --force"
+  },
+  "scripts": {
+    "verify-desktop": {
+      "command": "npm run verify:desktop"
+    },
+    "build-desktop": {
+      "command": "npm run build:desktop"
+    },
+    "install-desktop": {
+      "command": "npm run install:desktop"
+    },
+    "package-desktop": {
+      "command": "npm run package:desktop"
+    },
+    "verify-linux": {
+      "command": "npm run verify:linux"
+    }
+  }
+}

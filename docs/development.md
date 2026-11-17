@@ -15,7 +15,7 @@ Builds select the SDK's latest .NET runtime patch, at least 10.0.14, including t
 npm run verify:desktop
 ```
 
-`Directory.Build.props` auto-detects the platform from `PROCESSOR_ARCHITECTURE` (ARM64 → ARM64, otherwise x64). For the shared npm commands, pass `-- --platform x64` or `-- --platform ARM64`.
+The commands build for the build host's architecture by default. [windows-development.md](windows-development.md) lists them and what is specific to this repo; the shared Windows build tools document the rest.
 
 ## Windows run
 
@@ -46,8 +46,13 @@ See [docs/architecture.md](architecture.md) for detailed flows — launch modes,
 | [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) | 1.8.260209005 | WinUI 3 controls, Mica, NavigationView |
 | [H.NotifyIcon.WinUI](https://github.com/HavenDV/H.NotifyIcon) | 2.4.1 | System tray icon |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | 8.4.0 | Source-gen `[ObservableProperty]`, `RelayCommand` |
-| [SSH.NET](https://github.com/sshnet/SSH.NET) | 2025.1.0 | SFTP sync |
+| [SSH.NET](https://github.com/sshnet/SSH.NET) | 2026.0.0 | SFTP sync |
 | [NLog](https://nlog-project.org/) | 6.1.1 | Logging |
+| [Microsoft.Data.Sqlite](https://learn.microsoft.com/dotnet/standard/data/sqlite/) | 10.0.13 | Firefox bookmark import from `places.sqlite` |
+
+- `Microsoft.WindowsDesktop.App` is a framework reference, for `System.Windows.Automation` taskbar button detection.
+- The WebView2 managed API arrives with the Windows App SDK (no explicit package reference). Web launchers need the Evergreen WebView2 Runtime, which ships with Windows 11; `WebFlyoutWindow` offers to install it if `CoreWebView2Environment` cannot start.
+- Linux dependencies are listed in [the Linux guide](../linux/README.md) and [docs/linux.md](linux.md).
 
 **Target:** .NET 10, `net10.0-windows10.0.22000.0`, unpackaged (`WindowsPackageType=None`), platforms `x64` and `ARM64`.
 
@@ -95,37 +100,6 @@ linux/                         # Native Linux Qt host, isolated Electron browser
 
 ## Releasing
 
-Version is defined once in `Directory.Build.props`. Pushing a `v*` tag triggers two GitHub Actions:
+`<Version>` in `Directory.Build.props` is the only version source. A `v*` tag runs `build-msix.yml` (the GitHub Release) and `store-publish.yml` (builds the unsigned x64 and ARM64 packages and submits them to Partner Center). The [packaging guide](installer.md) and [versioning guide](versioning.md) describe both, and the `release` skill is the procedure.
 
-- **`build-msix.yml`** — builds and signs the app, then publishes the GitHub Release with the portable zips (x64 + ARM64) attached. Despite the name it does not build the MSIX.
-- **`store-publish.yml`** — builds the unsigned MSIX packages (x64 + ARM64) purely to prove the Store packaging path still works. It produces **no downloadable artifact** and submits nothing.
-
-### The Store package is built and submitted by hand
-
-```powershell
-npm run package:desktop -- --platform x64
-npm run package:desktop -- --platform ARM64
-```
-
-Upload the two `.msix` files individually in Partner Center. Store submission **cannot** be automated for this product — it is paid and on Pricing Version 2, which rules out both of Microsoft's automation paths — and the Store build must never be published as a CI artifact from this public repo. Both points are settled and written up, with the reasoning and the re-enable steps, in [docs/installer.md](installer.md).
-
-Windows delivery uses the portable ZIP and Microsoft Store package; there is no MSI. Linux delivery uses only x64 AppImage, targeting Debian 12 / Ubuntu 24.04 LTS or newer. The reusable `linux-appimage.yml` workflow builds and verifies the image, and `build-msix.yml` is configured to attach it and its checksum alongside Windows release assets. See [Linux delivery](../linux/README.md#linux-appimage-delivery) and the packaging guide for details.
-
-See the versioning and packaging guides under [the documentation index](README.md) for more detail.
-
-## Agent workflow
-
-Start with [the shared agent instructions](../AGENTS.md) and the [documentation index](README.md). Reusable workflows live in `.agents/skills/`; their names and instructions are shared across coding tools.
-Local verification uses `npm run install:desktop` from WSL.
-`npm run verify:desktop` compiles Debug without installing. The rebuild skill documents how to
-update the package in place and verify its running identity.
-
-## Windows desktop workflow
-
-Source is authoritative in WSL. Read `docs/windows-development.md` and use
-`npm run build:desktop`, `npm run verify:desktop`, `npm run install:desktop`, and
-`npm run package:desktop` from the repository root. The common bridge builds in
-a disposable C: Windows TEMP directory and cleans it after use. Never use a D:
-checkout or build directly against WSL source with Windows tools. Dev install
-versions change only in the temporary copy; never uninstall to bypass an update
-error. Store releases keep their existing project-specific release workflow.
+Linux delivery uses only the x64 AppImage, targeting Debian 12 / Ubuntu 24.04 LTS or newer, built by the reusable `linux-appimage.yml` workflow. See [Linux delivery](../linux/README.md#linux-appimage-delivery).

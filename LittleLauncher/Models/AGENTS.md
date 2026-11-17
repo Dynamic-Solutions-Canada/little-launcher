@@ -1,8 +1,8 @@
 # LittleLauncher/Models
 
-`Launcher.cs` (and `LauncherItem`) model conventions — observable properties, the `TrayIconMode` string scheme, sharing properties, and the legacy-settings migration path.
+`Launcher.cs` (and `LauncherItem`) model conventions: observable properties, the `TrayIconMode` string scheme, sharing properties, and the legacy-settings migration path.
 
-Read and follow [user-settings.md](../../docs/user-settings.md) before changing the code described above.
+Read and follow [user-settings.md](../../docs/user-settings.md) before changing the code described above, and [launcher-model.md](../../docs/launcher-model.md) before adding a launcher kind or item type.
 
 `WebLauncherPresets.cs` defines creation-only web launcher templates. Read
 [web-launchers.md](../../docs/web-launchers.md) before changing their defaults or flow.

@@ -2,7 +2,7 @@
 
 Reusable XAML views, panels and attached behaviors live here.
 
-Read [xaml.md](../../docs/xaml.md) before changing these controls or their template wiring.
+Read [xaml.md](../../docs/xaml.md) before changing these controls or their template wiring. `LauncherItemsView` renders the item types described in [launcher-model.md](../../docs/launcher-model.md).
 Read [components.md](../../docs/components.md) for component and namespace ownership.
 
 `ConditionalNameToolTip` owns conditional full-name tooltips for launcher item templates and trimmed group/column captions. Template roots target the nearest list/grid item; attaching Text directly to a TextBlock uses that label as both trim source and tooltip target, keeping group tooltips away from child items. Keep state local, detach label subscriptions on unload, and read actual trimming without measuring or changing layout.

@@ -4,7 +4,7 @@
 
 Read and follow [installer.md](../../docs/installer.md) before changing the code described above.
 
-Global launcher sync (`LauncherSyncService`, `SftpSyncService`, `FolderSyncService`, `CloudFolderService`, `LauncherPayload`, `AutoSyncService`) is transport-pluggable. Before changing any of it — including adding a trigger — follow the sync conventions:
+Global launcher sync (`LauncherSyncService`, `SftpSyncService`, `FolderSyncService`, `CloudFolderService`, `LauncherPayload`, `AutoSyncService`) is transport-pluggable. Before changing any of it, including adding a trigger, follow the sync conventions:
 
 Read and follow [sync.md](../../docs/sync.md) before changing the code described above.
 

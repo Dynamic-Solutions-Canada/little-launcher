@@ -1,6 +1,6 @@
 # Project documentation
 
-Project documentation lives in this directory. [The root README](../README.md) introduces the app and installation. [AGENTS.md](../AGENTS.md) and the source directories' nested instructions route coding work to the relevant guide; reusable agent workflows live under `.agents/skills/`. The instructions and workflows are shared across coding tools; tools that support `AGENTS.md`, including current Claude Code, can read the project guidance directly.
+Project documentation lives in this directory. [The root README](../README.md) introduces the app and installation. [AGENTS.md](../AGENTS.md) and the source directories' nested instructions route coding work to the relevant guide; reusable agent workflows live under `.agents/skills/`. The agent reaches the skills through the tracked `.claude/skills` link.
 
 ## Start here
 
@@ -11,13 +11,14 @@ Project documentation lives in this directory. [The root README](../README.md) i
 | [Architecture](architecture.md) | Application behavior, lifecycle and cross-platform boundaries |
 | [Component map](components.md) | Owning modules, namespaces and responsibility boundaries |
 | [Glossary](glossary.md) | Shared product terminology |
+| [Launcher model](launcher-model.md) | Launcher kinds, item types, groups and column breaks |
 
 ## Implementation guides
 
 | Guide | Area |
 | --- | --- |
 | [Linux](linux.md) | Native desktop UI, browser isolation, integration and qualification |
-| [Windows development](windows-development.md) | Shared disposable Windows build and install bridge |
+| [Windows development](windows-development.md) | This repo's Windows build commands, specifics and .NET build floor |
 | [User settings](user-settings.md) | Observable models, serialization and device-local preferences |
 | [Drag and drop](drag-drop.md) | Shared launcher item views, editing and drop policy |
 | [Web launchers](web-launchers.md) | WebView2 windows, tabs, profiles, permissions and lifecycle |
@@ -43,14 +44,13 @@ Project documentation lives in this directory. [The root README](../README.md) i
 
 ## Reusable contributor workflows
 
-- [Build, verify or install the Windows app](../.agents/skills/desktop/SKILL.md)
-- [Rebuild and launch the sideloaded Release MSIX](../.agents/skills/rebuild-desktop/SKILL.md)
+- [Build, verify, package or install the Windows app](../.agents/skills/desktop/SKILL.md)
 - [Add a launcher feature](../.agents/skills/add-launcher-feature/SKILL.md)
 - [Add a setting](../.agents/skills/add-setting/SKILL.md)
 - [Add a settings page](../.agents/skills/add-settings-page/SKILL.md)
-- [Update documentation](../.agents/skills/update-docs/SKILL.md)
+- [Audit documentation](../.agents/skills/audit-docs/SKILL.md)
 - [Commit requested changes](../.agents/skills/commit/SKILL.md)
-- [Publish a requested release](../.agents/skills/release-app/SKILL.md)
+- [Publish a requested release](../.agents/skills/release/SKILL.md)
 
 ## Maintenance
 

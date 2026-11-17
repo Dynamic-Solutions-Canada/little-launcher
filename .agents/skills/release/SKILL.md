@@ -1,6 +1,6 @@
 ---
-name: release-app
-description: Version, tag, and publish a Little Launcher release when the user requests a release. Does not apply to local sideloaded test builds.
+name: release
+description: Version, tag, and publish a Little Launcher release. Use when the user asks for a release. Do not use for local sideloaded test builds.
 ---
 
 # Release Little Launcher
@@ -18,8 +18,8 @@ Do not repeat approval already given for that release.
 The tag publishes portable artifacts and submits Store MSIX packages through separate workflows.
 Verify both results; API pricing reported as `Base` still requires resolution in Partner Center;
 never publish paid Store packages as public CI artifacts. A local four-part sideload version uses
-the [rebuild workflow](../rebuild-desktop/SKILL.md) and is not a public release.
+the `desktop` skill and is not a public release.
 
 ## Pending for the next release
 
-- The first release after v1.43.0 stops sending website hostnames to Google's favicon service (FIX-061). It also makes new 1-way OneDrive share links view-only instead of editable. When it ships, tell the standards session so the website privacy page is updated to match both. Remove this line once that is done.
+- The first release after v1.43.0 stops sending website hostnames to Google's favicon service (FIX-061). It also makes new 1-way OneDrive share links view-only instead of editable. When it ships, tell the maintainer so the website privacy page is updated to match both. Remove this line once that is done.

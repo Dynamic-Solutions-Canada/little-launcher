@@ -1,6 +1,6 @@
 # LittleLauncher/Classes
 
-P/Invoke and native interop conventions apply here — `NativeMethods.cs` is the single home for all `[LibraryImport]`/`[DllImport]` declarations.
+P/Invoke and native interop conventions apply here: `NativeMethods.cs` is the single home for all `[LibraryImport]`/`[DllImport]` declarations.
 
 Read and follow [pinvoke.md](../../docs/pinvoke.md) before changing the code described above.
 

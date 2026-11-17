@@ -32,7 +32,7 @@ Two surfaces read browser bookmarks, sharing `BookmarkImport.ReadBookmarks` / `.
 
 **In the tree selector, selection lives in a `HashSet<BookmarkNode>`, not in the `TreeView`.**
 Filtering rebuilds the nodes, so a selection held only by the control is destroyed on the next
-keystroke — tick three bookmarks, search for something else, and those three never get imported.
+keystroke: tick three bookmarks, search for something else, and those three never get imported.
 The tree is authoritative only for the rows it is currently showing; `SyncChosenFromTree` merges
 that back without touching anything filtered out. Verified: select 4 matches of one search, switch
 the search, select 1 more, clear the search → 5 selected.

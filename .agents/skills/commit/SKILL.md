@@ -7,7 +7,7 @@ description: Review and commit requested Little Launcher changes with their affe
 
 Review the working tree and staged diff. Include the changes within the user's requested scope,
 preserving unrelated edits and excluding generated files, signing certificates, and secrets.
-Check the documentation maintenance table in [AGENTS.md](../../../AGENTS.md), and update the
+Check the "Keeping docs current" table in [AGENTS.md](../../../AGENTS.md), and update the
 affected guides before staging explicit paths. Use a concise imperative subject and a body when
 the reason for the change needs explanation. Choose the message from the diff unless supplied.
 

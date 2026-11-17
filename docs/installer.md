@@ -105,7 +105,7 @@ These are the default locations; `XDG_CONFIG_HOME` and `XDG_DATA_HOME` move them
 
 ## Building the MSIX (`build-msix.ps1`)
 
-`LittleLauncherMSIX/build-msix.ps1 -Platform {x64|ARM64}` publishes the app (self-contained) + the AOT companion, assembles the layout, runs `makepri`/`makeappx`, and signs with the certificate passed to it (or not at all with `-NoSign`). Toolchain requirements (see also the local-build memory):
+`LittleLauncherMSIX/build-msix.ps1 -Platform {x64|ARM64}` publishes the app (self-contained) + the AOT companion, assembles the layout, runs `makepri`/`makeappx`, and signs with the certificate passed to it (or not at all with `-NoSign`). Toolchain requirements:
 
 - **.NET SDK 10.0.403 or a later 10.0.4xx patch**, selected by root `global.json`. The shared build policy requires runtime 10.0.14 or later for CVE-2026-111497. Rebuild both the self-contained app and NativeAOT helper; an updated host runtime does not repair existing embedded code. See [the build security floor](windows-development.md#net-build-security-floor).
 - **Windows SDK** packaging tools (`makeappx`/`makepri`/`signtool`). The script auto-detects the newest installed `C:\Program Files (x86)\Windows Kits\10\bin\10.*` that has them — don't hardcode a version.
@@ -123,15 +123,16 @@ checks the installed version, and launches the app. Never uninstall to bypass
 
 `npm run build:desktop` creates the signed package without installation;
 `npm run install:desktop -- --skip-build` reuses the last successful dev package.
-`npm run package:desktop` creates the unsigned Store package. Use
-`-- --platform x64` for x64. Output packages include their version in the filename
+`npm run package:desktop` creates the unsigned Store package for the build host's
+architecture. Output packages include their version in the filename
 and return to `.artifacts/windows-build/` in WSL.
 
-All four apps select the same local signer in `windows-build.json`. The single
+The Windows apps share one local dev signer, selected in `windows-build.json`. The single
 private key lives beside the shared build bridge, outside the app
 repositories. Do not recreate it or switch publisher to fix an install failure.
-Read [the shared desktop workflow](windows-development.md) for the signer,
-certificate trust, cleanup and container transport policy.
+The [Windows build tools README](https://github.com/Dynamic-Solutions-Canada/windows-build-tools)
+documents the signer, certificate trust, cleanup and container transport policy;
+[windows-development.md](windows-development.md) has this repo's specifics.
 
 `SignatureKind = Developer` identifies a sideloaded build; `Store` identifies
 the Store-signed copy. The shared helper stops on a conflicting development

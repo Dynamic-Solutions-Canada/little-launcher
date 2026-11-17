@@ -1,30 +1,27 @@
+> **Scope:** Use when building, verifying, packaging or installing the Windows app from WSL, or changing the .NET build floor.
+> **Governs:** `windows-build.json`, `scripts/windows-build`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`.
+
 # Windows desktop workflow
 
-From the WSL repository root, use the same commands across all four apps:
+Windows builds run from WSL through the shared Windows build tools, which stage the working tree in a disposable Windows TEMP copy, build there and return logs and packages to `.artifacts/windows-build/`. Their commands, options, signing, local build VM and troubleshooting are documented once, in the [Windows build tools README](https://github.com/Dynamic-Solutions-Canada/windows-build-tools) (the link resolves once that repository is published). `scripts/windows-build` calls them, and `windows-build.json` configures them for this repo. This guide keeps only what is specific to Little Launcher.
 
-| Command | Result |
+## This repo's commands
+
+| Command | What it does |
 | --- | --- |
-| `npm run build:desktop` | Signed ARM64 Release dev package |
-| `npm run verify:desktop` | Full Windows Debug compile |
-| `npm run install:desktop` | Build, update in place, launch |
-| `npm run install:desktop -- --skip-build` | Reinstall the latest successful dev package |
-| `npm run install:desktop -- --skip-build --dry-run` | Check the install without changing Windows |
+| `npm run verify:desktop` | Debug compile of the app and the companion helper |
+| `npm run build:desktop` | Signed dev package, not installed |
+| `npm run install:desktop` | Signed dev package, updated in place over the installed copy and launched |
 | `npm run package:desktop` | Unsigned Store package |
 
-Pass `-- --platform x64` for x64 or `-- --no-launch` when installing without
-launching. The working tree is staged in a unique C: Windows TEMP directory,
-cleaned after use. Logs and packages return to `.artifacts/windows-build/` in WSL.
-Tracked release versions stay unchanged; dev revisions change only in staging.
-Never uninstall to bypass an update error or silently replace a publisher.
+The build host's architecture is the default platform. `verify:desktop` compiles only the project named in `windows-build.json`, so the test harnesses under `tests/` are not compiled by it.
 
-The policy and implementation are shared, not copied per project. Read the
-[shared build/install guide](../../windows-build-tools/README.md), or open
-`$WINDOWS_BUILD_TOOLS/README.md` when using a custom tools location. The launcher is
-`scripts/windows-build` and the per-project manifest is `windows-build.json`.
+## What is specific to Little Launcher
 
-When this PC has no PowerShell 7 or .NET SDK, start the shared bridge's local Windows build VM; the same npm commands then build inside it automatically. It supports only `verify:desktop` and unsigned `package:desktop`, not `build:desktop` or `install:desktop`. Stop it afterwards, and never run it alongside the Android emulator VM. A worktree created without its submodules needs `git submodule update --init` before a Windows build. Setup and commands are in the [shared guide](../../windows-build-tools/README.md#local-windows-dev-vm-when-this-pc-has-no-windows-build-tools).
-
-Use the repository [desktop skill](../.agents/skills/desktop/SKILL.md) for build, verification and installation requests. Build-only requests do not authorize installation. Use `--skip-build` only when explicitly asked to reuse the last package. Report the resulting version, output location, build result and available runtime checks; distinguish checks needing human interaction. Follow [the release workflow](versioning.md) for publishing, leave changes uncommitted unless requested, and never change tracked release versions or package identity for a local build.
+- **Dev identity:** `windows-build.json` uses the Store identity as the dev identity, so a signed dev build updates the installed copy, keeping its settings and sign-ins. A Store install is a bundle, and a single dev `.msix` cannot update a bundle; installing over a Store copy needs a bundle built with the same version. Never uninstall to get past an update error (`0x80073CFB`): uninstalling deletes package settings, browser profiles and caches.
+- **Companion helper:** Release packages publish `LauncherShortcut` with Native AOT, which needs the Visual Studio C++ build tools (with ARM64 tools) on the Windows build machine. Debug builds use the framework-dependent helper.
+- **Packaging script:** `LittleLauncherMSIX/build-msix.ps1` (tiles, the notification activator and the helper are specific to this app); see [installer.md](installer.md#building-the-msix-build-msixps1).
+- **Submodules:** a worktree needs `git submodule update --init` before a Windows build (`external/promo`).
 
 ## .NET build security floor
 
@@ -36,10 +33,4 @@ This floor follows [Microsoft's CVE-2026-111497 advisory](https://github.com/dot
 
 Rebuild and inspect both x64 and ARM64 portable and Store outputs before distribution. Check shared runtime requirements, embedded runtime packs, and the NativeAOT helper independently. Updating a machine's shared runtime cannot replace code embedded in an existing helper or self-contained package. WebView2's Evergreen runtime is serviced separately from .NET.
 
-## Default login startup on both platforms
-
-Fresh Windows settings default `UserSettings.Startup` to true and always serialize its Boolean value, including false. Existing JSON files whose older false value was omitted retain false during restore. `SettingsManager.IsFirstRun` is transient and true only when both JSON and legacy XML settings are absent; unreadable existing files do not qualify. `MainWindow.ApplyFirstRunStartupAsync` registers the unpackaged per-user Run command once with `--silent`. The MSIX StartupTask manifest defaults enabled; OS DisabledByUser/policy states are never overridden. Subsequent launches do not recreate a user's removed startup entry. The System page continues displaying actual OS state. Linux already defaults `StartAtLogin` to true and retains an explicit false, using the stable AppImage path; temporary previews still disable startup integration. No auto-sync preference is enabled by this change.
-
-Production model JSON checks prove default true and false reload persistence. Full x64 Release1.41.1.2 compiles and signs. The isolated Linux native test also confirms the default-on setting. Windows fresh portable OS registration remains native acceptance beyond the model/build checks.
-
-The sync/startup follow-up installs x64 Release1.41.1.2 in the same Developer family. Native UI Automation verifies five initially collapsed destinations and the manifest’s enabled startup default while the existing OS-off state survives the update. Tracked versions stay unchanged. Evidence is in `.artifacts/linux-native/sync-startup-followup/`.
+Default login startup on both platforms is described in [installer.md](installer.md).
