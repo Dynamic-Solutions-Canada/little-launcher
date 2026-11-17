@@ -20,6 +20,11 @@ updates:
       - dependency-name: Microsoft.WindowsAppSDK
       - dependency-name: NLog
       - dependency-name: CommunityToolkit.Mvvm
+      # .NET-line packages follow the target framework: majors wait until the app targets that .NET.
+      - dependency-name: "Microsoft.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "System.*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/linux/browser"
@@ -31,6 +36,10 @@ updates:
     ignore:
       # A new Electron major needs the Linux browser qualification first; take it as its own change.
       - dependency-name: electron
+        update-types: ["version-update:semver-major"]
+      # build-vendor.cjs compiles the vendored extension source; a TypeScript major needs an AppImage
+      # build and the Linux browser checks first.
+      - dependency-name: typescript
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions

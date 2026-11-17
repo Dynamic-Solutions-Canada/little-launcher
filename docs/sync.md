@@ -447,7 +447,9 @@ confidential. Google's current Desktop guide labels `client_secret` optional, wh
 continues sending the configured secret for its deployed registration. Preserve that compatibility
 until a change is separately verified; an unexplained sign-in failure is not evidence to remove or
 rotate it. Client IDs live in source; the Google secret follows the private build-input policy
-below. PKCE and callback correlation protect the authorization flow.
+below. That policy only keeps the secret out of the public source: anyone with the shipped app
+can extract it, which Google's installed-app model assumes, so it is not a confidentiality control.
+PKCE and callback correlation protect the authorization flow.
 
 ### OneDrive: Microsoft Entra
 

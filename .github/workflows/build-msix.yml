@@ -1,183 +1,176 @@
 name: Build and Package
 
+# On a v* tag: run the gate (CI-4), check that the MSIX packages build for x64 and ARM64, build the
+# Linux AppImage, then create the GitHub Release from the committed notes (REL-5, REL-6).
+# workflow_dispatch runs the gate and the builds only.
+#
+# No Windows build is published anywhere, on purpose (DIST-5, D-020). Little Launcher is a paid
+# Microsoft Store app in a public repo, and an Actions artifact or Release asset on a public repo can
+# be downloaded by anyone. The Windows install route is the Microsoft Store. The Linux AppImage has
+# no paid channel, so the Release attaches it with SHA256SUMS; the in-app Linux updater fetches it by
+# its exact name (LittleLauncher-<version>-linux-x64.AppImage), so that name must not change.
+
 on:
   workflow_dispatch:
   push:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
+# Creates a GitHub Release, so a run in progress is never cancelled.
+concurrency:
+  group: build-msix-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build:
-    runs-on: windows-2025
-
-    strategy:
-      matrix:
-        platform: [x64, ARM64]
-
-    env:
-      PLATFORM: ${{ matrix.platform }}
-
+  # CI-4: the same gate a developer runs, before anything is built or released.
+  validate:
+    name: Validate (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
+      # Submodules too: the test runner, format and gitignore checks come from winui-app-kit.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: true
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
-      # ── Extract version from Directory.Build.props ─────────────
-      - name: Read version
-        id: version
-        shell: pwsh
-        run: |
-          [xml]$props = Get-Content Directory.Build.props
-          $ver = $props.Project.PropertyGroup[0].Version
-          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
-          echo "VERSION_QUAD=$ver.0" >> $env:GITHUB_OUTPUT
-          Write-Host "Detected version: $ver"
-
-      # ── Stamp MSIX manifest ────────────────────────────────────
-      - name: Stamp AppxManifest version
-        shell: pwsh
-        run: |
-          $manifest = "LittleLauncherMSIX/Package.appxmanifest"
-          $quad = "${{ steps.version.outputs.VERSION_QUAD }}"
-          # Only replace Version= on the Identity element line
-          (Get-Content $manifest) | ForEach-Object {
-            if ($_ -match '<Identity') { $_ -replace 'Version="[^"]*"', "Version=`"$quad`"" } else { $_ }
-          } | Set-Content $manifest
-
-      # ── Regular build ──────────────────────────────────────────
-      - name: Build (dotnet)
-        shell: pwsh
-        env:
-          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:GoogleClientSecret)) {
-            throw 'Missing GitHub Actions secret: GOOGLE_CLIENT_SECRET'
-          }
-          dotnet build LittleLauncher/LittleLauncher.csproj -c Release -p:Platform=$env:PLATFORM
-
-      # ── Authenticode signing ────────────────────────────────────
-      # Requires two GitHub repository secrets:
-      #   CODESIGN_PFX_BASE64  — base64-encoded PFX certificate file
-      #   CODESIGN_PFX_PASSWORD — password for the PFX certificate
-      #
-      # To encode your PFX: [Convert]::ToBase64String([IO.File]::ReadAllBytes("cert.pfx"))
-      # Obtain a certificate from DigiCert, Sectigo, or another trusted CA.
-      # EV certificates grant instant reputation with Smart App Control; OV certificates
-      # build reputation over time. Self-signed certificates do NOT satisfy SAC.
-      - name: Sign executables
-        shell: pwsh
-        env:
-          CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
-          CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
-        run: |
-          if ([string]::IsNullOrEmpty($env:CODESIGN_PFX_BASE64)) {
-            Write-Host "CODESIGN_PFX_BASE64 secret not set — skipping Authenticode signing." -ForegroundColor Yellow
-            Write-Host "Smart App Control may block unsigned binaries. See README for setup instructions."
-            exit 0
-          }
-
-          $pfxPath = Join-Path $env:RUNNER_TEMP "codesign.pfx"
-          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:CODESIGN_PFX_BASE64))
-
-          $binDir = "LittleLauncher\bin\$env:PLATFORM\Release\net10.0-windows10.0.22000.0"
-          $exes = @(
-            "$binDir\LittleLauncher.exe",
-            "$binDir\LittleLauncherFlyout.exe"
-          ) | Where-Object { Test-Path $_ }
-
-          foreach ($exe in $exes) {
-            Write-Host "Signing $exe ..."
-            & signtool sign /fd SHA256 /f $pfxPath /p $env:CODESIGN_PFX_PASSWORD `
-              /tr http://timestamp.digicert.com /td SHA256 $exe
-            if ($LASTEXITCODE -ne 0) { Write-Error "signtool failed for $exe"; exit 1 }
-          }
-
-          Remove-Item $pfxPath -Force
-
-      - name: Upload build output
-        uses: actions/upload-artifact@v4
+      - name: Setup Node
+        uses: actions/setup-node@v7
         with:
-          name: Build-${{ matrix.platform }}
-          path: LittleLauncher/bin/${{ matrix.platform }}/Release/net10.0-windows10.0.22000.0/
+          node-version-file: .nvmrc
+          # The root package.json only wraps scripts and has no lockfile (CI-6).
+          package-manager-cache: false
+
+      - name: Validate
+        run: npm run validate
+
+      # REL-6: the notes for the version must exist before anything is built. Never fall back to
+      # commit subjects or generated notes.
+      - name: Check release notes
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
+          NOTES="release-notes/${VERSION}.md"
+          if [ ! -s "${NOTES}" ]; then echo "::error::Missing release notes: ${NOTES}"; exit 1; fi
+
+  build:
+    name: Package (${{ matrix.platform }})
+    needs: validate
+    runs-on: windows-2025
+    # Two self-contained publishes (app and Native AOT helper), makepri, makeappx and signing.
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        platform: [x64, ARM64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # Nothing from this build is published; it is the automated check that manifest stamping,
+      # makepri, makeappx and signing still work, so a packaging break shows up on the tag rather
+      # than at Store submission. It signs with a throwaway self-signed certificate made for this
+      # run, with a random password that is never stored (DIST-2).
+      - name: Build MSIX
+        shell: pwsh
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          $password = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+          Write-Host "::add-mask::$password"
+          $cert = New-SelfSignedCertificate -Type Custom -Subject "CN=LittleLauncher-CI" `
+            -KeyUsage DigitalSignature -CertStoreLocation "Cert:\CurrentUser\My" `
+            -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3")
+          $pfx = Join-Path $env:RUNNER_TEMP "ci-signing.pfx"
+          Export-PfxCertificate -Cert $cert -FilePath $pfx `
+            -Password (ConvertTo-SecureString -String $password -Force -AsPlainText) | Out-Null
+          Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -DeleteKey
+          & "LittleLauncherMSIX/build-msix.ps1" -Platform $env:PLATFORM -TrustedPfxPath $pfx -TrustedPfxPassword $password
+          $buildExit = $LASTEXITCODE
+          Remove-Item $pfx -Force
+          if ($buildExit -ne 0) { Write-Error "build-msix failed"; exit 1 }
 
   linux:
+    name: Linux AppImage
+    needs: validate
     uses: ./.github/workflows/linux-appimage.yml
 
-
   release:
+    name: Create GitHub Release
     if: startsWith(github.ref, 'refs/tags/v')
+    # A tag gets no Release if the packages it names do not build.
     needs: [build, linux]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
-
     steps:
-      - name: Checkout (for git log)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - name: Prepare release notes
+      # REL-1, REL-6: the tag must name the version in Directory.Build.props, and its notes must exist.
+      - name: Read version and notes
         id: notes
         run: |
-          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
-          PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -E '^v' | sed -n '2p')
-
-          if [ -n "$PREVIOUS_TAG" ]; then
-            RANGE="${PREVIOUS_TAG}..${CURRENT_TAG}"
-          else
-            RANGE="${CURRENT_TAG}"
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -1)"
+          if [ "${TAG}" != "v${VERSION}" ]; then
+            echo "::error::Tag ${TAG} does not match <Version>${VERSION}</Version> in Directory.Build.props"
+            exit 1
           fi
-
-          NOTES_FILE="docs/releases/${CURRENT_TAG}.md"
-          if [ -f "$NOTES_FILE" ]; then
-            BODY=$(cat "$NOTES_FILE")
-          else
-            BODY=$(git log "$RANGE" --pretty=format:"- %s" --no-merges \
-              | awk 'tolower($0) !~ /^- (bump version|merge branch)/')
-          fi
-
-          if [ -z "$BODY" ]; then
-            BODY="- Maintenance release (no notable changes)"
-          fi
-
+          NOTES="release-notes/${VERSION}.md"
+          if [ ! -s "${NOTES}" ]; then echo "::error::Missing release notes: ${NOTES}"; exit 1; fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           {
-            echo "RELEASE_BODY<<RELEASE_EOF"
-            echo "$BODY"
+            echo "body<<RELEASE_EOF"
+            cat "${NOTES}"
+            echo ""
+            echo "## Get it"
+            echo ""
+            echo "**Windows:** [Little Launcher in the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf). Store installs update automatically."
+            echo ""
+            echo "**Linux:** download \`LittleLauncher-${VERSION}-linux-x64.AppImage\` below, make it executable and run it (Debian 12 / Ubuntu 24.04 LTS or newer). \`SHA256SUMS\` lists its checksum."
             echo ""
             echo "*AI disclosure: this release and the related code were written with the assistance of AI.*"
             echo "RELEASE_EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Download portable build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: Build-*
-          path: artifacts/build
-
-      - name: Collect release files
-        run: |
-          mkdir -p release
-          for dir in artifacts/build/*/; do
-            arch=$(basename "$dir" | sed 's/Build-//')
-            (cd "$dir" && zip -r "../../../release/LittleLauncher-${arch}-portable.zip" .)
-          done
-
-      - name: Download Linux AppImage
-        uses: actions/download-artifact@v4
+      - name: Download the Linux AppImage
+        uses: actions/download-artifact@v8
         with:
           name: Linux-AppImage
           path: release
 
+      # DIST-5: one SHA256SUMS file for the Release's assets.
+      - name: Write SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum -- *.AppImage > SHA256SUMS
+          cat SHA256SUMS
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
-          files: release/*
-          body: ${{ steps.notes.outputs.RELEASE_BODY }}
+          name: Little Launcher ${{ steps.notes.outputs.version }}
+          body: ${{ steps.notes.outputs.body }}
+          files: |
+            release/*.AppImage
+            release/SHA256SUMS
+          make_latest: true
           generate_release_notes: false

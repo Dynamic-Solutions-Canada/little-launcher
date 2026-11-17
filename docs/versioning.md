@@ -1,5 +1,5 @@
 > **Scope:** Use when bumping version numbers, creating releases, or modifying version-related files. Documents every file that contains a version string and the release workflow.
-> **Governs:** `**/Directory.Build.props`, `**/MainWindow.xaml.cs`, `**/Package.appxmanifest`, `**/AppxManifest.xml`, `**/build-msix.ps1`, `**/.github/workflows/build-msix.yml`.
+> **Governs:** `**/Directory.Build.props`, `**/MainWindow.xaml.cs`, `**/Package.appxmanifest`, `**/AppxManifest.xml`, `**/build-msix.ps1`, `**/.github/workflows/build-msix.yml`, `**/.github/workflows/store-publish.yml`, `**/.github/workflows/linux-appimage.yml`, `release-notes/**`.
 
 # Versioning & Releases
 
@@ -19,42 +19,27 @@ All other consumers derive from this automatically:
 |---|---|
 | **App (in-code display)** | `MainWindow.xaml.cs` reads `Assembly.GetName().Version` at startup: set by MSBuild from `<Version>` |
 | **MSIX manifest** | `LittleLauncherMSIX/build-msix.ps1` replaces `VERSION_PLACEHOLDER` in `Package.appxmanifest` with the version from `Directory.Build.props` at build time |
-| **Portable zip** | Built from the same `dotnet build` output, so it carries the assembly version |
 | **Linux AppImage** | `linux/packaging/build.py` reads `<Version>` and stages VERSION; asset name is `LittleLauncher-{version}-linux-x64.AppImage` |
 | **Git tag** | Created manually to match: `git tag -a v1.1.0 ...` |
 
 **`Directory.Build.props` is the only file to edit.** There are no fallback version strings left to keep in sync: the WiX `Package.wxs` define was the last one, and it went with the MSI.
 
+## Release notes
+
+Each release has a committed notes file, `release-notes/<version>.md` (REL-6), written and approved before the version is bumped and committed together with the bump (REL-2). The body is user-facing bullets only: no heading and no disclosure line, which CI adds. It must fit the Microsoft Store's 1,500-character "What's new" limit. From the next version on, the interface is localized, so add one sibling per other wording catalog (`<version>.es-ES.md`, `.fr-FR.md`, `.de-DE.md`, `.zh-CN.md`, `.pt-BR.md`, `.ja-JP.md`); the Canadian identities reuse `en-US` and `fr-FR`. Files for versions up to 1.43.0 are kept as published, with their old headings.
+
 ## Release workflow
 
-Pushing a tag matching `v*` triggers `.github/workflows/build-msix.yml` which:
+A `v*` tag runs two workflows. Neither falls back to commit subjects when notes are missing; both fail instead.
 
-1. Reads the version from `Directory.Build.props`
-2. Stamps the MSIX manifest with the four-part version
-3. Builds for **x64** and **ARM64** (`dotnet build -c Release`) and Authenticode-signs the exes
-4. Creates a **GitHub Release** with user-facing notes from `docs/releases/vX.Y.Z.md` when present, or a commit-summary fallback, followed by the required disclosure
-5. Attaches Windows `LittleLauncher-{x64,ARM64}-portable.zip` and the Linux x64 AppImage/checksum from reusable `linux-appimage.yml`. Linux CI builds in Debian12, then extracts and checks bundled imports. No DEB/RPM assets are offered.
+- **`build-msix.yml` (Build and Package):** runs `npm run validate` and checks that the notes exist (CI-4), checks that the x64 and ARM64 MSIX packages build and sign (with a throwaway certificate; nothing is published), builds the Linux AppImage through the reusable `linux-appimage.yml`, then creates the GitHub Release titled `Little Launcher X.Y.Z` from the notes, a "Get it" section and the AI disclosure. The Release attaches only `LittleLauncher-X.Y.Z-linux-x64.AppImage` and `SHA256SUMS`: as a paid Store app in a public repo, no Windows build is attached (DIST-5, D-020). The in-app Linux updater fetches the AppImage by that exact name, so it never changes.
+- **`store-publish.yml` (Publish to Microsoft Store):** calls winui-app-kit's reusable Store workflow. It runs the gate, builds both unsigned packages with the Google client secret supplied at build time, uploads them as a **draft** with the notes for every listing locale, and stops (REL-7). Submitting the draft for certification is a second, deliberate step: run the workflow manually on the same tag with `submit_draft` set to the draft ID from the tag run's summary. The verified US $0.99 price tier is `Tier1012`; see [installer.md](installer.md) for pricing history.
 
-The separate `store-publish.yml` builds both unsigned Store packages and submits them on the
-same tag using CLI v0.4.3 and the verified US $0.99 `Tier1012`. Manual runs default to draft
-review. See [installer.md](installer.md) for the regional price migration.
-
-Release-note filtering must succeed even when only version-bump commits remain, so the maintenance
-fallback can run. The workflow uses `awk` rather than `grep`, whose no-match exit status aborts Bash
-under `-e`. If publication fails after successful builds, the matching CI build artifacts can be
-packaged as portable ZIPs and published against the existing tag without rewriting it.
-
-Release v1.42.0 publishes Windows portable and Linux AppImage downloads without a Store submission. Its tag is explicitly excluded from `store-publish.yml`; manual Store publication remains available when requested. Other version tags retain their existing Store behavior.
-
-For a clean Electron 45 install, download the engine explicitly with `node linux/browser/node_modules/electron/install.js`; `npm ci` alone installs the lazy-download package. The Linux workflow does this before packaging. To rebuild an existing immutable source tag with repaired CI, manually dispatch `linux-appimage.yml` from the repaired workflow and set `source_ref` to the tag. Verify that source revision and combine its AppImage/checksum with Windows portable outputs built from the same tag before publishing; do not move the release tag.
+For a clean Electron 45 install, download the engine explicitly with `node linux/browser/node_modules/electron/install.js`; `npm ci` alone installs the lazy-download package. The Linux workflow does this before packaging. To rebuild an existing tag's AppImage with repaired CI, manually dispatch `linux-appimage.yml` from the repaired workflow and set `source_ref` to the tag; do not move the release tag.
 
 ## How to release
 
-1. Edit `Directory.Build.props`: change `<Version>X.Y.Z</Version>`
-2. Commit: `git commit -am "Bump version to vX.Y.Z"`
-3. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z: <brief summary>"`
-4. Push both: `git push origin main vX.Y.Z`
-5. Verify both workflows: the GitHub release and the Store submission (or resolve a pricing block in Partner Center)
+Use the `release` skill; it holds the full procedure (REL-8, REL-12). In short: write and approve the notes, bump `<Version>` and commit it with the notes as `Bump version to vX.Y.Z`, create the annotated tag `vX.Y.Z`, push the branch and the tag together, verify the Release and the Store draft, submit the draft, then do the post-release steps.
 
 ## Version bump guidance
 

@@ -1,13 +1,13 @@
-> **Scope:** Use when changing how Little Launcher is packaged, installed or updated. Covers Windows portable ZIP and Microsoft Store MSIX delivery, Linux AppImage delivery, desktop shortcut integration, and the update flow for each.
+> **Scope:** Use when changing how Little Launcher is packaged, installed or updated. Covers Microsoft Store MSIX delivery (and the retired portable ZIP), Linux AppImage delivery, desktop shortcut integration, and the update flow for each.
 > **Governs:** `**/UpdateService.cs`, `**/build-msix.ps1`, `**/Package.appxmanifest`.
 
 # Packaging and updates
 
-The Windows app ships through **two channels, and neither of them is an installer of ours**:
+The Windows app ships through the **Microsoft Store**. Releases after 1.43.0 attach no Windows build: as a paid Store app in a public repo, a free download would undercut the listing (DIST-5, D-020). Existing portable copies keep working, and their update check leads to a Release that points to the Store. Neither channel is an installer of ours:
 
 | Channel | Artifact | Put in place by | Updates |
 |---|---|---|---|
-| **Portable** | `LittleLauncher-{x64,ARM64}-portable.zip`, attached to the GitHub release | the user, unzipping it wherever they like | in-app check against GitHub Releases; the app opens the release page and the user replaces the folder |
+| **Portable** (retired) | `LittleLauncher-{x64,ARM64}-portable.zip`, attached to releases up to 1.43.0 only | the user, unzipping it wherever they like | in-app check against GitHub Releases; the app opens the release page, which now points to the Store |
 | **Microsoft Store** | MSIX, submitted by CI to Partner Center | the Store | About opens the Store updates page; the Store installs updates |
 
 **There is no MSI.** A per-user WiX installer shipped up to v1.35.1 and was retired: it duplicated
@@ -160,12 +160,13 @@ in the Action Center.
 
 ## CI Store publishing
 
-`build-msix.yml` publishes portable ZIPs and the GitHub Release on `v*` tags.
-`store-publish.yml` builds unsigned x64 and ARM64 MSIX packages on one runner,
-combines them with MakeAppx into one architecture-aware `.msixbundle` stamped with
-the app version, wraps it in
-`LittleLauncher-{version}.msixupload`, and submits it to Partner Center for
-product `9P3ZZBDQ6PJF`. No Store package is uploaded as a public Actions artifact.
+`build-msix.yml` creates the GitHub Release on `v*` tags, with the Linux AppImage and
+`SHA256SUMS` only; see [versioning.md](versioning.md#release-workflow). `store-publish.yml` calls
+winui-app-kit's reusable Store workflow, which runs the gate, builds unsigned x64 and ARM64 MSIX
+packages on one runner (passing the `GOOGLE_CLIENT_SECRET` repository secret as the
+`GoogleClientSecret` build property), combines them into one architecture-aware `.msixbundle`
+stamped with the app version, wraps it in `LittleLauncher-{version}.msixupload`, and uploads it to
+Partner Center for product `9P3ZZBDQ6PJF` as a draft with the release notes (REL-7). No Store package is uploaded as a public Actions artifact.
 MakeAppx defaults to a date-based bundle version unless `/bv` is supplied; that
 could outrank the next app version and block normal Store updates.
 Do not replace the bundle with a ZIP of two loose MSIX files: Partner Center
@@ -175,9 +176,8 @@ The workflow pins [Microsoft Store CLI v0.4.3](https://github.com/microsoft/msst
 The published submission reports `PriceId: "Base"`, which the CLI cannot round-trip.
 Tag runs now supply `Tier1012`, the verified US $0.99 tier, and may change converted
 prices in other markets. The user accepted the initial 36-market comparison below.
-Manual runs default to a draft; a different `price_id` can only be tested in a draft.
-The workflow checks for a pending submission before invoking the CLI, because the
-CLI would otherwise delete an existing draft. See [Microsoft PR #175](https://github.com/microsoft/msstore-cli/pull/175).
+`store-publish.yml` passes `price_tier: Tier1012`; the kit's workflow guards against the CLI
+deleting an existing draft. See [Microsoft PR #175](https://github.com/microsoft/msstore-cli/pull/175).
 
 The first live test, [v1.40.2 on September 22, 2026](https://github.com/RyanEwen/LittleLauncher/actions/runs/35759458540),
 built both packages and authenticated successfully. The CLI created a draft, retrieved it,
@@ -192,10 +192,12 @@ supported`. That failed draft was deleted and replaced by a Tier1012 submission.
 The workflow checks for pending submissions before invoking the CLI, so a retry
 cannot silently overwrite an existing draft or in-flight submission.
 
-Manual dispatch defaults `no_commit` to true, uploading a draft without submitting it.
-Use that first to verify credentials, both architectures and pricing in Partner Center.
-Tag pushes and manual runs with `no_commit` disabled commit the submission; certification
-and the submission's publishing settings determine when it becomes available.
+A tag run always stops at a draft. To submit, run the workflow manually on the same tag with
+`submit_draft` set to the draft ID from the tag run's summary. `dry_run` builds and checks
+everything without calling the Store; `repair_draft`, `replace_canceled_draft` and
+`replace_failed_draft` (with `failed_upload`) cover the recovery cases. The kit README documents
+each input. Certification and the submission's publishing settings determine when a submitted
+version becomes available.
 
 All four required repository secrets were present when checked on September 22, 2026:
 `AZURE_AD_TENANT_ID`, `AZURE_AD_APPLICATION_CLIENT_ID`, `AZURE_AD_APPLICATION_SECRET`,
@@ -264,29 +266,28 @@ settings). Copy **Seller ID** / **Publisher ID** → `SELLER_ID`.
 then inspect the draft's packages and pricing in Partner Center before committing it.
 The workflow supplies Tier1012 by default; review the resulting regional prices.
 
-### Repairing the existing pricing test draft
+### Repairing a draft, holding publication, inspecting
 
-The manual Store workflow accepts an existing_draft ID with no_commit enabled and an explicit
-price_id. The selected draft must match the current pending API submission and be PendingCommit.
-The helper in .github/scripts/update-store-test-draft.ps1 combines the approved Web Launcher
-feature bullets to meet the API's 20-feature limit, sets the requested tier, replaces packages,
-and uploads the bundle. It never creates, deletes, or commits submissions. Review the resulting
-regional prices and packages in Partner Center before any separate submission decision.
+These are inputs of the kit's Store workflow, run manually from `store-publish.yml`
+(the kit README's "Publishing to the Microsoft Store" section documents each):
 
+- `repair_draft` replaces both architectures in an existing draft (with `no_commit`).
+- `submit_draft` with `hold_publication` (on by default here) sets the submission to
+  manual publication, commits only if Partner Center kept that setting and the draft's own
+  price, then checks it again. The certified update waits until someone releases it in
+  Partner Center. Re-running after the commit only reads status.
+- `inspect_draft` reports status, pricing model, price tier, publishing mode and packages
+  without changing anything.
+
+They replace this repo's former `store-review.yml` and `.github/scripts/` helpers, which the
+history below refers to.
+
+### Pricing history
 
 The September 22 Tier2 draft retry (Actions run 35766179842) uploaded both 1.40.2
 packages and reduced the English features to 20. It failed at API commit ingestion
 and has since been replaced. Draft prices shown before ingestion did not establish
 effective regional pricing.
-
-
-### Committing with publication held
-
-After approval, dispatch store-review.yml with the existing submission_id. Its helper
-commit-store-review.ps1 changes only targetPublishMode to Manual, reads it back before
-committing, and checks ingestion status. It does not release the app. Re-running after
-commit reads status without committing again. Inspect ingested prices and packages before
-separately authorizing publication.
 
 
 The earlier Tier2 held commit was attempted in Actions run 35767396785. Microsoft confirmed
@@ -296,8 +297,7 @@ price for this app; accepting the initial PUT did not establish ingestion compat
 No publication occurred from that attempt.
 
 
-Use the inspect_only option of store-review.yml to read the submission's pricing
-fields without changing it. Microsoft documents Tier1012-Tier1424 for advanced
+Use `inspect_draft` to read a submission's pricing fields without changing it. Microsoft documents Tier1012-Tier1424 for advanced
 pricing and Tier2-Tier96 for the original model, but the msstore-cli maintainers
 measured the isAdvancedPricingModel flag flipping after a PUT and both ranges being
 accepted on the same product. Do not select a tier based on this flag. The Partner

@@ -1,8 +1,11 @@
+# Calls winui-app-kit's reusable Store workflow (CI-10, REL-7), from the kit's caller example.
+# Keep the `uses:` tag equal to the external/winui-app-kit pin; the kit's workflow stops at its first
+# step if they differ. A v* tag runs the gate, uploads both architectures to Partner Center as a draft
+# with the notes from release-notes/, and stops. A manual run on that tag with submit_draft set
+# submits it; hold_publication (on by default here) keeps a certified update waiting until it is
+# released by hand in Partner Center. inspect_draft reports a submission without changing it, and
+# dry_run builds and checks everything without any Store call.
 name: Publish to Microsoft Store
-
-# Tags submit both architectures directly to Partner Center at the verified US $0.99 tier.
-# Manual runs default to draft-only review. Never expose paid MSIX files as artifacts.
-# The published submission reports Base; CLI 0.4.3 needs Tier1012 for this product.
 
 on:
   push:
@@ -10,174 +13,81 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
+      dry_run:
+        description: 'Build, bundle and check, then stop before any Store call'
+        type: boolean
+        default: false
       no_commit:
         description: 'Stage a draft for review in Partner Center without submitting'
         type: boolean
         default: true
-      price_id:
-        description: 'Price tier (defaults to verified US $0.99 Tier1012)'
+      repair_draft:
+        description: 'Existing draft ID to repair with both architectures; requires no_commit'
         type: string
         default: ''
-
-      existing_draft:
-        description: 'Existing API draft ID to repair and upload without committing'
+      replace_canceled_draft:
+        description: 'Exact canceled tier submission ID to replace with a corrected release'
         type: string
         default: ''
-      failed_draft_to_replace:
-        description: 'Exact failed Tier2 test draft ID to replace with a new draft'
+      submit_draft:
+        description: 'Draft ID from the tag run to submit for certification; run on that release tag with no_commit unchecked'
+        type: string
+        default: ''
+      replace_failed_draft:
+        description: 'Exact CommitFailed submission ID to replace after correcting its package'
+        type: string
+        default: ''
+      failed_upload:
+        description: 'Exact upload filename in the failed submission being replaced'
+        type: string
+        default: ''
+      hold_publication:
+        description: 'With submit_draft: hold the release for manual publication in Partner Center'
+        type: boolean
+        # This app's practice: a certified update waits for a person to release it.
+        default: true
+      inspect_draft:
+        description: 'Submission ID to report (status, pricing, publishing mode) without changing anything'
         type: string
         default: ''
 
 permissions:
   contents: read
 
+# One Store run at a time, and never cancel one that has started talking to Partner Center.
 concurrency:
   group: store-package
   cancel-in-progress: false
 
 jobs:
   publish:
-    runs-on: windows-2025
-
-    steps:
-      - name: Check publishing credentials
-        shell: pwsh
-        env:
-          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          SELLER_ID: ${{ secrets.SELLER_ID }}
-          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
-          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
-        run: |
-          foreach ($name in @('AZURE_AD_TENANT_ID', 'SELLER_ID', 'AZURE_AD_APPLICATION_CLIENT_ID', 'AZURE_AD_APPLICATION_SECRET')) {
-            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
-              throw "Missing GitHub Actions secret: $name"
-            }
-          }
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-
-      - name: Build MSIX packages (x64 + ARM64, unsigned for Store)
-        shell: pwsh
-        env:
-          GoogleClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:GoogleClientSecret)) {
-            throw 'Missing GitHub Actions secret: GOOGLE_CLIENT_SECRET'
-          }
-          foreach ($plat in @('x64', 'ARM64')) {
-            Write-Host "::group::Build $plat MSIX"
-            & "$env:GITHUB_WORKSPACE\LittleLauncherMSIX\build-msix.ps1" -Platform $plat -NoSign
-            if ($LASTEXITCODE -ne 0) { throw "build-msix.ps1 failed for $plat (exit $LASTEXITCODE)" }
-            Write-Host "::endgroup::"
-          }
-
-      # Keep paid Store packages on this runner; never upload public Actions artifacts.
-      - name: Bundle Store packages
-        shell: pwsh
-        run: |
-          [xml]$props = Get-Content "$env:GITHUB_WORKSPACE/Directory.Build.props"
-          $version = $props.SelectSingleNode("//Version").InnerText
-          $out = "$env:GITHUB_WORKSPACE/LittleLauncherMSIX/bin/msix-output"
-          & "$env:GITHUB_WORKSPACE/.github/scripts/build-store-upload.ps1" -AppName LittleLauncher -OutputDirectory $out -Version $version
-
-      - name: Setup Microsoft Store CLI
-        uses: microsoft/microsoft-store-apppublisher@v1.1
-        with:
-          version: 'v0.4.3'
-
-      - name: Configure Store credentials
-        if: inputs.existing_draft == '' && inputs.failed_draft_to_replace == ''
-        shell: pwsh
-        env:
-          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          SELLER_ID: ${{ secrets.SELLER_ID }}
-          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
-          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
-        run: |
-          msstore reconfigure --tenantId "$env:AZURE_AD_TENANT_ID" --sellerId "$env:SELLER_ID" --clientId "$env:AZURE_AD_APPLICATION_CLIENT_ID" --clientSecret "$env:AZURE_AD_APPLICATION_SECRET"
-          if ($LASTEXITCODE -ne 0) { throw "Store authentication configuration failed (exit $LASTEXITCODE)" }
-          # The CLI deletes pending submissions before publishing. Preserve any existing draft.
-          $token = Invoke-RestMethod -Method Post -Uri "https://login.microsoftonline.com/$env:AZURE_AD_TENANT_ID/oauth2/token" -Body @{
-            grant_type = 'client_credentials'
-            client_id = $env:AZURE_AD_APPLICATION_CLIENT_ID
-            client_secret = $env:AZURE_AD_APPLICATION_SECRET
-            resource = 'https://manage.devcenter.microsoft.com'
-          }
-          $app = Invoke-RestMethod -Uri 'https://manage.devcenter.microsoft.com/v1.0/my/applications/9P3ZZBDQ6PJF' -Headers @{ Authorization = "Bearer $($token.access_token)" }
-          if ($null -ne $app.pendingApplicationSubmission) {
-            throw 'An existing Store submission is pending. Review it in Partner Center before starting another run.'
-          }
-
-
-      - name: Publish to Microsoft Store
-        if: inputs.existing_draft == '' && inputs.failed_draft_to_replace == ''
-        shell: pwsh
-        env:
-          NO_COMMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.no_commit }}
-          PRICE_ID: ${{ inputs.price_id || 'Tier1012' }}
-        run: |
-          [xml]$props = Get-Content "$env:GITHUB_WORKSPACE/Directory.Build.props"
-          $version = $props.SelectSingleNode("//Version").InnerText
-          $publishArgs = @('publish', "$env:GITHUB_WORKSPACE/LittleLauncherMSIX/bin/msix-output/LittleLauncher-$version.msixupload", '-id', '9P3ZZBDQ6PJF')
-          if ($env:NO_COMMIT -eq 'true') { $publishArgs += '--noCommit' }
-          # Tier1012 was accepted by API ingestion and its regional prices were reviewed.
-          if (![string]::IsNullOrWhiteSpace($env:PRICE_ID)) {
-            if ($env:PRICE_ID -notmatch '^Tier[0-9]+$') { throw 'Expected a numeric price tier ID.' }
-            if ($env:PRICE_ID -ne 'Tier1012' -and $env:NO_COMMIT -ne 'true') {
-              throw 'Unreviewed price tiers require a draft run.'
-            }
-            $publishArgs += @('--priceId', $env:PRICE_ID)
-          }
-          & msstore @publishArgs
-          if ($LASTEXITCODE -ne 0) {
-            throw "Store publishing failed (exit $LASTEXITCODE). If pricing is Base, use Partner Center; do not guess a priceId."
-          }
-          if ($env:NO_COMMIT -eq 'true') {
-            'Store draft uploaded. Review pricing and packages in Partner Center before committing.' >> $env:GITHUB_STEP_SUMMARY
-          } else {
-            'Store submission committed. Publication depends on Microsoft certification and the submission publishing settings.' >> $env:GITHUB_STEP_SUMMARY
-          }
-
-      - name: Update the selected test draft
-        if: inputs.existing_draft != ''
-        shell: pwsh
-        env:
-          SUBMISSION_ID: ${{ inputs.existing_draft }}
-          PRICE_ID: ${{ inputs.price_id }}
-          NO_COMMIT: ${{ inputs.no_commit }}
-          FAILED_DRAFT_TO_REPLACE: ${{ inputs.failed_draft_to_replace }}
-          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
-          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
-        run: |
-          if ($env:NO_COMMIT -ne 'true') { throw 'Updating a test draft requires no_commit.' }
-          if ($env:FAILED_DRAFT_TO_REPLACE) { throw 'Choose either existing_draft or failed_draft_to_replace.' }
-          [xml]$props = Get-Content "$env:GITHUB_WORKSPACE/Directory.Build.props"
-          $version = $props.SelectSingleNode("//Version").InnerText
-          & ./.github/scripts/update-store-test-draft.ps1 -SubmissionId $env:SUBMISSION_ID -PriceId $env:PRICE_ID -UploadPath "$env:GITHUB_WORKSPACE/LittleLauncherMSIX/bin/msix-output/LittleLauncher-$version.msixupload"
-
-      - name: Replace the failed Tier2 test draft
-        if: inputs.failed_draft_to_replace != ''
-        shell: pwsh
-        env:
-          FAILED_SUBMISSION_ID: ${{ inputs.failed_draft_to_replace }}
-          EXISTING_DRAFT: ${{ inputs.existing_draft }}
-          PRICE_ID: ${{ inputs.price_id }}
-          NO_COMMIT: ${{ inputs.no_commit }}
-          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
-          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
-          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
-        run: |
-          if ($env:NO_COMMIT -ne 'true') { throw 'Replacing a test draft requires no_commit.' }
-          if ($env:EXISTING_DRAFT) { throw 'Choose either existing_draft or failed_draft_to_replace.' }
-          [xml]$props = Get-Content "$env:GITHUB_WORKSPACE/Directory.Build.props"
-          $version = $props.SelectSingleNode("//Version").InnerText
-          & ./.github/scripts/replace-failed-store-test-draft.ps1 -FailedSubmissionId $env:FAILED_SUBMISSION_ID -PriceId $env:PRICE_ID -UploadPath "$env:GITHUB_WORKSPACE/LittleLauncherMSIX/bin/msix-output/LittleLauncher-$version.msixupload"
+    uses: Dynamic-Solutions-Canada/winui-app-kit/.github/workflows/store-publish.yml@v1.18.1
+    with:
+      store_product_id: 9P3ZZBDQ6PJF
+      # Paid, US $0.99: the tier verified with Partner Center (see docs/installer.md).
+      price_tier: Tier1012
+      # No steps of its own: the MSIX images are committed.
+      pre_build: ''
+      # The gate run first, on Linux (CI-4); this is the default.
+      gate_command: 'npm run validate'
+      # The Google Drive desktop OAuth client secret is compiled in from this build property
+      # (Directory.Build.props); the kit sets it from BUILD_SECRET for packaging only.
+      build_secret_env_name: 'GoogleClientSecret'
+      # A tag run is always a draft (REL-7); these only matter for manual runs.
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      no_commit: ${{ github.event_name == 'push' || inputs.no_commit }}
+      repair_draft: ${{ inputs.repair_draft || '' }}
+      replace_canceled_draft: ${{ inputs.replace_canceled_draft || '' }}
+      submit_draft: ${{ inputs.submit_draft || '' }}
+      replace_failed_draft: ${{ inputs.replace_failed_draft || '' }}
+      failed_upload: ${{ inputs.failed_upload || '' }}
+      hold_publication: ${{ github.event_name == 'workflow_dispatch' && inputs.hold_publication }}
+      inspect_draft: ${{ inputs.inspect_draft || '' }}
+    # Explicit, not inherit: the reusable workflow gets exactly the Store credentials (CI-11) and the
+    # one build secret.
+    secrets:
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+      AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+      SELLER_ID: ${{ secrets.SELLER_ID }}
+      BUILD_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}

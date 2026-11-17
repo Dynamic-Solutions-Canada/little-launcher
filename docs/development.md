@@ -117,6 +117,10 @@ linux/                         # Native Linux Qt host, isolated Electron browser
 
 The app keeps settings, icons and browser profiles under `%AppData%\LittleLauncher\` and `%LocalAppData%\LittleLauncher\` on Windows (redirected into the package folder for a Store install, so uninstalling removes them) and under `~/.config/little-launcher/` on Linux, plus startup entries, Start Menu shortcuts and taskbar pins. [installer.md](installer.md#uninstall-cleanup) lists every location and what is left after uninstalling. Sync and sharing write only to the destinations the user sets up. The app collects no telemetry or crash reports.
 
+## Build secret
+
+The Google Drive desktop OAuth client secret is a build input: `local.secrets.props` (git-ignored) supplies the `GoogleClientSecret` property locally, and the Store workflow passes the `GOOGLE_CLIENT_SECRET` repository secret. A desktop client secret compiled into a shipped app is not confidential, because Google's installed-app model assumes it can be extracted; keeping it out of the repo only keeps it out of the public source. Without it, builds compile and Google Drive sign-in may fail. See [sync.md](sync.md).
+
 ## Releasing
 
 `<Version>` in `Directory.Build.props` is the only version source. A `v*` tag runs `build-msix.yml` (the GitHub Release) and `store-publish.yml` (builds the unsigned x64 and ARM64 packages and submits them to Partner Center). The [packaging guide](installer.md) and [versioning guide](versioning.md) describe both, and the `release` skill is the procedure.

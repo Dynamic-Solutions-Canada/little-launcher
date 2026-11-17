@@ -51,7 +51,7 @@ The [full feature list](docs/features.md) covers every option.
 
 **Microsoft Store (recommended):** [Get Little Launcher from the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf). It installs and updates through the Store.
 
-**Portable:** download the ZIP for your architecture (x64 or ARM64) from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest) and unzip it wherever you like; nothing is installed and no admin rights are needed. It tells you when a new version is out and links you to it. To remove it, run `cleanup-uninstall.ps1` from the folder with the app closed (it clears settings, browser profiles and sign-ins, the startup entry and any shortcuts), then delete the folder.
+**Portable copies:** versions up to 1.43.0 also came as a portable ZIP; newer versions are available only from the Store. An existing portable copy keeps working. To remove one, run `cleanup-uninstall.ps1` from its folder with the app closed (it clears settings, browser profiles and sign-ins, the startup entry and any shortcuts), then delete the folder.
 
 **Requirements:** Windows 11 (build 22000 or later).
 

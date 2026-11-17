@@ -33,7 +33,7 @@ Project documentation lives in this directory. [The root README](../README.md) i
 
 ## Release notes
 
-[Version 1.42.0](releases/v1.42.0.md) introduces the native Linux app alongside the Windows downloads.
+Each version's notes are in [release-notes/](../release-notes/), one file per version; [1.42.0](../release-notes/1.42.0.md) introduced the native Linux app.
 
 ## Designs, decisions and verification
 

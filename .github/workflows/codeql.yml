@@ -45,7 +45,7 @@ jobs:
             build-mode: none
 
     steps:
-      # Submodules too, so calls into the promo page (and winui-app-kit once added) resolve during extraction;
+      # Submodules too, so calls into the promo page and winui-app-kit resolve during extraction;
       # codeql-config.yml keeps their own code out of the results.
       - name: Checkout
         uses: actions/checkout@v7

@@ -1,6 +1,6 @@
 # Little Launcher: Agent Instructions
 
-Little Launcher puts tray flyouts for shortcuts and live web pages on Windows and Linux, with launchers synced between devices. It is two native applications in one repo: Windows uses .NET 10 WinUI 3 and WebView2 and ships through the Microsoft Store as a paid MSIX (and as a portable ZIP); Linux uses Qt/PySide6 with a sandboxed Electron web engine and ships only as an x64 AppImage, with KDE as the primary target. Portable launcher data and selected icons sync between the two. The "Our other apps" page comes from the apps-promo submodule at `external/promo`.
+Little Launcher puts tray flyouts for shortcuts and live web pages on Windows and Linux, with launchers synced between devices. It is two native applications in one repo: Windows uses .NET 10 WinUI 3 and WebView2 and ships only through the Microsoft Store as a paid MSIX (GitHub Releases attach no Windows build); Linux uses Qt/PySide6 with a sandboxed Electron web engine and ships only as an x64 AppImage, with KDE as the primary target. Portable launcher data and selected icons sync between the two. The "Our other apps" page comes from the apps-promo submodule at `external/promo`.
 
 ## Standards
 
@@ -52,7 +52,7 @@ Local verification uses the sideloaded Release MSIX through the `desktop` skill,
 
 ## Release
 
-`<Version>` in `Directory.Build.props` is the only version string. A `v*` tag runs `build-msix.yml` (the GitHub Release, with the Linux AppImage) and `store-publish.yml` (the Store submission). Use the `release` skill; [docs/versioning.md](docs/versioning.md) and [docs/installer.md](docs/installer.md) have the detail.
+`<Version>` in `Directory.Build.props` is the only version string. A `v*` tag runs `build-msix.yml` (the GitHub Release, with the Linux AppImage) and `store-publish.yml` (a Store draft; submitting it is a separate manual run). Use the `release` skill; [docs/versioning.md](docs/versioning.md) and [docs/installer.md](docs/installer.md) have the detail.
 
 ## Guidance map
 
@@ -72,7 +72,7 @@ Local verification uses the sideloaded Release MSIX through the `desktop` skill,
 | [docs/localization.md](docs/localization.md) | Interface language, catalogs, adding UI text | `Shared/Localization/**`, `Shared/UiText.cs`, `Shared/SupportedLanguages.cs`, `LittleLauncher/Localization/**`, `linux/little_launcher/i18n.py` |
 | [docs/icons.md](docs/icons.md) | App, tray, shortcut and window icons, the icon gallery, website icons | `MainWindow.xaml.cs`, `SettingsWindow.xaml.cs`, `LaunchersPage.xaml*`, `HomePage.xaml.cs`, `FlyoutConverters.cs`, `FlyoutWindow.xaml*`, `IconGallery.cs`, `FaviconService*.cs`, `LauncherShortcut/**` |
 | [docs/installer.md](docs/installer.md) | Packaging, install and upgrade, update flows, uninstall cleanup | `UpdateService.cs`, `build-msix.ps1`, `Package.appxmanifest`, `cleanup-uninstall.ps1` |
-| [docs/versioning.md](docs/versioning.md) | Version bumps and releases | `Directory.Build.props`, `Package.appxmanifest`, `build-msix.ps1`, `.github/workflows/build-msix.yml` |
+| [docs/versioning.md](docs/versioning.md) | Version bumps and releases | `Directory.Build.props`, `release-notes/**`, `Package.appxmanifest`, `build-msix.ps1`, `.github/workflows/**` |
 | [tests/AGENTS.md](tests/AGENTS.md), [tests-native/AGENTS.md](tests-native/AGENTS.md) | Changing a harness or the native suite | `tests/**`, `tests-native/**` |
 | `desktop` skill | Building, verifying, packaging or installing the Windows app locally | Local Windows builds |
 | `add-setting`, `add-settings-page`, `add-launcher-feature` skills | Adding a setting, a Settings page or a launcher item feature | The files each names |

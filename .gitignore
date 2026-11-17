@@ -369,10 +369,6 @@ FodyWeavers.xsd
 # Part 2: project rules, each with a one-line reason.
 # The template's [Rr]elease/ build-output rule would otherwise hide the release skill (AI-7).
 !/.agents/skills/release/
-# Release notes are permanent documentation, not compiled Releases output.
-!/docs/releases/
-/docs/releases/*
-!/docs/releases/*.md
 # Linux's bin directory contains a source entry point, not compiled build output.
 !/linux/bin/
 /linux/bin/*
