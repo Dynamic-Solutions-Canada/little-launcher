@@ -19,12 +19,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: true
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
@@ -101,7 +101,7 @@ jobs:
           Remove-Item $pfxPath -Force
 
       - name: Upload build output
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Build-${{ matrix.platform }}
           path: LittleLauncher/bin/${{ matrix.platform }}/Release/net10.0-windows10.0.22000.0/
@@ -119,7 +119,7 @@ jobs:
 
     steps:
       - name: Checkout (for git log)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -156,7 +156,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Download portable build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: Build-*
           path: artifacts/build
@@ -170,13 +170,13 @@ jobs:
           done
 
       - name: Download Linux AppImage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: Linux-AppImage
           path: release
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: release/*
           body: ${{ steps.notes.outputs.RELEASE_BODY }}

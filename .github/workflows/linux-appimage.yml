@@ -20,10 +20,10 @@ jobs:
   appimage:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref || github.ref }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -44,7 +44,7 @@ jobs:
             --user "$(id -u):$(id -g)" -e QT_QPA_PLATFORM=offscreen \
             -v "$PWD/squashfs-root:/app:ro" little-launcher-appimage-builder:local \
             /app/usr/bin/python3.11 -I -c "import sys;sys.path.insert(0,'/app/usr/lib/python3.11/site-packages');from PySide6 import QtWidgets,QtNetwork,QtDBus;import dbus_next"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Linux-AppImage
           path: |
