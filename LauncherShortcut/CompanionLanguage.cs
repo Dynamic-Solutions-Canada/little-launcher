@@ -1,4 +1,5 @@
 using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using static LauncherShortcut.NativeMethods;
 
 namespace LauncherShortcut;
@@ -17,15 +18,25 @@ namespace LauncherShortcut;
 /// </remarks>
 internal static class CompanionLanguage
 {
+    /// <summary>The language the main app reported, read once on first use.</summary>
+    private static readonly Lazy<string?> Saved = new(ReadAppLanguage);
+
+    /// <summary>Windows' display languages, read once on first use.</summary>
+    private static readonly Lazy<string> Device = new(() => AppLanguages.Supported.Resolve(ReadPreferredUiLanguages()));
+
     /// <summary>
-    /// Configure <see cref="UiText"/>. Performs no I/O itself; the breadcrumb and the OS list
-    /// are read lazily on the first lookup.
+    /// The companion's interface text: winui-app-kit's dependency-free <see cref="TextLookup"/>
+    /// over the catalogs embedded in this exe. Nothing is read until the first lookup.
     /// </summary>
-    internal static void Configure()
-    {
-        var saved = new Lazy<string?>(ReadAppLanguage);
-        UiText.Configure(() => saved.Value, ReadPreferredUiLanguages);
-    }
+    internal static TextLookup Text { get; } = new(
+        new TextCatalogs(typeof(CompanionLanguage).Assembly, AppLanguages.ResourcePrefix,
+            (message, ex) => TaskbarPinning.Log($"language: {message}; {ex.Message}")),
+        AppLanguages.Supported,
+        CurrentLocale);
+
+    /// <summary>The identity in use: the app's choice when it names a supported language, else Windows'.</summary>
+    private static string CurrentLocale() =>
+        AppLanguages.Supported.NormalizeOverride(Saved.Value) ?? Device.Value;
 
     /// <summary>
     /// The language the main app last reported, or null when it has not written one yet.

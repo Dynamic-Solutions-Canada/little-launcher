@@ -1,7 +1,7 @@
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Controls;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using LittleLauncher.Models;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;

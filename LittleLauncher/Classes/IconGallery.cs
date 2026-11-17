@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Text;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using LittleLauncher.Models;
 using System.IO;
 using System.Net.Http;

@@ -4,9 +4,9 @@ Little Launcher's Windows and Linux apps share one set of translation catalogs a
 
 ## Languages
 
-`Shared/SupportedLanguages.cs` is the canonical list, in picker order: `en-US`, `en-CA`, `es-ES`, `fr-FR`, `fr-CA`, `de-DE`, `zh-CN`, `pt-BR`, `ja-JP`. Canadian English reads the `en-US` catalog and Canadian French reads `fr-FR`; their identities stay distinct so a later regional wording needs no migration. `linux/little_launcher/i18n.py` mirrors the list, and a Linux test fails if the two drift.
+`Shared/AppLanguages.cs` is the canonical list, as winui-app-kit's `SupportedLanguages`, in picker order: `en-US`, `en-CA`, `es-ES`, `fr-FR`, `fr-CA`, `de-DE`, `zh-CN`, `pt-BR`, `ja-JP`. Canadian English reads the `en-US` catalog and Canadian French reads `fr-FR`; their identities stay distinct so a later regional wording needs no migration. `linux/little_launcher/i18n.py` mirrors the list, and a Linux test fails if the two drift.
 
-Match device walks the user's ordered OS display languages, trying an exact identity and then a compatible language/script family. Unsupported languages fall back to English. Traditional Chinese never selects Simplified Chinese. These rules are copied from Persistent's `SupportedLanguages.cs`; keep them identical.
+Match device walks the user's ordered OS display languages, trying an exact identity and then a compatible language/script family. Unsupported languages fall back to English. Traditional Chinese never selects Simplified Chinese. These rules are winui-app-kit's `SupportedLanguages.Resolve`, shared with Persistent and the other apps; the Linux copy in `i18n.py` must stay identical.
 
 The choice is per device. Windows stores it as `UserSettings.LanguageOverride` (empty means Match device); Linux stores `Language` in the device-local `linux.json`. Neither travels through launcher sync. An unknown saved value means Match device.
 
@@ -50,13 +50,13 @@ Listing text and interface text use the same word for each of these, taken from 
 
 ## Windows
 
-`Shared/UiText.cs` loads the catalogs, which `LittleLauncher.csproj` embeds as resources; it is dependency-free and AOT-safe so the Native AOT companion can compile it too.
+winui-app-kit's `UiText` reads the catalogs, which `LittleLauncher.csproj` embeds as `LittleLauncher.Localization.<catalog>/<area>.json`; the kit merges a catalog's area files at first read. `App` configures it at startup with the saved choice, and the System page calls `UiText.SetOverride` when the user picks another language (empty follows Windows). When packaged, the kit takes the device's languages from Windows' list for this app, which Windows matches against the languages the package declares.
 
 - XAML: add `xmlns:l="using:LittleLauncher.Localization"` to the root element, then `Text="{l:Str Key=sync.title}"`. Works for any string or object property (`Text`, `Content`, `Header`, `PlaceholderText`, `ToolTipService.ToolTip`, `AutomationProperties.Name`).
-- C#: `UiText.Get("sync.title")`, `UiText.Format("sync.uploaded", ("provider", name))`, `UiText.Plural("launchers.count", n)`. Add `using LittleLauncher.Localization;`.
+- C#: `UiText.Get("sync.title")`, `UiText.Format("sync.uploaded", ("provider", name))`, `UiText.Plural("launchers.count", n)`. Add `using WinUIAppKit.Localization;`. Keys starting with `kit.` are the kit's own shared labels; never define them in these catalogs.
 - Text built in code for a window that stays open (a status line, a menu rebuilt on open) reads `UiText` when it is built, so it is in the current language whenever it is rebuilt.
 
-The Native AOT taskbar-pin companion (`LauncherShortcut`) links the same `UiText`, embeds only `pinning` and `common`, and reads the language the main app last wrote to `language.txt` beside it; `MainWindow` rewrites that file whenever the language changes.
+The Native AOT taskbar-pin companion (`LauncherShortcut`) links the kit's dependency-free text core (`SupportedLanguages.cs` and `TextCatalogs.cs`, used through `CompanionLanguage.Text`), embeds only `pinning` and `common`, and reads the language the main app last wrote to `language.txt` beside it; `MainWindow` rewrites that file whenever the language changes.
 
 The old `Resources/Localization/Dictionary-en-US.xaml` and `Application.Current.Resources` string lookups are retired; do not add string resources there.
 
@@ -66,4 +66,4 @@ The old `Resources/Localization/Dictionary-en-US.xaml` and `Application.Current.
 
 ## Checks
 
-`linux/tests/test_localization.py` checks that every catalog has exactly the English keys, matching placeholders and no empty values, that each key lives in the area file its prefix names, and that the Python language list matches `SupportedLanguages.cs`. `tests/LittleLauncher.Sync.Tests` covers the C# resolver, fallback and placeholder filling. These checks do not establish translation quality.
+`linux/tests/test_localization.py` checks that every catalog has exactly the English keys, matching placeholders and no empty values, that each key lives in the area file its prefix names, and that the Python language list matches `AppLanguages.cs`. `tests/LittleLauncher.Sync.Tests` covers the resolver, fallback, placeholder filling and plurals through the kit's `TextLookup`. The harnesses share `tests/HarnessLocalization/`, which links the kit's text core and a `UiText` stand-in over it, because the kit's `UiText` needs Windows. These checks do not establish translation quality.

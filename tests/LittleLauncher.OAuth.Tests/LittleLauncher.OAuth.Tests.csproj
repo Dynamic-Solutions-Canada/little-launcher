@@ -8,11 +8,6 @@
     <Compile Include="../../LittleLauncher/Services/OAuthPkceClient.cs" Link="OAuthPkceClient.cs" />
     <Compile Include="../../LittleLauncher/Services/CloudTokenStore.cs" Link="CloudTokenStore.cs" />
   </ItemGroup>
-  <!-- The real language layer and catalogs, embedded exactly as LittleLauncher.csproj does. -->
-  <ItemGroup>
-    <Compile Include="../../Shared/SupportedLanguages.cs" Link="SupportedLanguages.cs" />
-    <Compile Include="../../Shared/UiText.cs" Link="UiText.cs" />
-    <EmbeddedResource Include="../../Shared/Localization/**/*.json"
-                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
+  <!-- The real catalogs and winui-app-kit's text core, with a UiText stand-in. -->
+  <Import Project="../HarnessLocalization/HarnessLocalization.props" />
 </Project>

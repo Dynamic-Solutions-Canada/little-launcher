@@ -1,4 +1,4 @@
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using LittleLauncher.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;

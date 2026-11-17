@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 
 namespace LittleLauncher.Classes;
 
@@ -105,7 +106,7 @@ internal sealed class IconCatalogView : Grid
                     """);
             var groups = new List<IconCatalogGroup>();
             IconCatalogEntry? selected = null;
-            IReadOnlyDictionary<string, string> english = UiText.Catalog(SupportedLanguages.Default);
+            IReadOnlyDictionary<string, string> english = UiText.Catalog(AppLanguages.Supported.Default);
             foreach (var (categoryKey, icons) in categories)
             {
                 var group = new IconCatalogGroup(UiText.Get(categoryKey));

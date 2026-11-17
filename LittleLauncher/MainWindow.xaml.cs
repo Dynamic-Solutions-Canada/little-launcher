@@ -1,6 +1,6 @@
 using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Windows;
 using LittleLauncher.Services;

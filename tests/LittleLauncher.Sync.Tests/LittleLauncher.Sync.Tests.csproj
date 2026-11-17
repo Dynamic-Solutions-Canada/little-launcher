@@ -18,11 +18,6 @@
     <Compile Include="../../external/winui-app-kit/WinUIAppKit/Settings/JsonSettingsStore.cs" Link="JsonSettingsStore.cs" />
     <Compile Include="../../external/winui-app-kit/WinUIAppKit/Settings/AtomicFile.cs" Link="AtomicFile.cs" />
   </ItemGroup>
-  <!-- The real language layer and catalogs, embedded exactly as LittleLauncher.csproj does. -->
-  <ItemGroup>
-    <Compile Include="../../Shared/SupportedLanguages.cs" Link="SupportedLanguages.cs" />
-    <Compile Include="../../Shared/UiText.cs" Link="UiText.cs" />
-    <EmbeddedResource Include="../../Shared/Localization/**/*.json"
-                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
+  <!-- The real catalogs and winui-app-kit's text core, with a UiText stand-in. -->
+  <Import Project="../HarnessLocalization/HarnessLocalization.props" />
 </Project>

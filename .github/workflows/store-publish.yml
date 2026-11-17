@@ -61,7 +61,7 @@ concurrency:
 
 jobs:
   publish:
-    uses: Dynamic-Solutions-Canada/winui-app-kit/.github/workflows/store-publish.yml@v1.19.1
+    uses: Dynamic-Solutions-Canada/winui-app-kit/.github/workflows/store-publish.yml@v1.20.1
     with:
       store_product_id: 9P3ZZBDQ6PJF
       # Paid, US $0.99: the tier verified with Partner Center (see docs/installer.md).

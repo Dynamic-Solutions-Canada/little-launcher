@@ -1,4 +1,4 @@
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using System.Net;
 using System.Text.Json;
 

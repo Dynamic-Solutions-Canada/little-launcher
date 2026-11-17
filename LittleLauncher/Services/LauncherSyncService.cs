@@ -1,4 +1,4 @@
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using LittleLauncher.Classes.Settings;
 
 namespace LittleLauncher.Services;

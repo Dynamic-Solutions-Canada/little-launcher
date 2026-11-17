@@ -2,7 +2,7 @@
 
 Paths in this reference are relative to the LittleLauncher project unless stated otherwise.
 
-`Shared/SupportedLanguages.cs` (repository root) owns the supported interface languages and Match device resolution; `Shared/UiText.cs` loads the embedded shared catalogs and provides `Get`, `Format` and `Plural`. `Localization/Str.cs` is the `{l:Str Key=...}` XAML markup extension. The language picker lives on `Pages/SystemPage`, and `SettingsWindow.ReopenAfterLanguageChange` rebuilds Settings in the new language. Linux mirrors this in `linux/little_launcher/i18n.py`. See [localization.md](localization.md).
+`Shared/AppLanguages.cs` (repository root) owns the supported interface languages, as winui-app-kit's `SupportedLanguages`; the kit's `UiText` loads the embedded shared catalogs, resolves Match device and provides `Get`, `Format` and `Plural`. The companion reads the same catalogs through the kit's dependency-free `TextLookup`. `Localization/Str.cs` is the `{l:Str Key=...}` XAML markup extension. The language picker lives on `Pages/SystemPage`, and `SettingsWindow.ReopenAfterLanguageChange` rebuilds Settings in the new language. Linux mirrors this in `linux/little_launcher/i18n.py`. See [localization.md](localization.md).
 
 `Models/WebLauncherPresets.cs` owns messaging service creation templates. The Add Launcher
 menu creates independent, editable web launchers from them and opens their sign-in pages.

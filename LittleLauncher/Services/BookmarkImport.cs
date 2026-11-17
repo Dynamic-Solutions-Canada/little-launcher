@@ -1,4 +1,4 @@
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;

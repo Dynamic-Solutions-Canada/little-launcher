@@ -1,5 +1,5 @@
 using LittleLauncher.Classes;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.Services;
 using LittleLauncher.ViewModels;

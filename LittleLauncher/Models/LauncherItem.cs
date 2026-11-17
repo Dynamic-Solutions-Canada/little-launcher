@@ -1,5 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 

@@ -1,4 +1,4 @@
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using Microsoft.Web.WebView2.Core;
 using System;
 

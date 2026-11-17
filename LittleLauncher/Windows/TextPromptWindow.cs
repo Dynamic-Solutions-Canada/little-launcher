@@ -1,5 +1,5 @@
 using LittleLauncher.Classes;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;

@@ -10,11 +10,6 @@
     <Compile Include="../../LittleLauncher/Controls/LauncherItemReorder.cs" Link="LauncherItemReorder.cs" />
     <Compile Include="../../LittleLauncher/Controls/LauncherDropGeometry.cs" Link="LauncherDropGeometry.cs" />
   </ItemGroup>
-  <!-- LauncherItem's accessible names read through the real language layer. -->
-  <ItemGroup>
-    <Compile Include="../../Shared/SupportedLanguages.cs" Link="SupportedLanguages.cs" />
-    <Compile Include="../../Shared/UiText.cs" Link="UiText.cs" />
-    <EmbeddedResource Include="../../Shared/Localization/**/*.json"
-                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
+  <!-- LauncherItem's accessible names read through the real catalogs. -->
+  <Import Project="../HarnessLocalization/HarnessLocalization.props" />
 </Project>

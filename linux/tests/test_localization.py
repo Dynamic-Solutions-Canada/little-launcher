@@ -96,14 +96,12 @@ class CodeReferenceTests(unittest.TestCase):
 
 
 class LanguageListTests(unittest.TestCase):
-    def test_python_list_matches_supported_languages_cs(self):
-        source = (ROOT / 'Shared' / 'SupportedLanguages.cs').read_text(encoding='utf-8')
-        ordered = re.search(r'Ordered \{ get; \} =\s*\[([^\]]*)\]', source).group(1)
-        self.assertEqual(tuple(re.findall(r'"([^"]+)"', ordered)), i18n.ORDERED)
-        catalogs = dict(re.findall(r'\["([^"]+)"\] = "([^"]+)"', source.split('NativeNames')[0]))
-        self.assertEqual(catalogs, i18n.CATALOGS)
-        names = dict(re.findall(r'\["([^"]+)"\] = "([^"]+)"', source.split('NativeNames')[1]))
-        self.assertEqual(names, i18n.NATIVE_NAMES)
+    def test_python_list_matches_app_languages_cs(self):
+        source = (ROOT / 'Shared' / 'AppLanguages.cs').read_text(encoding='utf-8')
+        rows = re.findall(r'\("([^"]+)", "([^"]+)", "([^"]+)"\)', source)
+        self.assertEqual(tuple(identity for identity, _, _ in rows), i18n.ORDERED)
+        self.assertEqual({identity: catalog for identity, catalog, _ in rows}, i18n.CATALOGS)
+        self.assertEqual({identity: name for identity, _, name in rows}, i18n.NATIVE_NAMES)
 
 
 class ResolveTests(unittest.TestCase):

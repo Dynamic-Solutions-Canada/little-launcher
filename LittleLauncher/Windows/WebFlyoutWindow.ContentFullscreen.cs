@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 
 namespace LittleLauncher.Windows;
 

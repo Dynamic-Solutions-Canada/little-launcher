@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml.Markup;
+using WinUIAppKit.Localization;
 
 namespace LittleLauncher.Localization;
 

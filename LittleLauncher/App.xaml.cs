@@ -91,16 +91,17 @@ public partial class App : Application
         // Restore settings before any window constructor accesses SettingsManager.Current
         SettingsManager.RestoreSettings();
 
-        // Interface language. The OS list is the user's full ordered preference, not the
-        // package-filtered ApplicationLanguages list, which only ever contains the manifest's
-        // declared languages.
-        Localization.UiText.Configure(
-            () => SettingsManager.Current.LanguageOverride,
-            () => global::Windows.System.UserProfile.GlobalizationPreferences.Languages);
+        // Interface language: winui-app-kit's UiText over the shared catalogs, starting from the
+        // saved choice (empty follows Windows). Settings changes it with SetOverride.
+        WinUIAppKit.Localization.UiText.Configure(
+            typeof(App).Assembly,
+            Localization.AppLanguages.ResourcePrefix,
+            Localization.AppLanguages.Supported,
+            SettingsManager.Current.LanguageOverride);
 
         // The "Our other apps" page translates its own text and follows the app's language (PROMO-7).
-        TechnicallyReal.Promo.PromoLocalization.LocaleProvider = () => Localization.UiText.Locale;
-        Localization.UiText.Changed += TechnicallyReal.Promo.PromoLocalization.Refresh;
+        TechnicallyReal.Promo.PromoLocalization.LocaleProvider = () => WinUIAppKit.Localization.UiText.Locale;
+        WinUIAppKit.Localization.UiText.Changed += TechnicallyReal.Promo.PromoLocalization.Refresh;
 
         m_window = new MainWindow();
         m_window.Activate();

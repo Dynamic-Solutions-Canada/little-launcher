@@ -1,5 +1,5 @@
 using LittleLauncher.Classes;
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using WinUIAppKit.Updates;
 using System.Diagnostics;
 using Microsoft.UI.Xaml;

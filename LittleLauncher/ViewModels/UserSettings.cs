@@ -27,7 +27,7 @@ public partial class UserSettings : ObservableObject
     /// <remarks>
     /// Per device, like the theme: it is in this file, not the launcher payload, so sync never
     /// carries one machine's language to another. An unknown value (a language a newer build
-    /// added, say) also means Match device; see <c>SupportedLanguages.NormalizeOverride</c>.
+    /// added, say) also means Match device; see winui-app-kit's <c>SupportedLanguages.NormalizeOverride</c>.
     /// </remarks>
     [ObservableProperty]
     public partial string LanguageOverride { get; set; }

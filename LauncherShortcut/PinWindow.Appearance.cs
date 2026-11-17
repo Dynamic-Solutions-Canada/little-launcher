@@ -1,4 +1,3 @@
-using LittleLauncher.Localization;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using static LauncherShortcut.NativeMethods;
@@ -116,7 +115,7 @@ internal sealed partial class PinWindow
             string title = _name.StartsWith(prefix, StringComparison.Ordinal) ? _name[prefix.Length..] : _name;
             _title = CreateWindowExW(0, "STATIC", title, 0x50004080 /* SS_ENDELLIPSIS | SS_NOPREFIX */,
                 0, 0, 1, 1, _hwnd, 0, 0, 0);
-            _description = CreateWindowExW(0, "STATIC", UiText.Get("pinning.promptReminder"), 0x50000080 /* SS_NOPREFIX */,
+            _description = CreateWindowExW(0, "STATIC", CompanionLanguage.Text.Get("pinning.promptReminder"), 0x50000080 /* SS_NOPREFIX */,
                 0, 0, 1, 1, _hwnd, 0, 0, 0);
             if (_title == 0 || _description == 0)
             {

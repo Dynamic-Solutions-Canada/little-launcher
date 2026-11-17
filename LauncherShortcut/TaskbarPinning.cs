@@ -1,4 +1,3 @@
-using LittleLauncher.Localization;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -43,7 +42,7 @@ internal static unsafe class TaskbarPinning
 
     /// <summary>Why native pinning was not used, followed by the manual pinning instructions.</summary>
     internal static string InitialMessage =>
-        UiText.Format("pinning.manualInstructions", ("reason", UiText.Get(_reasonKey)));
+        CompanionLanguage.Text.Format("pinning.manualInstructions", ("reason", CompanionLanguage.Text.Get(_reasonKey)));
 
     /// <summary>Runs a compact foreground card pointing to Windows confirmation, with no action buttons.</summary>
     internal static int RunNativeWindow(string name, string icon, Action<nint> stampIdentity)

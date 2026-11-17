@@ -1,4 +1,4 @@
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using LittleLauncher.Models;
 using LittleLauncher.ViewModels;
 using Microsoft.UI.Xaml;

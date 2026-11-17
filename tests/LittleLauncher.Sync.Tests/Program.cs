@@ -97,30 +97,34 @@ try
     await Test("interface language matches Persistent's rules and falls back to English", () =>
     {
         using var _ = new LanguageScope();
-        string Resolve(params string[] preferences) => LittleLauncher.Localization.SupportedLanguages.Resolve(preferences);
+        var languages = LittleLauncher.Localization.AppLanguages.Supported;
+        string Resolve(params string[] preferences) => languages.Resolve(preferences);
         Check(Resolve("fr-CA") == "fr-CA" && Resolve("fr-BE") == "fr-FR" && Resolve("en-GB") == "en-US");
         Check(Resolve("it-IT", "es-MX") == "es-ES" && Resolve("it-IT") == "en-US");
         Check(Resolve("zh-TW") == "en-US" && Resolve("zh-SG") == "zh-CN" && Resolve("zh-Hant-CN", "ja") == "ja-JP");
         Check(Resolve("ja-JP-u-ca-japanese") == "ja-JP" && Resolve("en-Latn-CA") == "en-CA");
 
-        // Override wins; an unknown override means Match device.
-        LittleLauncher.Localization.UiText.Configure(() => "ja-jp", () => ["fr-FR"]);
-        Check(LittleLauncher.Localization.UiText.Locale == "ja-JP");
-        LittleLauncher.Localization.UiText.Configure(() => "it-IT", () => ["fr-CA"]);
-        Check(LittleLauncher.Localization.UiText.Locale == "fr-CA");
+        // A saved choice is normalised; an unknown one means Match device (null).
+        Check(languages.NormalizeOverride("ja-jp") == "ja-JP" && languages.NormalizeOverride("it-IT") == null);
 
-        // Embedded English catalog, key fallback and single-pass placeholders.
-        LittleLauncher.Localization.UiText.Configure(() => "en-US");
-        Check(LittleLauncher.Localization.UiText.Get("common.ok") == "OK");
-        Check(LittleLauncher.Localization.UiText.Get("no.such.key") == "no.such.key");
-        Check(LittleLauncher.Localization.UiText.Format("system.language.matchDevice", ("language", "{{language}}")) == "Match device ({{language}})");
+        // The embedded catalogs through the kit's lookup: key fallback and single-pass placeholders.
+        Check(WinUIAppKit.Localization.UiText.Get("common.ok") == "OK");
+        Check(WinUIAppKit.Localization.UiText.Get("no.such.key") == "no.such.key");
+        Check(WinUIAppKit.Localization.UiText.Format("system.language.matchDevice", ("language", "{{language}}")) == "Match device ({{language}})");
+
+        // Plurals follow each language's rule: French uses "one" for zero, English does not.
+        string english0 = WinUIAppKit.Localization.UiText.Plural("items.dragGroupCount", 0);
+        WinUIAppKit.Localization.UiText.UseLanguage("fr-CA");
+        string french0 = WinUIAppKit.Localization.UiText.Plural("items.dragGroupCount", 0);
+        Check(english0 == WinUIAppKit.Localization.UiText.Catalog("en-US")["items.dragGroupCount.other"].Replace("{{count}}", "0"));
+        Check(french0 == WinUIAppKit.Localization.UiText.Catalog("fr-FR")["items.dragGroupCount.one"].Replace("{{count}}", "0"));
 
         // Every other catalog has exactly the English keys once translations exist.
-        var english = LittleLauncher.Localization.UiText.Catalog("en-US");
-        foreach (string catalog in LittleLauncher.Localization.SupportedLanguages.Catalogs.Values.Distinct())
+        var englishCatalog = WinUIAppKit.Localization.UiText.Catalog("en-US");
+        foreach (string identity in languages.Identities)
         {
-            var translated = LittleLauncher.Localization.UiText.Catalog(catalog);
-            Check(translated.Count == english.Count && english.Keys.All(translated.ContainsKey));
+            var translated = WinUIAppKit.Localization.UiText.Catalog(identity);
+            Check(translated.Count == englishCatalog.Count && englishCatalog.Keys.All(translated.ContainsKey));
         }
         return Task.CompletedTask;
     });
@@ -278,10 +282,10 @@ try
 }
 finally { Directory.Delete(root, recursive: true); }
 
-/// <summary>Restores Match device with the process culture after a test changes the language.</summary>
+/// <summary>Restores English after a test changes the language.</summary>
 sealed class LanguageScope : IDisposable
 {
-    public void Dispose() => LittleLauncher.Localization.UiText.Configure(() => null, () => [System.Globalization.CultureInfo.CurrentUICulture.Name]);
+    public void Dispose() => WinUIAppKit.Localization.UiText.UseLanguage(LittleLauncher.Localization.AppLanguages.Supported.Default);
 }
 
 /// <summary>

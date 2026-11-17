@@ -11,7 +11,7 @@ This repo follows the shared standards at https://github.com/Dynamic-Solutions-C
 - **Behaviour and boundaries** are in [docs/architecture.md](docs/architecture.md); **module ownership** is in [docs/components.md](docs/components.md). Read the relevant sections before changing an area.
 - **Windows app** (`LittleLauncher/`): `MainWindow` is the invisible host that owns the tray icons and single instance; `SettingsWindow` hosts the Settings pages; `FlyoutWindow` (shortcuts) and `WebFlyoutWindow` (web pages) are the tray flyouts. `LauncherShortcut/` is the Native AOT companion helper used for taskbar pins.
 - **Linux app** (`linux/`): a separate Qt host with an isolated Electron browser process. It shares the launcher document format and the translation catalogs with Windows, not code.
-- **Shared** (`Shared/`): the translation catalogs and `UiText`, compiled into both Windows projects and read by Linux.
+- **Shared** (`Shared/`): the translation catalogs and the language table, read through winui-app-kit's localization classes by both Windows projects, and read by Linux.
 - Nested `AGENTS.md` files hold area rules. List them with `git ls-files '*AGENTS.md'` and read the ones for the folders you touch.
 
 ## Behaviour

@@ -13,7 +13,7 @@ from typing import Callable, Iterable
 
 DEFAULT = 'en-US'
 
-# Picker order. Must match Shared/SupportedLanguages.cs; test_localization checks it.
+# Picker order. Must match Shared/AppLanguages.cs; test_localization checks it.
 ORDERED = ('en-US', 'en-CA', 'es-ES', 'fr-FR', 'fr-CA', 'de-DE', 'zh-CN', 'pt-BR', 'ja-JP')
 
 # Canadian identities deliberately reuse wording; their identity still matters for selection.

@@ -109,12 +109,12 @@
     <Compile Include="..\Shared\PinSnapshot.cs" Link="Shared\PinSnapshot.cs" />
   </ItemGroup>
 
-  <!-- Interface language. The catalogs are shared with the Linux app; see docs/localization.md.
-       Each area file is embedded as LittleLauncher.Localization.<locale>\<area>.json
-       (RecursiveDir keeps the folder separator; UiText normalizes it). -->
+  <!-- Interface language, read through winui-app-kit's UiText. The catalogs are shared with the
+       Linux app; see docs/localization.md. Each area file is embedded as
+       LittleLauncher.Localization.<catalog>\<area>.json (RecursiveDir keeps the folder separator,
+       which the kit normalizes) and the kit merges a catalog's areas at first read. -->
   <ItemGroup>
-    <Compile Include="..\Shared\SupportedLanguages.cs" Link="Localization\SupportedLanguages.cs" />
-    <Compile Include="..\Shared\UiText.cs" Link="Localization\UiText.cs" />
+    <Compile Include="..\Shared\AppLanguages.cs" Link="Localization\AppLanguages.cs" />
     <EmbeddedResource Include="..\Shared\Localization\**\*.json"
                       LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>

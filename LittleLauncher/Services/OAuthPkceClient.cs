@@ -1,4 +1,4 @@
-using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;

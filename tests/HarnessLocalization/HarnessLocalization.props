@@ -1,0 +1,16 @@
+<Project>
+  <!--
+    The interface-text layer every portable harness compiles in: the app's language table, the
+    shared catalogs embedded exactly as LittleLauncher.csproj embeds them, winui-app-kit's
+    dependency-free text core, and a UiText stand-in over it (UiTextStandIn.cs). Import it from a
+    harness project instead of repeating these links.
+  -->
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)../../Shared/AppLanguages.cs" Link="Localization/AppLanguages.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../../external/winui-app-kit/WinUIAppKit/Localization/SupportedLanguages.cs" Link="Localization/SupportedLanguages.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)../../external/winui-app-kit/WinUIAppKit/Localization/TextCatalogs.cs" Link="Localization/TextCatalogs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UiTextStandIn.cs" Link="Localization/UiTextStandIn.cs" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)../../Shared/Localization/**/*.json"
+                      LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

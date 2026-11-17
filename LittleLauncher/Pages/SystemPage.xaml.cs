@@ -1,5 +1,6 @@
 using LittleLauncher.Classes.Settings;
 using LittleLauncher.Localization;
+using WinUIAppKit.Localization;
 using NLog;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -64,19 +65,20 @@ public partial class SystemPage : Page
     {
         _updatingLanguage = true;
 
-        string deviceName = SupportedLanguages.NativeNames[UiText.DeviceLocale];
+        var languages = AppLanguages.Supported;
+        string deviceName = languages.NativeName(UiText.DeviceLocale);
         LanguageCombo.Items.Add(new ComboBoxItem
         {
             Content = UiText.Format("system.language.matchDevice", ("language", deviceName)),
             Tag = "",
         });
 
-        foreach (string locale in SupportedLanguages.Ordered)
+        foreach (string locale in languages.Identities)
         {
-            LanguageCombo.Items.Add(new ComboBoxItem { Content = SupportedLanguages.NativeNames[locale], Tag = locale });
+            LanguageCombo.Items.Add(new ComboBoxItem { Content = languages.NativeName(locale), Tag = locale });
         }
 
-        string saved = SupportedLanguages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? "";
+        string saved = languages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? "";
         LanguageCombo.SelectedItem = LanguageCombo.Items
             .OfType<ComboBoxItem>()
             .First(item => (string)item.Tag == saved);
@@ -96,7 +98,7 @@ public partial class SystemPage : Page
             return;
         }
 
-        if (choice == (SupportedLanguages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? ""))
+        if (choice == (AppLanguages.Supported.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? ""))
         {
             return;
         }
@@ -104,7 +106,8 @@ public partial class SystemPage : Page
         SettingsManager.Current.LanguageOverride = choice;
         SettingsManager.SaveSettings();
         _languageChangedThisRun = true;
-        UiText.NotifyChanged();
+        // Empty means follow Windows; the kit raises UiText.Changed when the language in use changes.
+        UiText.SetOverride(choice);
 
         // Deferred so this page's own event handler finishes before its window is replaced.
         DispatcherQueue.TryEnqueue(() => SettingsWindow.ReopenAfterLanguageChange(typeof(SystemPage)));

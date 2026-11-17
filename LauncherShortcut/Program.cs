@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using LittleLauncher.Localization;
 using LittleLauncher.Shared;
 using System.Runtime.InteropServices;
 
@@ -186,9 +185,8 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
-        // Wording follows the main app's language choice. No file is read until a message is
-        // actually shown, so the ordinary flyout signal stays free of pin-only work.
-        CompanionLanguage.Configure();
+        // Wording (CompanionLanguage.Text) follows the main app's language choice. Nothing is read
+        // until a message is actually shown, so the ordinary flyout signal stays free of pin-only work.
 
         // Ensure cursor coordinates are reported in physical pixels.
         // Without this, a pinned non-MSIX helper can be DPI-virtualized,
@@ -321,11 +319,11 @@ static class Program
             if (args.Contains("--repin") && previousState == ExistingPinState.Pinned)
             {
                 string explanation = knownDetails
-                    ? UiText.Get("pinning.replace.detailsChanged")
-                    : UiText.Get("pinning.replace.detailsUnknown");
+                    ? CompanionLanguage.Text.Get("pinning.replace.detailsChanged")
+                    : CompanionLanguage.Text.Get("pinning.replace.detailsUnknown");
                 int confirmed = MessageBoxW(0,
-                    UiText.Format("pinning.replace.message", ("explanation", explanation)),
-                    UiText.Get("pinning.replace.title"), 0x00010041);
+                    CompanionLanguage.Text.Format("pinning.replace.message", ("explanation", explanation)),
+                    CompanionLanguage.Text.Get("pinning.replace.title"), 0x00010041);
                 if (confirmed != 1)
                 {
                     return;

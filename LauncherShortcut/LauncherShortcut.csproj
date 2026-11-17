@@ -21,8 +21,10 @@
        companion's own wording and the generic words are embedded, keeping the AOT exe small.
        Logical names match LittleLauncher.csproj (RecursiveDir keeps the locale folder). -->
   <ItemGroup>
-    <Compile Include="..\Shared\SupportedLanguages.cs" Link="Localization\SupportedLanguages.cs" />
-    <Compile Include="..\Shared\UiText.cs" Link="Localization\UiText.cs" />
+    <Compile Include="..\Shared\AppLanguages.cs" Link="Localization\AppLanguages.cs" />
+    <!-- winui-app-kit's dependency-free text core (no WinUI, NLog or WinRT), AOT-safe. -->
+    <Compile Include="..\external\winui-app-kit\WinUIAppKit\Localization\SupportedLanguages.cs" Link="Localization\SupportedLanguages.cs" />
+    <Compile Include="..\external\winui-app-kit\WinUIAppKit\Localization\TextCatalogs.cs" Link="Localization\TextCatalogs.cs" />
     <EmbeddedResource Include="..\Shared\Localization\**\pinning.json;..\Shared\Localization\**\common.json"
                       LogicalName="LittleLauncher.Localization.%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
