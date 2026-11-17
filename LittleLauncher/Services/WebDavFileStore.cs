@@ -52,7 +52,10 @@ public sealed class WebDavFileStore : ICloudFileStore
         get
         {
             var settings = SettingsManager.Current;
-            if (string.IsNullOrWhiteSpace(settings.WebDavUsername)) return "";
+            if (string.IsNullOrWhiteSpace(settings.WebDavUsername))
+            {
+                return "";
+            }
 
             return Uri.TryCreate(settings.WebDavUrl, UriKind.Absolute, out var uri)
                 ? $"{settings.WebDavUsername} at {uri.Host}"
@@ -77,13 +80,24 @@ public sealed class WebDavFileStore : ICloudFileStore
         var settings = SettingsManager.Current;
 
         if (string.IsNullOrWhiteSpace(settings.WebDavUrl))
+        {
             return (false, UiText.Get("cloud.webDav.enterFolderUrl"));
+        }
+
         if (string.IsNullOrWhiteSpace(settings.WebDavUsername))
+        {
             return (false, UiText.Get("cloud.webDav.enterUsername"));
+        }
+
         if (string.IsNullOrEmpty(StoredPassword))
+        {
             return (false, UiText.Get("cloud.webDav.enterPassword"));
+        }
+
         if (!Uri.TryCreate(BaseUrl, UriKind.Absolute, out var uri))
+        {
             return (false, UiText.Get("cloud.webDav.invalidUrl"));
+        }
 
         try
         {
@@ -99,11 +113,19 @@ public sealed class WebDavFileStore : ICloudFileStore
             using var response = await Http.SendAsync(request, ct);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
                 return (false, UiText.Get("cloud.webDav.credentialsRejected"));
+            }
+
             if (response.StatusCode == HttpStatusCode.NotFound)
+            {
                 return (false, UiText.Get("cloud.webDav.folderMissing"));
+            }
+
             if (!response.IsSuccessStatusCode)
+            {
                 return (false, UiText.Format("cloud.webDav.requestRefused", ("status", (int)response.StatusCode)));
+            }
 
             // A plain http:// server works, but the user should know the password travels unencrypted.
             string connected = uri.Scheme == Uri.UriSchemeHttps
@@ -129,7 +151,10 @@ public sealed class WebDavFileStore : ICloudFileStore
         using var response = await Http.SendAsync(request, ct);
 
         // A first sync has nothing to download yet; that is a normal state, not a failure.
-        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
 
         await ThrowIfFailedAsync(response, "download", ct);
         return await response.Content.ReadAsByteArrayAsync(ct);
@@ -152,7 +177,11 @@ public sealed class WebDavFileStore : ICloudFileStore
         using var request = Authorized(HttpMethod.Head, FileUrl);
         using var response = await Http.SendAsync(request, ct);
 
-        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
         await ThrowIfFailedAsync(response, "metadata", ct);
 
         return response.Content.Headers.LastModified ?? response.Headers.Date;
@@ -189,7 +218,10 @@ public sealed class WebDavFileStore : ICloudFileStore
     private static async Task ThrowIfFailedAsync(
         HttpResponseMessage response, string operation, CancellationToken ct)
     {
-        if (response.IsSuccessStatusCode) return;
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
 
         string body = await response.Content.ReadAsStringAsync(ct);
         Logger.Warn($"WebDAV {operation} failed ({(int)response.StatusCode}): {body}");

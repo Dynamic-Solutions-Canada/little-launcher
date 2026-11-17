@@ -45,27 +45,37 @@ internal static partial class FaviconService
         try
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
                 return null;
+            }
 
             string host = uri.Host;
             if (string.IsNullOrEmpty(host))
+            {
                 return null;
+            }
 
             Directory.CreateDirectory(CacheDir);
             string localPath = Path.Combine(CacheDir, $"{host}.png");
             string baseUrl = $"{uri.Scheme}://{uri.Authority}";
             if (preferCachedResult && File.Exists(localPath))
+            {
                 return localPath;
+            }
 
             // 1. Try PWA manifest icons / HTML link icons from the page (preferred)
             byte[]? bytes = RasterOrNull(await TryFetchIconFromSiteAsync(url));
 
             // 2. Fall back to /favicon.ico directly
             if (bytes == null || bytes.Length < 100)
+            {
                 bytes = RasterOrNull(await TryDownloadAsync(Http, $"{baseUrl}/favicon.ico"));
+            }
 
             if (bytes == null || bytes.Length < 100)
+            {
                 return null;
+            }
 
             await File.WriteAllBytesAsync(localPath, bytes);
             Logger.Info($"Favicon cached for {host} → {localPath}");
@@ -89,15 +99,42 @@ internal static partial class FaviconService
     /// </summary>
     private static bool IsRasterImage(byte[]? b)
     {
-        if (b == null || b.Length < 4) return false;
-        if (b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47) return true;      // PNG
-        if (b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF) return true;                       // JPEG
-        if (b[0] == 0x47 && b[1] == 0x49 && b[2] == 0x46) return true;                       // GIF
-        if (b[0] == 0x42 && b[1] == 0x4D) return true;                                       // BMP
+        if (b == null || b.Length < 4)
+        {
+            return false;
+        }
+
+        if (b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47)
+        {
+            return true;      // PNG
+        }
+
+        if (b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF)
+        {
+            return true;                       // JPEG
+        }
+
+        if (b[0] == 0x47 && b[1] == 0x49 && b[2] == 0x46)
+        {
+            return true;                       // GIF
+        }
+
+        if (b[0] == 0x42 && b[1] == 0x4D)
+        {
+            return true;                                       // BMP
+        }
+
         if (b[0] == 0x00 && b[1] == 0x00 && (b[2] == 0x01 || b[2] == 0x02) && b[3] == 0x00)  // ICO / CUR
+        {
             return true;
+        }
+
         if (b.Length >= 12 && b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x46   // "RIFF"
-            && b[8] == 0x57 && b[9] == 0x45 && b[10] == 0x42 && b[11] == 0x50) return true;  // "WEBP"
+            && b[8] == 0x57 && b[9] == 0x45 && b[10] == 0x42 && b[11] == 0x50)
+        {
+            return true;  // "WEBP"
+        }
+
         return false;
     }
 
@@ -110,7 +147,9 @@ internal static partial class FaviconService
         try
         {
             if (!Uri.TryCreate(pageUrl, UriKind.Absolute, out var pageUri))
+            {
                 return null;
+            }
 
             string baseUrl = $"{pageUri.Scheme}://{pageUri.Authority}";
 
@@ -121,7 +160,9 @@ internal static partial class FaviconService
             using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
                 options?.CancellationToken ?? CancellationToken.None);
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             // Auth-gated apps like Google Keep / Tasks often redirect to accounts.google.com.
             // Treat off-origin HTML as unusable so PWAs can fall back to their installed shell icon.
@@ -145,7 +186,9 @@ internal static partial class FaviconService
                 var manifestHref = manifestMatch.Groups[1].Value;
                 var manifestUrl = ResolveUrl(baseUrl, manifestHref);
                 if (manifestUrl != null)
+                {
                     manifestIconBytes = await TryFetchManifestIconAsync(manifestUrl, options);
+                }
             }
 
             if (manifestIconBytes is not { Length: >= 100 })
@@ -153,12 +196,17 @@ internal static partial class FaviconService
                 foreach (var path in CommonManifestPaths)
                 {
                     manifestIconBytes = await TryFetchManifestIconAsync(baseUrl + path, options);
-                    if (manifestIconBytes is { Length: >= 100 }) break;
+                    if (manifestIconBytes is { Length: >= 100 })
+                    {
+                        break;
+                    }
                 }
             }
 
             if (manifestIconBytes is { Length: >= 100 })
+            {
                 return manifestIconBytes;
+            }
 
             // 2. Fallback: HTML <link rel="icon"> tags
             var linkMatches = IconLinkRegex().Matches(html);
@@ -169,13 +217,18 @@ internal static partial class FaviconService
             {
                 var tag = m.Value;
                 var hrefMatch = HrefRegex().Match(tag);
-                if (!hrefMatch.Success) continue;
+                if (!hrefMatch.Success)
+                {
+                    continue;
+                }
 
                 var href = System.Net.WebUtility.HtmlDecode(hrefMatch.Groups[1].Value);
                 var sizeMatch = SizesRegex().Match(tag);
                 int size = 0;
                 if (sizeMatch.Success && int.TryParse(sizeMatch.Groups[1].Value, out var w))
+                {
                     size = w;
+                }
                 else if (tag.Contains("apple-touch-icon", StringComparison.OrdinalIgnoreCase))
                 {
                     // An apple-touch-icon rarely declares its size and is 180px by convention.
@@ -199,7 +252,9 @@ internal static partial class FaviconService
                 {
                     var bytes = await TryDownloadAsync(Http, iconUrl, options);
                     if (bytes is { Length: >= 100 })
+                    {
                         return bytes;
+                    }
                 }
             }
         }
@@ -226,7 +281,9 @@ internal static partial class FaviconService
                 ? await Http.GetAsync(manifestUrl)
                 : await SendIconPreviewRequestAsync(Http, manifestUrl, options);
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             string json;
             if (options == null)
@@ -236,14 +293,20 @@ internal static partial class FaviconService
             else
             {
                 byte[]? manifest = await ReadBoundedIconPreviewAsync(response, options);
-                if (manifest == null) return null;
+                if (manifest == null)
+                {
+                    return null;
+                }
+
                 json = System.Text.Encoding.UTF8.GetString(manifest).TrimStart('\uFEFF');
             }
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
             if (!root.TryGetProperty("icons", out var icons) || icons.ValueKind != JsonValueKind.Array)
+            {
                 return null;
+            }
 
             // Pick the largest icon (by sizes like "192x192")
             string? bestSrc = null;
@@ -252,10 +315,15 @@ internal static partial class FaviconService
             foreach (var icon in icons.EnumerateArray())
             {
                 if (!icon.TryGetProperty("src", out var srcProp))
+                {
                     continue;
+                }
 
                 var src = srcProp.GetString();
-                if (string.IsNullOrEmpty(src)) continue;
+                if (string.IsNullOrEmpty(src))
+                {
+                    continue;
+                }
 
                 int size = 0;
                 if (icon.TryGetProperty("sizes", out var sizesProp))
@@ -263,7 +331,9 @@ internal static partial class FaviconService
                     var sizesStr = sizesProp.GetString() ?? "";
                     var sizeMatch = Regex.Match(sizesStr, @"(\d+)x\d+");
                     if (sizeMatch.Success)
+                    {
                         int.TryParse(sizeMatch.Groups[1].Value, out size);
+                    }
                 }
 
                 if (size > bestSize || bestSrc == null)
@@ -274,7 +344,9 @@ internal static partial class FaviconService
             }
 
             if (bestSrc == null)
+            {
                 return null;
+            }
 
             // Manifest icon src can be relative to the manifest URL
             int lastSlash = manifestUrl.LastIndexOf('/');
@@ -302,7 +374,11 @@ internal static partial class FaviconService
             using var response = options == null
                 ? await client.GetAsync(url)
                 : await SendIconPreviewRequestAsync(client, url, options);
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
             return options == null
                 ? await response.Content.ReadAsByteArrayAsync()
                 : await ReadBoundedIconPreviewAsync(response, options);
@@ -318,9 +394,15 @@ internal static partial class FaviconService
     private static string? ResolveUrl(string baseUrl, string href)
     {
         if (Uri.TryCreate(href, UriKind.Absolute, out var abs))
+        {
             return abs.ToString();
+        }
+
         if (Uri.TryCreate(new Uri(baseUrl), href, out var resolved))
+        {
             return resolved.ToString();
+        }
+
         return null;
     }
 
@@ -333,7 +415,9 @@ internal static partial class FaviconService
         try
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
                 return null;
+            }
 
             string baseUrl = $"{uri.Scheme}://{uri.Authority}";
 
@@ -342,7 +426,9 @@ internal static partial class FaviconService
 
             using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             using var stream = await response.Content.ReadAsStreamAsync();
             using var reader = new StreamReader(stream);
@@ -359,13 +445,19 @@ internal static partial class FaviconService
                 if (manifestUrl != null)
                 {
                     var name = await TryFetchManifestNameAsync(manifestUrl);
-                    if (name != null) return name;
+                    if (name != null)
+                    {
+                        return name;
+                    }
                 }
             }
 
             // 2. Try common manifest paths (many SPAs have one but don't link it)
             var manifestName = await TryFetchManifestNameFromCommonPaths(baseUrl);
-            if (manifestName != null) return manifestName;
+            if (manifestName != null)
+            {
+                return manifestName;
+            }
 
             // 3. HTML <title>
             var titleMatch = TitleRegex().Match(html);
@@ -373,7 +465,9 @@ internal static partial class FaviconService
             {
                 var title = System.Net.WebUtility.HtmlDecode(titleMatch.Groups[1].Value).Trim();
                 if (!string.IsNullOrEmpty(title))
+                {
                     return title;
+                }
             }
 
             // 4. Meta tags: application-name, og:title
@@ -382,7 +476,9 @@ internal static partial class FaviconService
             {
                 var name = System.Net.WebUtility.HtmlDecode(metaMatch.Groups[1].Value).Trim();
                 if (!string.IsNullOrEmpty(name))
+                {
                     return name;
+                }
             }
 
             return null;
@@ -400,7 +496,10 @@ internal static partial class FaviconService
         try
         {
             using var response = await Http.GetAsync(manifestUrl);
-            if (!response.IsSuccessStatusCode) return null;
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
 
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
@@ -409,12 +508,18 @@ internal static partial class FaviconService
             if (root.TryGetProperty("name", out var nameProp))
             {
                 var name = nameProp.GetString()?.Trim();
-                if (!string.IsNullOrEmpty(name)) return name;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return name;
+                }
             }
             if (root.TryGetProperty("short_name", out var shortProp))
             {
                 var name = shortProp.GetString()?.Trim();
-                if (!string.IsNullOrEmpty(name)) return name;
+                if (!string.IsNullOrEmpty(name))
+                {
+                    return name;
+                }
             }
         }
         catch { /* best-effort */ }
@@ -430,7 +535,10 @@ internal static partial class FaviconService
         foreach (var path in CommonManifestPaths)
         {
             var name = await TryFetchManifestNameAsync(baseUrl + path);
-            if (name != null) return name;
+            if (name != null)
+            {
+                return name;
+            }
         }
         return null;
     }
@@ -441,7 +549,9 @@ internal static partial class FaviconService
     public static string? GetCachedPath(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
             return null;
+        }
 
         string localPath = Path.Combine(CacheDir, $"{uri.Host}.png");
         return File.Exists(localPath) ? localPath : null;
@@ -461,7 +571,11 @@ internal static partial class FaviconService
             {
                 // Try resolving via PATH
                 var resolved = ResolveExePath(exePath);
-                if (resolved == null) return Path.GetFileNameWithoutExtension(exePath);
+                if (resolved == null)
+                {
+                    return Path.GetFileNameWithoutExtension(exePath);
+                }
+
                 exePath = resolved;
             }
 
@@ -485,14 +599,20 @@ internal static partial class FaviconService
         try
         {
             var resolved = File.Exists(exePath) ? exePath : ResolveExePath(exePath);
-            if (resolved == null) return null;
+            if (resolved == null)
+            {
+                return null;
+            }
 
             Directory.CreateDirectory(CacheDir);
             string safeName = Path.GetFileNameWithoutExtension(resolved).ToLowerInvariant();
             string localPath = Path.Combine(CacheDir, $"app_{safeName}.png");
 
             using var icon = Icon.ExtractAssociatedIcon(resolved);
-            if (icon == null) return null;
+            if (icon == null)
+            {
+                return null;
+            }
 
             using var bitmap = icon.ToBitmap();
             bitmap.Save(localPath, System.Drawing.Imaging.ImageFormat.Png);
@@ -510,14 +630,19 @@ internal static partial class FaviconService
     {
         // If it already looks like a rooted path, just check existence
         if (Path.IsPathRooted(name))
+        {
             return File.Exists(name) ? name : null;
+        }
 
         // Search PATH
         var paths = Environment.GetEnvironmentVariable("PATH")?.Split(';') ?? [];
         foreach (var dir in paths)
         {
             var full = Path.Combine(dir.Trim(), name);
-            if (File.Exists(full)) return full;
+            if (File.Exists(full))
+            {
+                return full;
+            }
         }
         return null;
     }
@@ -541,7 +666,9 @@ internal static partial class FaviconService
                 $@"shell:AppsFolder\{aumid}", IntPtr.Zero,
                 ref IID_IShellItemImageFactory, out var factory);
             if (hr != 0 || factory == null)
+            {
                 return null;
+            }
 
             IntPtr hBitmap = IntPtr.Zero;
             try
@@ -555,7 +682,11 @@ internal static partial class FaviconService
                 for (int attempt = 0; ; attempt++)
                 {
                     hr = factory.GetImage(size, 0, out hBitmap);
-                    if (hr == 0 && hBitmap != IntPtr.Zero) break;
+                    if (hr == 0 && hBitmap != IntPtr.Zero)
+                    {
+                        break;
+                    }
+
                     if (hr == E_PENDING && attempt < 15) { System.Threading.Thread.Sleep(40); continue; }
                     return null;
                 }
@@ -565,7 +696,9 @@ internal static partial class FaviconService
                 int width = bm.bmWidth;
                 int height = bm.bmHeight;
                 if (width <= 0 || height <= 0)
+                {
                     return null;
+                }
 
                 // BitBlt the source HBITMAP into a top-down 32bpp DIB section
                 // we control. This avoids orientation ambiguity from the source
@@ -592,7 +725,11 @@ internal static partial class FaviconService
 
                 if (hDib == IntPtr.Zero || dibBits == IntPtr.Zero)
                 {
-                    if (hDib != IntPtr.Zero) NativeMethods.DeleteObject(hDib);
+                    if (hDib != IntPtr.Zero)
+                    {
+                        NativeMethods.DeleteObject(hDib);
+                    }
+
                     NativeMethods.DeleteDC(hdcSrc);
                     NativeMethods.DeleteDC(hdcDst);
                     // Fall back to Bitmap.FromHbitmap
@@ -645,7 +782,10 @@ internal static partial class FaviconService
             finally
             {
                 if (hBitmap != IntPtr.Zero)
+                {
                     NativeMethods.DeleteObject(hBitmap);
+                }
+
                 Marshal.ReleaseComObject(factory);
             }
         }
@@ -680,7 +820,9 @@ internal static partial class FaviconService
             {
                 string? webIcon = await FetchAndCacheCoreAsync(pwaUrl, preferCachedResult: false);
                 if (!string.IsNullOrEmpty(webIcon))
+                {
                     return webIcon;
+                }
             }
             catch (Exception ex)
             {
@@ -712,7 +854,9 @@ internal static partial class FaviconService
             }
 
             if (string.IsNullOrWhiteSpace(item.Path))
+            {
                 continue;
+            }
 
             bool hasExistingIcon = !string.IsNullOrEmpty(item.IconPath) && File.Exists(item.IconPath);
             bool shouldUpgradeShellPwaIcon = item.IsPwa && hasExistingIcon && IsShellExtractedPwaIconPath(item.IconPath);
@@ -720,7 +864,9 @@ internal static partial class FaviconService
             // Already has a valid local icon.
             // Existing shell-extracted PWA icons are upgraded opportunistically to the site's own icon.
             if (hasExistingIcon && !shouldUpgradeShellPwaIcon)
+            {
                 continue;
+            }
 
             try
             {
@@ -746,7 +892,9 @@ internal static partial class FaviconService
                 }
 
                 if (!string.IsNullOrEmpty(iconPath))
+                {
                     item.IconPath = iconPath;
+                }
             }
             catch (Exception ex)
             {
@@ -769,7 +917,10 @@ internal static partial class FaviconService
     public static bool IsAutoFetchedIconPath(string? path)
     {
         if (string.IsNullOrEmpty(path))
+        {
             return false;
+        }
+
         try
         {
             string? dir = Path.GetDirectoryName(Path.GetFullPath(path));
@@ -806,17 +957,25 @@ internal static partial class FaviconService
             }
 
             if (string.IsNullOrWhiteSpace(item.Path) || !IsAutoFetchedIconPath(item.IconPath))
+            {
                 continue;
+            }
 
             // Dead paths are handled by the missing-icon pipeline, not here.
             if (!File.Exists(item.IconPath))
+            {
                 continue;
+            }
 
             if (!visitedPaths.Add(item.IconPath))
+            {
                 continue;
+            }
 
             if (DateTime.UtcNow - File.GetLastWriteTimeUtc(item.IconPath) < IconMaxAge)
+            {
                 continue;
+            }
 
             try
             {
@@ -839,12 +998,16 @@ internal static partial class FaviconService
                 }
 
                 if (string.IsNullOrEmpty(newPath))
+                {
                     continue;
+                }
 
                 Logger.Info($"Refreshed stale icon for {item.Path} → {newPath}");
                 changed = true;
                 if (!string.Equals(newPath, item.IconPath, StringComparison.OrdinalIgnoreCase))
+                {
                     item.IconPath = newPath;
+                }
             }
             catch (Exception ex)
             {

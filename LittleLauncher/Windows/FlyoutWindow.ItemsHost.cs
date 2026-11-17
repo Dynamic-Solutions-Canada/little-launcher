@@ -18,7 +18,11 @@ public partial class FlyoutWindow
     /// <summary>Native hosts resize around intrinsic view dimensions only while presented.</summary>
     void ILauncherItemsHost.ContentSizeChanged(bool keepRightEdge)
     {
-        if (!_isOpen || _isHiding) return;
+        if (!_isOpen || _isHiding)
+        {
+            return;
+        }
+
         UpdateEditToolbarColumns();
         ResizeWindowToCurrentContent(keepRightEdge);
         RepositionEditToolbarBar();
@@ -27,7 +31,10 @@ public partial class FlyoutWindow
     void ILauncherItemsHost.EditModeChanged()
     {
         SetEditModeBorder(IsEditModeActive);
-        if (_isOpen) ResizeForEditChrome();
+        if (_isOpen)
+        {
+            ResizeForEditChrome();
+        }
     }
 
     void ILauncherItemsHost.FinishEditing() => ExitEditMode();
@@ -43,7 +50,10 @@ public partial class FlyoutWindow
     {
         HideFlyout();
         _lastDismissed = DateTime.UtcNow;
-        if (_owner != null) SettingsWindow.ShowInstance(_owner);
+        if (_owner != null)
+        {
+            SettingsWindow.ShowInstance(_owner);
+        }
     }
 
     Task<T> ILauncherItemsHost.RunModalAsync<T>(Func<Action<Window>, Task<T>> show) => RunModalAsync(show);
@@ -81,7 +91,9 @@ public partial class FlyoutWindow
         {
             if ((launcherId == null || launcher.Id == launcherId)
                 && launcher.TrayIconMode == TrayIconModes.Composite)
+            {
                 MainWindow.Current?.UpdateTrayIcon(launcher);
+            }
         }
     }
 
@@ -90,7 +102,11 @@ public partial class FlyoutWindow
     /// <summary>Ends native editing before the same launcher opens in a regular editor window.</summary>
     internal static void ParkForItemEditor(string launcherId)
     {
-        if (!Instances.TryGetValue(launcherId, out var flyout)) return;
+        if (!Instances.TryGetValue(launcherId, out var flyout))
+        {
+            return;
+        }
+
         flyout.HideFlyout();
         flyout.EndPreRender();
         flyout._animationVersion++;

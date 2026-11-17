@@ -73,11 +73,15 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
     public async Task<(bool Success, string Message)> SignInAsync(CancellationToken ct = default)
     {
         if (!IsAvailable)
+        {
             return (false, CloudSyncCredentials.NotConfiguredMessage(ProviderName));
+        }
 
         var result = await OAuthPkceClient.SignInAsync(Endpoint, scopeOverride: null, ct);
         if (result.Tokens is not { } tokens)
+        {
             return (false, UiText.Format("cloud.providerMessage", ("provider", ProviderName), ("message", result.Message)));
+        }
 
         tokens.AccountName = await FetchAccountNameAsync(tokens.AccessToken, ct);
         CloudTokenStore.Save(Provider, tokens);
@@ -109,14 +113,21 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
         CancellationToken ct = default)
     {
         if (!IsAvailable)
+        {
             return (false, CloudSyncCredentials.NotConfiguredMessage(ProviderName));
+        }
+
         if (HasSharingConsent)
+        {
             return (true, UiText.Get("cloud.sharingAlreadyGranted"));
+        }
 
         var existing = CloudTokenStore.Load(Provider);
         var result = await OAuthPkceClient.SignInAsync(Endpoint, SharingScope, ct);
         if (result.Tokens is not { } tokens)
+        {
             return (false, UiText.Format("cloud.providerMessage", ("provider", ProviderName), ("message", result.Message)));
+        }
 
         // Belt and braces: a provider can return a narrower grant than was asked for, and
         // storing it as though sharing were enabled would fail later with an opaque error.
@@ -139,12 +150,19 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
     public async Task<byte[]?> DownloadAsync(CancellationToken ct = default)
     {
         string? fileId = await FindFileIdAsync(ct);
-        if (fileId == null) return null;
+        if (fileId == null)
+        {
+            return null;
+        }
 
         using var request = await AuthorizedAsync(HttpMethod.Get, $"{ApiRoot}/files/{fileId}?alt=media", ct);
         using var response = await Http.SendAsync(request, ct);
 
-        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
         await ThrowIfFailedAsync(response, "download", ct);
 
         return await response.Content.ReadAsByteArrayAsync(ct);
@@ -198,7 +216,9 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
         if (!doc.RootElement.TryGetProperty("files", out var files) || files.GetArrayLength() == 0)
+        {
             return null;
+        }
 
         var file = files[0];
         string id = file.GetProperty("id").GetString() ?? "";
@@ -242,7 +262,9 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
     {
         string? token = await OAuthPkceClient.GetAccessTokenAsync(Provider, Endpoint, ct);
         if (token == null)
+        {
             throw new InvalidOperationException(UiText.Format("cloud.signInAgainToSync", ("provider", "Google Drive")));
+        }
 
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -264,10 +286,16 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             using var response = await Http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) return "";
+            if (!response.IsSuccessStatusCode)
+            {
+                return "";
+            }
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-            if (!doc.RootElement.TryGetProperty("user", out var user)) return "";
+            if (!doc.RootElement.TryGetProperty("user", out var user))
+            {
+                return "";
+            }
 
             return user.TryGetProperty("emailAddress", out var email) ? email.GetString() ?? ""
                  : user.TryGetProperty("displayName", out var name) ? name.GetString() ?? ""
@@ -283,7 +311,10 @@ public sealed class GoogleDriveFileStore : ICloudFileStore
     private static async Task ThrowIfFailedAsync(
         HttpResponseMessage response, string operation, CancellationToken ct)
     {
-        if (response.IsSuccessStatusCode) return;
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
 
         string body = await response.Content.ReadAsStringAsync(ct);
         Logger.Warn($"Google Drive {operation} failed ({(int)response.StatusCode}): {body}");

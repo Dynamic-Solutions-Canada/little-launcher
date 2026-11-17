@@ -175,9 +175,21 @@ public partial class LauncherItem : ObservableObject
     /// </remarks>
     public override string ToString()
     {
-        if (IsColumnBreak) return UiText.Get("launcher.columnBreak");
-        if (IsGroup) return UiText.Format("launcher.groupAccessibleName", ("name", Name));
-        if (string.IsNullOrEmpty(Path)) return Name;   // heading
+        if (IsColumnBreak)
+        {
+            return UiText.Get("launcher.columnBreak");
+        }
+
+        if (IsGroup)
+        {
+            return UiText.Format("launcher.groupAccessibleName", ("name", Name));
+        }
+
+        if (string.IsNullOrEmpty(Path))
+        {
+            return Name;   // heading
+        }
+
         return Name;
     }
 

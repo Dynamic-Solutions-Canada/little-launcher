@@ -85,11 +85,15 @@ internal static class DroppedItemFactory
 
                 var item = FromPath(entry.Path);
                 if (item != null)
+                {
                     items.Add(item);
+                }
             }
 
             if (items.Count > 0)
+            {
                 return items;
+            }
         }
 
         string? url = null;
@@ -109,7 +113,9 @@ internal static class DroppedItemFactory
         }
 
         if (!string.IsNullOrEmpty(url))
+        {
             items.Add(CreateWebsite(url, null));
+        }
 
         return items;
     }
@@ -125,13 +131,17 @@ internal static class DroppedItemFactory
             // Only replace the host placeholder — a name taken from a .url filename is
             // the user's own and outranks whatever <title> the site happens to carry.
             if (!item.IsWebsite || !IsHostPlaceholder(item))
+            {
                 continue;
+            }
 
             try
             {
                 var title = await FaviconService.FetchWebsiteTitleAsync(item.Path);
                 if (!string.IsNullOrWhiteSpace(title))
+                {
                     item.Name = title;
+                }
             }
             catch (Exception ex)
             {
@@ -148,10 +158,14 @@ internal static class DroppedItemFactory
         try
         {
             if (Directory.Exists(path))
+            {
                 return new LauncherItem(NameFromPath(path), path, FolderGlyph);
+            }
 
             if (!File.Exists(path))
+            {
                 return null;
+            }
 
             var extension = Path.GetExtension(path);
 
@@ -163,7 +177,9 @@ internal static class DroppedItemFactory
             }
 
             if (extension.Equals(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
                 return FromShortcut(path);
+            }
 
             bool isExecutable =
                 extension.Equals(".exe", StringComparison.OrdinalIgnoreCase) ||
@@ -208,7 +224,9 @@ internal static class DroppedItemFactory
     private static LauncherItem CreateWebsite(string url, string? name)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             name = Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.Host : url;
+        }
 
         return new LauncherItem(name!, url, WebGlyph, isWebsite: true);
     }
@@ -222,7 +240,9 @@ internal static class DroppedItemFactory
             {
                 var url = line[4..].Trim();
                 if (!string.IsNullOrEmpty(url))
+                {
                     return url;
+                }
             }
         }
 
@@ -233,7 +253,9 @@ internal static class DroppedItemFactory
     private static string? FirstUrl(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
+        {
             return null;
+        }
 
         var first = text.Split('\n')[0].Trim();
 

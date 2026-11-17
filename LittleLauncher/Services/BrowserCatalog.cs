@@ -31,11 +31,15 @@ public static class BrowserCatalog
         string? dir = Path.GetDirectoryName(exePath);
         if (dir != null && (File.Exists(Path.Combine(dir, "chrome.dll")) ||
                             File.Exists(Path.Combine(dir, "msedge.dll"))))
+        {
             return BrowserEngine.Chromium;
+        }
 
         string name = Path.GetFileNameWithoutExtension(exePath).ToLowerInvariant();
         if (name is "firefox" or "zen" or "waterfox" or "librewolf" or "floorp" or "mercury" or "firedragon")
+        {
             return BrowserEngine.Gecko;
+        }
 
         return BrowserEngine.Chromium;
     }
@@ -54,7 +58,9 @@ public static class BrowserCatalog
             {
                 string exePath = sb.ToString();
                 if (File.Exists(exePath))
+                {
                     return exePath;
+                }
             }
         }
         catch { }
@@ -130,7 +136,9 @@ public static class BrowserCatalog
     public static List<BrowserProfile> GetBrowserProfiles(string profileDataDir, BrowserEngine engine)
     {
         if (string.IsNullOrEmpty(profileDataDir) || !Directory.Exists(profileDataDir))
+        {
             return [];
+        }
 
         return engine == BrowserEngine.Gecko
             ? GetGeckoProfiles(profileDataDir)
@@ -145,7 +153,9 @@ public static class BrowserCatalog
     {
         var profiles = new List<BrowserProfile>();
         if (string.IsNullOrEmpty(userDataDir) || !Directory.Exists(userDataDir))
+        {
             return profiles;
+        }
 
         string localStatePath = Path.Combine(userDataDir, "Local State");
         if (File.Exists(localStatePath))
@@ -162,10 +172,14 @@ public static class BrowserCatalog
                         string dirName = entry.Name;
                         string displayName = dirName;
                         if (entry.Value.TryGetProperty("name", out var nameProp))
+                        {
                             displayName = nameProp.GetString() ?? dirName;
+                        }
 
                         if (Directory.Exists(Path.Combine(userDataDir, dirName)))
+                        {
                             profiles.Add(new BrowserProfile(dirName, displayName));
+                        }
                     }
                 }
             }
@@ -199,7 +213,9 @@ public static class BrowserCatalog
         var profiles = new List<BrowserProfile>();
         string iniPath = Path.Combine(profileDataDir, "profiles.ini");
         if (!File.Exists(iniPath))
+        {
             return profiles;
+        }
 
         try
         {
@@ -220,7 +236,9 @@ public static class BrowserCatalog
                             : currentPath;
 
                         if (Directory.Exists(fullPath))
+                        {
                             profiles.Add(new BrowserProfile(fullPath, currentName ?? Path.GetFileName(fullPath)));
+                        }
                     }
 
                     currentName = null;
@@ -228,23 +246,34 @@ public static class BrowserCatalog
                     isRelative = true;
 
                     if (!line.StartsWith("[Profile", StringComparison.OrdinalIgnoreCase))
+                    {
                         currentPath = null;
+                    }
 
                     continue;
                 }
 
                 int eq = line.IndexOf('=');
-                if (eq < 0) continue;
+                if (eq < 0)
+                {
+                    continue;
+                }
 
                 string key = line[..eq].Trim();
                 string value = line[(eq + 1)..].Trim();
 
                 if (key.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
                     currentName = value;
+                }
                 else if (key.Equals("Path", StringComparison.OrdinalIgnoreCase))
+                {
                     currentPath = value;
+                }
                 else if (key.Equals("IsRelative", StringComparison.OrdinalIgnoreCase))
+                {
                     isRelative = value == "1";
+                }
             }
 
             if (currentPath != null)
@@ -254,7 +283,9 @@ public static class BrowserCatalog
                     : currentPath;
 
                 if (Directory.Exists(fullPath))
+                {
                     profiles.Add(new BrowserProfile(fullPath, currentName ?? Path.GetFileName(fullPath)));
+                }
             }
         }
         catch { }

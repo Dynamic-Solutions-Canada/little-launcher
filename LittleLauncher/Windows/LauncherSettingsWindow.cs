@@ -116,7 +116,9 @@ public sealed partial class LauncherSettingsWindow : Window
         SystemBackdrop = new MicaBackdrop();
 
         if (ownerHwnd != IntPtr.Zero)
+        {
             NativeMethods.SetWindowLongPtr(_hwnd, NativeMethods.GWLP_HWNDPARENT, ownerHwnd);
+        }
 
         var titleBar = WindowChrome.BuildTitleBar(Title);
         ExtendsContentIntoTitleBar = true;
@@ -172,12 +174,16 @@ public sealed partial class LauncherSettingsWindow : Window
             ResizeToContent(form);
             _formLoaded = true;
             if (_requestedSection is { } section)
+            {
                 ShowSection(section);
+            }
 
             // A brand-new web launcher needs exactly one thing: an address. Put the caret there
             // rather than making the user find the field the window was opened for.
             if (isNewLauncher && launcher.IsWebLauncher)
+            {
                 _urlBox?.Focus(FocusState.Programmatic);
+            }
         };
 
         // Hidden: WinUI otherwise pops an "Esc" accelerator tooltip over the window.
@@ -216,7 +222,10 @@ public sealed partial class LauncherSettingsWindow : Window
     /// <summary>Reports physical screen bounds while the native settings window still exists.</summary>
     private void ReportClosingBounds()
     {
-        if (_onClosing == null || !NativeMethods.GetWindowRect(_hwnd, out var rect)) return;
+        if (_onClosing == null || !NativeMethods.GetWindowRect(_hwnd, out var rect))
+        {
+            return;
+        }
 
         _onClosing(new RectInt32(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top));
     }
@@ -233,16 +242,27 @@ public sealed partial class LauncherSettingsWindow : Window
     /// </remarks>
     private void UpdateAcceptButton()
     {
-        if (_doneButton == null) return;
+        if (_doneButton == null)
+        {
+            return;
+        }
+
         _doneButton.Content = UiText.Get(_isNewLauncher && !_launcher.IsWebLauncher ? "launcherSettings.nextAddItems" : "common.done");
     }
 
     /// <summary>The two text fields are the deferred edits; everything else applies as it changes.</summary>
     private void CommitName()
     {
-        if (_nameBox == null) return;
+        if (_nameBox == null)
+        {
+            return;
+        }
+
         string name = _nameBox.Text.Trim();
-        if (string.IsNullOrEmpty(name) || name == _launcher.Name) return;
+        if (string.IsNullOrEmpty(name) || name == _launcher.Name)
+        {
+            return;
+        }
 
         _launcher.Name = name;
         SettingsManager.SaveSettings();
@@ -270,7 +290,11 @@ public sealed partial class LauncherSettingsWindow : Window
     /// </remarks>
     private void CommitWebUrl()
     {
-        if (_urlBox == null) return;
+        if (_urlBox == null)
+        {
+            return;
+        }
+
         CommitWebAddress(_urlBox.Text.Trim());
     }
 
@@ -288,7 +312,10 @@ public sealed partial class LauncherSettingsWindow : Window
     private void CommitWebAddress(string url)
     {
         url = (url ?? "").Trim();
-        if (url == _launcher.WebAddress) return;
+        if (url == _launcher.WebAddress)
+        {
+            return;
+        }
 
         // Only ever for a launcher being set up: no bookmarks *and* no home page yet. The bar is
         // the user's after that, and a launcher whose last bookmark was just deleted must not have
@@ -298,7 +325,10 @@ public sealed partial class LauncherSettingsWindow : Window
         WebBookmark? seeded = null;
         if (_launcher.WebBookmarks.Count == 0 && string.IsNullOrWhiteSpace(_launcher.WebHomeUrl))
         {
-            if (string.IsNullOrEmpty(url)) return;
+            if (string.IsNullOrEmpty(url))
+            {
+                return;
+            }
 
             seeded = new WebBookmark(HostOf(url), url);
             _launcher.WebBookmarks.Add(seeded);
@@ -309,21 +339,31 @@ public sealed partial class LauncherSettingsWindow : Window
         SettingsManager.SaveSettings();
         WebFlyoutWindow.ApplyLauncherChanges(_launcher.Id);
 
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         // Only the bookmark this just made. The others are the user's and already have their icons;
         // re-fetching one because the *address* changed would be fetching for the wrong reason.
         if (seeded != null)
+        {
             _ = WebFlyoutWindow.FetchBookmarkIconAsync(_launcher, seeded);
+        }
 
         if (WebFlyoutWindow.MayAdoptPageIcon(_launcher))
+        {
             _iconAdoption = AdoptAndShowSiteIconAsync(_launcher, WebFlyoutWindow.NormalizeUrl(url));
+        }
     }
 
     /// <summary>Puts the launcher's address back in the address field.</summary>
     private void SyncAddressBox()
     {
-        if (_urlBox != null) _urlBox.Text = _launcher.WebAddress;
+        if (_urlBox != null)
+        {
+            _urlBox.Text = _launcher.WebAddress;
+        }
     }
 
     /// <summary>Fetches the site icon and shows it in this window's icon row once it lands.</summary>
@@ -340,7 +380,10 @@ public sealed partial class LauncherSettingsWindow : Window
         try
         {
             string? iconPath = await Services.FaviconService.FetchAndCacheAsync(url);
-            if (string.IsNullOrEmpty(iconPath) || !File.Exists(iconPath)) return;
+            if (string.IsNullOrEmpty(iconPath) || !File.Exists(iconPath))
+            {
+                return;
+            }
 
             // Copied out of the favicon cache (which is pruned on the item-icon schedule) to the
             // managed page-icon path — the distinct name is what lets the flyout tell an icon we
@@ -374,19 +417,30 @@ public sealed partial class LauncherSettingsWindow : Window
     private void ResizeToContent(FrameworkElement form)
     {
         var appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(_hwnd));
-        if (appWindow == null) return;
+        if (appWindow == null)
+        {
+            return;
+        }
 
         double contentHeight = form.ActualHeight > 0 ? form.ActualHeight : form.DesiredSize.Height;
-        if (contentHeight <= 0) return;   // keep the fallback size
+        if (contentHeight <= 0)
+        {
+            return;   // keep the fallback size
+        }
 
         double scale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         double heightDips = contentHeight + ChromeHeightDips;
 
         var area = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Nearest);
         if (area != null)
+        {
             heightDips = Math.Min(heightDips, (area.WorkArea.Height / scale) - 40);
+        }
 
         int width = (int)(WindowWidthDips * scale);
         int height = (int)(heightDips * scale);
@@ -404,10 +458,16 @@ public sealed partial class LauncherSettingsWindow : Window
     private void SizeAndCentre()
     {
         var appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(_hwnd));
-        if (appWindow == null) return;
+        if (appWindow == null)
+        {
+            return;
+        }
 
         double scale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         int width = (int)(WindowWidthDips * scale);
         int height = (int)(FallbackHeightDips * scale);
@@ -453,7 +513,11 @@ public sealed partial class LauncherSettingsWindow : Window
         nameBox.LostFocus += (_, _) => CommitName();
         nameBox.KeyDown += (_, e) =>
         {
-            if (e.Key != global::Windows.System.VirtualKey.Enter) return;
+            if (e.Key != global::Windows.System.VirtualKey.Enter)
+            {
+                return;
+            }
+
             e.Handled = true;
             CommitName();
         };
@@ -509,7 +573,9 @@ public sealed partial class LauncherSettingsWindow : Window
         int selectedViewMode = LauncherViewModes.Normalize(launcher.ViewMode);
         viewModeCombo.SelectedIndex = Array.FindIndex(viewModes, vm => vm.Value == selectedViewMode);
         if (viewModeCombo.SelectedIndex < 0)
+        {
             viewModeCombo.SelectedIndex = 0;
+        }
 
         var viewModeRow = new Grid();
         viewModeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -526,7 +592,10 @@ public sealed partial class LauncherSettingsWindow : Window
         // ── Icon mode density ───────────────────────────────────
         var iconsPerRowCombo = new ComboBox { MinWidth = 100 };
         for (int iconsPerRow = Launcher.MinIconModeIconsPerRow; iconsPerRow <= Launcher.MaxIconModeIconsPerRow; iconsPerRow++)
+        {
             iconsPerRowCombo.Items.Add(iconsPerRow.ToString());
+        }
+
         iconsPerRowCombo.SelectedItem = Launcher.ClampIconModeIconsPerRow(launcher.IconModeIconsPerRow).ToString();
         iconsPerRowCombo.SelectionChanged += (s, e) =>
         {
@@ -534,7 +603,7 @@ public sealed partial class LauncherSettingsWindow : Window
             {
                 launcher.IconModeIconsPerRow = Launcher.ClampIconModeIconsPerRow(iconsPerRow);
                 SettingsManager.SaveSettings();
-            Services.AutoSyncService.NotifyLaunchersChanged();
+                Services.AutoSyncService.NotifyLaunchersChanged();
                 FlyoutWindow.InvalidateItems(launcher.Id);
             }
         };
@@ -562,7 +631,9 @@ public sealed partial class LauncherSettingsWindow : Window
         viewModeCombo.SelectionChanged += (s, e) =>
         {
             if (viewModeCombo.SelectedItem is not ComboBoxItem selectedItem || selectedItem.Tag is not int viewMode)
+            {
                 return;
+            }
 
             launcher.ViewMode = viewMode;
             SettingsManager.SaveSettings();
@@ -663,7 +734,10 @@ public sealed partial class LauncherSettingsWindow : Window
             (Label: UiText.Get("launcherSettings.type.web"), Value: LauncherKinds.Web),
         };
         foreach (var kind in kinds)
+        {
             typeCombo.Items.Add(new ComboBoxItem { Content = kind.Label, Tag = kind.Value });
+        }
+
         typeCombo.SelectedIndex = Array.FindIndex(kinds, k => k.Value == LauncherKinds.Normalize(launcher.Kind));
 
         var itemRows = new[] { viewModeRow, iconsPerRowRow, showTitleRow };
@@ -672,16 +746,27 @@ public sealed partial class LauncherSettingsWindow : Window
         {
             bool isWeb = launcher.IsWebLauncher;
             foreach (var row in itemRows)
+            {
                 row.Visibility = isWeb ? Visibility.Collapsed : Visibility.Visible;
+            }
+
             if (!isWeb)
+            {
                 UpdateIconModeControls();   // the icons-per-row row has its own condition
+            }
+
             webAddressRow.Visibility = isWeb ? Visibility.Visible : Visibility.Collapsed;
             foreach (var row in webAppearanceRows)
+            {
                 row.Visibility = isWeb ? Visibility.Visible : Visibility.Collapsed;
+            }
+
             foreach (var definition in LauncherSettingsSections.All)
             {
                 if (_sectionExpanders.TryGetValue(definition.Id, out var expander))
+                {
                     expander.Visibility = !definition.WebOnly || isWeb ? Visibility.Visible : Visibility.Collapsed;
+                }
             }
             refreshBehaviorVisibility();
             refreshSizeRows();
@@ -696,9 +781,14 @@ public sealed partial class LauncherSettingsWindow : Window
         typeCombo.SelectionChanged += (s, e) =>
         {
             if (typeCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int kind)
+            {
                 return;
+            }
+
             if (kind == LauncherKinds.Normalize(launcher.Kind))
+            {
                 return;
+            }
 
             launcher.Kind = kind;
             SettingsManager.SaveSettings();
@@ -891,8 +981,10 @@ public sealed partial class LauncherSettingsWindow : Window
         var previewImage = new Image { Width = 20, Height = 20, VerticalAlignment = VerticalAlignment.Center };
         var previewEmoji = new TextBlock
         {
-            FontSize = 18, FontFamily = new FontFamily("Segoe UI Emoji"),
-            IsColorFontEnabled = true, VerticalAlignment = VerticalAlignment.Center
+            FontSize = 18,
+            FontFamily = new FontFamily("Segoe UI Emoji"),
+            IsColorFontEnabled = true,
+            VerticalAlignment = VerticalAlignment.Center
         };
         var previewLabel = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
         var chevron = new FontIcon { Glyph = "", FontSize = 10, Opacity = 0.6, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 0) };
@@ -995,18 +1087,28 @@ public sealed partial class LauncherSettingsWindow : Window
                 {
                     previewIcon.Glyph = glyph;
                     if (colorBrush != null)
+                    {
                         previewIcon.Foreground = colorBrush;
+                    }
                     else
+                    {
                         previewIcon.ClearValue(FontIcon.ForegroundProperty);
+                    }
+
                     previewIcon.Visibility = Visibility.Visible;
                 }
                 else
                 {
                     previewEmoji.Text = glyph;
                     if (colorBrush != null)
+                    {
                         previewEmoji.Foreground = colorBrush;
+                    }
                     else
+                    {
                         previewEmoji.ClearValue(TextBlock.ForegroundProperty);
+                    }
+
                     previewEmoji.Visibility = Visibility.Visible;
                 }
                 previewLabel.Text = "";
@@ -1020,7 +1122,10 @@ public sealed partial class LauncherSettingsWindow : Window
                 {
                     string pngPath = Path.Combine(iconsDir, $"{mode}.png");
                     if (File.Exists(pngPath))
+                    {
                         previewImage.Source = new BitmapImage(new Uri(pngPath));
+                    }
+
                     previewImage.Visibility = Visibility.Visible;
                     previewLabel.Text = PresetIconLabel(mode);
                 }
@@ -1216,7 +1321,10 @@ public sealed partial class LauncherSettingsWindow : Window
     /// </remarks>
     private async Task WaitForIconAdoptionAsync(Button? pinButton)
     {
-        if (_iconAdoption.IsCompleted) return;
+        if (_iconAdoption.IsCompleted)
+        {
+            return;
+        }
 
         object? content = pinButton?.Content;
         if (pinButton != null)

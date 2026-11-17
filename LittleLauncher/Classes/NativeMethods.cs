@@ -465,17 +465,17 @@ public static partial class NativeMethods
     internal static partial int Shell_NotifyIconGetRect(ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
 
     internal const uint NIF_MESSAGE = 0x00000001;
-    internal const uint NIF_ICON    = 0x00000002;
-    internal const uint NIF_TIP     = 0x00000004;
-    internal const uint NIF_GUID    = 0x00000020;
-    internal const uint NIM_ADD     = 0x00000000;
-    internal const uint NIM_MODIFY  = 0x00000001;
-    internal const uint NIM_DELETE  = 0x00000002;
+    internal const uint NIF_ICON = 0x00000002;
+    internal const uint NIF_TIP = 0x00000004;
+    internal const uint NIF_GUID = 0x00000020;
+    internal const uint NIM_ADD = 0x00000000;
+    internal const uint NIM_MODIFY = 0x00000001;
+    internal const uint NIM_DELETE = 0x00000002;
 
     // Tray callback notification events (lParam values sent to uCallbackMessage handler)
-    internal const int WM_LBUTTONUP    = 0x0202;
-    internal const int WM_RBUTTONUP    = 0x0205;
-    internal const int WM_CONTEXTMENU  = 0x007B;
+    internal const int WM_LBUTTONUP = 0x0202;
+    internal const int WM_RBUTTONUP = 0x0205;
+    internal const int WM_CONTEXTMENU = 0x007B;
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     internal static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
@@ -688,7 +688,10 @@ public static partial class NativeMethods
     {
         var IID_IPropertyStore = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99");
         int hr = SHGetPropertyStoreForWindow(hwnd, ref IID_IPropertyStore, out var store);
-        if (hr != S_OK || store == null) return;
+        if (hr != S_OK || store == null)
+        {
+            return;
+        }
 
         try
         {
@@ -712,12 +715,19 @@ public static partial class NativeMethods
         var iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99");
         int hr = SHGetPropertyStoreForWindow(hwnd, ref iid, out var store);
         Marshal.ThrowExceptionForHR(hr);
-        if (store == null) throw new InvalidOperationException("The window property store is unavailable.");
+        if (store == null)
+        {
+            throw new InvalidOperationException("The window property store is unavailable.");
+        }
 
         IntPtr empty = Marshal.AllocCoTaskMem(24);
         try
         {
-            for (int i = 0; i < 24; i++) Marshal.WriteByte(empty, i, 0);
+            for (int i = 0; i < 24; i++)
+            {
+                Marshal.WriteByte(empty, i, 0);
+            }
+
             var command = PKEY_AppUserModel_RelaunchCommand;
             var icon = PKEY_AppUserModel_RelaunchIconResource;
             var name = PKEY_AppUserModel_RelaunchDisplayNameResource;
@@ -743,7 +753,9 @@ public static partial class NativeMethods
         try
         {
             for (int i = 0; i < PROPVARIANT_SIZE; i++)
+            {
                 Marshal.WriteByte(pv, i, 0);
+            }
 
             Marshal.WriteInt16(pv, 0, 31); // VT_LPWSTR
             Marshal.WriteIntPtr(pv, 8, Marshal.StringToCoTaskMemUni(value));
@@ -764,7 +776,10 @@ public static partial class NativeMethods
     {
         var IID_IPropertyStore = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99");
         int hr = SHGetPropertyStoreForWindow(hwnd, ref IID_IPropertyStore, out var store);
-        if (hr != S_OK || store == null) return;
+        if (hr != S_OK || store == null)
+        {
+            return;
+        }
 
         try
         {
@@ -836,12 +851,19 @@ public static partial class NativeMethods
     /// </remarks>
     internal static ITaskbarList? GetTaskbarList()
     {
-        if (_taskbarList != null) return _taskbarList;
+        if (_taskbarList != null)
+        {
+            return _taskbarList;
+        }
 
         try
         {
             var list = (ITaskbarList)new TaskbarListClass();
-            if (list.HrInit() != 0) return null;
+            if (list.HrInit() != 0)
+            {
+                return null;
+            }
+
             return _taskbarList = list;
         }
         catch (Exception)
@@ -982,7 +1004,10 @@ public static partial class NativeMethods
     /// </remarks>
     internal static void SetShellLinkTitle(object shellLink, string title)
     {
-        if (shellLink is not IPropertyStore store) return;
+        if (shellLink is not IPropertyStore store)
+        {
+            return;
+        }
 
         SetPropertyStoreString(store, PKEY_Title, title);
         store.Commit();

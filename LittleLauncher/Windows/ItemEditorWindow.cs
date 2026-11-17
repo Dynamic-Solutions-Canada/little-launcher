@@ -90,7 +90,9 @@ public sealed class ItemEditorWindow : Window
         // Owned windows always sit above their owner — required because the flyout sets
         // IsAlwaysOnTop and would otherwise cover this.
         if (ownerHwnd != IntPtr.Zero)
+        {
             NativeMethods.SetWindowLongPtr(_hwnd, NativeMethods.GWLP_HWNDPARENT, ownerHwnd);
+        }
 
         // Custom title bar so the caption follows the app theme and Mica runs full height.
         var titleBar = WindowChrome.BuildTitleBar(Title);
@@ -122,10 +124,16 @@ public sealed class ItemEditorWindow : Window
     private void SizeAndCentre()
     {
         var appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(_hwnd));
-        if (appWindow == null) return;
+        if (appWindow == null)
+        {
+            return;
+        }
 
         double scale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         int width = (int)(WindowWidthDips * scale);
         int height = (int)(WindowHeightDips * scale);
@@ -238,16 +246,23 @@ public sealed class ItemEditorWindow : Window
         {
             var list = new List<AppPickerEntry>();
             foreach (var app in AppCatalog.GetInstalledApplications())
+            {
                 list.Add(new AppPickerEntry(app.DisplayName, app.ExePath, false, app.ExePath));
+            }
+
             foreach (var pwa in AppCatalog.GetInstalledPwas())
+            {
                 list.Add(new AppPickerEntry(pwa.DisplayName, pwa.Aumid, true, $@"shell:AppsFolder\{pwa.Aumid}"));
+            }
 
             // Duplicate identity comes from the full catalog, never the filtered results.
             foreach (var group in list.GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase))
             {
                 bool isDuplicate = group.Count() > 1;
                 foreach (var entry in group)
+                {
                     entry.HasDuplicateName = isDuplicate;
+                }
             }
 
             return list.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
@@ -257,7 +272,10 @@ public sealed class ItemEditorWindow : Window
         {
             IEnumerable<AppPickerEntry> items = allEntries;
             if (!string.IsNullOrWhiteSpace(query))
+            {
                 items = items.Where(a => a.Name.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase));
+            }
+
             var shown = items.ToList();
             populating = true;
             appList.ItemsSource = shown;
@@ -282,7 +300,11 @@ public sealed class ItemEditorWindow : Window
 
         async Task EnsureCatalogLoadedAsync()
         {
-            if (catalogLoaded) return;
+            if (catalogLoaded)
+            {
+                return;
+            }
+
             catalogLoaded = true;
             allEntries = await AppPickerService.RunStaAsync(BuildCatalog) ?? new List<AppPickerEntry>();
             searchBox.PlaceholderText = UiText.Get("itemEditor.searchApps");
@@ -307,10 +329,22 @@ public sealed class ItemEditorWindow : Window
 
         static bool LooksLikeWebUrl(string p)
         {
-            if (string.IsNullOrWhiteSpace(p)) return false;
+            if (string.IsNullOrWhiteSpace(p))
+            {
+                return false;
+            }
+
             if (p.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                p.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) return true;
-            if (LooksLikeFilePath(p)) return false;
+                p.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (LooksLikeFilePath(p))
+            {
+                return false;
+            }
+
             return p.Contains('.');
         }
 
@@ -323,12 +357,18 @@ public sealed class ItemEditorWindow : Window
                 // its type (especially a PWA's AUMID) until the path actually changes.
                 if (pickedEntry != null &&
                     string.Equals(t, pickedEntry.LaunchPath, StringComparison.OrdinalIgnoreCase))
+                {
                     return (t, pickedEntry.IsPwa, false);
+                }
+
                 return (t, false, LooksLikeWebUrl(t));
             }
             // Filtering the list can hide its selected row without changing the target.
             if (pickedEntry is AppPickerEntry e)
+            {
                 return (e.LaunchPath, e.IsPwa, false);
+            }
+
             return ("", false, false);
         }
 
@@ -395,7 +435,10 @@ public sealed class ItemEditorWindow : Window
         var installedBrowsers = BrowserCatalog.GetInstalledBrowsers();
         browserCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("itemEditor.defaultBrowser"), Tag = "" });
         foreach (var browser in installedBrowsers)
+        {
             browserCombo.Items.Add(new ComboBoxItem { Content = browser.DisplayName, Tag = browser.ExePath });
+        }
+
         browserCombo.Items.Add(new ComboBoxItem { Content = UiText.Get("itemEditor.customBrowser"), Tag = "__custom__" });
 
         // -- 4b. Profile picker --
@@ -462,7 +505,9 @@ public sealed class ItemEditorWindow : Window
         profileCombo.SelectionChanged += (s, ev) =>
         {
             if (profileCombo.SelectedItem is ComboBoxItem selected)
+            {
                 appWindowBrowserProfile = selected.Tag as string ?? "";
+            }
         };
 
         // Select existing browser
@@ -624,9 +669,14 @@ public sealed class ItemEditorWindow : Window
                     iconPreview.Visibility = Visibility.Visible;
                     string statusKey = "itemEditor.icon.auto";
                     if (customGlyph != null)
+                    {
                         statusKey = "itemEditor.icon.customImage";
+                    }
                     else if (isWebsite)
+                    {
                         statusKey = "itemEditor.icon.autoFavicon";
+                    }
+
                     iconStatus.Text = UiText.Get(statusKey);
                 }
                 catch
@@ -663,9 +713,14 @@ public sealed class ItemEditorWindow : Window
                 {
                     iconEmojiPreview.Text = customGlyph;
                     if (colorBrush != null)
+                    {
                         iconEmojiPreview.Foreground = colorBrush;
+                    }
                     else
+                    {
                         iconEmojiPreview.ClearValue(TextBlock.ForegroundProperty);
+                    }
+
                     iconEmojiPreview.Visibility = Visibility.Visible;
                 }
                 iconStatus.Text = UiText.Get("itemEditor.icon.custom");
@@ -762,7 +817,11 @@ public sealed class ItemEditorWindow : Window
             populating = true;
             pathBox.Text = e.LaunchPath;
             populating = false;
-            if (string.IsNullOrWhiteSpace(nameBox.Text)) nameBox.Text = e.Name;
+            if (string.IsNullOrWhiteSpace(nameBox.Text))
+            {
+                nameBox.Text = e.Name;
+            }
+
             SyncDerived();
             lastFetchedPath = "";
             await DoFetch(force: false);
@@ -775,7 +834,10 @@ public sealed class ItemEditorWindow : Window
             // Containers are reused while filtering and scrolling. Drop old row closures.
             container.ContextFlyout = null;
             ToolTipService.SetToolTip(container, null);
-            if (args.InRecycleQueue || args.Item is not AppPickerEntry entry) return;
+            if (args.InRecycleQueue || args.Item is not AppPickerEntry entry)
+            {
+                return;
+            }
 
             AppPickerRowActions.Configure(container, entry, () =>
             {
@@ -787,14 +849,25 @@ public sealed class ItemEditorWindow : Window
         };
         searchBox.TextChanged += (s, args) =>
         {
-            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                return;
+            }
+
             FilterApps(searchBox.Text);
         };
         appList.SelectionChanged += async (s, ev) =>
         {
-            if (populating) return;
+            if (populating)
+            {
+                return;
+            }
+
             if (appList.SelectedItem is AppPickerEntry e)
+            {
                 await SelectEntry(e);
+            }
+
             SyncDerived();
             ValidateForm();
         };
@@ -804,8 +877,16 @@ public sealed class ItemEditorWindow : Window
         {
             SyncDerived();
             var path = effectiveTarget;
-            if (string.IsNullOrEmpty(path)) return;
-            if (!force && path == lastFetchedPath) return;
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            if (!force && path == lastFetchedPath)
+            {
+                return;
+            }
+
             lastFetchedPath = path;
 
             if (isWebsite)
@@ -815,7 +896,9 @@ public sealed class ItemEditorWindow : Window
                     !fetchPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!force && fetchPath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
                         return;
+                    }
 
                     fetchPath = "https://" + fetchPath;
                     populating = true;
@@ -839,7 +922,9 @@ public sealed class ItemEditorWindow : Window
                 {
                     var title = titleTask.Result;
                     if (!string.IsNullOrEmpty(title))
+                    {
                         nameBox.Text = title;
+                    }
                 }
 
                 var iconPath = iconTask.Result;
@@ -898,7 +983,9 @@ public sealed class ItemEditorWindow : Window
                 {
                     var appName = FaviconService.GetApplicationName(path);
                     if (!string.IsNullOrEmpty(appName))
+                    {
                         nameBox.Text = appName;
+                    }
                 }
 
                 iconStatus.Text = UiText.Get("itemEditor.icon.extracting");
@@ -923,7 +1010,11 @@ public sealed class ItemEditorWindow : Window
 
         void ScheduleFetch()
         {
-            if (populating) return;
+            if (populating)
+            {
+                return;
+            }
+
             debounceTimer?.Stop();
             debounceTimer = DispatcherQueue.CreateTimer();
             debounceTimer.Interval = TimeSpan.FromMilliseconds(800);
@@ -937,7 +1028,11 @@ public sealed class ItemEditorWindow : Window
 
         pathBox.TextChanged += (s, ev) =>
         {
-            if (populating) return;
+            if (populating)
+            {
+                return;
+            }
+
             SyncDerived();
             ScheduleFetch();
             ValidateForm();
@@ -1048,7 +1143,11 @@ public sealed class ItemEditorWindow : Window
 
         tabBar.SelectionChanged += (s, ev) =>
         {
-            if (populating) return;
+            if (populating)
+            {
+                return;
+            }
+
             ShowTabPanel((tabBar.SelectedItem as SelectorBarItem)?.Tag as string ?? "list");
         };
 
@@ -1086,27 +1185,46 @@ public sealed class ItemEditorWindow : Window
         // -- Commit --
         async Task CommitAsync()
         {
-            if (_closed) return;
+            if (_closed)
+            {
+                return;
+            }
+
             SyncDerived();
             var (finalPath, finalIsPwa, finalIsWebsite) = ResolveTarget();
             finalPath = finalPath.Trim();
-            if (string.IsNullOrEmpty(finalPath)) return;
+            if (string.IsNullOrEmpty(finalPath))
+            {
+                return;
+            }
 
             var name = nameBox.Text.Trim();
             if (string.IsNullOrEmpty(name))
             {
                 if (pickedEntry != null)
+                {
                     name = pickedEntry.Name;
+                }
                 else if (finalIsWebsite)
+                {
                     name = await FaviconService.FetchWebsiteTitleAsync(finalPath) ?? finalPath;
+                }
                 else if (finalPath.StartsWith(@"shell:AppsFolder\", StringComparison.OrdinalIgnoreCase))
+                {
                     name = Path.GetFileNameWithoutExtension(finalPath);
+                }
                 else
+                {
                     name = FaviconService.GetApplicationName(finalPath) ?? Path.GetFileNameWithoutExtension(finalPath);
+                }
             }
             // An owner can close while a missing website title is being fetched.
             // A completed request must not commit into the session that has already ended.
-            if (_closed) return;
+            if (_closed)
+            {
+                return;
+            }
+
             var args = finalIsPwa ? "" : argsBox.Text.Trim();
             var glyph = customGlyph ?? (finalIsWebsite || finalIsPwa ? "" : "");
 
@@ -1142,7 +1260,10 @@ public sealed class ItemEditorWindow : Window
             saveButton.IsEnabled = false;
             debounceTimer?.Stop();
             await CommitAsync();
-            if (!_closed) Close();
+            if (!_closed)
+            {
+                Close();
+            }
         };
         cancelButton.Click += (s, ev) =>
         {
@@ -1178,7 +1299,10 @@ public sealed class ItemEditorWindow : Window
                 CloseButtonText = UiText.Get("common.cancel"),
                 DefaultButton = ContentDialogButton.Close,
             };
-            if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+            if (await confirm.ShowAsync() != ContentDialogResult.Primary)
+            {
+                return;
+            }
 
             debounceTimer?.Stop();
             _result = ItemEditorResult.Deleted;

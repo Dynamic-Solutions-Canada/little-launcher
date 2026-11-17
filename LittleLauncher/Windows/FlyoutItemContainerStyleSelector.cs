@@ -12,7 +12,10 @@ public sealed class FlyoutItemContainerStyleSelector : StyleSelector
     protected override Style SelectStyleCore(object item, DependencyObject container)
     {
         if (item is LauncherItem { IsGroup: true })
+        {
             return GroupStyle!;
+        }
+
         return ItemStyle!;
     }
 }

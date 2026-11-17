@@ -315,7 +315,10 @@ public partial class UserSettings : ObservableObject
 
         if (enabled)
         {
-            if (!list.Contains(provider)) list.Add(provider);
+            if (!list.Contains(provider))
+            {
+                list.Add(provider);
+            }
         }
         else
         {
@@ -456,7 +459,9 @@ public partial class UserSettings : ObservableObject
             {
                 // Migrate existing items into the default launcher
                 foreach (var item in LauncherItems)
+                {
                     defaultLauncher.Items.Add(item);
+                }
             }
             else
             {
@@ -482,7 +487,9 @@ public partial class UserSettings : ObservableObject
         // Earlier builds seeded SFTP for every fresh install, because SyncProvider defaults to it.
         // SFTP without a host can never sync, so treat it as off rather than leave its toggle on.
         if (string.IsNullOrWhiteSpace(SftpHost))
+        {
             EnabledSyncProviders.Remove(SyncProviders.Sftp);
+        }
 
         _initializing = false;
     }

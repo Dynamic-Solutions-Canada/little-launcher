@@ -84,13 +84,19 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void ShowFolderPopup(WebBookmark folder, FrameworkElement anchor, int depth = 0)
     {
-        if (_folderOverlay == null) return;
+        if (_folderOverlay == null)
+        {
+            return;
+        }
 
         // Clicking the folder that is already open closes it again.
         bool alreadyOpen = depth < _openFolders.Count && ReferenceEquals(_openFolders[depth], folder);
 
         CloseFolderPopups(depth);
-        if (alreadyOpen) return;
+        if (alreadyOpen)
+        {
+            return;
+        }
 
         var panel = new StackPanel { Spacing = 2 };
 
@@ -159,22 +165,31 @@ public sealed partial class WebFlyoutWindow
         }
 
         foreach (var child in folder.Children)
+        {
             panel.Children.Add(BuildFolderRow(child, depth));
+        }
 
         Button? tinted = null;
 
         void Tint(Button? row)
         {
-            if (ReferenceEquals(tinted, row)) return;
+            if (ReferenceEquals(tinted, row))
+            {
+                return;
+            }
 
             if (tinted != null)
+            {
                 tinted.Background = (Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"];
+            }
 
             tinted = row;
 
             // Background only, never a border: a border insets the content and reflows the row.
             if (tinted != null)
+            {
                 tinted.Background = (Brush)Application.Current.Resources["AccentFillColorSelectedTextBackgroundBrush"];
+            }
         }
 
         void ClearFeedback()
@@ -186,7 +201,10 @@ public sealed partial class WebFlyoutWindow
         panel.AllowDrop = true;
         panel.DragOver += (_, e) =>
         {
-            if (_draggingBookmark == null) return;
+            if (_draggingBookmark == null)
+            {
+                return;
+            }
 
             e.Handled = true;
             e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
@@ -194,7 +212,10 @@ public sealed partial class WebFlyoutWindow
             // No caption at all. The list is 260px wide and the caption box covered most of what
             // the user was reading to decide where to drop - which is the one thing they need to
             // see. The line and the tint say the same two things without standing on the rows.
-            if (e.DragUIOverride != null) e.DragUIOverride.IsCaptionVisible = false;
+            if (e.DragUIOverride != null)
+            {
+                e.DragUIOverride.IsCaptionVisible = false;
+            }
 
             double y = e.GetPosition(panel).Y;
 
@@ -222,7 +243,9 @@ public sealed partial class WebFlyoutWindow
     {
         var icon = new Image { Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center };
         if (!bookmark.IsFolder && !string.IsNullOrEmpty(bookmark.IconPath) && System.IO.File.Exists(bookmark.IconPath))
+        {
             icon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(bookmark.IconPath));
+        }
 
         var fallback = new FontIcon
         {
@@ -309,10 +332,16 @@ public sealed partial class WebFlyoutWindow
 
         button.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, e) =>
         {
-            if (!e.GetCurrentPoint(button).Properties.IsMiddleButtonPressed) return;
+            if (!e.GetCurrentPoint(button).Properties.IsMiddleButtonPressed)
+            {
+                return;
+            }
 
             e.Handled = true;
-            if (bookmark.IsFolder) return;
+            if (bookmark.IsFolder)
+            {
+                return;
+            }
 
             CloseFolderPopups(0);
             OpenBookmark(bookmark, newTab: true);
@@ -337,7 +366,10 @@ public sealed partial class WebFlyoutWindow
             // The overlay's backdrop covers the bar too, and it accepts nothing - so a bookmark
             // dragged out of a folder landed on it and the drop was refused. Out of hit-testing for
             // the length of the drag, and back afterwards so clicking away still closes the folder.
-            if (_folderBackdrop != null) _folderBackdrop.IsHitTestVisible = false;
+            if (_folderBackdrop != null)
+            {
+                _folderBackdrop.IsHitTestVisible = false;
+            }
 
             e.Data.SetText(bookmark.Url);
             e.Data.RequestedOperation =
@@ -350,7 +382,10 @@ public sealed partial class WebFlyoutWindow
             _draggingBookmark = null;
             _isStripDragging = false;
 
-            if (_folderBackdrop != null) _folderBackdrop.IsHitTestVisible = true;
+            if (_folderBackdrop != null)
+            {
+                _folderBackdrop.IsHitTestVisible = true;
+            }
 
             CloseFolderPopups(0);
         };
@@ -367,7 +402,10 @@ public sealed partial class WebFlyoutWindow
         var dragged = _draggingBookmark;
         Logger.Info("Folder drop on {Folder}, dragging {Dragged}", folder.Name, dragged?.Name ?? "(nothing)");
 
-        if (dragged == null) return;
+        if (dragged == null)
+        {
+            return;
+        }
 
         e.Handled = true;
         e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
@@ -383,7 +421,10 @@ public sealed partial class WebFlyoutWindow
             return;
         }
 
-        if (ReferenceEquals(dragged, folder) || (dragged.IsFolder && Contains(dragged, folder))) return;
+        if (ReferenceEquals(dragged, folder) || (dragged.IsFolder && Contains(dragged, folder)))
+        {
+            return;
+        }
 
         int to = FolderDropIndex(panel, y, dragged);
         int from = folder.Children.IndexOf(dragged);
@@ -394,14 +435,20 @@ public sealed partial class WebFlyoutWindow
             // list that exists after the removal, so it needs no adjustment - the same trap the
             // bar's drop records.
             to = Math.Clamp(to, 0, folder.Children.Count - 1);
-            if (to == from) return;
+            if (to == from)
+            {
+                return;
+            }
 
             folder.Children.Move(from, to);
         }
         else
         {
             // Arriving from the bar or from another folder.
-            if (!DetachBookmark(dragged)) return;
+            if (!DetachBookmark(dragged))
+            {
+                return;
+            }
 
             folder.Children.Insert(Math.Clamp(to, 0, folder.Children.Count), dragged);
         }
@@ -452,15 +499,28 @@ public sealed partial class WebFlyoutWindow
     {
         foreach (var child in panel.Children)
         {
-            if (child is not Button { Tag: WebBookmark bookmark } row) continue;
-            if (!bookmark.IsFolder || ReferenceEquals(bookmark, dragged)) continue;
+            if (child is not Button { Tag: WebBookmark bookmark } row)
+            {
+                continue;
+            }
+
+            if (!bookmark.IsFolder || ReferenceEquals(bookmark, dragged))
+            {
+                continue;
+            }
 
             double height = row.ActualHeight;
-            if (height <= 0) continue;
+            if (height <= 0)
+            {
+                continue;
+            }
 
             double top = RowTop(row, panel);
             double inset = Math.Min(height * 0.25, 10);
-            if (y >= top + inset && y <= top + height - inset) return bookmark;
+            if (y >= top + inset && y <= top + height - inset)
+            {
+                return bookmark;
+            }
         }
 
         return null;
@@ -476,13 +536,27 @@ public sealed partial class WebFlyoutWindow
 
         foreach (var child in panel.Children)
         {
-            if (child is not Button { Tag: WebBookmark bookmark } row) continue;
-            if (ReferenceEquals(bookmark, dragged)) continue;
+            if (child is not Button { Tag: WebBookmark bookmark } row)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(bookmark, dragged))
+            {
+                continue;
+            }
 
             double height = row.ActualHeight;
-            if (height <= 0) continue;
+            if (height <= 0)
+            {
+                continue;
+            }
 
-            if (y <= RowTop(row, panel) + (height / 2)) break;
+            if (y <= RowTop(row, panel) + (height / 2))
+            {
+                break;
+            }
+
             index++;
         }
 
@@ -496,7 +570,10 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Places a list against whatever opened it, kept inside the window.</summary>
     private void PlaceFolderPanel(Border surface, FrameworkElement anchor, int depth)
     {
-        if (_folderOverlay == null) return;
+        if (_folderOverlay == null)
+        {
+            return;
+        }
 
         try
         {
@@ -513,12 +590,18 @@ public sealed partial class WebFlyoutWindow
             }
 
             double height = surface.ActualHeight > 0 ? surface.ActualHeight : surface.DesiredSize.Height;
-            if (height <= 0) return;
+            if (height <= 0)
+            {
+                return;
+            }
 
             // Its own width, now that it sizes to its rows: a constant here would place a narrow
             // list as though it were the widest one possible.
             double width = surface.ActualWidth > 0 ? surface.ActualWidth : surface.DesiredSize.Width;
-            if (width <= 0) width = MinFolderPanelWidth;
+            if (width <= 0)
+            {
+                width = MinFolderPanelWidth;
+            }
 
             double maxLeft = Math.Max(0, _folderOverlay.ActualWidth - width);
             double maxTop = Math.Max(0, _folderOverlay.ActualHeight - height);
@@ -549,7 +632,9 @@ public sealed partial class WebFlyoutWindow
                 // No room to the right: fold back across the parent's left edge, overlapping it by
                 // the same amount, as a cascading menu does at the edge of a screen.
                 if (left > maxLeft)
+                {
                     left = Math.Max(0, parentLeft - width + FolderNestOverlap);
+                }
             }
 
             surface.Margin = new Thickness(
@@ -570,16 +655,28 @@ public sealed partial class WebFlyoutWindow
         {
             _folderOverlay?.Children.Remove(_folderPanels[i]);
             _folderPanels.RemoveAt(i);
-            if (i < _openFolders.Count) _openFolders.RemoveAt(i);
+            if (i < _openFolders.Count)
+            {
+                _openFolders.RemoveAt(i);
+            }
         }
 
-        if (_folderPanels.Count > 0) return;
+        if (_folderPanels.Count > 0)
+        {
+            return;
+        }
 
         // Whatever happened to the drag, the sheet is answering clicks again by the time the last
         // list has gone.
-        if (_folderBackdrop != null) _folderBackdrop.IsHitTestVisible = true;
+        if (_folderBackdrop != null)
+        {
+            _folderBackdrop.IsHitTestVisible = true;
+        }
 
         _isMenuOpen = false;
-        if (_folderOverlay != null) _folderOverlay.Visibility = Visibility.Collapsed;
+        if (_folderOverlay != null)
+        {
+            _folderOverlay.Visibility = Visibility.Collapsed;
+        }
     }
 }

@@ -92,7 +92,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private static string DisplayKeys(Shortcut shortcut)
     {
-        if (shortcut.Alternative == null) return shortcut.Keys;
+        if (shortcut.Alternative == null)
+        {
+            return shortcut.Keys;
+        }
 
         return shortcut.Keys + ShortcutsWindow.AlternativeSeparator + shortcut.Alternative();
     }
@@ -233,8 +236,15 @@ public sealed partial class WebFlyoutWindow
         {
             // A shortcut with an alternative is documentation of two routes rather than one combo,
             // and the page script owns it, as it did when the "or" was part of the keys text.
-            if (shortcut.Alternative != null) continue;
-            if (!TryParseAccelerator(shortcut.Keys, out var key, out var modifiers)) continue;
+            if (shortcut.Alternative != null)
+            {
+                continue;
+            }
+
+            if (!TryParseAccelerator(shortcut.Keys, out var key, out var modifiers))
+            {
+                continue;
+            }
 
             var accelerator = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
             string id = shortcut.Id;
@@ -256,7 +266,10 @@ public sealed partial class WebFlyoutWindow
 
         // Anything with an "or", an ellipsis or a symbol name is documentation rather than one
         // combo; the page script owns those.
-        if (keys.Contains(' ') || keys.Contains('…')) return false;
+        if (keys.Contains(' ') || keys.Contains('…'))
+        {
+            return false;
+        }
 
         foreach (string part in keys.Split('+', StringSplitOptions.TrimEntries))
         {
@@ -273,7 +286,11 @@ public sealed partial class WebFlyoutWindow
                 continue;
             }
 
-            if (!Enum.TryParse(part, ignoreCase: true, out global::Windows.System.VirtualKey named)) return false;
+            if (!Enum.TryParse(part, ignoreCase: true, out global::Windows.System.VirtualKey named))
+            {
+                return false;
+            }
+
             key = named;
         }
 
@@ -289,7 +306,10 @@ public sealed partial class WebFlyoutWindow
         if (id.StartsWith("tab.index:", StringComparison.Ordinal))
         {
             if (int.TryParse(id.AsSpan("tab.index:".Length), out int oneBased))
+            {
                 ActivateTabAt(oneBased - 1);
+            }
+
             return;
         }
 
@@ -298,7 +318,7 @@ public sealed partial class WebFlyoutWindow
             case "tab.next": CycleTab(1); break;
             case "tab.previous": CycleTab(-1); break;
             case "tab.new": OpenNewTab(); break;
-            case "tab.close": if (_activeTab is { } closing) CloseTab(closing); break;
+            case "tab.close": if (_activeTab is { } closing) { CloseTab(closing); } break;
             case "tab.reopen": ReopenClosedTab(); break;
             case "tab.last": ActivateTabAt(_tabs.Count - 1); break;
 
@@ -322,10 +342,16 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Moves <paramref name="delta"/> tabs along, wrapping, as a browser does.</summary>
     private void CycleTab(int delta)
     {
-        if (_tabs.Count < 2 || _activeTab == null) return;
+        if (_tabs.Count < 2 || _activeTab == null)
+        {
+            return;
+        }
 
         int index = _tabs.IndexOf(_activeTab);
-        if (index < 0) return;
+        if (index < 0)
+        {
+            return;
+        }
 
         // Modulo twice, so a negative delta lands in range rather than on a negative index.
         int next = ((index + delta) % _tabs.Count + _tabs.Count) % _tabs.Count;
@@ -334,7 +360,11 @@ public sealed partial class WebFlyoutWindow
 
     private void ActivateTabAt(int index)
     {
-        if (index < 0 || index >= _tabs.Count) return;
+        if (index < 0 || index >= _tabs.Count)
+        {
+            return;
+        }
+
         ActivateTab(_tabs[index]);
     }
 
@@ -351,15 +381,24 @@ public sealed partial class WebFlyoutWindow
         catch (Exception ex) { Logger.Debug(ex, "Reading a closing tab's address failed"); }
 
         url = NormalizeUrl(url);
-        if (string.IsNullOrEmpty(url) || url.Equals("about:blank", StringComparison.OrdinalIgnoreCase)) return;
+        if (string.IsNullOrEmpty(url) || url.Equals("about:blank", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
 
         _closedTabUrls.Add(url);
-        if (_closedTabUrls.Count > ClosedTabMemory) _closedTabUrls.RemoveAt(0);
+        if (_closedTabUrls.Count > ClosedTabMemory)
+        {
+            _closedTabUrls.RemoveAt(0);
+        }
     }
 
     private void ReopenClosedTab()
     {
-        if (_closedTabUrls.Count == 0) return;
+        if (_closedTabUrls.Count == 0)
+        {
+            return;
+        }
 
         string url = _closedTabUrls[^1];
         _closedTabUrls.RemoveAt(_closedTabUrls.Count - 1);
@@ -419,7 +458,10 @@ public sealed partial class WebFlyoutWindow
     private void SetZoom(int percent)
     {
         int clamped = Math.Clamp(percent, Launcher.MinWebZoomPercent, Launcher.MaxWebZoomPercent);
-        if (clamped == _launcher.ResolvedWebZoomPercent) return;
+        if (clamped == _launcher.ResolvedWebZoomPercent)
+        {
+            return;
+        }
 
         _launcher.WebZoomPercent = clamped;
         Classes.Settings.SettingsManager.SaveSettings();
@@ -432,7 +474,10 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Shows the shortcut list, pinned open like every other window the flyout raises.</summary>
     private async Task ShowShortcutsAsync()
     {
-        if (_isModalOpen) return;
+        if (_isModalOpen)
+        {
+            return;
+        }
 
         _isModalOpen = true;
         SetTopmost(false);

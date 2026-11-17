@@ -26,7 +26,10 @@ internal static class TaskbarPinStatusService
         string executable, string launcherId, string aumid, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (!File.Exists(executable) || string.IsNullOrEmpty(aumid)) return TaskbarPinState.Unknown;
+        if (!File.Exists(executable) || string.IsNullOrEmpty(aumid))
+        {
+            return TaskbarPinState.Unknown;
+        }
 
         var start = new ProcessStartInfo
         {
@@ -52,7 +55,10 @@ internal static class TaskbarPinStatusService
                 Logger.Debug(ex, "Could not start the read-only taskbar check for {LauncherId}", launcherId);
                 return TaskbarPinState.Unknown;
             }
-            if (!started) return TaskbarPinState.Unknown;
+            if (!started)
+            {
+                return TaskbarPinState.Unknown;
+            }
 
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             deadline.CancelAfter(TimeSpan.FromSeconds(10));
@@ -67,20 +73,35 @@ internal static class TaskbarPinStatusService
             }
 
             Logger.Debug("Read-only taskbar check for {LauncherId} exited {ExitCode}", launcherId, process.ExitCode);
-            if (process.ExitCode == 4) return TaskbarPinState.Pinned;
-            if (process.ExitCode == 5) return TaskbarPinState.NotPinned;
+            if (process.ExitCode == 4)
+            {
+                return TaskbarPinState.Pinned;
+            }
+
+            if (process.ExitCode == 5)
+            {
+                return TaskbarPinState.NotPinned;
+            }
+
             return TaskbarPinState.Unknown;
         }
         finally
         {
-            if (started) await StopReadOnlyChildAsync(process).ConfigureAwait(false);
+            if (started)
+            {
+                await StopReadOnlyChildAsync(process).ConfigureAwait(false);
+            }
         }
     }
 
     /// <summary>Reaps only the owned read-only query, independent of the closing window's UI context.</summary>
     private static async Task StopReadOnlyChildAsync(Process process)
     {
-        if (process.HasExited) return;
+        if (process.HasExited)
+        {
+            return;
+        }
+
         try
         {
             try { process.Kill(); }

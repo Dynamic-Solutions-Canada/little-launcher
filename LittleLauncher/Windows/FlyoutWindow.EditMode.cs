@@ -28,7 +28,10 @@ public partial class FlyoutWindow
         string launcherId,
         global::Windows.Graphics.RectInt32? setupBounds = null)
     {
-        if (LauncherItemsEditorWindow.TryFocus(launcherId)) return;
+        if (LauncherItemsEditorWindow.TryFocus(launcherId))
+        {
+            return;
+        }
         // A dismissed or still-warming flyout is visible off screen, not on it , Toggle brings
         // it in. `_isOpen` is what distinguishes the two; see FlyoutWindow.ParkOffScreen.
         bool alreadyVisible =
@@ -47,23 +50,34 @@ public partial class FlyoutWindow
 
             (int x, int y) = hasTrayIcon ? GetTrayAnchorPoint() : GetScreenCentreAnchor();
             if (setupBounds is { } bounds)
+            {
                 (x, y) = GetSetupAnchorPoint(bounds);
+            }
+
             Toggle(owner, x, y, launcherId, setupBounds);
         }
 
-        if (!Instances.TryGetValue(launcherId, out var flyout)) return;
+        if (!Instances.TryGetValue(launcherId, out var flyout))
+        {
+            return;
+        }
 
         if (alreadyVisible)
         {
             if (setupBounds.HasValue)
+            {
                 flyout._setupEditBounds = setupBounds;
+            }
 
             flyout.DispatcherQueue.TryEnqueue(() =>
             {
                 if (flyout._isOpen && !flyout._isHiding)
                 {
                     flyout.EnterEditMode();
-                    if (setupBounds.HasValue) flyout.ResizeForEditChrome();
+                    if (setupBounds.HasValue)
+                    {
+                        flyout.ResizeForEditChrome();
+                    }
                 }
             });
             return;
@@ -84,7 +98,9 @@ public partial class FlyoutWindow
         {
             s.Stop();
             if (flyout._isOpen && !flyout._isHiding && flyout._animationVersion == openingVersion)
+            {
                 flyout.EnterEditMode();
+            }
         };
         settle.Start();
     }
@@ -180,7 +196,10 @@ public partial class FlyoutWindow
     /// </remarks>
     private void SetEditModeBorder(bool editing)
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         try
         {
@@ -216,7 +235,9 @@ public partial class FlyoutWindow
         try
         {
             if (GetAppWindow().Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            {
                 presenter.IsAlwaysOnTop = topmost;
+            }
         }
         catch { /* presenter unavailable during teardown */ }
     }
@@ -254,8 +275,15 @@ public partial class FlyoutWindow
     /// </remarks>
     private void RestoreFlyoutActivation()
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
-        if (!_isOpen) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
+
+        if (!_isOpen)
+        {
+            return;
+        }
 
         try { SetForegroundWindow(_hwnd); } catch { /* foreground can be refused */ }
     }
@@ -274,12 +302,18 @@ public partial class FlyoutWindow
 
     private void ShowEditToolbarBar()
     {
-        if (_itemsView.Toolbar == null || !IsEditModeActive || _isModalOpen || !_isOpen || _isHiding) return;
+        if (_itemsView.Toolbar == null || !IsEditModeActive || _isModalOpen || !_isOpen || _isHiding)
+        {
+            return;
+        }
 
         _editToolbarBar ??= new EditToolbarWindow(_itemsView.Toolbar!);
 
         var (width, height) = EditToolbarSizeDips;
-        if (width <= 0 || height <= 0) return;
+        if (width <= 0 || height <= 0)
+        {
+            return;
+        }
 
         _editToolbarBar.PositionAbove(_hwnd, width, height);
     }
@@ -295,13 +329,21 @@ public partial class FlyoutWindow
     /// </remarks>
     private void RepositionEditToolbarBar()
     {
-        if (!IsEditModeActive) return;
+        if (!IsEditModeActive)
+        {
+            return;
+        }
+
         DispatcherQueue.TryEnqueue(ShowEditToolbarBar);
     }
 
     internal void ExitEditMode()
     {
-        if (!IsEditModeActive) return;
+        if (!IsEditModeActive)
+        {
+            return;
+        }
+
         _setupEditBounds = null;
         _itemsView.SetEditing(false, notifyHost: false);
         CloseOpenModal();

@@ -151,7 +151,9 @@ public static class OAuthPkceClient
         }
 
         if (result.Tokens == null)
+        {
             Logger.Warn($"OAuth sign-in: {result.Message}");
+        }
 
         return result;
     }
@@ -164,10 +166,20 @@ public static class OAuthPkceClient
         string provider, Endpoint endpoint, CancellationToken ct = default)
     {
         var tokens = CloudTokenStore.Load(provider);
-        if (tokens == null) return null;
+        if (tokens == null)
+        {
+            return null;
+        }
 
-        if (tokens.IsAccessTokenUsable) return tokens.AccessToken;
-        if (string.IsNullOrEmpty(tokens.RefreshToken)) return null;
+        if (tokens.IsAccessTokenUsable)
+        {
+            return tokens.AccessToken;
+        }
+
+        if (string.IsNullOrEmpty(tokens.RefreshToken))
+        {
+            return null;
+        }
 
         var refreshed = await RefreshAsync(endpoint, tokens, ct);
         if (refreshed == null)
@@ -200,7 +212,9 @@ public static class OAuthPkceClient
         };
 
         foreach (var (key, value) in endpoint.ExtraAuthorizeParams)
+        {
             query[key] = value;
+        }
 
         // Correlation belongs to this attempt and cannot be overridden by provider options.
         query["state"] = state;
@@ -364,7 +378,9 @@ public static class OAuthPkceClient
             ["code_verifier"] = verifier,
         };
         if (!string.IsNullOrEmpty(endpoint.ClientSecret))
+        {
             form["client_secret"] = endpoint.ClientSecret;
+        }
 
         return await PostTokenRequestAsync(endpoint, form, existingRefreshToken: null, scope, ct);
     }
@@ -383,12 +399,17 @@ public static class OAuthPkceClient
             ["scope"] = current.GrantedScope.Length > 0 ? current.GrantedScope : endpoint.Scope,
         };
         if (!string.IsNullOrEmpty(endpoint.ClientSecret))
+        {
             form["client_secret"] = endpoint.ClientSecret;
+        }
 
         var refreshed = await PostTokenRequestAsync(
             endpoint, form, current.RefreshToken, current.GrantedScope, ct);
         if (refreshed.Tokens != null)
+        {
             refreshed.Tokens.AccountName = current.AccountName;
+        }
+
         return refreshed.Tokens;
     }
 
@@ -424,11 +445,15 @@ public static class OAuthPkceClient
 
         string access = root.TryGetProperty("access_token", out var a) ? a.GetString() ?? "" : "";
         if (string.IsNullOrWhiteSpace(access))
+        {
             return new SignInResult(null, UiText.Get("cloud.signIn.noAccessToken"));
+        }
 
         string refresh = root.TryGetProperty("refresh_token", out var r) ? r.GetString() ?? "" : "";
         if (refresh.Length == 0 && existingRefreshToken != null)
+        {
             refresh = existingRefreshToken;
+        }
 
         int expiresIn = root.TryGetProperty("expires_in", out var e) && e.TryGetInt32(out int secs)
             ? secs

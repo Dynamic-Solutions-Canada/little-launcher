@@ -52,14 +52,24 @@ internal static class WindowChrome
     internal static void ApplyIcon(IntPtr hwnd, string? icoPath = null)
     {
         icoPath ??= ResolveAppIconPath();
-        if (icoPath == null || hwnd == IntPtr.Zero) return;
+        if (icoPath == null || hwnd == IntPtr.Zero)
+        {
+            return;
+        }
 
         try
         {
             var small = LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
             var big = LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
-            if (small != IntPtr.Zero) SendMessage(hwnd, WM_SETICON, ICON_SMALL, small);
-            if (big != IntPtr.Zero) SendMessage(hwnd, WM_SETICON, ICON_BIG, big);
+            if (small != IntPtr.Zero)
+            {
+                SendMessage(hwnd, WM_SETICON, ICON_SMALL, small);
+            }
+
+            if (big != IntPtr.Zero)
+            {
+                SendMessage(hwnd, WM_SETICON, ICON_BIG, big);
+            }
 
             var appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(hwnd));
             if (appWindow != null)

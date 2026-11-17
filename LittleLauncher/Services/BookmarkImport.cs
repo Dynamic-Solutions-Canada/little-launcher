@@ -19,7 +19,11 @@ public sealed class BookmarkNode
 
     public int CountLeaves()
     {
-        if (!IsFolder) return 1;
+        if (!IsFolder)
+        {
+            return 1;
+        }
+
         return Children.Sum(c => c.CountLeaves());
     }
 }
@@ -38,9 +42,21 @@ public sealed record FlatBookmark(string Name, string Url, string FolderPath)
     {
         foreach (string term in terms)
         {
-            if (Name.Contains(term, StringComparison.OrdinalIgnoreCase)) continue;
-            if (Url.Contains(term, StringComparison.OrdinalIgnoreCase)) continue;
-            if (FolderPath.Contains(term, StringComparison.OrdinalIgnoreCase)) continue;
+            if (Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (Url.Contains(term, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (FolderPath.Contains(term, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             return false;
         }
         return true;
@@ -108,11 +124,15 @@ public static class BookmarkImport
 
             string childPath = string.IsNullOrEmpty(path) ? node.Name : $"{path} / {node.Name}";
             foreach (var child in node.Children)
+            {
                 Walk(child, childPath);
+            }
         }
 
         foreach (var root in roots)
+        {
             Walk(root, "");
+        }
 
         return results;
     }
@@ -124,17 +144,30 @@ public static class BookmarkImport
         string path = Path.Combine(profileDir, "Bookmarks");
         // Newer Chrome versions store bookmarks in "AccountBookmarks" instead of "Bookmarks"
         if (!File.Exists(path))
+        {
             path = Path.Combine(profileDir, "AccountBookmarks");
-        if (!File.Exists(path)) return result;
+        }
+
+        if (!File.Exists(path))
+        {
+            return result;
+        }
 
         try
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(path));
-            if (!doc.RootElement.TryGetProperty("roots", out var roots)) return result;
+            if (!doc.RootElement.TryGetProperty("roots", out var roots))
+            {
+                return result;
+            }
 
             static BookmarkNode? ParseNode(JsonElement el)
             {
-                if (!el.TryGetProperty("type", out var tp)) return null;
+                if (!el.TryGetProperty("type", out var tp))
+                {
+                    return null;
+                }
+
                 string type = tp.GetString() ?? "";
                 string name = el.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
 
@@ -145,18 +178,27 @@ public static class BookmarkImport
                         url.StartsWith("chrome://", StringComparison.OrdinalIgnoreCase) ||
                         url.StartsWith("edge://", StringComparison.OrdinalIgnoreCase) ||
                         url.StartsWith("about:", StringComparison.OrdinalIgnoreCase))
+                    {
                         return null;
+                    }
+
                     return new BookmarkNode { Name = string.IsNullOrEmpty(name) ? url : name, Url = url };
                 }
                 if (type == "folder")
                 {
                     var folder = new BookmarkNode { Name = name };
                     if (el.TryGetProperty("children", out var children))
+                    {
                         foreach (var child in children.EnumerateArray())
                         {
                             var parsed = ParseNode(child);
-                            if (parsed != null) folder.Children.Add(parsed);
+                            if (parsed != null)
+                            {
+                                folder.Children.Add(parsed);
+                            }
                         }
+                    }
+
                     return folder;
                 }
                 return null;
@@ -169,12 +211,23 @@ public static class BookmarkImport
             };
             foreach (var (key, displayName) in rootSections)
             {
-                if (!roots.TryGetProperty(key, out var rootEl)) continue;
+                if (!roots.TryGetProperty(key, out var rootEl))
+                {
+                    continue;
+                }
+
                 var parsed = ParseNode(rootEl);
-                if (parsed == null || parsed.CountLeaves() == 0) continue;
+                if (parsed == null || parsed.CountLeaves() == 0)
+                {
+                    continue;
+                }
                 // Wrap using a friendly top-level name instead of the browser's internal label
                 var container = new BookmarkNode { Name = displayName };
-                foreach (var child in parsed.Children) container.Children.Add(child);
+                foreach (var child in parsed.Children)
+                {
+                    container.Children.Add(child);
+                }
+
                 result.Add(container);
             }
         }
@@ -201,8 +254,9 @@ public static class BookmarkImport
 
         // Fall back to places.sqlite when no jsonlz4 backups exist
         if (latestFile == null)
+        {
             return ReadGeckoBookmarksFromSqlite(profileDir);
-
+        }
 
         try
         {
@@ -211,17 +265,26 @@ public static class BookmarkImport
             if (raw.Length < 12 ||
                 raw[0] != 'm' || raw[1] != 'o' || raw[2] != 'z' || raw[3] != 'L' ||
                 raw[4] != 'z' || raw[5] != '4' || raw[6] != '0' || raw[7] != 0)
+            {
                 return result;
+            }
 
             int origSize = BitConverter.ToInt32(raw, 8);
-            if (origSize <= 0 || origSize > 64 * 1024 * 1024) return result;
+            if (origSize <= 0 || origSize > 64 * 1024 * 1024)
+            {
+                return result;
+            }
 
             byte[] json = DecompressLz4Block(raw.AsSpan(12), origSize);
             using var doc = JsonDocument.Parse(json);
 
             static BookmarkNode? ParseGeckoNode(JsonElement el)
             {
-                if (!el.TryGetProperty("type", out var tp)) return null;
+                if (!el.TryGetProperty("type", out var tp))
+                {
+                    return null;
+                }
+
                 string type = tp.GetString() ?? "";
                 string name = el.TryGetProperty("title", out var n) ? n.GetString() ?? "" : "";
 
@@ -231,18 +294,27 @@ public static class BookmarkImport
                     if (string.IsNullOrEmpty(uri) ||
                         uri.StartsWith("place:", StringComparison.OrdinalIgnoreCase) ||
                         uri.StartsWith("about:", StringComparison.OrdinalIgnoreCase))
+                    {
                         return null;
+                    }
+
                     return new BookmarkNode { Name = string.IsNullOrEmpty(name) ? uri : name, Url = uri };
                 }
                 if (type == "text/x-moz-place-container")
                 {
                     var folder = new BookmarkNode { Name = name };
                     if (el.TryGetProperty("children", out var children))
+                    {
                         foreach (var child in children.EnumerateArray())
                         {
                             var parsed = ParseGeckoNode(child);
-                            if (parsed != null) folder.Children.Add(parsed);
+                            if (parsed != null)
+                            {
+                                folder.Children.Add(parsed);
+                            }
                         }
+                    }
+
                     return folder;
                 }
                 return null;  // separator or unrecognised type
@@ -250,12 +322,16 @@ public static class BookmarkImport
 
             // Root is the placesRoot container; its direct children are the top-level sections
             if (doc.RootElement.TryGetProperty("children", out var topChildren))
+            {
                 foreach (var child in topChildren.EnumerateArray())
                 {
                     var node = ParseGeckoNode(child);
                     if (node != null && node.CountLeaves() > 0)
+                    {
                         result.Add(node);
+                    }
                 }
+            }
         }
         catch { }
 
@@ -283,7 +359,10 @@ public static class BookmarkImport
             sPos += litLen;
             dPos += litLen;
 
-            if (sPos >= src.Length) break;  // final sequence has no match portion
+            if (sPos >= src.Length)
+            {
+                break;  // final sequence has no match portion
+            }
 
             // Match offset (little-endian 16-bit)
             int offset = src[sPos] | (src[sPos + 1] << 8);
@@ -300,7 +379,9 @@ public static class BookmarkImport
             // Copy match — may overlap with current write position, so byte-by-byte
             int matchSrc = dPos - offset;
             for (int i = 0; i < matchLen; i++)
+            {
                 dst[dPos++] = dst[matchSrc++];
+            }
         }
 
         return dst;
@@ -311,7 +392,10 @@ public static class BookmarkImport
     {
         var result = new List<BookmarkNode>();
         string dbPath = Path.Combine(profileDir, "places.sqlite");
-        if (!File.Exists(dbPath)) return result;
+        if (!File.Exists(dbPath))
+        {
+            return result;
+        }
 
         // Copy to temp to avoid SQLite lock conflicts with a running browser
         string tempDb = Path.Combine(Path.GetTempPath(), $"ll_places_{Guid.NewGuid():N}.sqlite");
@@ -348,7 +432,9 @@ public static class BookmarkImport
                     long parent = reader.GetInt64(4);
 
                     if (type == 2) // folder
+                    {
                         folders[id] = new BookmarkNode { Name = title };
+                    }
 
                     if (!childrenMap.TryGetValue(parent, out var list))
                     {
@@ -362,20 +448,29 @@ public static class BookmarkImport
             // Recursively build tree
             void BuildChildren(BookmarkNode parentNode, long parentId)
             {
-                if (!childrenMap.TryGetValue(parentId, out var children)) return;
+                if (!childrenMap.TryGetValue(parentId, out var children))
+                {
+                    return;
+                }
+
                 foreach (var (id, type, title, url, _) in children)
                 {
                     if (type == 2 && folders.TryGetValue(id, out var folder))
                     {
                         BuildChildren(folder, id);
                         if (folder.CountLeaves() > 0)
+                        {
                             parentNode.Children.Add(folder);
+                        }
                     }
                     else if (type == 1 && !string.IsNullOrEmpty(url))
                     {
                         if (url.StartsWith("place:", StringComparison.OrdinalIgnoreCase) ||
                             url.StartsWith("about:", StringComparison.OrdinalIgnoreCase))
+                        {
                             continue;
+                        }
+
                         string name = string.IsNullOrEmpty(title) ? url : title;
                         parentNode.Children.Add(new BookmarkNode { Name = name, Url = url });
                     }
@@ -392,11 +487,17 @@ public static class BookmarkImport
 
             foreach (var (folderId, displayName) in topLevel)
             {
-                if (!folders.TryGetValue(folderId, out var folder)) continue;
+                if (!folders.TryGetValue(folderId, out var folder))
+                {
+                    continue;
+                }
+
                 folder = new BookmarkNode { Name = displayName };
                 BuildChildren(folder, folderId);
                 if (folder.CountLeaves() > 0)
+                {
                     result.Add(folder);
+                }
             }
         }
         catch { }

@@ -148,11 +148,16 @@ public sealed partial class LauncherItemsView
     {
         // Reordering can persist columns only during an active editing session.
         if (!_isEditMode)
+        {
             throw new InvalidOperationException("Launcher items can only be reordered while editing.");
+        }
+
         _launcher.Items.Clear();
 
         foreach (var item in LauncherItemReorder.Flatten(_columnLists, _syntheticGroups))
+        {
             _launcher.Items.Add(item);
+        }
     }
 
     private ListViewBase CreateColumnListView(int columnIndex)
@@ -183,7 +188,9 @@ public sealed partial class LauncherItemsView
             lv.ContainerContentChanging += IconColumn_ContainerContentChanging;
         }
         else
+        {
             lv.ItemContainerStyleSelector = (StyleSelector)RootGrid.Resources["ItemContainerStyleSelector"];
+        }
 
         ScrollViewer.SetVerticalScrollBarVisibility(lv, ScrollBarVisibility.Auto);
         ScrollViewer.SetHorizontalScrollBarVisibility(lv, ScrollBarVisibility.Disabled);
@@ -204,7 +211,9 @@ public sealed partial class LauncherItemsView
         listView.Transitions = new TransitionCollection();
 
         if (listView.ItemsPanelRoot is Panel panel)
+        {
             panel.ChildrenTransitions = new TransitionCollection();
+        }
     }
 
     private void ColumnListView_Loaded(object sender, RoutedEventArgs e)
@@ -216,16 +225,23 @@ public sealed partial class LauncherItemsView
             // Containers are realised after a rebuild, so edit visuals are applied here
             // rather than at the point the mode was entered.
             if (_isEditMode)
+            {
                 ApplyEditVisuals();
+            }
+
             if (IsIconMode)
+            {
                 ApplyTopLevelIconSpans(listView);
+            }
         }
     }
 
     private void IconColumn_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.InRecycleQueue || args.Item is not LauncherItem item || args.ItemContainer is not Control container)
+        {
             return;
+        }
 
         if (sender.ItemsPanelRoot is PackedIconPanel wrapGrid)
         {
@@ -308,7 +324,9 @@ public sealed partial class LauncherItemsView
     private int GetTopLevelIconSpan(LauncherItem item)
     {
         if (!item.IsGroup)
+        {
             return 1;
+        }
 
         // A group spans as many columns as it has children, so several narrow groups can
         // share a row. A group with more children than fit clamps to the full width, which
@@ -320,7 +338,9 @@ public sealed partial class LauncherItemsView
     private int GetTopLevelIconRowSpan(LauncherItem item)
     {
         if (!item.IsGroup)
+        {
             return 1;
+        }
 
         int childRows = Math.Max(1, (item.Children.Count + GetIconModeIconsPerRow() - 1) / GetIconModeIconsPerRow());
         return _syntheticGroups.Contains(item) ? childRows : childRows + 1;
@@ -332,7 +352,9 @@ public sealed partial class LauncherItemsView
     private void ApplyTopLevelIconSpans(ListViewBase listView)
     {
         if (listView.ItemsPanelRoot is not PackedIconPanel wrapGrid)
+        {
             return;
+        }
 
         wrapGrid.MaximumRowsOrColumns = GetIconModeIconsPerRow();
         wrapGrid.ItemWidth = GetActiveIconCellWidth();
@@ -343,7 +365,9 @@ public sealed partial class LauncherItemsView
         for (int index = 0; index < listView.Items.Count; index++)
         {
             if (listView.Items[index] is not LauncherItem item || listView.ContainerFromIndex(index) is not Control container)
+            {
                 continue;
+            }
 
             int columnSpan = GetTopLevelIconSpan(item);
             int rowSpan = GetTopLevelIconRowSpan(item);
@@ -385,7 +409,10 @@ public sealed partial class LauncherItemsView
         void Consider(string? label, double fontSize, global::Windows.UI.Text.FontWeight weight, int chrome)
         {
             double width = MeasureLabelWidth(label, fontSize, weight);
-            if (width <= 0) return;
+            if (width <= 0)
+            {
+                return;
+            }
 
             measuredAnything = true;
             widest = Math.Max(widest, width + chrome);
@@ -399,7 +426,9 @@ public sealed partial class LauncherItemsView
                 {
                     Consider(item.Name, ListGroupHeaderFontSize, Microsoft.UI.Text.FontWeights.SemiBold, ListGroupHeaderChromeWidth);
                     foreach (var child in item.Children)
+                    {
                         Consider(child.Name, ListItemFontSize, Microsoft.UI.Text.FontWeights.Normal, ListItemChromeWidth);
+                    }
                 }
                 else
                 {
@@ -411,7 +440,10 @@ public sealed partial class LauncherItemsView
         // Nothing measurable: an empty launcher, or a tree not yet live enough to lay text out.
         // Either way the honest answer is the width the flyout has always had: an empty launcher
         // still has its placeholder to show, and a premature call is retaken on Loaded.
-        if (!measuredAnything) return MaxListColumnWidth;
+        if (!measuredAnything)
+        {
+            return MaxListColumnWidth;
+        }
 
         // The launcher's title spans every column, so it is a floor on their shared width rather
         // than on any one of them. Without it a launcher of short items would start ellipsizing a
@@ -420,7 +452,9 @@ public sealed partial class LauncherItemsView
         {
             double title = MeasureLabelWidth(LauncherTitle.Text, ListGroupHeaderFontSize, Microsoft.UI.Text.FontWeights.SemiBold);
             if (title > 0)
+            {
                 widest = Math.Max(widest, (title + LauncherTitleChromeWidth) / Math.Max(1, _columnLists.Count));
+            }
         }
 
         return Math.Clamp((int)Math.Ceiling(widest), MinListColumnWidth, MaxListColumnWidth);
@@ -440,7 +474,10 @@ public sealed partial class LauncherItemsView
     /// </remarks>
     private double MeasureLabelWidth(string? label, double fontSize, global::Windows.UI.Text.FontWeight weight)
     {
-        if (string.IsNullOrWhiteSpace(label)) return 0;
+        if (string.IsNullOrWhiteSpace(label))
+        {
+            return 0;
+        }
 
         LabelMeasure.FontSize = fontSize;
         LabelMeasure.FontWeight = weight;
@@ -466,13 +503,18 @@ public sealed partial class LauncherItemsView
         RootGrid.Loaded -= RootGrid_Loaded;
 
         int width = ComputeListColumnWidth();
-        if (width == _listColumnWidth) return;
+        if (width == _listColumnWidth)
+        {
+            return;
+        }
 
         _listColumnWidth = width;
         if (IsListMode)
         {
             foreach (var columnListView in ColumnListViews())
+            {
                 columnListView.Width = width;
+            }
 
             ResizeIfVisible();
         }
@@ -483,12 +525,16 @@ public sealed partial class LauncherItemsView
         int contentWidth;
 
         if (IsListMode)
+        {
             contentWidth = _listColumnWidth * Math.Max(1, ColumnsPanel.Children.Count);
+        }
         else
         {
             contentWidth = 0;
             foreach (var column in _columnLists)
+            {
                 contentWidth += GetIconColumnWidth(column);
+            }
         }
 
         return contentWidth + (FlyoutOuterPadding * 2);
@@ -535,7 +581,9 @@ public sealed partial class LauncherItemsView
             currentRow.Children.Add(CreateIconTile(child));
             itemsInRow++;
             if (itemsInRow >= iconsPerRow)
+            {
                 FlushRow();
+            }
         }
 
         foreach (var item in items)
@@ -561,7 +609,9 @@ public sealed partial class LauncherItemsView
         }
 
         if (currentRow.Children.Count > 0)
+        {
             column.Children.Add(currentRow);
+        }
 
         return new ScrollViewer
         {
@@ -603,7 +653,9 @@ public sealed partial class LauncherItemsView
                 HorizontalAlignment = HorizontalAlignment.Center,
             };
             if (ParseIconColor(item.IconColor) is SolidColorBrush brush1)
+            {
                 ((FontIcon)iconElement).Foreground = brush1;
+            }
         }
         else
         {
@@ -616,7 +668,9 @@ public sealed partial class LauncherItemsView
                 TextAlignment = TextAlignment.Center,
             };
             if (ParseIconColor(item.IconColor) is SolidColorBrush brush2)
+            {
                 ((TextBlock)iconElement).Foreground = brush2;
+            }
         }
 
         var nameText = new TextBlock
@@ -665,7 +719,9 @@ public sealed partial class LauncherItemsView
     private void IconTile_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is LauncherItem item && !item.IsGroup)
+        {
             LaunchItem(item);
+        }
     }
 
     private void IconTile_ContextRequested(UIElement sender, ContextRequestedEventArgs e)
@@ -693,7 +749,9 @@ public sealed partial class LauncherItemsView
             else if (child is Panel wrapper)
             {
                 foreach (var inner in wrapper.Children.OfType<ListViewBase>())
+                {
                     yield return inner;
+                }
             }
         }
     }
@@ -712,12 +770,19 @@ public sealed partial class LauncherItemsView
         // (this window is permanent) , the root of a large native-memory leak.
         ClearHoverWiring();
         if (IsIconMode)
+        {
             WrapUngroupedItemsIntoSyntheticGroups();
+        }
 
         if (RootGrid.Resources["IconItemTemplateSelector"] is FlyoutItemTemplateSelector iconSelector)
+        {
             iconSelector.SyntheticGroups = _syntheticGroups;
+        }
+
         if (RootGrid.Resources["SmallIconItemTemplateSelector"] is FlyoutItemTemplateSelector smallIconSelector)
+        {
             smallIconSelector.SyntheticGroups = _syntheticGroups;
+        }
 
         ColumnsPanel.Children.Clear();
         UpdateResizeGripVisibility();
@@ -782,7 +847,11 @@ public sealed partial class LauncherItemsView
     /// </remarks>
     private static SolidColorBrush? ParseIconColor(string? hex)
     {
-        if (string.IsNullOrEmpty(hex)) return null;
+        if (string.IsNullOrEmpty(hex))
+        {
+            return null;
+        }
+
         hex = hex.TrimStart('#');
         try
         {
@@ -814,27 +883,35 @@ public sealed partial class LauncherItemsView
         ApplyEmptyGroupDropTargets();
 
         if (!IsIconMode)
+        {
             return;
+        }
 
         foreach (var childListView in _loadedIconChildLists.ToList())
         {
             DisableListViewTransitions(childListView);
 
             if (childListView.ItemsPanelRoot is ItemsWrapGrid wrapGrid)
+            {
                 wrapGrid.MaximumRowsOrColumns = GetIconModeIconsPerRow();
+            }
 
             ApplyIconGroupChildListLayout(childListView);
         }
 
         foreach (var groupRoot in _loadedIconGroupRoots.ToList())
+        {
             ApplyIconGroupRootLayout(groupRoot);
+        }
     }
 
     /// <summary>Applies current icon geometry and edit/drop behavior to a realised group list.</summary>
     private void IconGroupChildList_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not ListView listView)
+        {
             return;
+        }
 
         _loadedIconChildLists.Add(listView);
         listView.Unloaded -= IconGroupChildList_Unloaded;
@@ -850,7 +927,9 @@ public sealed partial class LauncherItemsView
         listView.UpdateLayout();
 
         if (listView.ItemsPanelRoot is ItemsWrapGrid wrapGrid)
+        {
             wrapGrid.MaximumRowsOrColumns = GetIconModeIconsPerRow();
+        }
 
         ApplyIconGroupChildListLayout(listView);
 
@@ -864,7 +943,9 @@ public sealed partial class LauncherItemsView
     private void IconGroupRoot_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement element || element.DataContext is not LauncherItem group)
+        {
             return;
+        }
 
         _loadedIconGroupRoots.Add(element);
         element.Unloaded -= IconGroupRoot_Unloaded;
@@ -876,7 +957,9 @@ public sealed partial class LauncherItemsView
     private void ApplyIconGroupRootLayout(FrameworkElement element)
     {
         if (element.DataContext is not LauncherItem group)
+        {
             return;
+        }
 
         element.ClearValue(FrameworkElement.WidthProperty);
         element.MaxWidth = GetIconGroupContentWidth(group);
@@ -888,7 +971,9 @@ public sealed partial class LauncherItemsView
     private void ApplyIconGroupChildListLayout(ListView listView)
     {
         if (listView.Tag is not LauncherItem group)
+        {
             return;
+        }
 
         listView.Width = GetIconGroupContentWidth(group);
         listView.MaxWidth = GetIconModeIconsPerRow() * GetActiveIconCellWidth();
@@ -898,13 +983,17 @@ public sealed partial class LauncherItemsView
     private void IconGroupChildList_Unloaded(object sender, RoutedEventArgs e)
     {
         if (sender is ListView listView)
+        {
             _loadedIconChildLists.Remove(listView);
+        }
     }
 
     private void IconGroupRoot_Unloaded(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement element)
+        {
             _loadedIconGroupRoots.Remove(element);
+        }
     }
 
     private void ListGroupChildList_Loaded(object sender, RoutedEventArgs e)
@@ -922,7 +1011,9 @@ public sealed partial class LauncherItemsView
     private double MeasureContentHeight()
     {
         if (IsIconMode)
+        {
             return MeasureIconModeHeight();
+        }
 
         // Calculate height arithmetically instead of calling UpdateLayout()/Measure()
         // on a potentially hidden window. Forcing a XAML layout pass on a window hidden
@@ -933,7 +1024,10 @@ public sealed partial class LauncherItemsView
         // Regular item content: Icon 20px tall → total ~32px.
         // Group header content: 12px label with 4px top/bottom margin → ~24px.
         var items = _launcher.Items;
-        if (items == null) return _lastMeasuredHeight;
+        if (items == null)
+        {
+            return _lastMeasuredHeight;
+        }
 
         const double itemHeight = 32;
         const double groupHeight = 24;
@@ -950,12 +1044,16 @@ public sealed partial class LauncherItemsView
                 {
                     currentColumnHeight += groupHeight;
                     foreach (var child in item.Children)
+                    {
                         currentColumnHeight += itemHeight;
+                    }
 
                     // An empty group still occupies one item-sized row, matching the
                     // MinHeight applied to its child list.
                     if (item.Children.Count == 0)
+                    {
                         currentColumnHeight += EmptyGroupListModeHeight;
+                    }
                 }
                 else
                 {
@@ -991,7 +1089,9 @@ public sealed partial class LauncherItemsView
             void FlushRow()
             {
                 if (currentRowSpan == 0)
+                {
                     return;
+                }
 
                 currentColumnHeight += currentRowHeight;
                 currentRowSpan = 0;
@@ -1012,13 +1112,17 @@ public sealed partial class LauncherItemsView
                     : iconRows * cellHeight;
 
                 if (currentRowSpan > 0 && currentRowSpan + span > GetIconModeIconsPerRow())
+                {
                     FlushRow();
+                }
 
                 currentRowSpan += span;
                 currentRowHeight = Math.Max(currentRowHeight, itemHeight);
 
                 if (currentRowSpan >= GetIconModeIconsPerRow())
+                {
                     FlushRow();
+                }
             }
 
             FlushRow();

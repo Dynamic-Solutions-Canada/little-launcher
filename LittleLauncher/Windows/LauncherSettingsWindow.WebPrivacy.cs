@@ -36,8 +36,15 @@ public sealed partial class LauncherSettingsWindow
 
         profileCombo.SelectionChanged += (_, _) =>
         {
-            if (profileCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not bool shared) return;
-            if (shared == launcher.WebSharedProfile) return;
+            if (profileCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not bool shared)
+            {
+                return;
+            }
+
+            if (shared == launcher.WebSharedProfile)
+            {
+                return;
+            }
 
             launcher.WebSharedProfile = shared;
             SettingsManager.SaveSettings();
@@ -106,7 +113,9 @@ public sealed partial class LauncherSettingsWindow
             forgetLoginsButton.Content = UiText.Get(cleared ? "launcherSettings.savedLogins.forgotten" : "launcherSettings.savedLogins.forget");
 
             if (!cleared)
+            {
                 await ShowErrorAsync(UiText.Get("launcherSettings.savedLogins.notRunning"));
+            }
 
             forgetLoginsButton.IsEnabled = true;
         };

@@ -90,7 +90,10 @@ public static class SettingsManager
     /// </remarks>
     private static void RaiseUpgradeNotices(string? previousVersion)
     {
-        if (!IsOlderThan(previousVersion, WebLauncherVersion)) return;
+        if (!IsOlderThan(previousVersion, WebLauncherVersion))
+        {
+            return;
+        }
 
         _current.ShowWebLauncherNotice = true;
         _current.UpgradeNoticesJustRaised = true;
@@ -106,7 +109,11 @@ public static class SettingsManager
     /// </remarks>
     private static bool IsOlderThan(string? version, Version threshold)
     {
-        if (string.IsNullOrWhiteSpace(version)) return true;
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return true;
+        }
+
         return !Version.TryParse(version, out var parsed) || parsed < threshold;
     }
 
@@ -122,7 +129,10 @@ public static class SettingsManager
     private static void StampVersion()
     {
         var current = AppVersion;
-        if (current == null) return;
+        if (current == null)
+        {
+            return;
+        }
 
         string stamped = current.ToString(3);
         if (_current.LastRunVersion != stamped)
@@ -154,7 +164,10 @@ public static class SettingsManager
                     // opt-outs; new files always write Startup, including an explicit false.
                     using var saved = JsonDocument.Parse(json);
                     if (!saved.RootElement.TryGetProperty(nameof(UserSettings.Startup), out _))
+                    {
                         deserialized.Startup = false;
+                    }
+
                     _current = deserialized;
                     _current.CompleteInitialization();
                     NormalizeAllGlyphs();
@@ -255,8 +268,12 @@ public static class SettingsManager
             {
                 item.NormalizeGlyph();
                 if (item.IsGroup)
+                {
                     foreach (var child in item.Children)
+                    {
                         child.NormalizeGlyph();
+                    }
+                }
             }
         }
     }

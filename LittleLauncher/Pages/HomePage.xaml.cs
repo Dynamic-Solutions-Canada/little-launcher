@@ -50,7 +50,10 @@ public partial class HomePage : Page
     private void DismissWhatsNew()
     {
         WhatsNewInfoBar.IsOpen = false;
-        if (!SettingsManager.Current.ShowWebLauncherNotice) return;
+        if (!SettingsManager.Current.ShowWebLauncherNotice)
+        {
+            return;
+        }
 
         SettingsManager.Current.ShowWebLauncherNotice = false;
         SettingsManager.SaveSettings();
@@ -72,7 +75,10 @@ public partial class HomePage : Page
         // Prefer the source PNG/image for crisp rendering — BitmapImage handles PNG
         // much better than ICO on high-DPI (WIC's ICO decoder may pick a low-res frame).
         string? source = ResolveAppIconSource();
-        if (source == null) return;
+        if (source == null)
+        {
+            return;
+        }
 
         var bmp = new BitmapImage();
         bmp.DecodePixelWidth = 256;
@@ -92,7 +98,10 @@ public partial class HomePage : Page
 
     private async Task CheckForUpdateAsync()
     {
-        if (MainWindow.IsPackaged) return;
+        if (MainWindow.IsPackaged)
+        {
+            return;
+        }
 
         try
         {

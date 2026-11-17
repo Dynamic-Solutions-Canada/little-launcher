@@ -96,7 +96,9 @@ internal static class LauncherPayload
         {
             var envelope = JsonSerializer.Deserialize<LaunchersEnvelope>(stream, JsonOptions);
             if (envelope?.Launchers != null && envelope.Launchers.Count > 0)
+            {
                 return (envelope.Launchers, envelope.LastModified, envelope.Extensions);
+            }
         }
         catch { }
 
@@ -126,7 +128,10 @@ internal static class LauncherPayload
     public static bool ShouldSkipDownload(DateTimeOffset? remoteTimestamp, bool force, out string reason)
     {
         reason = "";
-        if (force) return false;
+        if (force)
+        {
+            return false;
+        }
 
         var localModified = SettingsManager.Current.LaunchersModifiedUtc;
         if (localModified != default)
@@ -175,17 +180,28 @@ internal static class LauncherPayload
         }
         var rebound = await MergeAsync(launchers);
 
-        if (extensions != null) await BrowserExtensionService.ReconcileAsync(extensions);
+        if (extensions != null)
+        {
+            await BrowserExtensionService.ReconcileAsync(extensions);
+        }
 
         foreach (var launcher in SettingsManager.Current.Launchers)
         {
-            if (!launcher.IsSupportedOnThisOperatingSystem) continue;
+            if (!launcher.IsSupportedOnThisOperatingSystem)
+            {
+                continue;
+            }
+
             foreach (var item in launcher.Items)
             {
                 item.NormalizeGlyph();
                 if (item.IsGroup)
+                {
                     foreach (var child in item.Children)
+                    {
                         child.NormalizeGlyph();
+                    }
+                }
             }
             await FaviconService.FetchMissingItemIconsAsync(launcher.Items);
         }
@@ -199,11 +215,15 @@ internal static class LauncherPayload
         // every operation that finds an item by reference (remove, move, edit) silently does
         // nothing, while a drag reorder writes the stale objects back over the merge.
         if (rebound.Count > 0)
+        {
             await RunOnUiThreadAsync(() =>
             {
                 foreach (string id in rebound)
+                {
                     Windows.FlyoutWindow.InvalidateItems(id, force: true);
+                }
             });
+        }
     }
 
     /// <summary>
@@ -243,7 +263,9 @@ internal static class LauncherPayload
                 if (existing != null)
                 {
                     if (CopyInto(existing, downloaded))
+                    {
                         rebound.Add(existing.Id);
+                    }
                 }
                 else
                 {
@@ -366,7 +388,9 @@ internal static class LauncherPayload
         // the page has been visited and its icon adopted.
         existing.WebBookmarks.Clear();
         foreach (var bookmark in downloaded.WebBookmarks)
+        {
             existing.WebBookmarks.Add(bookmark);
+        }
 
         // ── Items ───────────────────────────────────────────────────
         // Only when they differ, and this is not an optimisation. Refilling the collection with
@@ -380,7 +404,9 @@ internal static class LauncherPayload
         {
             existing.Items.Clear();
             foreach (var item in downloaded.Items)
+            {
                 existing.Items.Add(item);
+            }
         }
 
         // Last, and after the bookmarks are in place: a launcher sent by an older build carries its
@@ -489,7 +515,10 @@ internal static class LauncherPayload
     {
         try
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
         }
         catch (Exception ex)
         {

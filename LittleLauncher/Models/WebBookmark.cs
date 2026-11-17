@@ -90,7 +90,9 @@ public partial class WebBookmark : ObservableObject
         foreach (var child in Children)
         {
             foreach (var nested in child.Flatten())
+            {
                 yield return nested;
+            }
         }
     }
 }

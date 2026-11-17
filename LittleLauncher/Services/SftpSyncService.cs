@@ -121,10 +121,14 @@ public static class SftpSyncService
 
             var (launchers, remoteTimestamp, extensions) = LauncherPayload.Deserialize(stream);
             if (launchers == null)
+            {
                 return (false, UiText.Get("syncService.sftp.parseFailed"));
+            }
 
             if (LauncherPayload.ShouldSkipDownload(remoteTimestamp, force, out string reason))
+            {
                 return (false, reason);
+            }
 
             await LauncherPayload.ApplyAsync(launchers, extensions);
 
@@ -149,7 +153,10 @@ public static class SftpSyncService
     /// </remarks>
     public static async Task<DateTimeOffset?> GetRemoteModifiedAsync()
     {
-        if (string.IsNullOrWhiteSpace(SettingsManager.Current.SftpHost)) return null;
+        if (string.IsNullOrWhiteSpace(SettingsManager.Current.SftpHost))
+        {
+            return null;
+        }
 
         try
         {
@@ -181,8 +188,15 @@ public static class SftpSyncService
     public static async Task<(bool Success, string Message)> ShareLauncherAsync(
         Launcher launcher, string? password = null)
     {
-        if (launcher.IsOneDriveSync) return await OneDriveSharedStore.PushAsync(launcher);
-        if (launcher.IsWebDavSync) return await WebDavSharedStore.PushAsync(launcher);
+        if (launcher.IsOneDriveSync)
+        {
+            return await OneDriveSharedStore.PushAsync(launcher);
+        }
+
+        if (launcher.IsWebDavSync)
+        {
+            return await WebDavSharedStore.PushAsync(launcher);
+        }
 
         return launcher.IsFileSync
             ? await ShareLauncherFileAsync(launcher)
@@ -196,8 +210,15 @@ public static class SftpSyncService
     public static async Task<(bool Success, string Message)> SyncSharedLauncherAsync(
         Launcher launcher, string? password = null)
     {
-        if (launcher.IsOneDriveSync) return await OneDriveSharedStore.PullAsync(launcher);
-        if (launcher.IsWebDavSync) return await WebDavSharedStore.PullAsync(launcher);
+        if (launcher.IsOneDriveSync)
+        {
+            return await OneDriveSharedStore.PullAsync(launcher);
+        }
+
+        if (launcher.IsWebDavSync)
+        {
+            return await WebDavSharedStore.PullAsync(launcher);
+        }
 
         return launcher.IsFileSync
             ? await SyncSharedLauncherFileAsync(launcher)
@@ -211,8 +232,15 @@ public static class SftpSyncService
     public static async Task<(bool Success, int ItemCount, string Error)> VerifySharedLauncherAsync(
         Launcher launcher, string? password = null)
     {
-        if (launcher.IsOneDriveSync) return await OneDriveSharedStore.VerifyAsync(launcher);
-        if (launcher.IsWebDavSync) return await WebDavSharedStore.VerifyAsync(launcher);
+        if (launcher.IsOneDriveSync)
+        {
+            return await OneDriveSharedStore.VerifyAsync(launcher);
+        }
+
+        if (launcher.IsWebDavSync)
+        {
+            return await WebDavSharedStore.VerifyAsync(launcher);
+        }
 
         return launcher.IsFileSync
             ? await VerifySharedLauncherFileAsync(launcher)
@@ -229,30 +257,48 @@ public static class SftpSyncService
     {
         foreach (var launcher in SettingsManager.Current.Launchers.ToList())
         {
-            if (!launcher.IsShared) continue;
+            if (!launcher.IsShared)
+            {
+                continue;
+            }
 
             // File mode always works; SFTP needs a passphrase-free key; WebDAV needs its
             // stored password. Anything that would prompt is skipped — this runs on a timer.
-            if (!HasAutoKeyForShared(launcher)) continue;
+            if (!HasAutoKeyForShared(launcher))
+            {
+                continue;
+            }
 
             if (launcher.SharedTwoWay)
             {
                 // 2-way: pull first, then push
                 var (pullOk, pullMsg) = await SyncSharedLauncherAsync(launcher);
-                if (!pullOk) Logger.Warn($"Shared pull failed for '{launcher.Name}': {pullMsg}");
+                if (!pullOk)
+                {
+                    Logger.Warn($"Shared pull failed for '{launcher.Name}': {pullMsg}");
+                }
 
                 var (pushOk, pushMsg) = await ShareLauncherAsync(launcher);
-                if (!pushOk) Logger.Warn($"Shared push failed for '{launcher.Name}': {pushMsg}");
+                if (!pushOk)
+                {
+                    Logger.Warn($"Shared push failed for '{launcher.Name}': {pushMsg}");
+                }
             }
             else if (launcher.IsSharedOwner)
             {
                 var (ok, msg) = await ShareLauncherAsync(launcher);
-                if (!ok) Logger.Warn($"Shared outgoing sync failed for '{launcher.Name}': {msg}");
+                if (!ok)
+                {
+                    Logger.Warn($"Shared outgoing sync failed for '{launcher.Name}': {msg}");
+                }
             }
             else
             {
                 var (ok, msg) = await SyncSharedLauncherAsync(launcher);
-                if (!ok) Logger.Warn($"Shared incoming sync failed for '{launcher.Name}': {msg}");
+                if (!ok)
+                {
+                    Logger.Warn($"Shared incoming sync failed for '{launcher.Name}': {msg}");
+                }
             }
         }
     }
@@ -266,12 +312,26 @@ public static class SftpSyncService
     {
         foreach (var launcher in SettingsManager.Current.Launchers.ToList())
         {
-            if (!launcher.IsShared) continue;
-            if (!launcher.SharedTwoWay && !launcher.IsSharedOwner) continue;
-            if (!HasAutoKeyForShared(launcher)) continue;
+            if (!launcher.IsShared)
+            {
+                continue;
+            }
+
+            if (!launcher.SharedTwoWay && !launcher.IsSharedOwner)
+            {
+                continue;
+            }
+
+            if (!HasAutoKeyForShared(launcher))
+            {
+                continue;
+            }
 
             var (ok, msg) = await ShareLauncherAsync(launcher);
-            if (!ok) Logger.Warn($"Shared push failed for '{launcher.Name}': {msg}");
+            if (!ok)
+            {
+                Logger.Warn($"Shared push failed for '{launcher.Name}': {msg}");
+            }
         }
     }
 
@@ -281,15 +341,24 @@ public static class SftpSyncService
     /// </summary>
     public static bool HasAutoKeyForShared(Launcher launcher)
     {
-        if (launcher.IsFileSync) return true;
+        if (launcher.IsFileSync)
+        {
+            return true;
+        }
 
         // WebDAV keeps its own password in ProtectedStore, so it never needs a prompt — but it
         // does need that password to actually be there.
-        if (launcher.IsWebDavSync) return WebDavSharedStore.HasCredentials(launcher);
+        if (launcher.IsWebDavSync)
+        {
+            return WebDavSharedStore.HasCredentials(launcher);
+        }
 
         // OneDrive sharing rides the stored account token, so it never prompts — but it does
         // need the wider sharing grant, and an unattended sync must not try to obtain one.
-        if (launcher.IsOneDriveSync) return OneDriveSharedStore.HasConsent;
+        if (launcher.IsOneDriveSync)
+        {
+            return OneDriveSharedStore.HasConsent;
+        }
 
         string? keyPath = ResolvePrivateKeyPath(
             string.IsNullOrWhiteSpace(launcher.SharedSftpPrivateKeyPath) ? null : launcher.SharedSftpPrivateKeyPath);
@@ -305,7 +374,9 @@ public static class SftpSyncService
             string path = launcher.SharedPath;
             string? dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir))
+            {
                 Directory.CreateDirectory(dir);
+            }
 
             byte[] bytes = SharedLauncherPayload.Serialize(launcher);
 
@@ -331,11 +402,15 @@ public static class SftpSyncService
         {
             string path = launcher.SharedPath;
             if (!File.Exists(path))
+            {
                 return (false, UiText.Get("sharing.fileNotFound"));
+            }
 
             var file = SharedLauncherPayload.Deserialize(await File.ReadAllBytesAsync(path));
             if (file == null)
+            {
                 return (false, UiText.Get("sharing.parseFailed"));
+            }
 
             await SharedLauncherPayload.ApplyAsync(launcher, file);
             Logger.Info($"Shared launcher '{launcher.Name}' synced from {path}");
@@ -354,11 +429,15 @@ public static class SftpSyncService
         {
             string path = launcher.SharedPath;
             if (!File.Exists(path))
+            {
                 return (false, 0, UiText.Get("sharing.verify.notFound"));
+            }
 
             var file = SharedLauncherPayload.Deserialize(await File.ReadAllBytesAsync(path));
             if (file == null)
+            {
                 return (false, 0, UiText.Get("sharing.verify.unreadable"));
+            }
 
             return (true, file.Items.Count, "");
         }
@@ -381,7 +460,9 @@ public static class SftpSyncService
             string remotePath = ResolveRemotePath(client, launcher.SharedPath);
             string? remoteDir = RemoteDirOf(remotePath);
             if (!string.IsNullOrEmpty(remoteDir))
+            {
                 await Task.Run(() => EnsureRemoteDirectory(client, remoteDir));
+            }
 
             using var stream = new MemoryStream(SharedLauncherPayload.Serialize(launcher));
             await Task.Run(() => client.UploadFile(stream, remotePath, canOverride: true));
@@ -420,7 +501,9 @@ public static class SftpSyncService
 
             var file = SharedLauncherPayload.Deserialize(ms.ToArray());
             if (file == null)
+            {
                 return (false, UiText.Get("sharing.parseFailed"));
+            }
 
             await SharedLauncherPayload.ApplyAsync(launcher, file);
             Logger.Info($"Shared launcher '{launcher.Name}' synced from {launcher.SharedSftpHost}");
@@ -455,7 +538,9 @@ public static class SftpSyncService
 
             var file = SharedLauncherPayload.Deserialize(ms.ToArray());
             if (file == null)
+            {
                 return (false, 0, UiText.Get("sharing.verify.unreadable"));
+            }
 
             return (true, file.Items.Count, "");
         }
@@ -483,7 +568,9 @@ public static class SftpSyncService
         var settings = SettingsManager.Current;
 
         if (string.IsNullOrWhiteSpace(settings.SftpHost))
+        {
             throw new InvalidOperationException(UiText.Get("syncService.sftp.hostNotConfigured"));
+        }
 
         // Default to Windows username if not specified
         string username = string.IsNullOrWhiteSpace(settings.SftpUsername)
@@ -524,7 +611,9 @@ public static class SftpSyncService
         if (!string.IsNullOrWhiteSpace(configuredPath))
         {
             if (File.Exists(configuredPath))
+            {
                 return configuredPath;
+            }
 
             Logger.Warn($"Configured SSH key not found: {configuredPath}");
             return null;
@@ -533,7 +622,9 @@ public static class SftpSyncService
         // Auto-detect from ~/.ssh/
         string sshDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ssh");
         if (!Directory.Exists(sshDir))
+        {
             return null;
+        }
 
         foreach (var name in DefaultKeyNames)
         {
@@ -585,7 +676,9 @@ public static class SftpSyncService
         }
 
         if (!client.Exists(path))
+        {
             throw new InvalidOperationException(UiText.Format("syncService.sftp.createDirectoryFailed", ("path", path)));
+        }
     }
 
     /// <summary>
@@ -594,7 +687,9 @@ public static class SftpSyncService
     private static SftpClient CreateSharedSftpClient(Launcher launcher, string? password)
     {
         if (string.IsNullOrWhiteSpace(launcher.SharedSftpHost))
+        {
             throw new InvalidOperationException(UiText.Get("sharing.sftp.hostNotConfigured"));
+        }
 
         string username = string.IsNullOrWhiteSpace(launcher.SharedSftpUsername)
             ? Environment.UserName
@@ -614,7 +709,9 @@ public static class SftpSyncService
         }
 
         if (!string.IsNullOrEmpty(password))
+        {
             return new SftpClient(launcher.SharedSftpHost, launcher.SharedSftpPort, username, password);
+        }
 
         throw new InvalidOperationException(
             UiText.Get("syncService.sftp.noKey"));
@@ -624,7 +721,11 @@ public static class SftpSyncService
     private static string? RemoteDirOf(string path)
     {
         int idx = path.LastIndexOf('/');
-        if (idx <= 0) return null;
+        if (idx <= 0)
+        {
+            return null;
+        }
+
         return path[..idx];
     }
 }

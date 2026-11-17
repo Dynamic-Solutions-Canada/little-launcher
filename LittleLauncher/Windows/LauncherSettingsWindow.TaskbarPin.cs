@@ -22,7 +22,11 @@ public sealed partial class LauncherSettingsWindow
     /// </remarks>
     private async void PinToTaskbar_Click(object sender, RoutedEventArgs e)
     {
-        if (_pinning || sender is not Button button || button.Tag is not Launcher launcher) return;
+        if (_pinning || sender is not Button button || button.Tag is not Launcher launcher)
+        {
+            return;
+        }
+
         _pinning = true;
         button.IsEnabled = false;
 
@@ -30,11 +34,19 @@ public sealed partial class LauncherSettingsWindow
         try
         {
             await StopPinStateQueryAsync();
-            if (_pinStatusClosed) return;
+            if (_pinStatusClosed)
+            {
+                return;
+            }
+
             CommitName();
             CommitWebUrl();
             await WaitForIconAdoptionAsync(button);
-            if (_pinStatusClosed) return;
+            if (_pinStatusClosed)
+            {
+                return;
+            }
+
             button.IsEnabled = false;
 
             string flyoutExe = MainWindow.GetFlyoutCompanionPath();
@@ -49,7 +61,10 @@ public sealed partial class LauncherSettingsWindow
             string baseIco = Path.Combine(appDataDir, $"app-icon-{launcher.Id}.ico");
             string stamp = Guid.NewGuid().ToString("N");
             string pinnedIcon = Path.Combine(appDataDir, $"app-icon-{launcher.Id}-pin{stamp}.ico");
-            if (File.Exists(baseIco)) File.Copy(baseIco, pinnedIcon);
+            if (File.Exists(baseIco))
+            {
+                File.Copy(baseIco, pinnedIcon);
+            }
 
             // Both identity and icon path must be new: Windows caches names and icons separately.
             // Keep the saved identity until Windows confirms, or the user confirms a manual pin.
@@ -89,7 +104,11 @@ public sealed partial class LauncherSettingsWindow
                 // Give the companion foreground ownership for Windows confirmation or manual pinning.
                 NativeMethods.ShowWindow(_hwnd, 6 /* SW_MINIMIZE */);
                 using var process = System.Diagnostics.Process.Start(start);
-                if (process == null) throw new InvalidOperationException(UiText.Get("taskbarPin.helperNotStarted"));
+                if (process == null)
+                {
+                    throw new InvalidOperationException(UiText.Get("taskbarPin.helperNotStarted"));
+                }
+
                 await process.WaitForExitAsync();
                 result = process.ExitCode;
             }
@@ -151,7 +170,11 @@ public sealed partial class LauncherSettingsWindow
     {
         var logger = NLog.LogManager.GetCurrentClassLogger();
         logger.Warn("Taskbar pin request: {Message}", message);
-        if (_pinStatusClosed) return;
+        if (_pinStatusClosed)
+        {
+            return;
+        }
+
         try
         {
             await ShowErrorAsync(message);

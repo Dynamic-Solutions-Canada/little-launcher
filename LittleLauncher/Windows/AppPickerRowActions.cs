@@ -53,7 +53,10 @@ internal static class AppPickerRowActions
     /// <summary>Opens an existing filesystem parent through the shell; failures are logged.</summary>
     private static void OpenContainingFolder(string? folder)
     {
-        if (folder == null) return;
+        if (folder == null)
+        {
+            return;
+        }
 
         try
         {

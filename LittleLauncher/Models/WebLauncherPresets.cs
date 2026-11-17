@@ -17,7 +17,9 @@ internal sealed record WebLauncherPreset(string Name, string Address, int Width,
         var names = existingNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
         string name = Name;
         for (int suffix = 2; names.Contains(name); suffix++)
+        {
             name = $"{Name} ({suffix})";
+        }
 
         var launcher = new Launcher
         {

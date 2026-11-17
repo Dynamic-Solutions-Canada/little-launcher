@@ -71,11 +71,15 @@ public sealed class OneDriveFileStore : ICloudFileStore
     public async Task<(bool Success, string Message)> SignInAsync(CancellationToken ct = default)
     {
         if (!IsAvailable)
+        {
             return (false, CloudSyncCredentials.NotConfiguredMessage(ProviderName));
+        }
 
         var result = await OAuthPkceClient.SignInAsync(Endpoint, scopeOverride: null, ct);
         if (result.Tokens is not { } tokens)
+        {
             return (false, UiText.Format("cloud.providerMessage", ("provider", ProviderName), ("message", result.Message)));
+        }
 
         tokens.AccountName = await FetchAccountNameAsync(tokens.AccessToken, ct);
         CloudTokenStore.Save(Provider, tokens);
@@ -107,14 +111,21 @@ public sealed class OneDriveFileStore : ICloudFileStore
         CancellationToken ct = default)
     {
         if (!IsAvailable)
+        {
             return (false, CloudSyncCredentials.NotConfiguredMessage(ProviderName));
+        }
+
         if (HasSharingConsent)
+        {
             return (true, UiText.Get("cloud.sharingAlreadyGranted"));
+        }
 
         var existing = CloudTokenStore.Load(Provider);
         var result = await OAuthPkceClient.SignInAsync(Endpoint, SharingScope, ct);
         if (result.Tokens is not { } tokens)
+        {
             return (false, UiText.Format("cloud.providerMessage", ("provider", ProviderName), ("message", result.Message)));
+        }
 
         // Belt and braces: a provider can return a narrower grant than was asked for, and
         // storing it as though sharing were enabled would fail later with an opaque error.
@@ -140,7 +151,10 @@ public sealed class OneDriveFileStore : ICloudFileStore
         using var response = await Http.SendAsync(request, ct);
 
         // A first sync has nothing to download yet; that is a normal state, not a failure.
-        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
 
         await ThrowIfFailedAsync(response, "download", ct);
         return await response.Content.ReadAsByteArrayAsync(ct);
@@ -164,7 +178,11 @@ public sealed class OneDriveFileStore : ICloudFileStore
             HttpMethod.Get, $"{GraphRoot}{ItemPath}?$select=lastModifiedDateTime", ct);
         using var response = await Http.SendAsync(request, ct);
 
-        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
         await ThrowIfFailedAsync(response, "metadata", ct);
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
@@ -184,7 +202,9 @@ public sealed class OneDriveFileStore : ICloudFileStore
     {
         string? token = await OAuthPkceClient.GetAccessTokenAsync(Provider, Endpoint, ct);
         if (token == null)
+        {
             throw new InvalidOperationException(UiText.Format("cloud.signInAgainToSync", ("provider", "OneDrive")));
+        }
 
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -203,7 +223,10 @@ public sealed class OneDriveFileStore : ICloudFileStore
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             using var response = await Http.SendAsync(request, ct);
-            if (!response.IsSuccessStatusCode) return "";
+            if (!response.IsSuccessStatusCode)
+            {
+                return "";
+            }
 
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
             return doc.RootElement.TryGetProperty("owner", out var owner)
@@ -223,7 +246,10 @@ public sealed class OneDriveFileStore : ICloudFileStore
     private static async Task ThrowIfFailedAsync(
         HttpResponseMessage response, string operation, CancellationToken ct)
     {
-        if (response.IsSuccessStatusCode) return;
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
 
         string body = await response.Content.ReadAsStringAsync(ct);
         Logger.Warn($"OneDrive {operation} failed ({(int)response.StatusCode}): {body}");

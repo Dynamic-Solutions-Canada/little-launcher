@@ -143,21 +143,30 @@ static class Program
                 // picks up our icon for the taskbar without flashing the embedded one.
                 // HCBT_ACTIVATE is a backup to re-set the icon once fully initialized.
                 if (_hIconBig != 0)
+                {
                     SendMessage(wParam, 0x0080 /* WM_SETICON */, 1 /* ICON_BIG */, _hIconBig);
+                }
+
                 if (_hIconSmall != 0)
+                {
                     SendMessage(wParam, 0x0080 /* WM_SETICON */, 0 /* ICON_SMALL */, _hIconSmall);
+                }
                 // Unhook on activate — the dialog is fully initialized at this point
                 if (code == HCBT_ACTIVATE && _cbtHook != 0)
                 {
                     // Stamp the AUMID; add relaunch metadata only without a matching shortcut.
                     if (_relaunchAppId != null)
+                    {
                         SetWindowRelaunchProperties(wParam);
+                    }
 
                     // Override the MessageBox title to the launcher display name.
                     // The taskbar reads the window title for the button tooltip,
                     // so this must match the relaunch display name.
                     if (_relaunchDisplayName != null)
+                    {
                         SetWindowText(wParam, _relaunchDisplayName);
+                    }
 
                     TaskbarPinning.OnActivated(wParam);
 
@@ -198,21 +207,37 @@ static class Program
         for (int i = 0; i < args.Length - 1; i++)
         {
             if (args[i] == "--launcher" || args[i] == "--layout")
+            {
                 launcherId ??= args[i + 1];
+            }
             else if (args[i] == "--name")
+            {
                 launcherName ??= args[i + 1];
+            }
             else if (args[i] == "--icon")
+            {
                 explicitIconPath ??= args[i + 1];
+            }
             else if (args[i] == "--aumid")
+            {
                 explicitAumid ??= args[i + 1];
+            }
             else if (args[i] == "--previous-aumid")
+            {
                 previousAumid ??= args[i + 1];
+            }
             else if (args[i] == "--item" && itemIndex < 0)
+            {
                 _ = int.TryParse(args[i + 1], out itemIndex);
+            }
             else if (args[i] == "--token")
+            {
                 _ = int.TryParse(args[i + 1], out itemToken);
+            }
             else if (args[i] == "--action" && launcherAction == 0)
+            {
                 _ = int.TryParse(args[i + 1], out launcherAction);
+            }
         }
 
         if (args.Length > 0 && args[0] == "--pin")
@@ -225,9 +250,19 @@ static class Program
                 {
                     state = TaskbarPinning.CheckExistingPin(launcherId, previousAumid);
                 }
-                if (state == ExistingPinState.Pinned) Environment.ExitCode = 4;
-                else if (state == ExistingPinState.NotPinned) Environment.ExitCode = 5;
-                else Environment.ExitCode = 3;
+                if (state == ExistingPinState.Pinned)
+                {
+                    Environment.ExitCode = 4;
+                }
+                else if (state == ExistingPinState.NotPinned)
+                {
+                    Environment.ExitCode = 5;
+                }
+                else
+                {
+                    Environment.ExitCode = 3;
+                }
+
                 return;
             }
 
@@ -248,12 +283,16 @@ static class Program
             string loadIconPath = Path.Combine(AppContext.BaseDirectory, "app-icon.ico");
 
             if (!string.IsNullOrEmpty(explicitIconPath) && File.Exists(explicitIconPath))
+            {
                 loadIconPath = explicitIconPath;
+            }
             else if (!string.IsNullOrEmpty(launcherId))
             {
                 string perLauncherIcon = Path.Combine(AppContext.BaseDirectory, $"app-icon-{launcherId}.ico");
                 if (File.Exists(perLauncherIcon))
+                {
                     loadIconPath = perLauncherIcon;
+                }
             }
 
             ExistingPinState previousState = ExistingPinState.Unknown;
@@ -287,7 +326,10 @@ static class Program
                 int confirmed = MessageBoxW(0,
                     UiText.Format("pinning.replace.message", ("explanation", explanation)),
                     UiText.Get("pinning.replace.title"), 0x00010041);
-                if (confirmed != 1) return;
+                if (confirmed != 1)
+                {
+                    return;
+                }
             }
 
             if (!string.IsNullOrEmpty(launcherId))
@@ -338,10 +380,22 @@ static class Program
 
             TaskbarPinning.Finish(result);
             // Native success is IDYES; OK explicitly confirms the user completed manual pinning.
-            if (result == 6) Environment.ExitCode = 1;
-            else if (result == 1) Environment.ExitCode = 2;
-            else if (result == 3) Environment.ExitCode = 3;
-            else Environment.ExitCode = 0;
+            if (result == 6)
+            {
+                Environment.ExitCode = 1;
+            }
+            else if (result == 1)
+            {
+                Environment.ExitCode = 2;
+            }
+            else if (result == 3)
+            {
+                Environment.ExitCode = 3;
+            }
+            else
+            {
+                Environment.ExitCode = 0;
+            }
 
             // Clean up in case the hook wasn't triggered
             if (_cbtHook != 0)
@@ -370,12 +424,16 @@ static class Program
                 {
                     string candidate = File.ReadAllText(breadcrumb).Trim();
                     if (File.Exists(candidate))
+                    {
                         mainExe = candidate;
+                    }
                 }
             }
 
             if (!File.Exists(mainExe))
+            {
                 return;
+            }
 
             Process.Start(new ProcessStartInfo
             {
@@ -391,11 +449,15 @@ static class Program
                 Thread.Sleep(100);
                 target = FindWindow(null, "Little Launcher Host");
                 if (target != 0)
+                {
                     break;
+                }
             }
 
             if (target == 0)
+            {
                 return;
+            }
         }
 
         // App is running — signal it. A jump list task names an entry to launch; everything else
@@ -434,7 +496,10 @@ static class Program
     {
         var IID_IPropertyStore = new Guid(0x886D8EEB, 0x8CF2, 0x4446, 0x8D, 0x02, 0xCD, 0xBA, 0x1D, 0xBD, 0xCF, 0x99);
         int hr = SHGetPropertyStoreForWindow(hwnd, ref IID_IPropertyStore, out nint pStore);
-        if (hr != 0 || pStore == 0) return;
+        if (hr != 0 || pStore == 0)
+        {
+            return;
+        }
 
         try
         {
@@ -444,13 +509,24 @@ static class Program
             var commit = (delegate* unmanaged[Stdcall]<nint, int>)vtbl[7];
 
             if (_relaunchAppId != null)
+            {
                 SetPropString(pStore, setValue, PKEY_AppUserModel_ID, _relaunchAppId);
+            }
+
             if (!_shortcutIdentity && _relaunchCommand != null)
+            {
                 SetPropString(pStore, setValue, PKEY_AppUserModel_RelaunchCommand, _relaunchCommand);
+            }
+
             if (!_shortcutIdentity && _relaunchIcon != null)
+            {
                 SetPropString(pStore, setValue, PKEY_AppUserModel_RelaunchIconResource, _relaunchIcon);
+            }
+
             if (!_shortcutIdentity && _relaunchDisplayName != null)
+            {
                 SetPropString(pStore, setValue, PKEY_AppUserModel_RelaunchDisplayNameResource, _relaunchDisplayName);
+            }
 
             Marshal.ThrowExceptionForHR(commit(pStore));
         }

@@ -35,7 +35,11 @@ internal sealed partial class PinWindow
     /// <summary>Runs one top-level STA message pump; callback completion closes it before another identity is used.</summary>
     internal static int Run(string name, string? iconPath, bool visible, Action<nint, Action<int>> ready)
     {
-        if (visible) TaskbarPinning.Log("pin-window: creating foreground card");
+        if (visible)
+        {
+            TaskbarPinning.Log("pin-window: creating foreground card");
+        }
+
         EnsureClass();
         var window = new PinWindow(name, ready, iconPath, visible);
         window._handle = GCHandle.Alloc(window);
@@ -43,7 +47,11 @@ internal sealed partial class PinWindow
         {
             window._hwnd = CreateWindowExW(0, ClassName, name, WindowStyle,
                 0, 0, 320, 120, 0, 0, GetModuleHandleW(null), GCHandle.ToIntPtr(window._handle));
-            if (window._hwnd == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            if (window._hwnd == 0)
+            {
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            }
+
             if (visible)
             {
                 TaskbarPinning.Log("pin-window: HWND created; applying appearance");
@@ -55,7 +63,11 @@ internal sealed partial class PinWindow
                 SetForegroundWindow(window._hwnd);
             }
             bool queued = PostMessageW(window._hwnd, 0x8001, 0, 0);
-            if (visible) TaskbarPinning.Log($"pin-window: ready queued={queued}; foreground={GetForegroundWindow() == window._hwnd}");
+            if (visible)
+            {
+                TaskbarPinning.Log($"pin-window: ready queued={queued}; foreground={GetForegroundWindow() == window._hwnd}");
+            }
+
             if (!queued)
             {
                 // No ready callback means no deadline timer. Exit through normal cleanup instead
@@ -67,13 +79,25 @@ internal sealed partial class PinWindow
                 TranslateMessage(ref message);
                 DispatchMessageW(ref message);
             }
-            if (!window._completed) window._result = 3;
+            if (!window._completed)
+            {
+                window._result = 3;
+            }
+
             return window._result;
         }
         finally
         {
-            if (window._hwnd != 0) DestroyWindow(window._hwnd);
-            if (window._icon != 0) DestroyIcon(window._icon);
+            if (window._hwnd != 0)
+            {
+                DestroyWindow(window._hwnd);
+            }
+
+            if (window._icon != 0)
+            {
+                DestroyIcon(window._icon);
+            }
+
             window.DisposeAppearance();
             window._handle.Free();
         }
@@ -81,7 +105,11 @@ internal sealed partial class PinWindow
 
     private static void EnsureClass()
     {
-        if (_registered) return;
+        if (_registered)
+        {
+            return;
+        }
+
         var definition = new WindowClass
         {
             Size = (uint)Marshal.SizeOf<WindowClass>(),
@@ -92,7 +120,11 @@ internal sealed partial class PinWindow
         };
         try
         {
-            if (RegisterClassExW(ref definition) == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            if (RegisterClassExW(ref definition) == 0)
+            {
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            }
+
             _registered = true;
         }
         finally { Marshal.FreeHGlobal(definition.Name); }
@@ -119,11 +151,27 @@ internal sealed partial class PinWindow
             nint data = GetWindowLongPtrW(hwnd, -21);
             if (data != 0 && GCHandle.FromIntPtr(data).Target is PinWindow window)
             {
-                if (message == 0x0083 /* WM_NCCALCSIZE */) return 0;
-                if (message == 0x0084 /* WM_NCHITTEST */) return 2; // HTCAPTION: draggable, never resizable.
-                if (message == 0x00A3 /* WM_NCLBUTTONDBLCLK */) return 0;
+                if (message == 0x0083 /* WM_NCCALCSIZE */)
+                {
+                    return 0;
+                }
+
+                if (message == 0x0084 /* WM_NCHITTEST */)
+                {
+                    return 2; // HTCAPTION: draggable, never resizable.
+                }
+
+                if (message == 0x00A3 /* WM_NCLBUTTONDBLCLK */)
+                {
+                    return 0;
+                }
+
                 if (message == 0x0112 /* WM_SYSCOMMAND */ &&
-                    ((wParam & 0xFFF0) == 0xF000 || (wParam & 0xFFF0) == 0xF030)) return 0;
+                    ((wParam & 0xFFF0) == 0xF000 || (wParam & 0xFFF0) == 0xF030))
+                {
+                    return 0;
+                }
+
                 if (message == 0x0010 /* WM_CLOSE */)
                 {
                     // Keep the request timer alive. Its bounded cancellation path owns completion.
@@ -140,7 +188,11 @@ internal sealed partial class PinWindow
                 }
                 if (message == 0x8001)
                 {
-                    if (window._visible) TaskbarPinning.Log("pin-window: ready callback entered");
+                    if (window._visible)
+                    {
+                        TaskbarPinning.Log("pin-window: ready callback entered");
+                    }
+
                     window._ready(hwnd, window.Complete);
                     return 0;
                 }
@@ -162,7 +214,11 @@ internal sealed partial class PinWindow
             // Native callbacks cannot propagate exceptions through user32. Complete without success.
             TaskbarPinning.Log($"pin-window: callback failed message=0x{message:X4}; hr=0x{ex.HResult:X8}; {ex.Message}");
             nint data = GetWindowLongPtrW(hwnd, -21);
-            if (data != 0 && GCHandle.FromIntPtr(data).Target is PinWindow window) window.Complete(3);
+            if (data != 0 && GCHandle.FromIntPtr(data).Target is PinWindow window)
+            {
+                window.Complete(3);
+            }
+
             return 0;
         }
         return DefWindowProcW(hwnd, message, wParam, lParam);

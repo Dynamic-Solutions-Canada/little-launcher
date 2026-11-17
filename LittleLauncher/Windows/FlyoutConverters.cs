@@ -19,7 +19,9 @@ public sealed class IconPathToImageConverter : IValueConverter
         {
             int decodePixelWidth = 24;
             if (parameter is string parameterText && int.TryParse(parameterText, out int parsedWidth) && parsedWidth > 0)
+            {
                 decodePixelWidth = parsedWidth;
+            }
 
             var bmp = new BitmapImage
             {
@@ -49,7 +51,11 @@ public sealed class IconPathToVisibilityConverter : IValueConverter
     {
         bool hasFile = value is string path && !string.IsNullOrEmpty(path) && File.Exists(path);
         bool invert = parameter is string p && p.Equals("invert", StringComparison.OrdinalIgnoreCase);
-        if (invert) hasFile = !hasFile;
+        if (invert)
+        {
+            hasFile = !hasFile;
+        }
+
         return hasFile ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -67,7 +73,11 @@ public sealed class IsFluentGlyphConverter : IValueConverter
     {
         bool isFluent = IconGallery.IsFluentGlyph(value as string);
         bool invert = parameter is string p && p.Equals("invert", StringComparison.OrdinalIgnoreCase);
-        if (invert) isFluent = !isFluent;
+        if (invert)
+        {
+            isFluent = !isFluent;
+        }
+
         return isFluent ? Visibility.Visible : Visibility.Collapsed;
     }
 

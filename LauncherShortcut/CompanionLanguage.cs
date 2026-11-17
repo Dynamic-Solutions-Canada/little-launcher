@@ -52,13 +52,17 @@ internal static class CompanionLanguage
     {
         uint length = 0;
         if (!GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, out _, null, ref length) || length == 0)
+        {
             return [];
+        }
 
         char[] buffer = new char[length];
         fixed (char* pointer = buffer)
         {
             if (!GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, out _, pointer, ref length))
+            {
                 return [];
+            }
         }
 
         // Tags are separated by single nulls and the list ends with two.

@@ -50,7 +50,10 @@ public sealed partial class LauncherItemsView
     {
         get
         {
-            if (_editToolbar is not VariableSizedWrapGrid compactToolbar) return (0, 0);
+            if (_editToolbar is not VariableSizedWrapGrid compactToolbar)
+            {
+                return (0, 0);
+            }
 
             int count = compactToolbar.Children.Count;
             int perRow = Math.Max(1, compactToolbar.MaximumRowsOrColumns);
@@ -122,11 +125,17 @@ public sealed partial class LauncherItemsView
     /// </remarks>
     private void UpdateEmptyPlaceholder()
     {
-        if (_emptyPlaceholder == null) return;
+        if (_emptyPlaceholder == null)
+        {
+            return;
+        }
 
         bool empty = LauncherIsEmpty;
         _emptyPlaceholder.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
-        if (!empty) return;
+        if (!empty)
+        {
+            return;
+        }
 
         _emptyPlaceholder.Text = _isEditMode
             ? UiText.Get("items.emptyEditing")
@@ -147,7 +156,10 @@ public sealed partial class LauncherItemsView
     private void InitializeEditChrome()
     {
         // Shared launchers the user doesn't own are read-only , no entry point at all.
-        if (IsReadOnlyLauncher) return;
+        if (IsReadOnlyLauncher)
+        {
+            return;
+        }
 
         _editPencil = new Button
         {
@@ -185,7 +197,11 @@ public sealed partial class LauncherItemsView
 
     private void SetPencilVisible(bool visible)
     {
-        if (_editPencil == null || _isEditMode) return;
+        if (_editPencil == null || _isEditMode)
+        {
+            return;
+        }
+
         _editPencil.Opacity = visible ? 1 : 0;
         _editPencil.IsHitTestVisible = visible;
     }
@@ -216,11 +232,16 @@ public sealed partial class LauncherItemsView
             UiText.Get("items.launcherSettings"),
             () => _ = OpenLauncherSettingsAsync());
         if (_host.IsRegularWindow)
+        {
             return BuildRegularEditToolbar(toolbar, settings);
+        }
 
         toolbar.Children.Add(settings);
         if (!_host.IsRegularWindow)
+        {
             toolbar.Children.Add(EditButton("", UiText.Get("common.done"), ExitEditMode));
+        }
+
         return toolbar;
     }
 
@@ -254,7 +275,11 @@ public sealed partial class LauncherItemsView
             return;
         }
 
-        if (_editToolbar is not VariableSizedWrapGrid compactToolbar) return;
+        if (_editToolbar is not VariableSizedWrapGrid compactToolbar)
+        {
+            return;
+        }
+
         int perRow = Math.Max(1, (int)(usable / EditButtonSlot));
         compactToolbar.MaximumRowsOrColumns = Math.Min(perRow, compactToolbar.Children.Count);
     }
@@ -313,7 +338,10 @@ public sealed partial class LauncherItemsView
         ToolTipService.SetToolTip(button, tooltip);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, tooltip);
         if (onClick != null)
+        {
             button.Click += (_, _) => onClick();
+        }
+
         return button;
     }
 
@@ -369,12 +397,23 @@ public sealed partial class LauncherItemsView
         {
             foreach (var columnListView in ColumnListViews())
             {
-                if (columnListView.ItemsSource is not IEnumerable<LauncherItem> items) continue;
+                if (columnListView.ItemsSource is not IEnumerable<LauncherItem> items)
+                {
+                    continue;
+                }
 
                 foreach (var item in items)
                 {
-                    if (!IsEditableGroup(item)) continue;
-                    if (columnListView.ContainerFromItem(item) is not Control container) continue;
+                    if (!IsEditableGroup(item))
+                    {
+                        continue;
+                    }
+
+                    if (columnListView.ContainerFromItem(item) is not Control container)
+                    {
+                        continue;
+                    }
+
                     ApplyGroupEditVisual(container);
                 }
             }
@@ -384,7 +423,10 @@ public sealed partial class LauncherItemsView
             // Containers no longer realised (rebuilt columns) can simply be dropped , they
             // were discarded along with their styling.
             foreach (var container in _editStyledContainers)
+            {
                 ClearGroupEditVisual(container);
+            }
+
             _editStyledContainers.Clear();
         }
 
@@ -452,13 +494,17 @@ public sealed partial class LauncherItemsView
     private void GroupChildList_UnloadedForEdit(object sender, RoutedEventArgs e)
     {
         if (sender is ListView listView)
+        {
             _loadedGroupChildLists.Remove(listView);
+        }
     }
 
     private void ApplyEmptyGroupDropTargets()
     {
         foreach (var listView in _loadedGroupChildLists.ToList())
+        {
             ApplyEmptyGroupDropTarget(listView);
+        }
     }
 
     /// <summary>
@@ -480,9 +526,13 @@ public sealed partial class LauncherItemsView
             : listView.Items.Count == 0;
 
         if (isEmpty)
+        {
             listView.MinHeight = IsIconMode ? GetActiveIconCellHeight() : EmptyGroupListModeHeight;
+        }
         else
+        {
             listView.ClearValue(FrameworkElement.MinHeightProperty);
+        }
 
         if (isEmpty && _isEditMode)
         {
@@ -508,7 +558,10 @@ public sealed partial class LauncherItemsView
     /// </summary>
     private void ApplyGroupEditVisual(Control container)
     {
-        if (!_editStyledContainers.Add(container)) return;
+        if (!_editStyledContainers.Add(container))
+        {
+            return;
+        }
 
         container.Background = new SolidColorBrush(EditTintColor(0x59));
         container.CornerRadius = new CornerRadius(6);
@@ -518,7 +571,10 @@ public sealed partial class LauncherItemsView
     private static global::Windows.UI.Color EditTintColor(byte alpha)
     {
         if (Application.Current.Resources["AccentFillColorDefaultBrush"] is SolidColorBrush accent)
+        {
             return global::Windows.UI.Color.FromArgb(alpha, accent.Color.R, accent.Color.G, accent.Color.B);
+        }
+
         return global::Windows.UI.Color.FromArgb(alpha, 0x60, 0xA0, 0xE0);
     }
 
@@ -560,9 +616,15 @@ public sealed partial class LauncherItemsView
         int version = _sessionVersion;
         var target = GetAddTarget();
         var result = await RunModalAsync(track => ItemEditorWindow.ShowAsync(null, target, OwnerHwnd, track));
-        if (!IsCurrentSession(version)) return;
+        if (!IsCurrentSession(version))
+        {
+            return;
+        }
+
         if (result == ItemEditorResult.Saved)
+        {
             PersistStructuralChange();
+        }
     }
 
     internal async Task EditItemAsync(LauncherItem item)
@@ -571,7 +633,11 @@ public sealed partial class LauncherItemsView
         var parent = FindParentCollection(item) ?? GetAddTarget();
         var result = await RunModalAsync(track => ItemEditorWindow.ShowAsync(item, parent, OwnerHwnd, track));
 
-        if (!IsCurrentSession(version)) return;
+        if (!IsCurrentSession(version))
+        {
+            return;
+        }
+
         switch (result)
         {
             case ItemEditorResult.Saved:
@@ -587,7 +653,10 @@ public sealed partial class LauncherItemsView
     private async Task AddGroupAsync()
     {
         string? name = await PromptForGroupNameAsync(null);
-        if (name == null) return;
+        if (name == null)
+        {
+            return;
+        }
 
         var group = LauncherItem.CreateGroup(name);
         GetAddTarget().Add(group);
@@ -597,7 +666,10 @@ public sealed partial class LauncherItemsView
     internal async Task RenameGroupAsync(LauncherItem group)
     {
         string? name = await PromptForGroupNameAsync(group.Name);
-        if (name == null) return;
+        if (name == null)
+        {
+            return;
+        }
 
         group.Name = name;
         PersistStructuralChange();
@@ -635,10 +707,17 @@ public sealed partial class LauncherItemsView
     internal void RemoveItem(LauncherItem item)
     {
         // Synthetic groups are ephemeral wrappers, not real content , never removable.
-        if (item.IsGroup && !IsEditableGroup(item)) return;
+        if (item.IsGroup && !IsEditableGroup(item))
+        {
+            return;
+        }
 
         var parent = FindParentCollection(item);
-        if (parent == null || !parent.Remove(item)) return;
+        if (parent == null || !parent.Remove(item))
+        {
+            return;
+        }
+
         PersistStructuralChange();
     }
 
@@ -743,7 +822,9 @@ public sealed partial class LauncherItemsView
             foreach (var header in child.Children.OfType<Grid>())
             {
                 if (header.Tag as string == "ColumnHeader")
+                {
                     header.Visibility = _isEditMode ? Visibility.Visible : Visibility.Collapsed;
+                }
             }
         }
     }
@@ -759,7 +840,10 @@ public sealed partial class LauncherItemsView
     private void RemoveColumnAt(int columnIndex)
     {
         var breaks = _launcher.Items.Where(i => i.IsColumnBreak).ToList();
-        if (breaks.Count == 0) return;
+        if (breaks.Count == 0)
+        {
+            return;
+        }
 
         int breakIndex = Math.Clamp(columnIndex == 0 ? 0 : columnIndex - 1, 0, breaks.Count - 1);
         _launcher.Items.Remove(breaks[breakIndex]);
@@ -771,7 +855,10 @@ public sealed partial class LauncherItemsView
 
     private void ItemsListControl_ItemClick(object sender, ItemClickEventArgs e)
     {
-        if (e.ClickedItem is not LauncherItem item) return;
+        if (e.ClickedItem is not LauncherItem item)
+        {
+            return;
+        }
 
         // In edit mode a click edits rather than launches.
         if (_isEditMode)
@@ -779,14 +866,21 @@ public sealed partial class LauncherItemsView
             if (item.IsGroup)
             {
                 if (!_syntheticGroups.Contains(item))
+                {
                     _ = RenameGroupAsync(item);
+                }
+
                 return;
             }
             _ = EditItemAsync(item);
             return;
         }
 
-        if (item.IsGroup) return;
+        if (item.IsGroup)
+        {
+            return;
+        }
+
         LaunchItem(item);
     }
 
@@ -811,12 +905,21 @@ public sealed partial class LauncherItemsView
     {
         for (int i = 0; i < listView.Items.Count; i++)
         {
-            if (listView.ContainerFromIndex(i) is not Control container) continue;
+            if (listView.ContainerFromIndex(i) is not Control container)
+            {
+                continue;
+            }
             // Column breaks are invisible sentinels and synthetic groups are ephemeral, so
             // neither is a valid context-menu target. Real groups are, in edit mode.
-            if (listView.Items[i] is not LauncherItem candidate || candidate.IsColumnBreak) continue;
+            if (listView.Items[i] is not LauncherItem candidate || candidate.IsColumnBreak)
+            {
+                continue;
+            }
             // Groups are only a context-menu target while editing; synthetic ones never are.
-            if (candidate.IsGroup && !(_isEditMode && IsEditableGroup(candidate))) continue;
+            if (candidate.IsGroup && !(_isEditMode && IsEditableGroup(candidate)))
+            {
+                continue;
+            }
 
             var origin = container.TransformToVisual(listView).TransformPoint(new global::Windows.Foundation.Point(0, 0));
             var bounds = new global::Windows.Foundation.Rect(origin.X, origin.Y, container.ActualWidth, container.ActualHeight);
@@ -834,9 +937,14 @@ public sealed partial class LauncherItemsView
     private void ShowItemContextMenu(FrameworkElement anchor, LauncherItem item, global::Windows.Foundation.Point? position = null)
     {
         if (item.IsColumnBreak)
+        {
             return;
+        }
+
         if (item.IsGroup && !IsEditableGroup(item))
+        {
             return;
+        }
 
         var flyout = new MenuFlyout();
 
@@ -847,9 +955,14 @@ public sealed partial class LauncherItemsView
         {
             AppendLegacyContextMenuItems(flyout);
             if (position is global::Windows.Foundation.Point p)
+            {
                 flyout.ShowAt(anchor, p);
+            }
             else
+            {
                 flyout.ShowAt(anchor);
+            }
+
             return;
         }
 
@@ -862,10 +975,16 @@ public sealed partial class LauncherItemsView
         moveUp.Click += (_, _) =>
         {
             var parent = FindParentCollection(item);
-            if (parent == null) return;
+            if (parent == null)
+            {
+                return;
+            }
 
             int index = parent.IndexOf(item);
-            if (index <= 0) return;
+            if (index <= 0)
+            {
+                return;
+            }
 
             parent.Move(index, index - 1);
             PersistFlyoutItemChanges();
@@ -876,10 +995,16 @@ public sealed partial class LauncherItemsView
         moveDown.Click += (_, _) =>
         {
             var parent = FindParentCollection(item);
-            if (parent == null) return;
+            if (parent == null)
+            {
+                return;
+            }
 
             int index = parent.IndexOf(item);
-            if (index < 0 || index >= parent.Count - 1) return;
+            if (index < 0 || index >= parent.Count - 1)
+            {
+                return;
+            }
 
             parent.Move(index, index + 1);
             PersistFlyoutItemChanges();
@@ -915,7 +1040,10 @@ public sealed partial class LauncherItemsView
         // Groups cannot nest, so a group is never offered another group as a destination.
         foreach (var group in item.IsGroup ? [] : _launcher.Items.Where(candidate => candidate.IsGroup))
         {
-            if (group == currentGroup) continue;
+            if (group == currentGroup)
+            {
+                continue;
+            }
 
             var targetGroup = group;
             var groupOption = new MenuFlyoutItem { Text = group.Name, Icon = new FontIcon { Glyph = "\uF168" } };
@@ -932,7 +1060,9 @@ public sealed partial class LauncherItemsView
         if (otherLaunchers.Count > 0)
         {
             if (moveToSub.Items.Count > 0)
+            {
                 moveToSub.Items.Add(new MenuFlyoutSeparator());
+            }
 
             foreach (var launcher in otherLaunchers)
             {
@@ -947,11 +1077,15 @@ public sealed partial class LauncherItemsView
                     // Recheck live policy before touching the source: the destination may
                     // have been deleted, changed kind or become read-only while the menu was open.
                     if (_disposed || !_isEditMode || IsReadOnlyLauncher || !CanMoveToLauncher(targetLauncher))
+                    {
                         return;
+                    }
 
                     var source = FindParentCollection(item);
                     if (source == null || !source.Remove(item))
+                    {
                         return;
+                    }
 
                     targetLauncher.Items.Add(item);
                     PersistFlyoutItemChanges(targetLauncher);
@@ -976,9 +1110,13 @@ public sealed partial class LauncherItemsView
         edit.Click += (_, _) =>
         {
             if (item.IsGroup)
+            {
                 _ = RenameGroupAsync(item);
+            }
             else
+            {
                 _ = EditItemAsync(item);
+            }
         };
         flyout.Items.Add(edit);
 
@@ -989,9 +1127,13 @@ public sealed partial class LauncherItemsView
         AppendLegacyContextMenuItems(flyout);
 
         if (position is global::Windows.Foundation.Point point)
+        {
             flyout.ShowAt(anchor, point);
+        }
         else
+        {
             flyout.ShowAt(anchor);
+        }
     }
 
     /// <summary>
@@ -1009,12 +1151,16 @@ public sealed partial class LauncherItemsView
     private ObservableCollection<LauncherItem>? FindParentCollection(LauncherItem item)
     {
         if (_launcher.Items.Contains(item))
+        {
             return _launcher.Items;
+        }
 
         foreach (var group in _launcher.Items.Where(candidate => candidate.IsGroup))
         {
             if (group.Children.Contains(item))
+            {
                 return group.Children;
+            }
         }
 
         // A synthetic group is a display wrapper and is deliberately not in the launcher. Anything
@@ -1023,8 +1169,10 @@ public sealed partial class LauncherItemsView
         // gives up when it is not found, so the user sees a menu entry that does nothing. See
         // LauncherPayload.ItemsMatch for the sync merge that used to leave rows in that state.
         if (!_syntheticGroups.Contains(item))
+        {
             Logger.Warn($"Flyout item '{item.Name}' is not in launcher '{_launcher.Name}' " +
                         "(row bound to a stale object); remove and move will do nothing");
+        }
 
         return null;
     }
@@ -1042,7 +1190,9 @@ public sealed partial class LauncherItemsView
         foreach (var launcher in launchers)
         {
             if (string.IsNullOrEmpty(launcher.Id) || !seenIds.Add(launcher.Id))
+            {
                 continue;
+            }
 
             FlyoutWindow.InvalidateItems(launcher.Id);
             MainWindow.Current?.UpdateTrayIconVisibility(launcher);
@@ -1055,7 +1205,9 @@ public sealed partial class LauncherItemsView
         // Only separate from preceding entries if there are any , outside edit mode these
         // launcher-level entries are the whole menu.
         if (flyout.Items.Count > 0)
+        {
             flyout.Items.Add(new MenuFlyoutSeparator());
+        }
 
         // Enters edit mode rather than opening launcher settings directly \u2014 settings are
         // reachable from the edit toolbar, so this keeps one obvious way in.
@@ -1088,14 +1240,19 @@ public sealed partial class LauncherItemsView
         int version = _sessionVersion;
         await RunModalAsync(track => LauncherSettingsWindow.ShowAsync(_launcher, OwnerHwnd, track));
 
-        if (!IsCurrentSession(version)) return;
+        if (!IsCurrentSession(version))
+        {
+            return;
+        }
         // View mode, density and title all affect layout, so rebuild rather than assume.
         FlyoutWindow.InvalidateItems(_launcher.Id);
 
         // Resize only after the rebuilt containers have actually been laid out , measuring
         // immediately would read stale desired sizes.
         if (_isEditMode)
+        {
             DispatcherQueue.TryEnqueue(ResizeForEditChrome);
+        }
     }
 
 
@@ -1122,7 +1279,11 @@ public sealed partial class LauncherItemsView
     /// <summary>Ends a session before owned dialogs or deferred results can use its old UI.</summary>
     internal void SetEditing(bool editing, bool notifyHost = true)
     {
-        if (_disposed || _isEditMode == editing || (editing && IsReadOnlyLauncher)) return;
+        if (_disposed || _isEditMode == editing || (editing && IsReadOnlyLauncher))
+        {
+            return;
+        }
+
         _isEditMode = editing;
         _sessionVersion++;
         RebuildColumnsPanel();
@@ -1138,6 +1299,9 @@ public sealed partial class LauncherItemsView
         UpdateEditToolbarColumns();
         UpdateResizeGripVisibility();
         ApplyEditVisuals();
-        if (notifyHost) _host.EditModeChanged();
+        if (notifyHost)
+        {
+            _host.EditModeChanged();
+        }
     }
 }

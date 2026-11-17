@@ -17,13 +17,21 @@ internal static class LauncherDropGeometry
         if (!double.IsFinite(x) || !double.IsFinite(y)
             || !double.IsFinite(width) || !double.IsFinite(height)
             || width <= 0 || height <= 0 || x < 0 || x >= width || y < 0 || y >= height)
+        {
             return GroupZone.Outside;
+        }
 
         double edge = Math.Min(8, height / 4);
         if (y < edge)
+        {
             return GroupZone.Before;
+        }
+
         if (y >= height - edge)
+        {
             return GroupZone.After;
+        }
+
         return GroupZone.Inside;
     }
 
@@ -36,7 +44,9 @@ internal static class LauncherDropGeometry
         double width, double height)
     {
         if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0)
+        {
             return null;
+        }
 
         double sideInset = Math.Min(8, width / 4);
         double bottomInset = Math.Min(8, height / 3);

@@ -47,7 +47,9 @@ internal static class SupportedLanguages
     internal static string? NormalizeOverride(string? language)
     {
         if (string.IsNullOrWhiteSpace(language))
+        {
             return null;
+        }
 
         string tag = language.Trim();
         return Catalogs.Keys.FirstOrDefault(supported =>
@@ -63,7 +65,9 @@ internal static class SupportedLanguages
         foreach (string preference in preferences)
         {
             if (string.IsNullOrWhiteSpace(preference))
+            {
                 continue;
+            }
 
             // Unicode calendar/numeral extensions belong to regional formatting, not wording identity.
             string[] parts = preference.Trim().Split('-');
@@ -73,14 +77,18 @@ internal static class SupportedLanguages
             foreach (string supported in Catalogs.Keys)
             {
                 if (string.Equals(tag, supported, StringComparison.OrdinalIgnoreCase))
+                {
                     return supported;
+                }
             }
 
             string family = LanguageFamily(tag);
             foreach (string supported in Catalogs.Keys)
             {
                 if (family.Length > 0 && string.Equals(family, LanguageFamily(supported), StringComparison.OrdinalIgnoreCase))
+                {
                     return supported;
+                }
             }
         }
 
@@ -106,7 +114,9 @@ internal static class SupportedLanguages
     {
         string[] parts = tag.Split('-');
         if (parts.Any(part => part.Length is < 1 or > 8 || !part.All(char.IsAsciiLetterOrDigit)))
+        {
             return "";
+        }
 
         string language = parts[0].ToLowerInvariant();
         string? script = parts.Skip(1).FirstOrDefault(part => part.Length == 4 && part.All(char.IsAsciiLetter));
@@ -114,7 +124,9 @@ internal static class SupportedLanguages
         {
             // An explicit script is authoritative, even when the regional default differs.
             if (script is not null)
+            {
                 return "zh-" + script;
+            }
 
             if (parts.Any(part => part.Equals("TW", StringComparison.OrdinalIgnoreCase)
                 || part.Equals("HK", StringComparison.OrdinalIgnoreCase)

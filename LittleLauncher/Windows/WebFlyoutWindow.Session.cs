@@ -44,8 +44,15 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     internal void SaveSession()
     {
-        if (_restoringSession) return;
-        if (_tabs.Count == 0) return;
+        if (_restoringSession)
+        {
+            return;
+        }
+
+        if (_tabs.Count == 0)
+        {
+            return;
+        }
 
         var urls = new List<string>();
         foreach (var tab in _tabs)
@@ -61,10 +68,16 @@ public sealed partial class WebFlyoutWindow
             // are not coming back" looked like.
             // The initial document can also be about:blank while the requested page is pending.
             // Keep that destination until the browser has committed a real address.
-            if (IsBlankAddress(url)) url = tab.NavigatedUrl;
+            if (IsBlankAddress(url))
+            {
+                url = tab.NavigatedUrl;
+            }
 
             url = NormalizeUrl(url);
-            if (string.IsNullOrEmpty(url) || url.Equals("about:blank", StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.IsNullOrEmpty(url) || url.Equals("about:blank", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
 
             urls.Add(url);
         }
@@ -76,7 +89,10 @@ public sealed partial class WebFlyoutWindow
         // reachable now for tabs that exist but have no address yet, never for a teardown.
         var stored = urls.Count == 0 ? null : urls;
 
-        if (SameAsStored(stored, active)) return;
+        if (SameAsStored(stored, active))
+        {
+            return;
+        }
 
         _launcher.WebSessionTabs = stored;
         _launcher.WebSessionActiveTab = active;
@@ -91,10 +107,16 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private bool SameAsStored(List<string>? urls, int active)
     {
-        if (_launcher.WebSessionActiveTab != active) return false;
+        if (_launcher.WebSessionActiveTab != active)
+        {
+            return false;
+        }
 
         var stored = _launcher.WebSessionTabs;
-        if (stored == null || urls == null) return stored == null && urls == null;
+        if (stored == null || urls == null)
+        {
+            return stored == null && urls == null;
+        }
 
         return stored.SequenceEqual(urls, StringComparer.OrdinalIgnoreCase);
     }
@@ -102,7 +124,10 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Forgets the session — the launcher was closed down to nothing.</summary>
     internal void ClearSession()
     {
-        if (_launcher.WebSessionTabs == null && _launcher.WebSessionActiveTab == 0) return;
+        if (_launcher.WebSessionTabs == null && _launcher.WebSessionActiveTab == 0)
+        {
+            return;
+        }
 
         _launcher.WebSessionTabs = null;
         _launcher.WebSessionActiveTab = 0;
@@ -125,7 +150,10 @@ public sealed partial class WebFlyoutWindow
     {
         var urls = _launcher.WebSessionTabs?.ToList() ?? [];
 
-        if (urls.Count == 0) return;
+        if (urls.Count == 0)
+        {
+            return;
+        }
 
         int active = urls.Count == 0 ? 0 : Math.Clamp(_launcher.WebSessionActiveTab, 0, urls.Count - 1);
 
@@ -186,13 +214,22 @@ public sealed partial class WebFlyoutWindow
     private int IndexOfHomeTab(List<string> urls)
     {
         string home = NormalizeUrl(CurrentTargetUrl());
-        if (string.IsNullOrEmpty(home)) return -1;
+        if (string.IsNullOrEmpty(home))
+        {
+            return -1;
+        }
 
         int exact = urls.FindIndex(u => string.Equals(u, home, StringComparison.OrdinalIgnoreCase));
-        if (exact >= 0) return exact;
+        if (exact >= 0)
+        {
+            return exact;
+        }
 
         string host = HostOf(home);
-        if (string.IsNullOrEmpty(host)) return -1;
+        if (string.IsNullOrEmpty(host))
+        {
+            return -1;
+        }
 
         return urls.FindIndex(u => string.Equals(HostOf(u), host, StringComparison.OrdinalIgnoreCase));
     }

@@ -48,11 +48,19 @@ public static class AppPickerService
         {
             foreach (var entry in entries)
             {
-                if (entry.Icon != null) continue;
+                if (entry.Icon != null)
+                {
+                    continue;
+                }
+
                 ShellIcons.IconPixels? px;
                 try { px = ShellIcons.Extract(entry.IconTarget, 32); }
                 catch { px = null; }
-                if (px == null) continue;
+                if (px == null)
+                {
+                    continue;
+                }
+
                 dispatcher.TryEnqueue(() =>
                 {
                     try

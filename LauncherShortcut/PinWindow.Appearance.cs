@@ -49,8 +49,16 @@ internal sealed partial class PinWindow
             border = dark ? 0x00474747 : 0x00D6D6D6;
         }
         nint brush = CreateSolidBrush(background);
-        if (brush == 0) throw new InvalidOperationException("Windows could not create the pin card background.");
-        if (_background != 0) DeleteObject(_background);
+        if (brush == 0)
+        {
+            throw new InvalidOperationException("Windows could not create the pin card background.");
+        }
+
+        if (_background != 0)
+        {
+            DeleteObject(_background);
+        }
+
         _background = brush;
 
         // Match the existing flyout's DWM-rounded frame and shadow without a classic title strip.
@@ -70,7 +78,11 @@ internal sealed partial class PinWindow
     /// </summary>
     private void Layout(bool center)
     {
-        if (!_visible) return;
+        if (!_visible)
+        {
+            return;
+        }
+
         uint dpi = GetDpiForWindow(_hwnd);
         int Scale(int dips) => (int)Math.Round(dips * dpi / 96d);
         int width = Scale(420);
@@ -107,7 +119,9 @@ internal sealed partial class PinWindow
             _description = CreateWindowExW(0, "STATIC", UiText.Get("pinning.promptReminder"), 0x50000080 /* SS_NOPREFIX */,
                 0, 0, 1, 1, _hwnd, 0, 0, 0);
             if (_title == 0 || _description == 0)
+            {
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            }
         }
 
         SetWindowPos(_title, 0, Scale(80), Scale(27), Scale(316), Scale(26), 0x14);
@@ -121,7 +135,11 @@ internal sealed partial class PinWindow
             nint icon = LoadImageW(0, _iconPath, 1 /* IMAGE_ICON */, _iconSize, _iconSize, 0x10 /* LR_LOADFROMFILE */);
             SendMessageW(_hwnd, 0x0080 /* WM_SETICON */, 1 /* ICON_BIG */, icon);
             SendMessageW(_hwnd, 0x0080, 0 /* ICON_SMALL */, icon);
-            if (_icon != 0) DestroyIcon(_icon);
+            if (_icon != 0)
+            {
+                DestroyIcon(_icon);
+            }
+
             _icon = icon;
         }
         InvalidateCard();
@@ -134,14 +152,30 @@ internal sealed partial class PinWindow
         nint body = CreateFontW(-bodyHeight, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
         if (title == 0 || body == 0)
         {
-            if (title != 0) DeleteObject(title);
-            if (body != 0) DeleteObject(body);
+            if (title != 0)
+            {
+                DeleteObject(title);
+            }
+
+            if (body != 0)
+            {
+                DeleteObject(body);
+            }
+
             throw new InvalidOperationException("Windows could not create the pin card fonts.");
         }
         SendMessageW(_title, 0x0030 /* WM_SETFONT */, title, 1);
         SendMessageW(_description, 0x0030, body, 1);
-        if (_titleFont != 0) DeleteObject(_titleFont);
-        if (_bodyFont != 0) DeleteObject(_bodyFont);
+        if (_titleFont != 0)
+        {
+            DeleteObject(_titleFont);
+        }
+
+        if (_bodyFont != 0)
+        {
+            DeleteObject(_bodyFont);
+        }
+
         _titleFont = title;
         _bodyFont = body;
     }
@@ -154,14 +188,19 @@ internal sealed partial class PinWindow
         {
             FillBackground(dc);
             if (_icon != 0)
+            {
                 DrawIconEx(dc, _iconLeft, _iconTop, _icon, _iconSize, _iconSize, 0, 0, 3 /* DI_NORMAL */);
+            }
         }
         finally { EndPaint(_hwnd, ref paint); }
     }
 
     private void FillBackground(nint dc)
     {
-        if (_background != 0 && GetClientRect(_hwnd, out var bounds)) FillRect(dc, ref bounds, _background);
+        if (_background != 0 && GetClientRect(_hwnd, out var bounds))
+        {
+            FillRect(dc, ref bounds, _background);
+        }
     }
 
     /// <summary>Handles native drawing and appearance changes without touching the pin-request timer.</summary>
@@ -195,15 +234,33 @@ internal sealed partial class PinWindow
     private void InvalidateCard()
     {
         InvalidateRect(_hwnd, 0, true);
-        if (_title != 0) InvalidateRect(_title, 0, true);
-        if (_description != 0) InvalidateRect(_description, 0, true);
+        if (_title != 0)
+        {
+            InvalidateRect(_title, 0, true);
+        }
+
+        if (_description != 0)
+        {
+            InvalidateRect(_description, 0, true);
+        }
     }
 
     /// <summary>Called only after HWND teardown, when child controls no longer reference the fonts.</summary>
     private void DisposeAppearance()
     {
-        if (_titleFont != 0) DeleteObject(_titleFont);
-        if (_bodyFont != 0) DeleteObject(_bodyFont);
-        if (_background != 0) DeleteObject(_background);
+        if (_titleFont != 0)
+        {
+            DeleteObject(_titleFont);
+        }
+
+        if (_bodyFont != 0)
+        {
+            DeleteObject(_bodyFont);
+        }
+
+        if (_background != 0)
+        {
+            DeleteObject(_background);
+        }
     }
 }

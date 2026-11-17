@@ -203,7 +203,11 @@ public sealed partial class WebFlyoutWindow
         // cannot feed back on itself.
         scroller.SizeChanged += (_, e) =>
         {
-            if (Math.Abs(_tabStrip.AvailableWidth - e.NewSize.Width) < 0.5) return;
+            if (Math.Abs(_tabStrip.AvailableWidth - e.NewSize.Width) < 0.5)
+            {
+                return;
+            }
+
             _tabStrip.AvailableWidth = e.NewSize.Width;
         };
 
@@ -305,7 +309,9 @@ public sealed partial class WebFlyoutWindow
             // tab should read as further away, not merely as differently coloured.
             tab.Chip.Opacity = active ? 1.0 : 0.6;
             if (tab.Indicator != null)
+            {
                 tab.Indicator.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+            }
 
             _tabStrip.Children.Add(tab.Chip);
         }
@@ -328,15 +334,24 @@ public sealed partial class WebFlyoutWindow
     private void BringActiveTabIntoView()
     {
         var chip = _activeTab?.Chip;
-        if (chip == null || _tabScroller == null) return;
+        if (chip == null || _tabScroller == null)
+        {
+            return;
+        }
 
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
             // The strip is rebuilt freely, so the chip aimed at may have been dropped in between.
-            if (_tabScroller == null || !_tabStrip.Children.Contains(chip)) return;
+            if (_tabScroller == null || !_tabStrip.Children.Contains(chip))
+            {
+                return;
+            }
 
             double viewport = _tabScroller.ViewportWidth;
-            if (viewport <= 0 || chip.ActualWidth <= 0) return;
+            if (viewport <= 0 || chip.ActualWidth <= 0)
+            {
+                return;
+            }
 
             try
             {
@@ -347,9 +362,18 @@ public sealed partial class WebFlyoutWindow
 
                 // The least scroll that puts it fully in view, and nothing at all when it already
                 // is: a strip that re-centres itself on every switch is its own kind of noise.
-                if (left < offset) offset = left;
-                else if (right > offset + viewport) offset = right - viewport;
-                else return;
+                if (left < offset)
+                {
+                    offset = left;
+                }
+                else if (right > offset + viewport)
+                {
+                    offset = right - viewport;
+                }
+                else
+                {
+                    return;
+                }
 
                 _tabScroller.ChangeView(Math.Max(0, offset), null, null, disableAnimation: false);
             }
@@ -494,7 +518,10 @@ public sealed partial class WebFlyoutWindow
         // the squeeze re-runs, and every tab after this one slides as the pointer crosses the row.
         chip.PointerEntered += (_, _) =>
         {
-            if (chip.ActualWidth > 0) chip.Width = chip.ActualWidth;
+            if (chip.ActualWidth > 0)
+            {
+                chip.Width = chip.ActualWidth;
+            }
 
             // Measured rather than assumed. The button is laid out even while it is invisible - an
             // overlay costs no width but is still arranged, so its real width is there to read,
@@ -545,7 +572,11 @@ public sealed partial class WebFlyoutWindow
         // only starts on the left button, so this cannot be mistaken for a drag.
         chip.PointerPressed += (_, e) =>
         {
-            if (!e.GetCurrentPoint(null).Properties.IsMiddleButtonPressed) return;
+            if (!e.GetCurrentPoint(null).Properties.IsMiddleButtonPressed)
+            {
+                return;
+            }
+
             e.Handled = true;
             CloseTab(tab);
         };
@@ -583,7 +614,10 @@ public sealed partial class WebFlyoutWindow
     private void ShowTabMenu(WebTab tab, FrameworkElement anchor)
     {
         var items = BuildTabMenuItems(tab);
-        if (items.Count == 0) return;
+        if (items.Count == 0)
+        {
+            return;
+        }
 
         var menu = new MenuFlyout
         {
@@ -592,7 +626,9 @@ public sealed partial class WebFlyoutWindow
         };
 
         foreach (var item in items)
+        {
             menu.Items.Add(item);
+        }
 
         menu.Opened += (_, _) => _isMenuOpen = true;
         menu.Closed += (_, _) => _isMenuOpen = false;
@@ -641,8 +677,14 @@ public sealed partial class WebFlyoutWindow
             UiText.Get(bookmark != null ? "web.removeFromBookmarks" : "web.addToBookmarks"),
             () =>
             {
-                if (bookmark != null) RemoveBookmark(bookmark);
-                else AddBookmark(url);
+                if (bookmark != null)
+                {
+                    RemoveBookmark(bookmark);
+                }
+                else
+                {
+                    AddBookmark(url);
+                }
             },
             hasUrl));
 
@@ -699,19 +741,31 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void CloseOtherTabs(WebTab keep)
     {
-        if (_tabs.Count <= 1) return;
+        if (_tabs.Count <= 1)
+        {
+            return;
+        }
 
-        if (_activeTab != keep) SwitchToTab(keep);
+        if (_activeTab != keep)
+        {
+            SwitchToTab(keep);
+        }
 
         foreach (var tab in _tabs.ToList())
         {
-            if (tab != keep) CloseTab(tab);
+            if (tab != keep)
+            {
+                CloseTab(tab);
+            }
         }
     }
 
     private void TabStrip_DragOver(object sender, DragEventArgs e)
     {
-        if (_draggingTab == null) return;
+        if (_draggingTab == null)
+        {
+            return;
+        }
 
         e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
         e.Handled = true;
@@ -729,13 +783,19 @@ public sealed partial class WebFlyoutWindow
     {
         var dragged = _draggingTab;
         HideTabDropCaret();
-        if (dragged == null) return;
+        if (dragged == null)
+        {
+            return;
+        }
 
         e.Handled = true;
         e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
 
         int from = _tabs.IndexOf(dragged);
-        if (from < 0) return;
+        if (from < 0)
+        {
+            return;
+        }
 
         // No adjustment for the gap the dragged item leaves behind: the index already counts only
         // the *others*, which is exactly the list that exists after it is removed — and both Move
@@ -744,7 +804,10 @@ public sealed partial class WebFlyoutWindow
         // started and appeared to do nothing, while drops to the left (where the subtraction never
         // applied) worked.
         int to = TabDropIndexFor(e.GetPosition(_tabStrip).X);
-        if (to == from) return;
+        if (to == from)
+        {
+            return;
+        }
 
         _tabs.RemoveAt(from);
         _tabs.Insert(to, dragged);
@@ -759,13 +822,24 @@ public sealed partial class WebFlyoutWindow
         int index = 0;
         foreach (var child in _tabStrip.Children)
         {
-            if (child is not Button { Tag: WebTab tab } chip) continue;
-            if (ReferenceEquals(tab, _draggingTab)) continue;
+            if (child is not Button { Tag: WebTab tab } chip)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(tab, _draggingTab))
+            {
+                continue;
+            }
 
             var origin = chip.TransformToVisual(_tabStrip)
                 .TransformPoint(new global::Windows.Foundation.Point(0, 0));
 
-            if (x <= origin.X + chip.ActualWidth / 2) break;
+            if (x <= origin.X + chip.ActualWidth / 2)
+            {
+                break;
+            }
+
             index++;
         }
 
@@ -774,7 +848,10 @@ public sealed partial class WebFlyoutWindow
 
     private void ShowTabDropCaretAt(int index)
     {
-        if (_tabBarOverlay == null || _tabDropCaret == null) return;
+        if (_tabBarOverlay == null || _tabDropCaret == null)
+        {
+            return;
+        }
 
         var others = _tabStrip.Children
             .OfType<Button>()
@@ -800,7 +877,10 @@ public sealed partial class WebFlyoutWindow
 
     private void HideTabDropCaret()
     {
-        if (_tabDropCaret != null) _tabDropCaret.Visibility = Visibility.Collapsed;
+        if (_tabDropCaret != null)
+        {
+            _tabDropCaret.Visibility = Visibility.Collapsed;
+        }
     }
 
     /// <summary>What the chip should say: the page's title, falling back to its host.</summary>
@@ -812,14 +892,19 @@ public sealed partial class WebFlyoutWindow
         try { title = core?.DocumentTitle ?? ""; }
         catch (Exception ex) { Logger.Debug(ex, "Reading the document title failed for launcher {Name}", _launcher.Name); }
 
-        if (!string.IsNullOrWhiteSpace(title)) return title;
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            return title;
+        }
 
         string source = "";
         try { source = core?.Source ?? tab.NavigatedUrl; }
         catch (Exception ex) { Logger.Debug(ex, "Reading the source failed for launcher {Name}", _launcher.Name); }
 
         if (string.IsNullOrWhiteSpace(source) || source.Equals("about:blank", StringComparison.OrdinalIgnoreCase))
+        {
             return UiText.Get("webTabs.blankTabCaption");
+        }
 
         try { return new Uri(source).Host; }
         catch (UriFormatException) { return source; }
@@ -827,10 +912,17 @@ public sealed partial class WebFlyoutWindow
 
     private void UpdateTabChip(WebTab tab)
     {
-        if (tab.Label == null) return;
+        if (tab.Label == null)
+        {
+            return;
+        }
+
         string caption = TabCaption(tab);
         tab.Label.Text = caption;
-        if (tab.Chip != null) ToolTipService.SetToolTip(tab.Chip, caption);
+        if (tab.Chip != null)
+        {
+            ToolTipService.SetToolTip(tab.Chip, caption);
+        }
     }
 
     /// <summary>
@@ -845,12 +937,18 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private async Task UpdateTabIconAsync(CoreWebView2 core, WebTab tab)
     {
-        if (tab.Icon == null) return;
+        if (tab.Icon == null)
+        {
+            return;
+        }
 
         try
         {
             var stream = await core.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png);
-            if (stream == null || stream.Size == 0) return;
+            if (stream == null || stream.Size == 0)
+            {
+                return;
+            }
 
             uint size = (uint)stream.Size;
             var buffer = new byte[size];
@@ -867,11 +965,18 @@ public sealed partial class WebFlyoutWindow
                 await writer.StoreAsync();
             }
 
-            if (tab.Icon == null) return;   // closed while the bytes were being read
+            if (tab.Icon == null)
+            {
+                return;   // closed while the bytes were being read
+            }
+
             var bitmap = new BitmapImage();
             await bitmap.SetSourceAsync(memory);
             tab.Icon.Source = bitmap;
-            if (tab.IconFallback != null) tab.IconFallback.Visibility = Visibility.Collapsed;
+            if (tab.IconFallback != null)
+            {
+                tab.IconFallback.Visibility = Visibility.Collapsed;
+            }
         }
         catch (Exception ex)
         {
@@ -888,8 +993,16 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Brings a tab to the front. A chip click, so it must tolerate a stale chip.</summary>
     private void SwitchToTab(WebTab tab)
     {
-        if (!_tabs.Contains(tab)) return;
-        if (ReferenceEquals(tab, _activeTab)) return;
+        if (!_tabs.Contains(tab))
+        {
+            return;
+        }
+
+        if (ReferenceEquals(tab, _activeTab))
+        {
+            return;
+        }
+
         ActivateTab(tab);
     }
 
@@ -908,7 +1021,9 @@ public sealed partial class WebFlyoutWindow
     private void ActivateTab(WebTab tab)
     {
         foreach (var other in _tabs)
+        {
             other.View.Visibility = ReferenceEquals(other, tab) ? Visibility.Visible : Visibility.Collapsed;
+        }
 
         _activeTab = tab;
         _webView = tab.View;
@@ -918,7 +1033,9 @@ public sealed partial class WebFlyoutWindow
         // page fullscreen, but its geometry must not trap the new tab's navigation controls.
         bool tabFullscreen = tab.View.CoreWebView2?.ContainsFullScreenElement == true;
         if (tabFullscreen != _isFullScreen)
+        {
             ApplyFullScreen(tabFullscreen);
+        }
 
         ResumeWebView();
         ApplyZoom();
@@ -958,7 +1075,10 @@ public sealed partial class WebFlyoutWindow
     private async Task OpenBlankTabAsync()
     {
         var tab = await CreateTabAsync(homeKey: null, navigateTo: null);
-        if (tab == null) return;
+        if (tab == null)
+        {
+            return;
+        }
 
         // The address bar is the whole content of an empty tab, so put the caret in it. Do not use
         // FocusAddressBar here: Ctrl+L means "show this from now on", while the blank-tab override
@@ -983,7 +1103,10 @@ public sealed partial class WebFlyoutWindow
     private async Task OpenLinkTabAsync(string url, bool background = false)
     {
         var tab = await CreateTabAsync(homeKey: null, navigateTo: url, background: background);
-        if (tab == null) OpenExternally(url);
+        if (tab == null)
+        {
+            OpenExternally(url);
+        }
     }
 
     /// <summary>
@@ -1131,7 +1254,10 @@ public sealed partial class WebFlyoutWindow
             {
                 var installed = await core.Profile.GetBrowserExtensionsAsync();
                 var live = installed.FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
-                if (live != null && !string.IsNullOrWhiteSpace(live.Name)) return live.Name;
+                if (live != null && !string.IsNullOrWhiteSpace(live.Name))
+                {
+                    return live.Name;
+                }
             }
         }
         catch (Exception ex)
@@ -1161,12 +1287,22 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private bool WantsBackgroundWindow(CoreWebView2NewWindowRequestedEventArgs e)
     {
-        if (_backgroundIntentAt == 0) return false;
-        if (Environment.TickCount64 - _backgroundIntentAt > BackgroundIntentWindowMs) return false;
+        if (_backgroundIntentAt == 0)
+        {
+            return false;
+        }
+
+        if (Environment.TickCount64 - _backgroundIntentAt > BackgroundIntentWindowMs)
+        {
+            return false;
+        }
 
         try
         {
-            if (e.WindowFeatures is { } features && (features.HasSize || features.HasPosition)) return false;
+            if (e.WindowFeatures is { } features && (features.HasSize || features.HasPosition))
+            {
+                return false;
+            }
         }
         catch (Exception ex)
         {
@@ -1225,7 +1361,10 @@ public sealed partial class WebFlyoutWindow
     private void CloseTab(WebTab tab)
     {
         int index = _tabs.IndexOf(tab);
-        if (index < 0) return;
+        if (index < 0)
+        {
+            return;
+        }
 
         _tabs.RemoveAt(index);
         bool wasActive = ReferenceEquals(tab, _activeTab);
@@ -1264,7 +1403,11 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Takes one tab's browser and chip down. Never decides what is shown next.</summary>
     private void DestroyTab(WebTab tab)
     {
-        if (tab.Chip != null) _tabStrip.Children.Remove(tab.Chip);
+        if (tab.Chip != null)
+        {
+            _tabStrip.Children.Remove(tab.Chip);
+        }
+
         tab.Chip = null;
         tab.Label = null;
         tab.Icon = null;
@@ -1286,7 +1429,9 @@ public sealed partial class WebFlyoutWindow
     private void CloseAllTabs()
     {
         foreach (var tab in _tabs)
+        {
             DestroyTab(tab);
+        }
 
         _tabs.Clear();
         _activeTab = null;

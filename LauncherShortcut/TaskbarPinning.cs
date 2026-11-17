@@ -48,7 +48,11 @@ internal static unsafe class TaskbarPinning
     /// <summary>Runs a compact foreground card pointing to Windows confirmation, with no action buttons.</summary>
     internal static int RunNativeWindow(string name, string icon, Action<nint> stampIdentity)
     {
-        if (_manager == 0) return 11; // Manual fallback, no progress window is needed.
+        if (_manager == 0)
+        {
+            return 11; // Manual fallback, no progress window is needed.
+        }
+
         int result = PinWindow.Run(name, icon, visible: true, (hwnd, complete) =>
         {
             stampIdentity(hwnd);
@@ -71,7 +75,11 @@ internal static unsafe class TaskbarPinning
         try
         {
             Marshal.ThrowExceptionForHR(SetCurrentProcessExplicitAppUserModelID(aumid));
-            if (!InitializeNative(aumid, needManager: true)) return ExistingPinState.Unknown;
+            if (!InitializeNative(aumid, needManager: true))
+            {
+                return ExistingPinState.Unknown;
+            }
+
             if (!PinShortcut.HasMatchingIdentity(launcherId, aumid))
             {
                 Log("previous-pin: unknown; matching Start shortcut unavailable");
@@ -82,8 +90,16 @@ internal static unsafe class TaskbarPinning
                 _complete = complete;
                 OnActivated(hwnd);
             });
-            if (result == 6) return ExistingPinState.Pinned;
-            if (result == 7) return ExistingPinState.NotPinned;
+            if (result == 6)
+            {
+                return ExistingPinState.Pinned;
+            }
+
+            if (result == 7)
+            {
+                return ExistingPinState.NotPinned;
+            }
+
             return ExistingPinState.Unknown;
         }
         catch (Exception ex)
@@ -96,7 +112,11 @@ internal static unsafe class TaskbarPinning
             CloseOperation();
             Release(_manager);
             _manager = 0;
-            if (_initialized) RoUninitialize();
+            if (_initialized)
+            {
+                RoUninitialize();
+            }
+
             _initialized = false;
             _checkOnly = false;
             _checking = false;
@@ -117,7 +137,11 @@ internal static unsafe class TaskbarPinning
         _pendingPath = Path.Combine(AppContext.BaseDirectory, $"pin-pending-{launcherId}.txt");
         try
         {
-            if (!InitializeNative(aumid, needManager: !manualOnly)) return false;
+            if (!InitializeNative(aumid, needManager: !manualOnly))
+            {
+                return false;
+            }
+
             if (manualOnly)
             {
                 _shortcut = new PinShortcut(aumid, exe, launcherId, name, icon);
@@ -155,7 +179,10 @@ internal static unsafe class TaskbarPinning
 
         Marshal.ThrowExceptionForHR(RoInitialize(0 /* RO_INIT_SINGLETHREADED */));
         _initialized = true;
-        if (!needManager) return true;
+        if (!needManager)
+        {
+            return true;
+        }
 
         using RegistryKey? key = Registry.LocalMachine.OpenSubKey(LafKey);
         if (key?.GetValue(LafSeed) is int required && required != 0)
@@ -195,7 +222,11 @@ internal static unsafe class TaskbarPinning
     /// <summary>Schedules one guarded timer while the native window's top-level message pump runs.</summary>
     internal static void OnActivated(nint hwnd)
     {
-        if (_manager == 0 || _manualFallback) return;
+        if (_manager == 0 || _manualFallback)
+        {
+            return;
+        }
+
         _window = hwnd;
         _operationStarted = Stopwatch.GetTimestamp();
         _firstTimerCallback = true;
@@ -203,20 +234,30 @@ internal static unsafe class TaskbarPinning
         {
             ShowFallback("pinning.reason.startFailed");
         }
-        else if (!_checkOnly) Log("native-window: operation timer armed");
+        else if (!_checkOnly)
+        {
+            Log("native-window: operation timer armed");
+        }
     }
 
     /// <summary>Each callback performs at most one API transition. A guard covers COM reentrancy.</summary>
     private static void OnTimer(nint hwnd, uint message, nuint timer, uint time)
     {
-        if (_checking) return;
+        if (_checking)
+        {
+            return;
+        }
+
         _checking = true;
         try
         {
             if (_firstTimerCallback)
             {
                 _firstTimerCallback = false;
-                if (!_checkOnly) Log("native-window: first operation timer callback");
+                if (!_checkOnly)
+                {
+                    Log("native-window: first operation timer callback");
+                }
             }
             if (_operation != 0)
             {
@@ -239,9 +280,19 @@ internal static unsafe class TaskbarPinning
                     // Keep resources unless Windows actually returns a completed false result.
                     Log($"operation: terminal status={status}; outcome unconfirmed");
                     CloseOperation(terminal: true);
-                    if (_checkOnly) Complete(5);
-                    else if (_pinRequestStarted) FinishUnconfirmed();
-                    else ShowFallback("pinning.reason.checkFailed");
+                    if (_checkOnly)
+                    {
+                        Complete(5);
+                    }
+                    else if (_pinRequestStarted)
+                    {
+                        FinishUnconfirmed();
+                    }
+                    else
+                    {
+                        ShowFallback("pinning.reason.checkFailed");
+                    }
+
                     return;
                 }
 
@@ -282,7 +333,11 @@ internal static unsafe class TaskbarPinning
             {
                 if (GetForegroundWindow() != hwnd)
                 {
-                    if (++_attempts >= 30) ShowFallback("pinning.reason.needsForeground");
+                    if (++_attempts >= 30)
+                    {
+                        ShowFallback("pinning.reason.needsForeground");
+                    }
+
                     return;
                 }
 
@@ -291,7 +346,11 @@ internal static unsafe class TaskbarPinning
                 if (allowed == 0)
                 {
                     // Give the shell a bounded chance to index the newly written Start entry.
-                    if (++_attempts >= 30) ShowFallback("pinning.reason.requestBlocked");
+                    if (++_attempts >= 30)
+                    {
+                        ShowFallback("pinning.reason.requestBlocked");
+                    }
+
                     return;
                 }
 
@@ -341,7 +400,11 @@ internal static unsafe class TaskbarPinning
         if (_cancelRequested == 0)
         {
             TimeSpan deadline = _checkOnly ? TimeSpan.FromSeconds(5) : RequestDeadline;
-            if (Stopwatch.GetElapsedTime(_operationStarted) < deadline) return;
+            if (Stopwatch.GetElapsedTime(_operationStarted) < deadline)
+            {
+                return;
+            }
+
             _cancelRequested = Stopwatch.GetTimestamp();
             int hr = ((delegate* unmanaged[Stdcall]<nint, int>)Slot(_info, 9))(_info);
             Log($"cancel: deadline reached; advisory Cancel hr=0x{hr:X8}");
@@ -352,9 +415,18 @@ internal static unsafe class TaskbarPinning
         TimeSpan grace = _checkOnly ? TimeSpan.FromSeconds(1) : CancellationGrace;
         if (Stopwatch.GetElapsedTime(_cancelRequested) >= grace)
         {
-            if (_checkOnly) Complete(5);
-            else if (_pinRequestStarted) FinishUnconfirmed();
-            else ShowFallback("pinning.reason.checkFailed");
+            if (_checkOnly)
+            {
+                Complete(5);
+            }
+            else if (_pinRequestStarted)
+            {
+                FinishUnconfirmed();
+            }
+            else
+            {
+                ShowFallback("pinning.reason.checkFailed");
+            }
         }
     }
 
@@ -386,7 +458,10 @@ internal static unsafe class TaskbarPinning
         if (_info != 0 && terminal)
         {
             int hr = ((delegate* unmanaged[Stdcall]<nint, int>)Slot(_info, 10))(_info);
-            if (hr < 0) Log($"operation: Close hr=0x{hr:X8}");
+            if (hr < 0)
+            {
+                Log($"operation: Close hr=0x{hr:X8}");
+            }
         }
         Release(_info);
         Release(_operation);
@@ -399,21 +474,41 @@ internal static unsafe class TaskbarPinning
     {
         bool pinned = dialogResult == 6 || dialogResult == 1;
         bool unconfirmed = dialogResult == 3;
-        if (_window != 0) KillTimer(_window, 1);
-        if (pinned) Log("dialog: pin confirmed");
-        else if (unconfirmed) Log("dialog: unconfirmed; keeping previous identity and pending resources");
-        else Log("dialog: cancelled; keeping previous identity");
+        if (_window != 0)
+        {
+            KillTimer(_window, 1);
+        }
+
+        if (pinned)
+        {
+            Log("dialog: pin confirmed");
+        }
+        else if (unconfirmed)
+        {
+            Log("dialog: unconfirmed; keeping previous identity and pending resources");
+        }
+        else
+        {
+            Log("dialog: cancelled; keeping previous identity");
+        }
+
         try
         {
             _shortcut?.Complete(pinned, unconfirmed,
                 ex => Log($"snapshot-metadata-error: {ex.Message}"));
-            if (pinned && _shortcut == null && _pendingPath != null) File.Delete(_pendingPath);
+            if (pinned && _shortcut == null && _pendingPath != null)
+            {
+                File.Delete(_pendingPath);
+            }
         }
         catch (Exception ex) { Log($"snapshot-completion-error: {ex.Message}"); }
         CloseOperation();
         Release(_manager);
         _manager = 0;
-        if (_initialized) RoUninitialize();
+        if (_initialized)
+        {
+            RoUninitialize();
+        }
     }
 
     /// <summary>Pin-only diagnostics stay beside the stable helper, away from the latency-critical launch path.</summary>

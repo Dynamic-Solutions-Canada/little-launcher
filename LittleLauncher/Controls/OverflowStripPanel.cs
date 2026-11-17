@@ -58,7 +58,9 @@ public sealed class OverflowStripPanel : Panel
         // Measured unconstrained: a bookmark is its icon and its name, and squeezing one is not an
         // option the way it is for a tab. It either has room or it goes in the menu.
         foreach (var child in Children)
+        {
             child.Measure(new Size(double.PositiveInfinity, availableSize.Height));
+        }
 
         double budget = availableSize.Width;
         double used = 0;
@@ -71,7 +73,10 @@ public sealed class OverflowStripPanel : Panel
             double next = used + (i == 0 ? 0 : Spacing) + width;
 
             // No budget at all means an unconstrained parent, where everything fits by definition.
-            if (!double.IsInfinity(budget) && next > budget) break;
+            if (!double.IsInfinity(budget) && next > budget)
+            {
+                break;
+            }
 
             used = next;
             height = Math.Max(height, Children[i].DesiredSize.Height);
@@ -107,7 +112,10 @@ public sealed class OverflowStripPanel : Panel
 
     private void SetVisibleCount(int count)
     {
-        if (_visibleCount == count) return;
+        if (_visibleCount == count)
+        {
+            return;
+        }
 
         _visibleCount = count;
         VisibleCountChanged?.Invoke(count);
@@ -115,6 +123,9 @@ public sealed class OverflowStripPanel : Panel
 
     private static void OnLayoutPropertyChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
     {
-        if (sender is OverflowStripPanel panel) panel.InvalidateMeasure();
+        if (sender is OverflowStripPanel panel)
+        {
+            panel.InvalidateMeasure();
+        }
     }
 }

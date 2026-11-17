@@ -50,8 +50,15 @@ public sealed class CloudTokens
     /// </remarks>
     public bool CoversScope(string required)
     {
-        if (string.IsNullOrWhiteSpace(required)) return true;
-        if (string.IsNullOrWhiteSpace(GrantedScope)) return false;
+        if (string.IsNullOrWhiteSpace(required))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(GrantedScope))
+        {
+            return false;
+        }
 
         var granted = Normalize(GrantedScope).ToHashSet(StringComparer.OrdinalIgnoreCase);
         return Normalize(required).All(granted.Contains);

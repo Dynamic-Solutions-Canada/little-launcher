@@ -56,7 +56,10 @@ public sealed partial class WebFlyoutWindow
     private void ApplyTaskbarButton(bool wanted)
     {
         bool target = wanted && _launcher.WebRegularWindow;
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         // Checked on every show, ahead of the presentation short-circuit below, because the
         // identity can move while the presentation does not. Re-pinning a launcher mints a fresh
@@ -70,7 +73,10 @@ public sealed partial class WebFlyoutWindow
             ApplyRelaunchProperties();
         }
 
-        if (target == _isRegularWindow) return;
+        if (target == _isRegularWindow)
+        {
+            return;
+        }
 
         try
         {
@@ -114,17 +120,25 @@ public sealed partial class WebFlyoutWindow
     {
         string aumid = PinAppUserModelId();
         if (string.IsNullOrEmpty(aumid) || string.Equals(aumid, _appliedAumid, StringComparison.Ordinal))
+        {
             return;
+        }
 
         try
         {
             bool hadButton = _isRegularWindow;
-            if (hadButton) GetTaskbarList()?.DeleteTab(_hwnd);
+            if (hadButton)
+            {
+                GetTaskbarList()?.DeleteTab(_hwnd);
+            }
 
             SetWindowAppUserModelId(_hwnd, aumid);
             _appliedAumid = aumid;
 
-            if (hadButton) GetTaskbarList()?.AddTab(_hwnd);
+            if (hadButton)
+            {
+                GetTaskbarList()?.AddTab(_hwnd);
+            }
 
             // Recorded here, where the identity is actually applied, and only when it is the one
             // this app minted. The window is pinnable from its own taskbar button now
@@ -205,9 +219,15 @@ public sealed partial class WebFlyoutWindow
             // The icon is not part of the key and does not need to be: its path is derived from the
             // launcher id, so it cannot change while the command stays the same.
             string applied = command + "|" + display;
-            if (string.Equals(applied, _appliedRelaunch, StringComparison.Ordinal)) return;
+            if (string.Equals(applied, _appliedRelaunch, StringComparison.Ordinal))
+            {
+                return;
+            }
 
-            if (!System.IO.File.Exists(exe)) return;
+            if (!System.IO.File.Exists(exe))
+            {
+                return;
+            }
 
             MainWindow.EnsureLauncherIconSaved(_launcher);
             string ico = System.IO.Path.Combine(
@@ -294,7 +314,9 @@ public sealed partial class WebFlyoutWindow
     internal static void InvalidateWindowIcon(string launcherId)
     {
         if (Instances.TryGetValue(launcherId, out var panel) && panel._hIconBig != IntPtr.Zero)
+        {
             panel.LoadWindowIcon();
+        }
     }
 
     /// <summary>
@@ -318,7 +340,10 @@ public sealed partial class WebFlyoutWindow
         {
             string path = System.IO.Path.Combine(
                 MainWindow.GetPhysicalAppDataDir(), $"app-icon-{_launcher.Id}.ico");
-            if (!System.IO.File.Exists(path)) return;
+            if (!System.IO.File.Exists(path))
+            {
+                return;
+            }
 
             var small = LoadImage(IntPtr.Zero, path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
             var big = LoadImage(IntPtr.Zero, path, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
@@ -328,7 +353,11 @@ public sealed partial class WebFlyoutWindow
             // taskbar and the switcher, which reads as a broken window rather than an old icon.
             if (big == IntPtr.Zero)
             {
-                if (small != IntPtr.Zero) DestroyIcon(small);
+                if (small != IntPtr.Zero)
+                {
+                    DestroyIcon(small);
+                }
+
                 return;
             }
 
@@ -346,8 +375,15 @@ public sealed partial class WebFlyoutWindow
             _hIconBig = big;
             PushWindowIcon();
 
-            if (previousSmall != IntPtr.Zero) DestroyIcon(previousSmall);
-            if (previousBig != IntPtr.Zero) DestroyIcon(previousBig);
+            if (previousSmall != IntPtr.Zero)
+            {
+                DestroyIcon(previousSmall);
+            }
+
+            if (previousBig != IntPtr.Zero)
+            {
+                DestroyIcon(previousBig);
+            }
         }
         catch (Exception ex)
         {
@@ -360,9 +396,16 @@ public sealed partial class WebFlyoutWindow
     /// </summary>
     private void PushWindowIcon()
     {
-        if (_hIconBig == IntPtr.Zero || _hwnd == IntPtr.Zero) return;
+        if (_hIconBig == IntPtr.Zero || _hwnd == IntPtr.Zero)
+        {
+            return;
+        }
 
-        if (_hIconSmall != IntPtr.Zero) SendMessage(_hwnd, WM_SETICON, ICON_SMALL, _hIconSmall);
+        if (_hIconSmall != IntPtr.Zero)
+        {
+            SendMessage(_hwnd, WM_SETICON, ICON_SMALL, _hIconSmall);
+        }
+
         SendMessage(_hwnd, WM_SETICON, ICON_BIG, _hIconBig);
     }
 
@@ -371,7 +414,10 @@ public sealed partial class WebFlyoutWindow
     {
         int current = GetWindowLong(_hwnd, GWL_EXSTYLE);
         int next = tool ? current | WS_EX_TOOLWINDOW : current & ~WS_EX_TOOLWINDOW;
-        if (next == current) return;
+        if (next == current)
+        {
+            return;
+        }
 
         SetWindowLong(_hwnd, GWL_EXSTYLE, next);
 
@@ -396,11 +442,18 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     internal void BringToFront()
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         try
         {
-            if (IsIconic(_hwnd)) ShowWindow(_hwnd, SW_RESTORE);
+            if (IsIconic(_hwnd))
+            {
+                ShowWindow(_hwnd, SW_RESTORE);
+            }
+
             SetForegroundWindow(_hwnd);
             RestorePageFocus();
         }
@@ -427,11 +480,21 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private bool HandleTaskbarMinimize(uint msg, IntPtr wParam)
     {
-        if (!_isRegularWindow || msg != WM_SYSCOMMAND) return false;
-        if (!_launcher.WebTaskbarClickCloses) return false;
+        if (!_isRegularWindow || msg != WM_SYSCOMMAND)
+        {
+            return false;
+        }
+
+        if (!_launcher.WebTaskbarClickCloses)
+        {
+            return false;
+        }
 
         int command = (int)(wParam.ToInt64() & 0xFFF0);
-        if (command is not (SC_MINIMIZE or SC_CLOSE)) return false;
+        if (command is not (SC_MINIMIZE or SC_CLOSE))
+        {
+            return false;
+        }
 
         HideFlyout();
         return true;
@@ -475,7 +538,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private string PinAppUserModelId()
     {
-        if (!string.IsNullOrEmpty(_launcher.PinAumid)) return _launcher.PinAumid;
+        if (!string.IsNullOrEmpty(_launcher.PinAumid))
+        {
+            return _launcher.PinAumid;
+        }
 
         // The blob is a packed shell structure, not a string table — matching the known AUMID shape
         // inside its UTF-16 bytes is deliberate, and far less brittle than parsing it.
@@ -489,10 +555,16 @@ public sealed partial class WebFlyoutWindow
             {
                 using var key = Registry.CurrentUser.OpenSubKey(
                     @"Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband");
-                if (key?.GetValue(valueName) is not byte[] blob) continue;
+                if (key?.GetValue(valueName) is not byte[] blob)
+                {
+                    continue;
+                }
 
                 var match = pattern.Match(Encoding.Unicode.GetString(blob));
-                if (match.Success) return match.Value;
+                if (match.Success)
+                {
+                    return match.Value;
+                }
             }
             catch (Exception ex)
             {

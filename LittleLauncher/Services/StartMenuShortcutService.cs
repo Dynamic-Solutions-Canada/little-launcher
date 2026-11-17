@@ -97,7 +97,10 @@ internal static class StartMenuShortcutService
         try
         {
             string dir = GroupDirectory();
-            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+            }
         }
         catch (Exception ex)
         {
@@ -141,7 +144,10 @@ internal static class StartMenuShortcutService
     {
         foreach (string existing in Directory.GetFiles(dir, "*.lnk"))
         {
-            if (expected.Contains(Path.GetFileName(existing))) continue;
+            if (expected.Contains(Path.GetFileName(existing)))
+            {
+                continue;
+            }
 
             try { File.Delete(existing); }
             catch (Exception ex) { Logger.Debug(ex, "Could not remove stale shortcut {File}", existing); }
@@ -161,11 +167,16 @@ internal static class StartMenuShortcutService
     {
         string safe = SanitizeFileName(launcher.Name);
         // Pruning keeps only what should exist, so a language change simply renames this shortcut.
-        if (safe.Length == 0) safe = SanitizeFileName(UiText.Get("shell.startMenu.unnamedWebLauncher"));
+        if (safe.Length == 0)
+        {
+            safe = SanitizeFileName(UiText.Get("shell.startMenu.unnamedWebLauncher"));
+        }
 
         string candidate = $"{safe}.lnk";
         for (int suffix = 2; taken.Contains(candidate); suffix++)
+        {
             candidate = $"{safe} ({suffix}).lnk";
+        }
 
         taken.Add(candidate);
         return candidate;

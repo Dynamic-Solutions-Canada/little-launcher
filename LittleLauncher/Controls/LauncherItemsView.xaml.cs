@@ -82,8 +82,16 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
     /// <summary>Rebinds changed model state, then lets the host update its own extent.</summary>
     internal void Refresh(bool force = false)
     {
-        if (_disposed) return;
-        if (force) _lastItemsHash = -1;
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (force)
+        {
+            _lastItemsHash = -1;
+        }
+
         RebuildItemsIfNeeded();
         ResizeIfVisible();
     }
@@ -94,14 +102,20 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
         foreach (var view in Instances.ToArray())
         {
             if (launcherId == null || view._launcher.Id == launcherId)
+            {
                 view.Refresh(force);
+            }
         }
     }
 
     /// <summary>Releases handlers and invalidates pending session work before its host closes.</summary>
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         _sessionVersion++;
         Instances.Remove(this);
@@ -119,7 +133,10 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
     private bool IsCurrentSession(int version) => !_disposed && version == _sessionVersion;
     private void ResizeIfVisible()
     {
-        if (!_disposed) _host.ContentSizeChanged(keepRightEdge: false);
+        if (!_disposed)
+        {
+            _host.ContentSizeChanged(keepRightEdge: false);
+        }
     }
     private void ResizeForEditChrome() => ResizeIfVisible();
     private Task<T> RunModalAsync<T>(Func<Action<Window>, Task<T>> show) => _host.RunModalAsync(show);
@@ -133,7 +150,11 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
     private static int ComputeItemsHash(Launcher launcher)
     {
         var items = launcher.Items;
-        if (items == null || items.Count == 0) return 0;
+        if (items == null || items.Count == 0)
+        {
+            return 0;
+        }
+
         var hash = new HashCode();
         hash.Add(LauncherViewModes.Normalize(launcher.ViewMode));
         hash.Add(Launcher.ClampIconModeIconsPerRow(launcher.IconModeIconsPerRow));
@@ -145,7 +166,9 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
             if (item.IsGroup)
             {
                 foreach (var child in item.Children)
+                {
                     HashItem(ref hash, child);
+                }
             }
         }
         return hash.ToHashCode();

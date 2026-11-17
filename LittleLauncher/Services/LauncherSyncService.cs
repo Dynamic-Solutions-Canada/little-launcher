@@ -38,7 +38,9 @@ public static class LauncherSyncService
     {
         var destinations = SyncDestinations.Enabled();
         if (destinations.Count == 0)
+        {
             return (false, UiText.Get("syncService.noneSwitchedOn"));
+        }
 
         var lines = new List<string>();
         bool anySucceeded = false;
@@ -52,7 +54,11 @@ public static class LauncherSyncService
             }
 
             var (ok, message) = await destination.TestAsync(password);
-            if (ok) anySucceeded = true;
+            if (ok)
+            {
+                anySucceeded = true;
+            }
+
             lines.Add(UiText.Format("syncService.destinationResult", ("destination", destination.DisplayName), ("message", message)));
         }
 
@@ -71,7 +77,9 @@ public static class LauncherSyncService
     {
         var destinations = SyncDestinations.Active();
         if (destinations.Count == 0)
+        {
             return (false, UiText.Get("syncService.noneConfigured"));
+        }
 
         var succeeded = new List<string>();
         var failed = new List<string>();
@@ -81,8 +89,14 @@ public static class LauncherSyncService
             try
             {
                 var (ok, message) = await destination.UploadAsync(password);
-                if (ok) succeeded.Add(destination.DisplayName);
-                else failed.Add($"{destination.DisplayName} ({message})");
+                if (ok)
+                {
+                    succeeded.Add(destination.DisplayName);
+                }
+                else
+                {
+                    failed.Add($"{destination.DisplayName} ({message})");
+                }
             }
             catch (Exception ex)
             {
@@ -92,7 +106,9 @@ public static class LauncherSyncService
         }
 
         if (succeeded.Count == 0)
+        {
             return (false, UiText.Format("syncService.uploadFailed", ("error", string.Join("; ", failed))));
+        }
 
         string uploadedTo = string.Join(", ", succeeded);
         string summary = failed.Count > 0
@@ -122,10 +138,14 @@ public static class LauncherSyncService
     {
         var destinations = SyncDestinations.Active();
         if (destinations.Count == 0)
+        {
             return (false, UiText.Get("syncService.noneConfigured"));
+        }
 
         if (destinations.Count == 1)
+        {
             return await destinations[0].DownloadAsync(password, force);
+        }
 
         ISyncDestination? newest = null;
         DateTimeOffset newestAt = DateTimeOffset.MinValue;
@@ -151,7 +171,9 @@ public static class LauncherSyncService
         }
 
         if (newest == null)
+        {
             return (false, UiText.Get("syncService.noDestinationHasData"));
+        }
 
         Logger.Info($"Downloading from {newest.DisplayName}, newest at {newestAt:u}");
         var (ok, message) = await newest.DownloadAsync(password, force);

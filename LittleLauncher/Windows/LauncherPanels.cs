@@ -24,13 +24,21 @@ internal static class LauncherPanels
         if (!SettingsManager.Current.IsLauncherEnabled(launcherId))
         {
             var disabled = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
-            if (disabled != null) _ = LauncherSettingsWindow.ShowAsync(disabled);
+            if (disabled != null)
+            {
+                _ = LauncherSettingsWindow.ShowAsync(disabled);
+            }
+
             return;
         }
         if (IsWebLauncher(launcherId))
+        {
             WebFlyoutWindow.Toggle(owner, screenX, screenY, launcherId);
+        }
         else
+        {
             FlyoutWindow.Toggle(owner, screenX, screenY, launcherId);
+        }
     }
 
     /// <summary>
@@ -52,7 +60,10 @@ internal static class LauncherPanels
         int screenX, int screenY)
     {
         var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
-        if (launcher == null) return;
+        if (launcher == null)
+        {
+            return;
+        }
 
         if (!SettingsManager.Current.IsLauncherEnabled(launcherId))
         {
@@ -64,7 +75,9 @@ internal static class LauncherPanels
             : FlyoutWindow.LaunchItemFromJumpList(launcher, index, token);
 
         if (!handled)
+        {
             Toggle(owner, screenX, screenY, launcherId);
+        }
     }
 
     /// <summary>
@@ -80,7 +93,10 @@ internal static class LauncherPanels
     public static void RunLauncherAction(MainWindow owner, string launcherId, int action)
     {
         var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
-        if (launcher == null) return;
+        if (launcher == null)
+        {
+            return;
+        }
 
         if (!SettingsManager.Current.IsLauncherEnabled(launcherId)
             && action is not LauncherActions.LauncherSettings and not LauncherActions.AppSettings)
@@ -127,9 +143,13 @@ internal static class LauncherPanels
             return;
         }
         if (launcher.IsWebLauncher)
+        {
             FlyoutWindow.DisposeLauncher(launcher.Id);
+        }
         else
+        {
             WebFlyoutWindow.DisposeLauncher(launcher.Id);
+        }
     }
 
     /// <summary>

@@ -106,7 +106,9 @@ public sealed partial class LauncherItemsView
             {
                 var point = e.GetCurrentPoint(RootGrid).Position;
                 if (point.X < 0 || point.Y < 0 || point.X >= RootGrid.ActualWidth || point.Y >= RootGrid.ActualHeight)
+                {
                     HideHoverAffordance();
+                }
             }),
             handledEventsToo: true);
     }
@@ -135,7 +137,9 @@ public sealed partial class LauncherItemsView
         for (int i = 0; i < list.Items.Count; i++)
         {
             if (list.ContainerFromIndex(i) is Control container)
+            {
                 WireHoverContainer(container);
+            }
         }
     }
 
@@ -144,16 +148,24 @@ public sealed partial class LauncherItemsView
         // Phase zero can run before incoming Content is assigned. Restore by container
         // identity, without reading either the old or the incoming item's presentation.
         if (ReferenceEquals(args.ItemContainer, _hoverTarget))
+        {
             HideHoverAffordance();
+        }
 
         if (!args.InRecycleQueue && args.ItemContainer is Control container)
+        {
             WireHoverContainer(container);
+        }
     }
 
     private void WireHoverContainer(Control container)
     {
         bool isNew = _hoverWiredContainers.Add(container);
-        if (!isNew) return;
+        if (!isNew)
+        {
+            return;
+        }
+
         container.PointerEntered += Container_PointerEnteredForEdit;
         container.PointerExited += Container_PointerExitedForEdit;
         container.AddHandler(UIElement.PointerMovedEvent,
@@ -208,11 +220,15 @@ public sealed partial class LauncherItemsView
     private bool TryShowHoverAffordance(Control container)
     {
         if (!_isEditMode || IsReadOnlyLauncher || _dragItem != null)
+        {
             return false;
+        }
 
         var item = GetContainerItem(container);
         if (item == null || item.IsColumnBreak || (item.IsGroup && !IsEditableGroup(item)))
+        {
             return false;
+        }
 
         PositionHoverAffordance(container);
         return true;
@@ -232,7 +248,10 @@ public sealed partial class LauncherItemsView
             if (current is Control candidate && _hoverWiredContainers.Contains(candidate))
             {
                 if (ReferenceEquals(candidate, sender))
+                {
                     TryShowHoverAffordance(candidate);
+                }
+
                 return;
             }
             current = VisualTreeHelper.GetParent(current);
@@ -245,7 +264,9 @@ public sealed partial class LauncherItemsView
         {
             var point = e.GetCurrentPoint(container).Position;
             if (point.X < 0 || point.Y < 0 || point.X >= container.ActualWidth || point.Y >= container.ActualHeight)
+            {
                 HideHoverAffordance();
+            }
         }
 
         // Keep exits unhandled: swallowing an exit interferes with nested ListView dragging.
@@ -254,7 +275,9 @@ public sealed partial class LauncherItemsView
     private void HoverContainer_Unloaded(object sender, RoutedEventArgs e)
     {
         if (ReferenceEquals(sender, _hoverTarget))
+        {
             HideHoverAffordance();
+        }
     }
 
     /// <summary>
@@ -265,11 +288,15 @@ public sealed partial class LauncherItemsView
     private void PositionHoverAffordance(Control container)
     {
         if (ReferenceEquals(_hoverTarget, container))
+        {
             return;
+        }
 
         HideHoverAffordance();
         if (_hoverAffordance == null || _hoverGrip == null || _hoverPencil == null)
+        {
             return;
+        }
 
         try
         {
@@ -282,7 +309,10 @@ public sealed partial class LauncherItemsView
                 // The header Grid's margin is part of the header, but none of the child
                 // list is. Centering on the group container would cover its child items.
                 if (label == null || VisualTreeHelper.GetParent(label) is not FrameworkElement header)
+                {
                     return;
+                }
+
                 bounds = header;
                 outerMargin = header.Margin;
             }
@@ -292,7 +322,9 @@ public sealed partial class LauncherItemsView
             double width = bounds.ActualWidth + outerMargin.Left + outerMargin.Right;
             double height = bounds.ActualHeight + outerMargin.Top + outerMargin.Bottom;
             if (width <= 0 || height <= 0)
+            {
                 return;
+            }
 
             _hoverTarget = container;
             if (isGroup && _hoverGroupScope != null)
@@ -308,12 +340,17 @@ public sealed partial class LauncherItemsView
             bool isIconTile = IsIconMode && !isGroup;
             ConfigureHoverCues(isIconTile, IsSmallIconMode);
             if (label != null)
+            {
                 ReserveHoverLabelSpace(label, reserveLeading: isGroup);
+            }
 
             _hoverAffordance.Width = width;
             _hoverAffordance.Height = height;
             if (_hoverAffordance.Clip is RectangleGeometry clip)
+            {
                 clip.Rect = new global::Windows.Foundation.Rect(0, 0, width, height);
+            }
+
             _hoverAffordance.Margin = new Thickness(
                 origin.X - outerMargin.Left, origin.Y - outerMargin.Top, 0, 0);
             _hoverAffordance.Visibility = Visibility.Visible;
@@ -358,11 +395,19 @@ public sealed partial class LauncherItemsView
         {
             var child = VisualTreeHelper.GetChild(element, index);
             if (child is ListViewBase)
+            {
                 continue;
+            }
+
             if (child is TextBlock label && (isGroup || label.Name == "ItemNameLabel"))
+            {
                 return label;
+            }
+
             if (FindHoverLabel(child, isGroup) is { } descendant)
+            {
                 return descendant;
+            }
         }
         return null;
     }
@@ -391,16 +436,26 @@ public sealed partial class LauncherItemsView
         {
             _hoverLabel = null;
             if (ReferenceEquals(_hoverLabelMarginValue, DependencyProperty.UnsetValue))
+            {
                 label.ClearValue(MarginProperty);
+            }
             else
+            {
                 label.SetValue(MarginProperty, _hoverLabelMarginValue);
+            }
+
             _hoverLabelMarginValue = null;
         }
 
         _hoverTarget = null;
         if (_hoverAffordance != null)
+        {
             _hoverAffordance.Visibility = Visibility.Collapsed;
+        }
+
         if (_hoverGroupScope != null)
+        {
             _hoverGroupScope.Visibility = Visibility.Collapsed;
+        }
     }
 }

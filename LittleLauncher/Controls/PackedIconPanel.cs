@@ -57,7 +57,9 @@ public sealed class PackedIconPanel : Panel
         if (cellWidth <= 0)
         {
             foreach (UIElement child in Children)
+            {
                 child.Measure(availableSize);
+            }
 
             return new Size(0, 0);
         }
@@ -71,7 +73,9 @@ public sealed class PackedIconPanel : Panel
         void FlushRow()
         {
             if (rowItems.Count == 0)
+            {
                 return;
+            }
 
             double currentLeft = 0;
             foreach (var rowItem in rowItems)
@@ -93,7 +97,9 @@ public sealed class PackedIconPanel : Panel
             double childWidth = columnSpan * cellWidth;
 
             if (currentRowSpan > 0 && currentRowSpan + columnSpan > maxColumns)
+            {
                 FlushRow();
+            }
 
             child.Measure(new Size(childWidth, double.PositiveInfinity));
             double childHeight = child.DesiredSize.Height;
@@ -103,7 +109,9 @@ public sealed class PackedIconPanel : Panel
             currentRowHeight = Math.Max(currentRowHeight, childHeight);
 
             if (currentRowSpan >= maxColumns)
+            {
                 FlushRow();
+            }
         }
 
         FlushRow();
@@ -130,6 +138,8 @@ public sealed class PackedIconPanel : Panel
     private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is PackedIconPanel panel)
+        {
             panel.InvalidateMeasure();
+        }
     }
 }

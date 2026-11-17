@@ -52,10 +52,16 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
     /// </summary>
     internal static Task ShowAsync(MainWindow owner, string launcherId, Window windowOwner, RectInt32? setupBounds = null)
     {
-        if (TryFocus(launcherId)) return Instances[launcherId]._completion.Task;
+        if (TryFocus(launcherId))
+        {
+            return Instances[launcherId]._completion.Task;
+        }
+
         var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
         if (launcher == null || launcher.IsWebLauncher || launcher is { IsShared: true, IsSharedOwner: false })
+        {
             return Task.CompletedTask;
+        }
 
         FlyoutWindow.ParkForItemEditor(launcherId);
         var window = new LauncherItemsEditorWindow(owner, launcher, windowOwner, setupBounds);
@@ -86,7 +92,9 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
             Title = UiText.Get("prompts.launcherItems.title");
             SystemBackdrop = new MicaBackdrop();
             if (ownerHwnd != IntPtr.Zero)
+            {
                 SetWindowLongPtr(_hwnd, GWLP_HWNDPARENT, ownerHwnd);
+            }
 
             var titleBar = WindowChrome.BuildTitleBar(Title);
             ExtendsContentIntoTitleBar = true;
@@ -156,7 +164,9 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
             Activated += (_, args) =>
             {
                 if (args.WindowActivationState != WindowActivationState.Deactivated && _openModal != null)
+                {
                     FocusEditor();
+                }
             };
         }
         catch
@@ -186,9 +196,17 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
         }
 
         var area = DisplayArea.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(referenceHwnd), DisplayAreaFallback.Nearest);
-        if (area == null) return;
+        if (area == null)
+        {
+            return;
+        }
+
         double scale = GetDpiForWindow(referenceHwnd) / 96.0;
-        if (scale <= 0) scale = 1;
+        if (scale <= 0)
+        {
+            scale = 1;
+        }
+
         PlaceInWorkArea(appWindow, area.WorkArea, scale,
             area.WorkArea.X + (area.WorkArea.Width / 2), area.WorkArea.Y + (area.WorkArea.Height / 2));
     }
@@ -223,7 +241,11 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
     /// <summary>Updates the scrollable content extent without resizing/reflowing the window.</summary>
     private void UpdateContentExtent()
     {
-        if (_closing) return;
+        if (_closing)
+        {
+            return;
+        }
+
         if (_launcher.IsWebLauncher) { Close(); return; }
         _itemsView.Width = _itemsView.ContentWidth;
         _itemsView.Height = _itemsView.ContentHeight;
@@ -235,7 +257,11 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
 
     internal static bool TryFocus(string launcherId)
     {
-        if (!Instances.TryGetValue(launcherId, out var window) || window._closing) return false;
+        if (!Instances.TryGetValue(launcherId, out var window) || window._closing)
+        {
+            return false;
+        }
+
         window.FocusEditor();
         return true;
     }
@@ -243,34 +269,58 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
     /// <summary>Returning from tray/pin targets this editor's owned modal before its main view.</summary>
     private void FocusEditor()
     {
-        if (_closing) return;
-        if (IsIconic(_hwnd)) ShowWindow(_hwnd, SW_RESTORE);
+        if (_closing)
+        {
+            return;
+        }
+
+        if (IsIconic(_hwnd))
+        {
+            ShowWindow(_hwnd, SW_RESTORE);
+        }
+
         IntPtr target = _openModal != null ? WindowNative.GetWindowHandle(_openModal) : _hwnd;
-        if (IsWindow(target)) SetForegroundWindow(target);
+        if (IsWindow(target))
+        {
+            SetForegroundWindow(target);
+        }
     }
 
     internal static void CloseForLauncher(string launcherId)
     {
-        if (Instances.TryGetValue(launcherId, out var window)) window.Close();
+        if (Instances.TryGetValue(launcherId, out var window))
+        {
+            window.Close();
+        }
     }
 
     internal static void ApplyTheme(ElementTheme theme)
     {
         foreach (var window in Instances.Values)
         {
-            if (window.Content is FrameworkElement root) root.RequestedTheme = theme;
+            if (window.Content is FrameworkElement root)
+            {
+                root.RequestedTheme = theme;
+            }
         }
     }
 
     /// <summary>Cleanup runs before native destruction and is safe for programmatic Close too.</summary>
     private void Cleanup()
     {
-        if (_closing) return;
+        if (_closing)
+        {
+            return;
+        }
+
         _closing = true;
         _windowOwner.AppWindow.Closing -= Owner_Closing;
         _windowOwner.Closed -= Owner_Closed;
         if (Instances.TryGetValue(_launcher.Id, out var current) && ReferenceEquals(current, this))
+        {
             Instances.Remove(_launcher.Id);
+        }
+
         _itemsView?.SetEditing(false, notifyHost: false);
         var modal = _openModal;
         _openModal = null;
@@ -301,7 +351,11 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
     /// <summary>Prevents overlapping dialogs, keeps owner chrome normal, and never refocuses after close.</summary>
     async Task<T> ILauncherItemsHost.RunModalAsync<T>(Func<Action<Window>, Task<T>> show)
     {
-        if (_closing || _isModalOpen) return default!;
+        if (_closing || _isModalOpen)
+        {
+            return default!;
+        }
+
         _isModalOpen = true;
         var previousFocus = FocusManager.GetFocusedElement(_body.XamlRoot) as Control;
         bool wasEnabled = _bodyInputScope.IsEnabled;
@@ -325,7 +379,10 @@ internal sealed class LauncherItemsEditorWindow : Window, ILauncherItemsHost
                         && previousFocus.XamlRoot == _body.XamlRoot
                         && previousFocus.IsEnabled
                         && previousFocus.Focus(FocusState.Programmatic);
-                    if (!restored) _itemsView.Focus(FocusState.Programmatic);
+                    if (!restored)
+                    {
+                        _itemsView.Focus(FocusState.Programmatic);
+                    }
                 }
             }
         }

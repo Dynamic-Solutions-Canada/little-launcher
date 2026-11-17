@@ -46,7 +46,9 @@ internal static class CloudErrors
 
         string? serviceMessage = TryExtractMessage(body);
         if (!string.IsNullOrWhiteSpace(serviceMessage))
+        {
             return UiText.Format("cloud.providerMessage", ("provider", provider), ("message", serviceMessage));
+        }
 
         return DescribeStatus(provider, operation, status);
     }
@@ -88,12 +90,18 @@ internal static class CloudErrors
     /// </remarks>
     private static string? TryExtractMessage(string body)
     {
-        if (string.IsNullOrWhiteSpace(body)) return null;
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
 
         try
         {
             using var doc = JsonDocument.Parse(body);
-            if (!doc.RootElement.TryGetProperty("error", out var error)) return null;
+            if (!doc.RootElement.TryGetProperty("error", out var error))
+            {
+                return null;
+            }
 
             // Google sometimes nests a more specific reason here.
             if (error.TryGetProperty("errors", out var errors)

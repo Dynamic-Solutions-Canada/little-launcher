@@ -97,7 +97,9 @@ internal static unsafe class GlyphIconRenderer
         {
             Format = 87, // DXGI_FORMAT_B8G8R8A8_UNORM
             AlphaMode = 1, // D2D1_ALPHA_MODE_PREMULTIPLIED
-            DpiX = 96, DpiY = 96, Options = options
+            DpiX = 96,
+            DpiY = 96,
+            Options = options
         };
         IntPtr bitmap = IntPtr.Zero;
         // ID2D1DeviceContext::CreateBitmap, slot 57 (the Bitmap1 overload).
@@ -136,8 +138,10 @@ internal static unsafe class GlyphIconRenderer
     {
         var color = new D2D_COLOR_F
         {
-            R = foreground.R / 255f, G = foreground.G / 255f,
-            B = foreground.B / 255f, A = foreground.A / 255f
+            R = foreground.R / 255f,
+            G = foreground.G / 255f,
+            B = foreground.B / 255f,
+            A = foreground.A / 255f
         };
         IntPtr brush = IntPtr.Zero;
         // ID2D1RenderTarget::CreateSolidColorBrush, slot 8.

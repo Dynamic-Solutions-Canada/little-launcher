@@ -77,12 +77,16 @@ public static class UpdateService
     {
         var release = await Http.GetFromJsonAsync(LatestReleaseUri, GitHubJsonContext.Default.GitHubRelease);
         if (release == null || string.IsNullOrEmpty(release.TagName))
+        {
             return null;
+        }
 
         var current = ParseVersion(GetCurrentVersion());
         var latest = ParseVersion(release.TagName);
         if (current == null || latest == null)
+        {
             return null;
+        }
 
         bool updateAvailable = latest > current;
 

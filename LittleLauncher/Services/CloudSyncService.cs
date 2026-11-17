@@ -47,9 +47,20 @@ public static class CloudSyncService
     public static async Task<(bool Success, string Message)> TestAsync(int provider)
     {
         var store = StoreFor(provider);
-        if (store == null) return (false, UiText.Get("cloud.notCloudProvider"));
-        if (!store.IsAvailable) return (false, CloudSyncCredentials.NotConfiguredMessage(store.ProviderName));
-        if (!store.IsSignedIn) return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
+        if (store == null)
+        {
+            return (false, UiText.Get("cloud.notCloudProvider"));
+        }
+
+        if (!store.IsAvailable)
+        {
+            return (false, CloudSyncCredentials.NotConfiguredMessage(store.ProviderName));
+        }
+
+        if (!store.IsSignedIn)
+        {
+            return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
+        }
 
         try
         {
@@ -70,8 +81,15 @@ public static class CloudSyncService
     public static async Task<(bool Success, string Message)> UploadLaunchersAsync(int provider)
     {
         var store = StoreFor(provider);
-        if (store == null) return (false, UiText.Get("cloud.notCloudProvider"));
-        if (!store.IsSignedIn) return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
+        if (store == null)
+        {
+            return (false, UiText.Get("cloud.notCloudProvider"));
+        }
+
+        if (!store.IsSignedIn)
+        {
+            return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
+        }
 
         try
         {
@@ -101,22 +119,35 @@ public static class CloudSyncService
         int provider, bool force = false)
     {
         var store = StoreFor(provider);
-        if (store == null) return (false, UiText.Get("cloud.notCloudProvider"));
-        if (!store.IsSignedIn) return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
+        if (store == null)
+        {
+            return (false, UiText.Get("cloud.notCloudProvider"));
+        }
+
+        if (!store.IsSignedIn)
+        {
+            return (false, UiText.Format("cloud.notSignedIn", ("provider", store.ProviderName)));
+        }
 
         try
         {
             byte[]? bytes = await store.DownloadAsync();
             if (bytes == null)
+            {
                 return (false, UiText.Format("cloud.noLaunchersFile", ("provider", store.ProviderName)));
+            }
 
             using var stream = new MemoryStream(bytes, writable: false);
             var (launchers, remoteTimestamp, extensions) = LauncherPayload.Deserialize(stream);
             if (launchers == null)
+            {
                 return (false, UiText.Format("cloud.parseFailed", ("provider", store.ProviderName)));
+            }
 
             if (LauncherPayload.ShouldSkipDownload(remoteTimestamp, force, out string reason))
+            {
                 return (false, reason);
+            }
 
             await LauncherPayload.ApplyAsync(launchers, extensions);
 
@@ -134,9 +165,21 @@ public static class CloudSyncService
     private static string DescribeAge(DateTimeOffset when)
     {
         var age = DateTimeOffset.UtcNow - when;
-        if (age < TimeSpan.FromMinutes(1)) return UiText.Get("syncService.age.justNow");
-        if (age < TimeSpan.FromHours(1)) return UiText.Plural("syncService.age.minutes", (int)age.TotalMinutes);
-        if (age < TimeSpan.FromDays(1)) return UiText.Plural("syncService.age.hours", (int)age.TotalHours);
+        if (age < TimeSpan.FromMinutes(1))
+        {
+            return UiText.Get("syncService.age.justNow");
+        }
+
+        if (age < TimeSpan.FromHours(1))
+        {
+            return UiText.Plural("syncService.age.minutes", (int)age.TotalMinutes);
+        }
+
+        if (age < TimeSpan.FromDays(1))
+        {
+            return UiText.Plural("syncService.age.hours", (int)age.TotalHours);
+        }
+
         return UiText.Plural("syncService.age.days", (int)age.TotalDays);
     }
 }

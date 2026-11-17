@@ -39,7 +39,11 @@ public sealed partial class LauncherSettingsWindow
 
         widthBox.ValueChanged += (_, _) =>
         {
-            if (double.IsNaN(widthBox.Value)) return;
+            if (double.IsNaN(widthBox.Value))
+            {
+                return;
+            }
+
             launcher.WebFlyoutWidth = (int)widthBox.Value;
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
@@ -47,7 +51,11 @@ public sealed partial class LauncherSettingsWindow
         };
         heightBox.ValueChanged += (_, _) =>
         {
-            if (double.IsNaN(heightBox.Value)) return;
+            if (double.IsNaN(heightBox.Value))
+            {
+                return;
+            }
+
             launcher.WebFlyoutHeight = (int)heightBox.Value;
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
@@ -65,11 +73,18 @@ public sealed partial class LauncherSettingsWindow
         int currentZoom = launcher.ResolvedWebZoomPercent;
         int[] zoomLevels = Launcher.WebZoomLevelsIncluding(currentZoom);
         foreach (int zoom in zoomLevels)
+        {
             zoomCombo.Items.Add(new ComboBoxItem { Content = UiText.Format("launcherSettings.zoom.percent", ("percent", zoom)), Tag = zoom });
+        }
+
         zoomCombo.SelectedIndex = Array.IndexOf(zoomLevels, currentZoom);
         zoomCombo.SelectionChanged += (_, _) =>
         {
-            if (zoomCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int zoom) return;
+            if (zoomCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int zoom)
+            {
+                return;
+            }
+
             launcher.WebZoomPercent = zoom;
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
@@ -96,7 +111,10 @@ public sealed partial class LauncherSettingsWindow
             (UiText.Get("launcherSettings.opensAt.bottomRight"), WebAnchors.BottomRight),
         ];
         foreach (var a in anchors)
+        {
             anchorCombo.Items.Add(new ComboBoxItem { Content = a.Label, Tag = a.Value });
+        }
+
         anchorCombo.SelectedIndex = Array.FindIndex(anchors, a => a.Value == WebAnchors.Normalize(launcher.WebAnchor));
 
         var anchorSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
@@ -108,15 +126,25 @@ public sealed partial class LauncherSettingsWindow
 
         anchorCombo.SelectionChanged += (_, _) =>
         {
-            if (anchorCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int anchor) return;
-            if (anchor == WebAnchors.Normalize(launcher.WebAnchor)) return;
+            if (anchorCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int anchor)
+            {
+                return;
+            }
+
+            if (anchor == WebAnchors.Normalize(launcher.WebAnchor))
+            {
+                return;
+            }
 
             launcher.WebAnchor = anchor;
 
             // Any answer but "where you last dragged it" forgets where that was; otherwise picking
             // a corner would leave the flyout opening exactly where it did before, and switching
             // back would restore a position the user had stopped using.
-            if (anchor != WebAnchors.LastPosition) launcher.WebFlyoutPosition = "";
+            if (anchor != WebAnchors.LastPosition)
+            {
+                launcher.WebFlyoutPosition = "";
+            }
 
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();

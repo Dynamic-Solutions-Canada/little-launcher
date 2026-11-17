@@ -42,7 +42,11 @@ public static class AutoSyncService
     /// </summary>
     public static void Start()
     {
-        if (_running) return;
+        if (_running)
+        {
+            return;
+        }
+
         _running = true;
         RestartPeriodicTimer();
     }
@@ -68,10 +72,16 @@ public static class AutoSyncService
         _periodicTimer = null;
 
         if (!_running || !SettingsManager.Current.SftpAutoSync)
+        {
             return;
+        }
 
         int minutes = SettingsManager.Current.SftpAutoSyncInterval;
-        if (minutes <= 0) minutes = 5;
+        if (minutes <= 0)
+        {
+            minutes = 5;
+        }
+
         var interval = TimeSpan.FromMinutes(minutes);
 
         _periodicTimer = new System.Threading.Timer(
@@ -97,9 +107,20 @@ public static class AutoSyncService
     {
         try
         {
-            if (SettingsWindow.GetCurrent() != null) return true;
-            if (Windows.LauncherSettingsWindow.OpenCount > 0) return true;
-            if (Windows.FlyoutWindow.IsAnyInEditMode()) return true;
+            if (SettingsWindow.GetCurrent() != null)
+            {
+                return true;
+            }
+
+            if (Windows.LauncherSettingsWindow.OpenCount > 0)
+            {
+                return true;
+            }
+
+            if (Windows.FlyoutWindow.IsAnyInEditMode())
+            {
+                return true;
+            }
         }
         catch (Exception ex)
         {
@@ -136,7 +157,9 @@ public static class AutoSyncService
         }
 
         if (!IsSyncEnabled)
+        {
             return;
+        }
 
         // Reset the debounce timer — upload 3 seconds after last change
         _debounceTimer?.Dispose();
@@ -158,7 +181,9 @@ public static class AutoSyncService
         _debounceTimer = null;
 
         if (!IsSyncEnabled)
+        {
             return;
+        }
 
         _ = UploadAndPushSharedAsync("settings close flush");
     }
@@ -179,7 +204,9 @@ public static class AutoSyncService
     public static async Task SyncOnStartupAsync()
     {
         if (!IsSyncEnabled)
+        {
             return;
+        }
 
         try
         {
@@ -193,7 +220,9 @@ public static class AutoSyncService
                 MainWindow.Current?.RefreshTrayIcons();
             }
             else
+            {
                 Logger.Warn($"Auto-sync startup skipped: {message}");
+            }
         }
         catch (Exception ex)
         {
@@ -206,7 +235,9 @@ public static class AutoSyncService
     private static async Task UploadAndPushSharedAsync(string trigger)
     {
         if (!IsSyncEnabled)
+        {
             return;
+        }
 
         try
         {
@@ -217,7 +248,9 @@ public static class AutoSyncService
                 Logger.Info($"Auto-sync ({trigger}): uploaded launchers");
             }
             else
+            {
                 Logger.Warn($"Auto-sync ({trigger}) skipped: {message}");
+            }
         }
         catch (Exception ex)
         {
@@ -244,7 +277,9 @@ public static class AutoSyncService
     private static async Task DownloadSilentAsync(string trigger)
     {
         if (!IsSyncEnabled)
+        {
             return;
+        }
 
         if (_hasPendingLocalItemChanges || SettingsManager.Current.LaunchersModifiedUtc != default)
         {
@@ -277,7 +312,9 @@ public static class AutoSyncService
                 });
             }
             else
+            {
                 Logger.Warn($"Auto-sync ({trigger}) skipped: {message}");
+            }
         }
         catch (Exception ex)
         {

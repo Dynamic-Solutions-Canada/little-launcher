@@ -27,17 +27,23 @@ public sealed partial class LauncherItemsView
         {
             var column = FindGroupColumn(owner);
             if (_dragItem?.IsGroup == true && column != null)
+            {
                 return new ItemDropTarget(column, GetDropIndex(column, e));
+            }
 
             if (column != null && TryResolveGroupDrop(column, owner, e, out var nestedTarget))
+            {
                 return nestedTarget;
+            }
         }
         else if (_dragItem?.IsGroup != true)
         {
             foreach (var group in surface.Items.OfType<LauncherItem>().Where(item => item.IsGroup))
             {
                 if (TryResolveGroupDrop(surface, group, e, out var groupTarget))
+                {
                     return groupTarget;
+                }
             }
         }
 
@@ -54,13 +60,17 @@ public sealed partial class LauncherItemsView
         target = default;
         if (_syntheticGroups.Contains(group)
             || column.ContainerFromItem(group) is not Control container)
+        {
             return false;
+        }
 
         var point = e.GetPosition(container);
         var zone = LauncherDropGeometry.GetGroupZone(
             point.X, point.Y, container.ActualWidth, container.ActualHeight);
         if (zone == LauncherDropGeometry.GroupZone.Outside)
+        {
             return false;
+        }
 
         int groupIndex = column.Items.IndexOf(group);
         if (zone != LauncherDropGeometry.GroupZone.Inside)
@@ -73,11 +83,16 @@ public sealed partial class LauncherItemsView
         var children = _loadedGroupChildLists.FirstOrDefault(list =>
             ReferenceEquals(list.Tag, group) && list.IsLoaded);
         if (children == null)
+        {
             return false;
+        }
 
         int childIndex = GetDropIndex(children, e);
         if (e.GetPosition(children).Y < 0)
+        {
             childIndex = children.Items.Count;
+        }
+
         target = new ItemDropTarget(children, childIndex, group, container, zone);
         return true;
     }
@@ -104,13 +119,21 @@ public sealed partial class LauncherItemsView
         {
             string groupName = GetItemDisplayName(target.Group);
             if (target.Zone == LauncherDropGeometry.GroupZone.Before)
+            {
                 return UiText.Format("items.dragBeforeGroup", ("group", groupName));
+            }
+
             if (target.Zone == LauncherDropGeometry.GroupZone.After)
+            {
                 return UiText.Format("items.dragAfterGroup", ("group", groupName));
+            }
 
             if (target.Index < target.Group.Children.Count)
+            {
                 return UiText.Format("items.dragIntoGroupBefore",
                     ("group", groupName), ("item", GetItemDisplayName(target.Group.Children[target.Index])));
+            }
+
             return UiText.Format("items.dragIntoGroupEnd", ("group", groupName));
         }
 
@@ -129,13 +152,18 @@ public sealed partial class LauncherItemsView
     {
         ShowInsertionIndicator(target.List, target.Index);
         if (target.GroupContainer is not { } container)
+        {
             return;
+        }
 
         if (target.Zone == LauncherDropGeometry.GroupZone.Inside)
         {
             ShowGroupDropHighlight(container);
             if (target.Group != null && target.Index >= target.Group.Children.Count)
+            {
                 ShowGroupEndFeedback(target);
+            }
+
             return;
         }
 
@@ -145,7 +173,10 @@ public sealed partial class LauncherItemsView
                 .TransformPoint(new global::Windows.Foundation.Point(0, 0));
             double y = origin.Y;
             if (target.Zone == LauncherDropGeometry.GroupZone.After)
+            {
                 y += container.ActualHeight;
+            }
+
             _insertionIndicator!.Width = container.ActualWidth;
             _insertionIndicator.Height = 2;
             _insertionIndicator.Margin = new Thickness(origin.X, y, 0, 0);
@@ -171,7 +202,9 @@ public sealed partial class LauncherItemsView
     {
         string attemptKey = _dragToken ?? $"external:{_sessionVersion}";
         if (_failedGroupDropToken == attemptKey)
+        {
             return;
+        }
 
         try
         {
@@ -230,7 +263,10 @@ public sealed partial class LauncherItemsView
         {
             _failedGroupDropToken = attemptKey;
             if (_groupDropHighlight != null)
+            {
                 _groupDropHighlight.Visibility = Visibility.Collapsed;
+            }
+
             Logger.Warn(ex, "Could not show the receiving group highlight");
         }
     }
@@ -245,11 +281,15 @@ public sealed partial class LauncherItemsView
     {
         if (target.List.Items.Count == 0
             || target.List.ContainerFromIndex(target.List.Items.Count - 1) is not Control lastChild)
+        {
             return;
+        }
 
         var marker = LauncherDropGeometry.GetEndMarker(lastChild.ActualWidth, lastChild.ActualHeight);
         if (marker == null)
+        {
             return;
+        }
 
         try
         {
@@ -280,7 +320,9 @@ public sealed partial class LauncherItemsView
             // A rebuild can detach the child during feedback. Retain the ordinary caret
             // and accepted move; decoration must never interrupt a valid drop.
             if (_groupEndFade != null)
+            {
                 _groupEndFade.Visibility = Visibility.Collapsed;
+            }
         }
     }
 
@@ -292,7 +334,9 @@ public sealed partial class LauncherItemsView
     private void ConfigureGroupEndGradient(double markerTop, double childHeight)
     {
         if (_groupEndFade?.Background is not LinearGradientBrush gradient)
+        {
             return;
+        }
 
         var edgeColor = gradient.GradientStops[2].Color;
         var transparent = global::Windows.UI.Color.FromArgb(0, edgeColor.R, edgeColor.G, edgeColor.B);
@@ -332,10 +376,16 @@ public sealed partial class LauncherItemsView
                 return origin.X + (container.ActualWidth * 2) > available + 1;
             }
 
-            if (dropIndex <= 0) return false;
+            if (dropIndex <= 0)
+            {
+                return false;
+            }
 
             // Starts a row if the preceding item sits on an earlier row.
-            if (listView.ContainerFromIndex(dropIndex - 1) is not Control previous) return false;
+            if (listView.ContainerFromIndex(dropIndex - 1) is not Control previous)
+            {
+                return false;
+            }
 
             double targetY = container.TransformToVisual(listView)
                 .TransformPoint(new global::Windows.Foundation.Point(0, 0)).Y;
@@ -392,7 +442,9 @@ public sealed partial class LauncherItemsView
             {
                 int index = Math.Min(dropIndex, listView.Items.Count - 1);
                 if (index < 0 || listView.ContainerFromIndex(index) is not Control container)
+                {
                     return;
+                }
 
                 anchor = container;
                 width = container.ActualWidth;
@@ -406,7 +458,9 @@ public sealed partial class LauncherItemsView
                     height = container.ActualHeight;
                     stroke = new Thickness(3, 0, 0, 0);
                     if (appending)
+                    {
                         xOffset = Math.Max(0, container.ActualWidth - width);
+                    }
                 }
                 else if (appending)
                 {
@@ -433,7 +487,9 @@ public sealed partial class LauncherItemsView
             }
 
             if (width <= 0 || height <= 0)
+            {
                 return;
+            }
 
             var origin = anchor.TransformToVisual(RootGrid)
                 .TransformPoint(new global::Windows.Foundation.Point(0, 0));
@@ -453,28 +509,42 @@ public sealed partial class LauncherItemsView
     private void ClearInsertionIndicator()
     {
         if (_insertionIndicator != null)
+        {
             _insertionIndicator.Visibility = Visibility.Collapsed;
+        }
+
         if (_groupDropHighlight != null)
+        {
             _groupDropHighlight.Visibility = Visibility.Collapsed;
+        }
+
         if (_groupEndFade != null)
+        {
             _groupEndFade.Visibility = Visibility.Collapsed;
+        }
     }
 
     private static int GetDropIndex(ListViewBase listView, DragEventArgs e)
     {
         if (IsGridItemsPanel(listView.ItemsPanelRoot))
+        {
             return GetDropIndexGrid(listView, e);
+        }
 
         var position = e.GetPosition(listView);
         for (int index = 0; index < listView.Items.Count; index++)
         {
             if (listView.ContainerFromIndex(index) is not Control container)
+            {
                 continue;
+            }
 
             var transform = container.TransformToVisual(listView);
             var point = transform.TransformPoint(new global::Windows.Foundation.Point(0, 0));
             if (position.Y < point.Y + (container.ActualHeight / 2))
+            {
                 return index;
+            }
         }
 
         return listView.Items.Count;
@@ -485,7 +555,9 @@ public sealed partial class LauncherItemsView
         var position = e.GetPosition(listView);
         int count = listView.Items.Count;
         if (count == 0)
+        {
             return 0;
+        }
 
         int bestIndex = count;
         double bestDistance = double.MaxValue;
@@ -494,7 +566,9 @@ public sealed partial class LauncherItemsView
         for (int index = 0; index < count; index++)
         {
             if (listView.ContainerFromIndex(index) is not Control container)
+            {
                 continue;
+            }
 
             var transform = container.TransformToVisual(listView);
             var point = transform.TransformPoint(new global::Windows.Foundation.Point(0, 0));
@@ -508,7 +582,9 @@ public sealed partial class LauncherItemsView
             if (position.Y >= top && position.Y < bottom)
             {
                 if (position.X < midX)
+                {
                     return index;
+                }
 
                 bestIndex = index + 1;
                 bestDistance = 0;
@@ -529,7 +605,9 @@ public sealed partial class LauncherItemsView
         // whenever the pointer happened to sit left of its midpoint, so appending required
         // landing precisely beside the final item.
         if (position.Y >= contentBottom)
+        {
             return count;
+        }
 
         return Math.Min(bestIndex, count);
     }

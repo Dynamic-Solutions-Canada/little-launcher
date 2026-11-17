@@ -60,7 +60,9 @@ public sealed class TextPromptWindow : Window
         // Owned windows always sit above their owner — required because the flyout sets
         // IsAlwaysOnTop and would otherwise cover this.
         if (ownerHwnd != IntPtr.Zero)
+        {
             NativeMethods.SetWindowLongPtr(_hwnd, NativeMethods.GWLP_HWNDPARENT, ownerHwnd);
+        }
 
         var textBox = new TextBox
         {
@@ -153,10 +155,16 @@ public sealed class TextPromptWindow : Window
     private void SizeAndCentre()
     {
         var appWindow = AppWindow.GetFromWindowId(Win32Interop.GetWindowIdFromWindow(_hwnd));
-        if (appWindow == null) return;
+        if (appWindow == null)
+        {
+            return;
+        }
 
         double scale = NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         int width = (int)(WindowWidthDips * scale);
         int height = (int)(WindowHeightDips * scale);

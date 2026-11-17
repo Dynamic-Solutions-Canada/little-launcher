@@ -208,8 +208,10 @@ internal static class IconGallery
         var cancelButton = new Button { Content = UiText.Get("common.cancel") };
         var confirmBar = new StackPanel
         {
-            Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 8, Margin = new Thickness(0, 8, 0, 0)
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8,
+            Margin = new Thickness(0, 8, 0, 0)
         };
         confirmBar.Children.Add(confirmButton);
         confirmBar.Children.Add(cancelButton);
@@ -217,7 +219,9 @@ internal static class IconGallery
 
         var bottomBar = new StackPanel
         {
-            Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 8, 0, 0)
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Margin = new Thickness(0, 8, 0, 0)
         };
         if (onReset != null)
         {
@@ -525,7 +529,10 @@ internal static class IconGallery
         foreach (var (color, nameKey) in filtered)
         {
             string sourcePath = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcons", $"{color}.png");
-            if (!File.Exists(sourcePath)) continue;
+            if (!File.Exists(sourcePath))
+            {
+                continue;
+            }
 
             var btn = new Button
             {
@@ -616,7 +623,9 @@ internal static class IconGallery
         {
             var catalog = await GetSelfhStCatalogAsync();
             if (isCurrentRequest?.Invoke() == false)
+            {
                 return;
+            }
 
             var visible = FilterSelfhStIcons(catalog, query).Take(MaxVisibleSelfhStIcons).ToList();
             if (string.IsNullOrWhiteSpace(query) && !string.IsNullOrEmpty(currentImagePath))
@@ -728,7 +737,9 @@ internal static class IconGallery
         catch
         {
             if (isCurrentRequest?.Invoke() == false)
+            {
                 return;
+            }
 
             panel.Children.Clear();
             panel.Children.Add(new TextBlock
@@ -790,7 +801,10 @@ internal static class IconGallery
             foreach (var (color, nameKey) in filteredColors)
             {
                 string sourcePath = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcons", $"{color}.png");
-                if (!File.Exists(sourcePath)) continue;
+                if (!File.Exists(sourcePath))
+                {
+                    continue;
+                }
 
                 var btn = new Button
                 {
@@ -806,14 +820,17 @@ internal static class IconGallery
                 var content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
                 content.Children.Add(new Image
                 {
-                    Width = 36, Height = 36,
+                    Width = 36,
+                    Height = 36,
                     Source = new BitmapImage(new Uri(sourcePath, UriKind.Absolute)),
                     Margin = new Thickness(0, 0, 0, 4)
                 });
                 string colorName = UiText.Get(nameKey);
                 content.Children.Add(new TextBlock
                 {
-                    Text = colorName, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center
+                    Text = colorName,
+                    FontSize = 11,
+                    HorizontalAlignment = HorizontalAlignment.Center
                 });
                 btn.Content = content;
                 ToolTipService.SetToolTip(btn, UiText.Format("icons.appColorTooltip", ("color", colorName)));
@@ -826,7 +843,9 @@ internal static class IconGallery
         }
 
         if (panel.Children.Count == 0)
+        {
             panel.Children.Add(NoResults());
+        }
     }
 
     /// <summary>Wraps only small image-option lists; large symbol catalogs keep native UI virtualization.</summary>
@@ -924,7 +943,11 @@ internal static class IconGallery
     /// </summary>
     public static bool IsFluentGlyph(string? glyph)
     {
-        if (string.IsNullOrEmpty(glyph)) return true; // treat default/empty as fluent
+        if (string.IsNullOrEmpty(glyph))
+        {
+            return true; // treat default/empty as fluent
+        }
+
         int cp = char.IsHighSurrogate(glyph[0]) && glyph.Length > 1
             ? char.ConvertToUtf32(glyph[0], glyph[1])
             : glyph[0];
@@ -1058,7 +1081,10 @@ internal static class IconGallery
     {
         var name = new System.Text.StringBuilder(reference.Length);
         foreach (char c in reference.ToLowerInvariant())
+        {
             name.Append(Array.IndexOf(Path.GetInvalidFileNameChars(), c) >= 0 ? '_' : c);
+        }
+
         return name.ToString();
     }
 
@@ -1099,7 +1125,9 @@ internal static class IconGallery
         {
             // The user has typed on since this tile was built; the panel it lives in is gone.
             if (isCurrentRequest?.Invoke() == false)
+            {
                 return;
+            }
 
             byte[] bytes = await SelfhStHttp.GetByteArrayAsync(GetSelfhStPngUrl(reference));
             await WriteSelfhStCacheFileAsync(cachePath, bytes);
@@ -1174,7 +1202,9 @@ internal static class IconGallery
     private static IEnumerable<SelfhStIconEntry> FilterSelfhStIcons(IEnumerable<SelfhStIconEntry> icons, string query)
     {
         if (string.IsNullOrWhiteSpace(query))
+        {
             return icons;
+        }
 
         return icons.Where(icon =>
             icon.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
@@ -1196,13 +1226,17 @@ internal static class IconGallery
     private static async Task<IReadOnlyList<SelfhStIconEntry>> GetSelfhStCatalogAsync()
     {
         if (_selfhStCatalog != null && DateTimeOffset.UtcNow - _selfhStCatalogFetchedAt < SelfhStCatalogTtl)
+        {
             return _selfhStCatalog;
+        }
 
         await SelfhStCatalogLock.WaitAsync();
         try
         {
             if (_selfhStCatalog != null && DateTimeOffset.UtcNow - _selfhStCatalogFetchedAt < SelfhStCatalogTtl)
+            {
                 return _selfhStCatalog;
+            }
 
             string catalogPath = GetSelfhStCatalogPath();
             var cached = ReadSelfhStCatalogFile(catalogPath);
@@ -1254,7 +1288,9 @@ internal static class IconGallery
         try
         {
             if (!File.Exists(path))
+            {
                 return null;
+            }
 
             var icons = ParseSelfhStCatalog(File.ReadAllText(path));
             return icons.Count > 0 ? icons : null;
@@ -1273,7 +1309,9 @@ internal static class IconGallery
     {
         string cachePath = Path.Combine(GetItemIconCacheDir(), $"selfhst-{SelfhStFileName(icon.Reference)}.png");
         if (File.Exists(cachePath))
+        {
             return cachePath;
+        }
 
         try
         {
@@ -1328,7 +1366,11 @@ internal static class IconGallery
 
     private static SolidColorBrush? ParseHexBrush(string? hex)
     {
-        if (string.IsNullOrEmpty(hex) || hex[0] != '#') return null;
+        if (string.IsNullOrEmpty(hex) || hex[0] != '#')
+        {
+            return null;
+        }
+
         try
         {
             byte r = Convert.ToByte(hex.Substring(1, 2), 16);
@@ -1386,7 +1428,9 @@ internal static class IconGallery
             void UpdateSelection(Button b, string h)
             {
                 if (selectedButton != null)
+                {
                     selectedButton.BorderBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                }
 
                 selectedButton = b;
                 selectedColor = h;
@@ -1427,7 +1471,10 @@ internal static class IconGallery
     private static Brush GetAccentBrush()
     {
         if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var b))
+        {
             return (Brush)b;
+        }
+
         return new SolidColorBrush(Microsoft.UI.Colors.DodgerBlue);
     }
 

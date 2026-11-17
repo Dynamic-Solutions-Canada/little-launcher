@@ -69,7 +69,10 @@ public sealed partial class WebFlyoutWindow
         string launcherId, string url, Func<bool> isCurrent, CancellationToken cancellationToken)
     {
         bool IsCurrent() => !cancellationToken.IsCancellationRequested && isCurrent();
-        if (!IsCurrent()) return null;
+        if (!IsCurrent())
+        {
+            return null;
+        }
 
         byte[]? loaded = null;
         try
@@ -84,11 +87,22 @@ public sealed partial class WebFlyoutWindow
         {
             Logger.Debug(ex, "The loaded page could not provide an icon preview; trying its site directly");
         }
-        if (!IsCurrent()) return null;
-        if (loaded is { Length: > 0 }) return loaded;
+        if (!IsCurrent())
+        {
+            return null;
+        }
+
+        if (loaded is { Length: > 0 })
+        {
+            return loaded;
+        }
 
         byte[]? direct = await Services.FaviconService.FetchSiteIconPreviewAsync(NormalizeUrl(url), cancellationToken);
-        if (!IsCurrent()) return null;
+        if (!IsCurrent())
+        {
+            return null;
+        }
+
         return direct == null ? null : NormalizeAdoptedIcon(direct);
     }
 

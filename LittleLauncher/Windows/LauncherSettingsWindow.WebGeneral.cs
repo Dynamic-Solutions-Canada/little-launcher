@@ -28,7 +28,11 @@ public sealed partial class LauncherSettingsWindow
         urlBox.LostFocus += (_, _) => CommitWebUrl();
         urlBox.KeyDown += (_, e) =>
         {
-            if (e.Key != global::Windows.System.VirtualKey.Enter) return;
+            if (e.Key != global::Windows.System.VirtualKey.Enter)
+            {
+                return;
+            }
+
             e.Handled = true;
             CommitWebUrl();
         };
@@ -47,7 +51,10 @@ public sealed partial class LauncherSettingsWindow
         bookmarkButton.Click += async (_, _) =>
         {
             var picked = await Pages.BookmarkPicker.PickAsync(Content.XamlRoot);
-            if (picked == null) return;
+            if (picked == null)
+            {
+                return;
+            }
 
             urlBox.Text = picked.Url;
 
@@ -55,7 +62,9 @@ public sealed partial class LauncherSettingsWindow
             // doing that silently at close would overwrite a name the user had just typed.
             CommitWebUrl();
             if (_nameBox != null && string.IsNullOrWhiteSpace(_nameBox.Text))
+            {
                 _nameBox.Text = picked.Name;
+            }
         };
 
         var urlControls = new Grid();

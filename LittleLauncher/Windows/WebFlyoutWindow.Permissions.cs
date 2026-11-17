@@ -253,7 +253,10 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Says one line above the page, and takes it away again.</summary>
     internal void ShowNotice(string text, int seconds = 12)
     {
-        if (_noticeBar == null || _noticeText == null) return;
+        if (_noticeBar == null || _noticeText == null)
+        {
+            return;
+        }
 
         _noticeText.Text = text;
         _noticeBar.Visibility = Visibility.Visible;
@@ -272,7 +275,10 @@ public sealed partial class WebFlyoutWindow
     private void HideNotice()
     {
         _noticeTimer?.Stop();
-        if (_noticeBar != null) _noticeBar.Visibility = Visibility.Collapsed;
+        if (_noticeBar != null)
+        {
+            _noticeBar.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void EnqueuePrompt(PromptRequest request)
@@ -283,8 +289,15 @@ public sealed partial class WebFlyoutWindow
 
     private void ShowNextPrompt()
     {
-        if (_promptBar == null || IsPromptOpen) return;
-        if (_prompts.Count == 0) return;
+        if (_promptBar == null || IsPromptOpen)
+        {
+            return;
+        }
+
+        if (_prompts.Count == 0)
+        {
+            return;
+        }
 
         var next = _prompts.Peek();
         _promptText!.Text = next.Text;
@@ -295,7 +308,10 @@ public sealed partial class WebFlyoutWindow
 
     private void AnswerPrompt(bool accepted)
     {
-        if (_prompts.Count == 0) return;
+        if (_prompts.Count == 0)
+        {
+            return;
+        }
 
         var answered = _prompts.Dequeue();
         _promptBar!.Visibility = Visibility.Collapsed;
@@ -320,12 +336,18 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private static void ReleaseWebViewObject(object? projected)
     {
-        if (projected == null) return;
+        if (projected == null)
+        {
+            return;
+        }
 
         try
         {
             if (projected is WinRT.IWinRTObject winrt) { winrt.NativeObject.Dispose(); return; }
-            if (projected is IDisposable disposable) disposable.Dispose();
+            if (projected is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
         catch (Exception ex)
         {
@@ -364,7 +386,10 @@ public sealed partial class WebFlyoutWindow
 
     private void ResolvePermission(bool allowed)
     {
-        if (_permissionDeferrals.Count == 0) return;
+        if (_permissionDeferrals.Count == 0)
+        {
+            return;
+        }
 
         var (args, deferral) = _permissionDeferrals.Dequeue();
         try
@@ -380,7 +405,10 @@ public sealed partial class WebFlyoutWindow
             deferral.Complete();
         }
 
-        if (allowed) OnPermissionGranted(args.PermissionKind);
+        if (allowed)
+        {
+            OnPermissionGranted(args.PermissionKind);
+        }
 
         // Answered and completed, so the args are ours to let go of — on this thread.
         ReleaseWebViewObject(args);
@@ -416,7 +444,10 @@ public sealed partial class WebFlyoutWindow
         }
 
         _prompts.Clear();
-        if (_promptBar != null) _promptBar.Visibility = Visibility.Collapsed;
+        if (_promptBar != null)
+        {
+            _promptBar.Visibility = Visibility.Collapsed;
+        }
     }
 
     /// <summary>
@@ -430,9 +461,20 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void OnPermissionGranted(CoreWebView2PermissionKind kind)
     {
-        if (kind != CoreWebView2PermissionKind.Notifications) return;
-        if (WebHiddenPolicies.Normalize(_launcher.WebHiddenPolicy) == WebHiddenPolicies.KeepRunning) return;
-        if (!KeepRunningOffered.Add(_launcher.Id)) return;
+        if (kind != CoreWebView2PermissionKind.Notifications)
+        {
+            return;
+        }
+
+        if (WebHiddenPolicies.Normalize(_launcher.WebHiddenPolicy) == WebHiddenPolicies.KeepRunning)
+        {
+            return;
+        }
+
+        if (!KeepRunningOffered.Add(_launcher.Id))
+        {
+            return;
+        }
 
         EnqueuePrompt(new PromptRequest(
             UiText.Format("webNotifications.keepRunningPrompt", ("launcher", _launcher.Name)),
@@ -440,7 +482,10 @@ public sealed partial class WebFlyoutWindow
             UiText.Get("webNotifications.notNow"),
             accepted =>
             {
-                if (!accepted) return;
+                if (!accepted)
+                {
+                    return;
+                }
 
                 _launcher.WebHiddenPolicy = WebHiddenPolicies.KeepRunning;
                 SettingsManager.SaveSettings();
@@ -533,7 +578,11 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Applies a reset that was asked for while this launcher had no browser.</summary>
     private void ApplyPendingPermissionReset(CoreWebView2 core)
     {
-        if (!PendingPermissionResets.Remove(_launcher.Id)) return;
+        if (!PendingPermissionResets.Remove(_launcher.Id))
+        {
+            return;
+        }
+
         _ = ClearPermissionsAsync(core);
     }
 
@@ -821,7 +870,10 @@ public sealed partial class WebFlyoutWindow
     {
         core.IsDocumentPlayingAudioChanged += (sender, _) =>
         {
-            if (!sender.IsDocumentPlayingAudio) return;
+            if (!sender.IsDocumentPlayingAudio)
+            {
+                return;
+            }
 
             long now = Environment.TickCount64;
             _pageAudioStartedAt = now;
@@ -830,7 +882,9 @@ public sealed partial class WebFlyoutWindow
             // one is silent. This is the half that catches a page whose sound trails its
             // notification, which no check made at toast time could see.
             if (_lastToastAt != 0 && now - _lastToastAt <= PageSoundWindowMs)
+            {
                 _pageSoundedForToastAt = now;
+            }
         };
     }
 
@@ -841,7 +895,10 @@ public sealed partial class WebFlyoutWindow
 
         try
         {
-            if (core?.IsDocumentPlayingAudio == true) return true;
+            if (core?.IsDocumentPlayingAudio == true)
+            {
+                return true;
+            }
         }
         catch (Exception ex)
         {
@@ -849,7 +906,10 @@ public sealed partial class WebFlyoutWindow
             Logger.Debug(ex, "Reading the audio state failed for launcher {Name}", _launcher.Name);
         }
 
-        if (_pageAudioStartedAt != 0 && now - _pageAudioStartedAt <= PageSoundWindowMs) return true;
+        if (_pageAudioStartedAt != 0 && now - _pageAudioStartedAt <= PageSoundWindowMs)
+        {
+            return true;
+        }
 
         return _pageSoundedForToastAt != 0 && now - _pageSoundedForToastAt <= PageSoundMemoryMs;
     }
@@ -880,7 +940,10 @@ public sealed partial class WebFlyoutWindow
     private void ShowNotificationToast(CoreWebView2 source, JsonNode message)
     {
         string tag = message["tag"]?.GetValue<string>() ?? "";
-        if (string.IsNullOrEmpty(tag)) return;
+        if (string.IsNullOrEmpty(tag))
+        {
+            return;
+        }
 
         string title = message["title"]?.GetValue<string>() ?? "";
         string body = message["body"]?.GetValue<string>() ?? "";
@@ -903,7 +966,9 @@ public sealed partial class WebFlyoutWindow
                 .AddText(string.IsNullOrWhiteSpace(title) ? _launcher.Name : title);
 
             if (!string.IsNullOrWhiteSpace(body))
+            {
                 builder.AddText(body);
+            }
 
             string identifier = ToastIdentifier(tag);
             builder.SetTag(identifier);
@@ -934,7 +999,9 @@ public sealed partial class WebFlyoutWindow
                     launcherIcon ?? "(null)", exists);
 
                 if (exists)
+                {
                     builder.SetAppLogoOverride(new Uri(launcherIcon!));
+                }
             }
 
             // Actions arrive by either of two routes, and which one carries them depends on how
@@ -945,11 +1012,16 @@ public sealed partial class WebFlyoutWindow
             // AddNotificationActions is a no-op when nothing was ever sent for this tag, so the
             // common case is unaffected.
             if (message["actions"] is JsonArray actions && actions.Count > 0)
+            {
                 _pendingActions[tag] = (JsonArray)actions.DeepClone();
+            }
 
             AddNotificationActions(builder, tag);
 
-            if (silent) builder.MuteAudio();
+            if (silent)
+            {
+                builder.MuteAudio();
+            }
 
             // Before the Show, so a sound the page starts while Windows is putting the toast up is
             // still attributed to it rather than being missed by a few milliseconds.
@@ -983,15 +1055,24 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Writes the page-supplied icon to disk, or null when there was not a usable one.</summary>
     private string? SaveNotificationIcon(string tag, string dataUrl)
     {
-        if (string.IsNullOrEmpty(dataUrl)) return null;
+        if (string.IsNullOrEmpty(dataUrl))
+        {
+            return null;
+        }
 
         int comma = dataUrl.IndexOf(',', StringComparison.Ordinal);
-        if (comma < 0 || !dataUrl.StartsWith("data:", StringComparison.Ordinal)) return null;
+        if (comma < 0 || !dataUrl.StartsWith("data:", StringComparison.Ordinal))
+        {
+            return null;
+        }
 
         try
         {
             byte[] bytes = Convert.FromBase64String(dataUrl[(comma + 1)..]);
-            if (bytes.Length == 0) return null;
+            if (bytes.Length == 0)
+            {
+                return null;
+            }
 
             string path = NotificationIconPath(ToastIdentifier(tag));
             System.IO.File.WriteAllBytes(path, bytes);
@@ -1008,7 +1089,10 @@ public sealed partial class WebFlyoutWindow
     private void PostNotificationEvent(string kind, string tag)
     {
         var core = _webView?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         try
         {
@@ -1047,7 +1131,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void CloseNotificationToast(string tag)
     {
-        if (string.IsNullOrEmpty(tag)) return;
+        if (string.IsNullOrEmpty(tag))
+        {
+            return;
+        }
 
         string identifier = ToastIdentifier(tag);
         int index = _liveToastTags.FindIndex(t => t.Tag == identifier);
@@ -1100,7 +1187,11 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void ClearNotificationBacklog()
     {
-        if (!_hasOutstandingToasts) return;
+        if (!_hasOutstandingToasts)
+        {
+            return;
+        }
+
         _hasOutstandingToasts = false;
 
         Logger.Info("Notification: clearing {Count} tracked toast(s) for {Name}",
@@ -1224,7 +1315,10 @@ public sealed partial class WebFlyoutWindow
         try
         {
             var payload = System.Xml.Linq.XDocument.Parse(built.Payload);
-            if (payload.Root == null) return built;
+            if (payload.Root == null)
+            {
+                return built;
+            }
 
             // AddFirst, because a header is a child of <toast> and belongs ahead of <visual>.
             // Built as an XElement rather than spliced in as text: a launcher's name is arbitrary
@@ -1327,7 +1421,9 @@ public sealed partial class WebFlyoutWindow
                 try
                 {
                     if (System.IO.File.GetLastWriteTimeUtc(file) < writtenBefore)
+                    {
                         System.IO.File.Delete(file);
+                    }
                 }
                 catch { }
             }
@@ -1350,7 +1446,10 @@ public sealed partial class WebFlyoutWindow
     private static string ToastIdentifier(string value)
     {
         var cleaned = new string([.. value.Where(char.IsLetterOrDigit)]);
-        if (cleaned.Length is > 0 and <= 64) return cleaned;
+        if (cleaned.Length is > 0 and <= 64)
+        {
+            return cleaned;
+        }
 
         byte[] hash = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(value));
         return Convert.ToHexString(hash);
@@ -1363,7 +1462,9 @@ public sealed partial class WebFlyoutWindow
     internal static bool HandleNotificationActivation(IDictionary<string, string> arguments, string reply = "")
     {
         if (!arguments.TryGetValue("launcher", out string? launcherId) || string.IsNullOrEmpty(launcherId))
+        {
             return false;
+        }
 
         // A header click acknowledges the whole launcher, and Windows does not clear a header's
         // notifications itself — its own documentation says "Clicking on a header doesn't clear the
@@ -1374,12 +1475,17 @@ public sealed partial class WebFlyoutWindow
         // launcher already open and in front never raises another activation, so its notifications
         // would survive the very click that acknowledged them.
         if (arguments.ContainsKey("header") && Instances.TryGetValue(launcherId, out var acknowledged))
+        {
             acknowledged.ClearNotificationBacklog();
+        }
 
         // An action button is answered in the page, not by opening the flyout. Replying to a
         // message from the toast and then having the window fly open would undo the point of
         // replying from the toast.
-        if (TryDeliverAction(launcherId, arguments, reply)) return true;
+        if (TryDeliverAction(launcherId, arguments, reply))
+        {
+            return true;
+        }
 
         // Clicked. Two audiences, and a page has only one of them:
         //
@@ -1407,8 +1513,15 @@ public sealed partial class WebFlyoutWindow
         }
 
         var owner = MainWindow.Current;
-        if (owner == null) return false;
-        if (SettingsManager.Current.Launchers.All(l => l.Id != launcherId)) return false;
+        if (owner == null)
+        {
+            return false;
+        }
+
+        if (SettingsManager.Current.Launchers.All(l => l.Id != launcherId))
+        {
+            return false;
+        }
 
         // Already open: bring it forward rather than toggling, which would dismiss it.
         //

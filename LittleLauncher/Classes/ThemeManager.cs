@@ -19,7 +19,9 @@ internal static class ThemeManager
         SettingsManager.SaveSettings();
 
         if ((Application.Current as App)?.m_window is MainWindow mw)
+        {
             ApplyTheme(theme, mw);
+        }
     }
 
     private static void ApplyTheme(int theme, Window window)
@@ -32,19 +34,25 @@ internal static class ThemeManager
         };
 
         if (window.Content is FrameworkElement fe)
+        {
             fe.RequestedTheme = requestedTheme;
+        }
 
         // Apply to settings window too
         var settingsWindow = SettingsWindow.GetCurrent();
         if (settingsWindow?.Content is FrameworkElement sfe)
+        {
             sfe.RequestedTheme = requestedTheme;
+        }
 
         Windows.LauncherItemsEditorWindow.ApplyTheme(requestedTheme);
 
         // Apply to flyout window too
         var flyout = Windows.FlyoutWindow.GetCurrent();
         if (flyout?.Content is FrameworkElement ffe)
+        {
             ffe.RequestedTheme = requestedTheme;
+        }
     }
 
     private static readonly global::Windows.UI.ViewManagement.UISettings UiSettings = new();

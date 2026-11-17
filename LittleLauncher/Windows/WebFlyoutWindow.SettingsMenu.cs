@@ -26,7 +26,9 @@ public sealed partial class WebFlyoutWindow
         }
 
         if (submenu.Items.Count > 0)
+        {
             submenu.Items.Add(new MenuFlyoutSeparator());
+        }
 
         var settings = new MenuFlyoutItem
         {

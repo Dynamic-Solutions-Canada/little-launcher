@@ -743,7 +743,11 @@ public sealed partial class WebFlyoutWindow : Window
             // Escape while editing the address means "forget what I typed", not "close the
             // window" — checked here rather than relying on the TextBox marking the key handled
             // first, because an accelerator and a bubbling KeyDown do not resolve in a fixed order.
-            if (CancelAddressEditing()) return;
+            if (CancelAddressEditing())
+            {
+                return;
+            }
+
             HideFlyout();
         };
         root.KeyboardAccelerators.Add(escape);
@@ -866,8 +870,15 @@ public sealed partial class WebFlyoutWindow : Window
                 // A null Background is not hit-testable; a transparent one is.
                 Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
             };
-            if (width > 0) grip.Width = width;
-            if (height > 0) grip.Height = height;
+            if (width > 0)
+            {
+                grip.Width = width;
+            }
+
+            if (height > 0)
+            {
+                grip.Height = height;
+            }
 
             grip.PointerPressed += Grip_PointerPressed;
             grip.PointerMoved += Grip_PointerMoved;
@@ -912,7 +923,9 @@ public sealed partial class WebFlyoutWindow : Window
     {
         var visibility = CanResizeWindow ? Visibility.Visible : Visibility.Collapsed;
         foreach (var grip in _resizeGrips)
+        {
             grip.Visibility = visibility;
+        }
     }
 
     private bool CanResizeWindow => !_isMaximized && (!_isFullScreen || _fullScreenInWindow);
@@ -923,11 +936,21 @@ public sealed partial class WebFlyoutWindow : Window
         // resize from here would also persist the maximized size onto the launcher, which is
         // exactly what "temporarily" rules out. The grips are collapsed in both states
         // (UpdateResizeGripVisibility); this stays as the backstop.
-        if (!CanResizeWindow) return;
-        if (sender is not ResizeGrip grip || grip.Tag is not ResizeEdges edges) return;
+        if (!CanResizeWindow)
+        {
+            return;
+        }
+
+        if (sender is not ResizeGrip grip || grip.Tag is not ResizeEdges edges)
+        {
+            return;
+        }
 
         GetCursorPos(out _resizeStartCursor);
-        if (!GetWindowRect(_hwnd, out _resizeStartRect)) return;
+        if (!GetWindowRect(_hwnd, out _resizeStartRect))
+        {
+            return;
+        }
 
         _resizeEdges = edges;
         _isResizing = true;
@@ -944,7 +967,10 @@ public sealed partial class WebFlyoutWindow : Window
 
     private void Grip_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (!_isResizing) return;
+        if (!_isResizing)
+        {
+            return;
+        }
 
         GetCursorPos(out var cursor);
         int dx = cursor.X - _resizeStartCursor.X;
@@ -959,14 +985,31 @@ public sealed partial class WebFlyoutWindow : Window
         int right = _resizeStartRect.Right;
         int bottom = _resizeStartRect.Bottom;
 
-        if (_resizeEdges.HasFlag(ResizeEdges.Left)) left = Math.Min(left + dx, right - minWidth);
-        if (_resizeEdges.HasFlag(ResizeEdges.Right)) right = Math.Max(right + dx, left + minWidth);
-        if (_resizeEdges.HasFlag(ResizeEdges.Top)) top = Math.Min(top + dy, bottom - minHeight);
-        if (_resizeEdges.HasFlag(ResizeEdges.Bottom)) bottom = Math.Max(bottom + dy, top + minHeight);
+        if (_resizeEdges.HasFlag(ResizeEdges.Left))
+        {
+            left = Math.Min(left + dx, right - minWidth);
+        }
+
+        if (_resizeEdges.HasFlag(ResizeEdges.Right))
+        {
+            right = Math.Max(right + dx, left + minWidth);
+        }
+
+        if (_resizeEdges.HasFlag(ResizeEdges.Top))
+        {
+            top = Math.Min(top + dy, bottom - minHeight);
+        }
+
+        if (_resizeEdges.HasFlag(ResizeEdges.Bottom))
+        {
+            bottom = Math.Max(bottom + dy, top + minHeight);
+        }
 
         if (left != _resizeStartRect.Left || top != _resizeStartRect.Top ||
             right != _resizeStartRect.Right || bottom != _resizeStartRect.Bottom)
+        {
             _videoFitApplied = false;
+        }
 
         SetWindowPos(_hwnd, IntPtr.Zero, left, top, right - left, bottom - top,
             SWP_NOZORDER | SWP_NOACTIVATE);
@@ -977,7 +1020,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void Grip_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
         if (sender is ResizeGrip grip)
+        {
             grip.ReleasePointerCapture(e.Pointer);
+        }
+
         CompleteResize();
         e.Handled = true;
     }
@@ -995,21 +1041,33 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void CompleteResize()
     {
-        if (!_isResizing) return;
+        if (!_isResizing)
+        {
+            return;
+        }
+
         _isResizing = false;
         _resizeEdges = ResizeEdges.None;
 
         // Pressing a grip without changing the bounds must not save a temporary video fit.
-        if (_videoFitApplied) return;
+        if (_videoFitApplied)
+        {
+            return;
+        }
 
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd) || !GetWindowRect(_hwnd, out var rect)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd) || !GetWindowRect(_hwnd, out var rect))
+        {
+            return;
+        }
 
         double scale = GetScale();
         int width = (int)Math.Round((rect.Right - rect.Left) / scale);
         int height = (int)Math.Round((rect.Bottom - rect.Top) / scale);
 
         if (width == _launcher.ResolvedWebFlyoutWidth && height == _launcher.ResolvedWebFlyoutHeight)
+        {
             return;
+        }
 
         // A locked size is the whole point of the toggle: the flyout can still be dragged to any
         // size for the session, it just does not become the launcher's size. Flagged rather than
@@ -1056,12 +1114,18 @@ public sealed partial class WebFlyoutWindow : Window
         if (_openModal is LauncherSettingsWindow settingsWindow && settingsWindow.IsOpenFor(_launcher.Id))
         {
             if (section is { } destination)
+            {
                 settingsWindow.ShowSection(destination);
+            }
+
             settingsWindow.Activate();
             await settingsWindow.Completion;
             return;
         }
-        if (_isModalOpen) return;
+        if (_isModalOpen)
+        {
+            return;
+        }
 
         _isModalOpen = true;
         SetTopmost(false);
@@ -1093,7 +1157,9 @@ public sealed partial class WebFlyoutWindow : Window
         try
         {
             if (GetAppWindow().Presenter is OverlappedPresenter presenter)
+            {
                 presenter.IsMinimizable = minimizable;
+            }
         }
         catch (Exception ex)
         {
@@ -1133,7 +1199,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void MinimizeWindow()
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         try
         {
@@ -1153,7 +1222,10 @@ public sealed partial class WebFlyoutWindow : Window
             // nature, a window is not. Resolved here rather than at each caller: they are all
             // either dropping it for a modal (false stays false) or restoring the default, and
             // "the default" is exactly what differs between the two window kinds.
-            if (_launcher.WebRegularWindow) topmost = topmost && _launcher.WebPinFlyout;
+            if (_launcher.WebRegularWindow)
+            {
+                topmost = topmost && _launcher.WebPinFlyout;
+            }
 
             // Only when it actually changes. Setting the presenter's flag re-applies HWND_TOPMOST,
             // which lifts the window to the head of the always-on-top band whether or not it was
@@ -1162,10 +1234,15 @@ public sealed partial class WebFlyoutWindow : Window
             // therefore jumped in front of whichever one the user was looking at, with no action of
             // theirs. The band's order is settled by activation (see RaiseWithinTopmostBand), not
             // by whichever window last re-stated a flag it already had.
-            if (topmost == IsTopmost) return;
+            if (topmost == IsTopmost)
+            {
+                return;
+            }
 
             if (GetAppWindow().Presenter is OverlappedPresenter presenter)
+            {
                 presenter.IsAlwaysOnTop = topmost;
+            }
         }
         catch (Exception ex)
         {
@@ -1195,7 +1272,10 @@ public sealed partial class WebFlyoutWindow : Window
         // Only for a launcher that is actually on screen. A parked window is topmost too, since the park
         // is a move off the virtual screen, not a hide, and so is every launcher preloaded under
         // KeepRunning, none of which the user has looked at.
-        if (!_isOpen || !IsTopmost) return;
+        if (!_isOpen || !IsTopmost)
+        {
+            return;
+        }
 
         SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
@@ -1210,7 +1290,11 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void RestoreActivation()
     {
-        if (!_isOpen) return;
+        if (!_isOpen)
+        {
+            return;
+        }
+
         try { SetForegroundWindow(_hwnd); } catch { /* foreground can be refused */ }
     }
 
@@ -1248,7 +1332,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void UpdatePinButton()
     {
         if (_pinButton.Content is FontIcon icon)
+        {
             icon.Glyph = PinGlyph(_launcher.WebPinFlyout);
+        }
+
         SetHeaderLabel(_pinButton, PinTooltip(_launcher.WebPinFlyout));
     }
 
@@ -1270,9 +1357,13 @@ public sealed partial class WebFlyoutWindow : Window
         }
 
         if (_isMaximized)
+        {
             ExitMaximized(restoreGeometry: true);
+        }
         else
+        {
             EnterMaximized();
+        }
     }
 
     /// <summary>
@@ -1288,9 +1379,20 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void EnterMaximized()
     {
-        if (_isMaximized || (_isFullScreen && !_fullScreenInWindow)) return;
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
-        if (!GetWindowRect(_hwnd, out _preMaximizeRect)) return;
+        if (_isMaximized || (_isFullScreen && !_fullScreenInWindow))
+        {
+            return;
+        }
+
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
+
+        if (!GetWindowRect(_hwnd, out _preMaximizeRect))
+        {
+            return;
+        }
 
         _isMaximized = true;
         UpdateMaximizeButton();
@@ -1315,13 +1417,19 @@ public sealed partial class WebFlyoutWindow : Window
     /// </param>
     private void ExitMaximized(bool restoreGeometry)
     {
-        if (!_isMaximized) return;
+        if (!_isMaximized)
+        {
+            return;
+        }
 
         _isMaximized = false;
         UpdateMaximizeButton();
         UpdateResizeGripVisibility();
 
-        if (!restoreGeometry || _hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (!restoreGeometry || _hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         _animationVersion++;
         MoveResize(_preMaximizeRect.Left, _preMaximizeRect.Top,
@@ -1332,7 +1440,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void UpdateMaximizeButton()
     {
         if (_maximizeButton.Content is FontIcon icon)
+        {
             icon.Glyph = _isFullScreen ? "\uE73F" : MaximizeGlyph(_isMaximized);
+        }
+
         string tooltip = _isFullScreen
             ? UiText.Get("web.exitFullscreen")
             : MaximizeTooltip(_isMaximized);
@@ -1351,7 +1462,10 @@ public sealed partial class WebFlyoutWindow : Window
     public static void Toggle(MainWindow owner, int screenX, int screenY, string launcherId)
     {
         var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
-        if (launcher == null) return;
+        if (launcher == null)
+        {
+            return;
+        }
 
         if (!Instances.TryGetValue(launcherId, out var panel) || panel._hwnd == IntPtr.Zero || !IsWindow(panel._hwnd))
         {
@@ -1371,13 +1485,18 @@ public sealed partial class WebFlyoutWindow : Window
             }
 
             if (!panel._isHiding)
+            {
                 panel.HideFlyout();
+            }
+
             return;
         }
 
         // The click that dismissed the panel via focus loss must not immediately reopen it.
         if (!panel._isHiding && (DateTime.UtcNow - panel._lastDismissed).TotalMilliseconds < ReopenGuardMs)
+        {
             return;
+        }
 
         panel._owner = owner;
         panel.ShowFlyout(screenX, screenY);
@@ -1398,7 +1517,10 @@ public sealed partial class WebFlyoutWindow : Window
     {
         foreach (var launcher in launchers)
         {
-            if (Instances.ContainsKey(launcher.Id)) continue;
+            if (Instances.ContainsKey(launcher.Id))
+            {
+                continue;
+            }
 
             var window = new WebFlyoutWindow(owner, launcher);
             Instances[launcher.Id] = window;
@@ -1432,7 +1554,10 @@ public sealed partial class WebFlyoutWindow : Window
         // NeedsPreload, not ShouldPreload: warm-up runs again on every launcher change, so once
         // these are loaded this has to cost nothing rather than schedule a timer per sync.
         var queue = new Queue<Launcher>(launchers.Where(NeedsPreload));
-        if (queue.Count == 0) return;
+        if (queue.Count == 0)
+        {
+            return;
+        }
 
         // Held in a static field, not a local. A DispatcherQueueTimer is only kept alive by
         // something referencing it: a local one is collectable the moment this method returns, and
@@ -1448,7 +1573,11 @@ public sealed partial class WebFlyoutWindow : Window
         {
             sender.Tick -= Next;
 
-            if (queue.Count == 0) return;
+            if (queue.Count == 0)
+            {
+                return;
+            }
+
             var launcher = queue.Dequeue();
 
             // Re-read the launcher rather than trusting the snapshot: sync or the settings window
@@ -1466,7 +1595,11 @@ public sealed partial class WebFlyoutWindow : Window
                 panel.BeginPreload();
             }
 
-            if (queue.Count == 0) return;
+            if (queue.Count == 0)
+            {
+                return;
+            }
+
             sender.Interval = TimeSpan.FromSeconds(PreloadStaggerSeconds);
             sender.Tick += Next;
             sender.Start();
@@ -1508,7 +1641,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// <summary>Loads this launcher's page off screen and then leaves it in its hidden state.</summary>
     private void BeginPreload()
     {
-        if (_webView != null || _isOpen || _preloadPending) return;
+        if (_webView != null || _isOpen || _preloadPending)
+        {
+            return;
+        }
 
         Logger.Info("Preloading web launcher {Name} so its connection is live before it is opened", _launcher.Name);
 
@@ -1537,7 +1673,11 @@ public sealed partial class WebFlyoutWindow : Window
     /// <summary>Puts a preloaded launcher into the state a dismissal would leave it in.</summary>
     private void CompletePreload()
     {
-        if (!_preloadPending) return;
+        if (!_preloadPending)
+        {
+            return;
+        }
+
         _preloadPending = false;
 
         if (_preloadTimer != null)
@@ -1548,7 +1688,10 @@ public sealed partial class WebFlyoutWindow : Window
 
         // The user got there first. Their open owns the window now, and collapsing it under them
         // would blank the page they are looking at.
-        if (_isOpen) return;
+        if (_isOpen)
+        {
+            return;
+        }
 
         ParkOffScreen();
     }
@@ -1556,7 +1699,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// <summary>Parks the window outside the virtual screen at its full size, so WinUI draws it.</summary>
     private void PreRenderOffScreen()
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         double scale = GetScale();
         int width = (int)Math.Ceiling(_launcher.ResolvedWebFlyoutWidth * scale);
@@ -1575,7 +1721,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// <summary>Destroys the flyout for a launcher that was deleted or is no longer a web launcher.</summary>
     public static void DisposeLauncher(string launcherId)
     {
-        if (!Instances.Remove(launcherId, out var panel)) return;
+        if (!Instances.Remove(launcherId, out var panel))
+        {
+            return;
+        }
 
         // Its toasts outlive it otherwise, and there is nothing left for a click on one to open.
         // They also keep occupying the app-wide Action Center queue, so a deleted launcher would
@@ -1599,7 +1748,11 @@ public sealed partial class WebFlyoutWindow : Window
     /// </summary>
     public static void ApplyLauncherChanges(string launcherId)
     {
-        if (!Instances.TryGetValue(launcherId, out var panel)) return;
+        if (!Instances.TryGetValue(launcherId, out var panel))
+        {
+            return;
+        }
+
         panel.ApplyLauncherChanges();
     }
 
@@ -1620,7 +1773,9 @@ public sealed partial class WebFlyoutWindow : Window
     internal static void InvalidateBookmarks()
     {
         foreach (var panel in Instances.Values)
+        {
             panel.RebuildBookmarkBar();
+        }
     }
 
     /// <summary>
@@ -1644,8 +1799,15 @@ public sealed partial class WebFlyoutWindow : Window
         // others are views onto the same folder, not copies. Same shape as ClearBrowsingDataAsync.
         foreach (string id in ProfileSiblings(launcher))
         {
-            if (!Instances.TryGetValue(id, out var panel)) continue;
-            if (panel._webView?.CoreWebView2 is not { } core) continue;
+            if (!Instances.TryGetValue(id, out var panel))
+            {
+                continue;
+            }
+
+            if (panel._webView?.CoreWebView2 is not { } core)
+            {
+                continue;
+            }
 
             try
             {
@@ -1686,12 +1848,17 @@ public sealed partial class WebFlyoutWindow : Window
 
         // Nothing loaded — the profile is just a folder on disk.
         foreach (string id in siblings)
+        {
             DisposeLauncher(id);
+        }
 
         string folder = GetUserDataFolder(launcher);
         if (Directory.Exists(folder))
+        {
             Directory.Delete(folder, recursive: true);
-            Services.WebViewEnvironments.Forget(folder);
+        }
+
+        Services.WebViewEnvironments.Forget(folder);
     }
 
     /// <summary>Where a web launcher's cookies, storage and cache live, so logins survive restarts.</summary>
@@ -1729,7 +1896,10 @@ public sealed partial class WebFlyoutWindow : Window
         string key = ProfileKey(launcher);
 
         off.RemoveAll(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
-        if (!enabled) off.Add(key);
+        if (!enabled)
+        {
+            off.Add(key);
+        }
 
         SettingsManager.SaveSettings();
         Services.AutoSyncService.NotifyLaunchersChanged();
@@ -1745,7 +1915,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// </summary>
     private static List<string> ProfileSiblings(Launcher launcher)
     {
-        if (!launcher.WebSharedProfile) return [launcher.Id];
+        if (!launcher.WebSharedProfile)
+        {
+            return [launcher.Id];
+        }
 
         return SettingsManager.Current.Launchers
             .Where(l => l.IsWebLauncher && l.WebSharedProfile)
@@ -1760,7 +1933,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// </summary>
     public static void ReloadProfile(string launcherId)
     {
-        if (!Instances.TryGetValue(launcherId, out var panel)) return;
+        if (!Instances.TryGetValue(launcherId, out var panel))
+        {
+            return;
+        }
 
         bool wasLoaded = panel._webView != null;
         panel.UnloadWebView();
@@ -1769,7 +1945,9 @@ public sealed partial class WebFlyoutWindow : Window
         // collapsed bookmark bar — deliberately has no browser, and starting one here would
         // undo the whole resource promise.
         if (wasLoaded && panel._isOpen && !string.IsNullOrEmpty(panel.CurrentTargetUrl()))
+        {
             _ = panel.PrepareContentAsync();
+        }
     }
 
 
@@ -1782,12 +1960,17 @@ public sealed partial class WebFlyoutWindow : Window
         // moves an iconic window without restoring it, SWP_SHOWWINDOW included, and
         // SetForegroundWindow brings it to the front still minimized, which is the no-op
         // BringToFront exists to avoid. Left as it was, the launcher could never be shown again.
-        if (IsMinimized) ShowWindow(_hwnd, SW_RESTORE);
+        if (IsMinimized)
+        {
+            ShowWindow(_hwnd, SW_RESTORE);
+        }
 
         // The page can leave fullscreen while hidden. Reconcile before choosing its
         // presentation, without moving the parked window back onto the desktop.
         if (_isFullScreen && _webView?.CoreWebView2?.ContainsFullScreenElement != true)
+        {
             ApplyFullScreen(false);
+        }
 
         _header.Visibility = _isFullScreen ? Visibility.Collapsed : Visibility.Visible;
 
@@ -1796,7 +1979,10 @@ public sealed partial class WebFlyoutWindow : Window
 
         var placement = CalculatePlacement(screenX, screenY);
         if (_isFullScreen)
+        {
             placement = GetFullscreenReopenPlacement(screenX, screenY, placement);
+        }
+
         _lastEntranceEdge = placement.Edge;
         _resizeAnchor = placement.ResizeAnchor;
 
@@ -1808,15 +1994,22 @@ public sealed partial class WebFlyoutWindow : Window
         // parked off screen at startup; a web launcher deliberately builds nothing until it is
         // asked for, so it takes the plain show instead and slides on every open after this one.
         if (AreAnimationsEnabled && _hasBeenShown && !_isFullScreen)
+        {
             ShowAnimated(placement);
+        }
         else
+        {
             ShowWithoutAnimation(placement);
+        }
 
         _hasBeenShown = true;
 
         UpdateLoadingAnimations();
 
-        if (_isFullScreen) ConfigureFullscreenTitleBar();
+        if (_isFullScreen)
+        {
+            ConfigureFullscreenTitleBar();
+        }
 
         // PROTOTYPE: light up the launcher's pinned taskbar button while the flyout is on screen.
         // After the show, so the button appears with the window rather than ahead of it.
@@ -1849,7 +2042,9 @@ public sealed partial class WebFlyoutWindow : Window
 
         int startTop = placement.StartTop;
         if (_isOpen && GetWindowRect(_hwnd, out var rect))
+        {
             startTop = rect.Top;
+        }
 
         _isOpen = true;
         ClearFade();
@@ -1874,7 +2069,9 @@ public sealed partial class WebFlyoutWindow : Window
     private void HideFlyout()
     {
         if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd) || !_isOpen)
+        {
             return;
+        }
 
         // Focus loss cannot dismiss the flyout while it is asking something, but closing it
         // outright still can — and the question goes with it. Refused rather than left pending:
@@ -1891,8 +2088,11 @@ public sealed partial class WebFlyoutWindow : Window
         // Capture before the exit animation moves the window. Parking coordinates
         // and configured normal dimensions cannot describe this fullscreen view.
         if (_isFullScreen && GetWindowRect(_hwnd, out var fullscreenRect))
+        {
             _dismissedFullScreenRect = _fullScreenInWindow && _isMaximized
                 ? _preMaximizeRect : fullscreenRect;
+        }
+
         _videoFitVersion++;
 
         _lastDismissed = DateTime.UtcNow;
@@ -1929,7 +2129,11 @@ public sealed partial class WebFlyoutWindow : Window
         _isOpen = false;
         UpdateLoadingAnimations();
         _fullscreenHeaderTimer?.Stop();
-        if (_isFullScreen) _header.Visibility = Visibility.Collapsed;
+        if (_isFullScreen)
+        {
+            _header.Visibility = Visibility.Collapsed;
+        }
+
         ClearFade();
 
         // Drop the taskbar button before the window goes off screen. The park leaves it visible in
@@ -2002,7 +2206,10 @@ public sealed partial class WebFlyoutWindow : Window
             _idleUnloadTimer.Tick -= IdleUnloadTimer_Tick;
         }
 
-        if (_webView == null) return;
+        if (_webView == null)
+        {
+            return;
+        }
 
         // Every live browser, not just the one on screen: in tabs mode the others are already
         // collapsed but still hold their memory target and, under a suspending policy, still need
@@ -2051,7 +2258,9 @@ public sealed partial class WebFlyoutWindow : Window
         }
 
         if (policy != WebHiddenPolicies.UnloadWhenIdle)
+        {
             return;
+        }
 
         _idleUnloadTimer ??= DispatcherQueue.CreateTimer();
         _idleUnloadTimer.Stop();
@@ -2064,7 +2273,11 @@ public sealed partial class WebFlyoutWindow : Window
     private void IdleUnloadTimer_Tick(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args)
     {
         sender.Tick -= IdleUnloadTimer_Tick;
-        if (_isOpen) return;
+        if (_isOpen)
+        {
+            return;
+        }
+
         UnloadWebView();
     }
 
@@ -2072,7 +2285,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void TrySetMemoryTarget(WebView2? view, CoreWebView2MemoryUsageTargetLevel level)
     {
         var core = view?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         try
         {
@@ -2087,14 +2303,19 @@ public sealed partial class WebFlyoutWindow : Window
     private async Task SuspendWebViewAsync(WebView2? view)
     {
         var core = view?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         try
         {
             core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
             bool suspended = await core.TrySuspendAsync();
             if (!suspended)
+            {
                 Logger.Debug("WebView2 declined to suspend for launcher {Name}", _launcher.Name);
+            }
         }
         catch (Exception ex)
         {
@@ -2105,7 +2326,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void ResumeWebView()
     {
         var core = _webView?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         try
         {
@@ -2121,9 +2345,15 @@ public sealed partial class WebFlyoutWindow : Window
     /// <summary>Tears every browser down completely; the next open builds a fresh one.</summary>
     private void UnloadWebView()
     {
-        if (_tabs.Count == 0) return;
+        if (_tabs.Count == 0)
+        {
+            return;
+        }
 
-        if (_isFullScreen) ApplyFullScreen(false);
+        if (_isFullScreen)
+        {
+            ApplyFullScreen(false);
+        }
 
         _webView = null;
         _revealOnNavigationCompleted = false;
@@ -2168,7 +2398,10 @@ public sealed partial class WebFlyoutWindow : Window
         if (HasSessionToRestore)
         {
             await RestoreSessionAsync();
-            if (_tabs.Count > 0) return;
+            if (_tabs.Count > 0)
+            {
+                return;
+            }
         }
 
         if (_activeTab is { HomeKey: null } link && link.View.CoreWebView2 != null)
@@ -2205,7 +2438,10 @@ public sealed partial class WebFlyoutWindow : Window
         }
 
         ActivateTab(tab);
-        if (tab.View.CoreWebView2 == null) return;   // still starting; its own creation navigates
+        if (tab.View.CoreWebView2 == null)
+        {
+            return;   // still starting; its own creation navigates
+        }
 
         bool navigating = !string.Equals(tab.NavigatedUrl, url, StringComparison.OrdinalIgnoreCase);
         bool reloading = !navigating && _launcher.WebReloadOnShow;
@@ -2220,8 +2456,15 @@ public sealed partial class WebFlyoutWindow : Window
             tab.View.Visibility = Visibility.Collapsed;
             SetStatus(UiText.Get("common.loading"), busy: true, showRetry: false);
 
-            if (navigating) Navigate(url);
-            else ReloadPage();
+            if (navigating)
+            {
+                Navigate(url);
+            }
+            else
+            {
+                ReloadPage();
+            }
+
             return;
         }
 
@@ -2256,12 +2499,22 @@ public sealed partial class WebFlyoutWindow : Window
     {
         // Re-entrancy only matters for the launcher's own page: two shows racing must not build two
         // browsers for it. A link tab is a distinct request every time and is never deduplicated.
-        if (homeKey != null && _webViewInitializing) return null;
-        if (homeKey != null) _webViewInitializing = true;
+        if (homeKey != null && _webViewInitializing)
+        {
+            return null;
+        }
+
+        if (homeKey != null)
+        {
+            _webViewInitializing = true;
+        }
 
         // The status overlay is shared chrome, so a background tab must not put a spinner over the
         // page the user is reading.
-        if (!background) SetStatus(UiText.Get("common.loading"), busy: true, showRetry: false);
+        if (!background)
+        {
+            SetStatus(UiText.Get("common.loading"), busy: true, showRetry: false);
+        }
 
         var webView = new WebView2 { Visibility = background ? Visibility.Collapsed : Visibility.Visible };
         Grid.SetRow(webView, 1);   // row 0 belongs to the prompt bar
@@ -2289,8 +2542,14 @@ public sealed partial class WebFlyoutWindow : Window
         // Background: the strip has to learn about the chip, but nothing else moves — _webView goes
         // on pointing at the tab in front, which is what keeps the header, the address box, zoom and
         // focus describing the page the user is actually looking at.
-        if (background) RefreshTabBar();
-        else ActivateTab(tab);
+        if (background)
+        {
+            RefreshTabBar();
+        }
+        else
+        {
+            ActivateTab(tab);
+        }
 
         // Clicking into the page is what arms the focus restore; see _pageHadFocus.
         webView.GotFocus += (_, _) => _pageHadFocus = true;
@@ -2336,32 +2595,50 @@ public sealed partial class WebFlyoutWindow : Window
         }
         finally
         {
-            if (homeKey != null) _webViewInitializing = false;
+            if (homeKey != null)
+            {
+                _webViewInitializing = false;
+            }
         }
 
         // Closed while it was starting — a dismissal that unloaded, or the tab being closed.
-        if (!_tabs.Contains(tab) || webView.CoreWebView2 == null) return null;
+        if (!_tabs.Contains(tab) || webView.CoreWebView2 == null)
+        {
+            return null;
+        }
 
         ConfigureCore(webView.CoreWebView2, tab);
 
         // Awaited, and before Navigate: a document-created script added after the navigation has
         // started misses the very page the flyout was opened to show.
         await InstallNotificationBridgeAsync(webView.CoreWebView2);
-        if (!_tabs.Contains(tab)) return null;
+        if (!_tabs.Contains(tab))
+        {
+            return null;
+        }
 
         await InstallServiceWorkerBridgeAsync(webView.CoreWebView2, tab);
-        if (!_tabs.Contains(tab)) return null;
+        if (!_tabs.Contains(tab))
+        {
+            return null;
+        }
 
         // Keys the host owns rather than Chromium — see WebFlyoutWindow.Shortcuts.cs. Same
         // document-created timing as the two bridges above, for the same reason.
         await InstallShortcutBridgeAsync(webView.CoreWebView2);
-        if (!_tabs.Contains(tab)) return null;
+        if (!_tabs.Contains(tab))
+        {
+            return null;
+        }
 
         // Whatever is on the extension list, onto this profile. Per browser rather than once at
         // startup: an extension added while this launcher was closed has to arrive when it opens,
         // and a launcher on a private profile needs its own copy loaded.
         await Services.BrowserExtensionService.ApplyAsync(webView.CoreWebView2);
-        if (!_tabs.Contains(tab)) return null;
+        if (!_tabs.Contains(tab))
+        {
+            return null;
+        }
 
         ApplyZoom(webView.CoreWebView2);
         UpdateTabChip(tab);
@@ -2374,8 +2651,14 @@ public sealed partial class WebFlyoutWindow : Window
         // NavigateTab, not Navigate: Navigate drives whichever tab is in front, so a background tab
         // would otherwise load its address into the page the user is reading. That was safe only
         // while every new tab was activated on creation.
-        if (IsBlankAddress(navigateTo)) ShowEmptyTabStatus(tab);
-        else if (!adopted) NavigateTab(tab, navigateTo!);
+        if (IsBlankAddress(navigateTo))
+        {
+            ShowEmptyTabStatus(tab);
+        }
+        else if (!adopted)
+        {
+            NavigateTab(tab, navigateTo!);
+        }
 
         return tab;
     }
@@ -2399,12 +2682,22 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void ShowEmptyTabStatus(WebTab tab)
     {
-        if (!ReferenceEquals(tab, _activeTab)) return;
+        if (!ReferenceEquals(tab, _activeTab))
+        {
+            return;
+        }
 
         // Told to go somewhere, even if it has not arrived: the load owns the overlay, and a tab
         // mid-navigation still reports an empty Source until the first response commits.
-        if (!IsBlankAddress(tab.NavigatedUrl)) return;
-        if (!IsActiveTabBlank) return;
+        if (!IsBlankAddress(tab.NavigatedUrl))
+        {
+            return;
+        }
+
+        if (!IsActiveTabBlank)
+        {
+            return;
+        }
 
         SetStatus(UiText.Get("web.emptyTabHint"), busy: false, showRetry: false);
     }
@@ -2444,8 +2737,14 @@ public sealed partial class WebFlyoutWindow : Window
         // itself opened is speaking for the whole flyout.
         core.WindowCloseRequested += (_, _) =>
         {
-            if (tab.HomeKey == null) CloseTab(tab);
-            else HideFlyout();
+            if (tab.HomeKey == null)
+            {
+                CloseTab(tab);
+            }
+            else
+            {
+                HideFlyout();
+            }
         };
 
         // Every handler below that writes shared chrome asks IsActiveCore first: a background tab
@@ -2453,20 +2752,30 @@ public sealed partial class WebFlyoutWindow : Window
         // the check it would drive the header of a page nobody is looking at.
         core.NavigationStarting += (_, e) =>
         {
-            if (TryHandleBrowserPageNavigation(core, tab, e)) return;
+            if (TryHandleBrowserPageNavigation(core, tab, e))
+            {
+                return;
+            }
 
             if (IsActiveCore(core))
             {
                 _fullscreenAvailabilityVersion++;
                 if (_enterFullscreenButton is { } fullscreenButton)
+                {
                     fullscreenButton.Visibility = Visibility.Collapsed;
+                }
+
                 ShowLoading(tab);
             }
         };
 
         core.HistoryChanged += (_, _) =>
         {
-            if (IsActiveCore(core)) UpdateNavigationButtons();
+            if (IsActiveCore(core))
+            {
+                UpdateNavigationButtons();
+            }
+
             UpdateTabChip(tab);
         };
 
@@ -2479,7 +2788,10 @@ public sealed partial class WebFlyoutWindow : Window
         // whatever size the flyout happens to be.
         core.ContainsFullScreenElementChanged += (_, _) =>
         {
-            if (IsActiveCore(core)) ApplyFullScreen(core.ContainsFullScreenElement);
+            if (IsActiveCore(core))
+            {
+                ApplyFullScreen(core.ContainsFullScreenElement);
+            }
         };
 
         // Every WebView2 object handed to a handler is released here, on the UI thread, rather than
@@ -2489,66 +2801,78 @@ public sealed partial class WebFlyoutWindow : Window
         {
             try
             {
-            bool active = IsActiveCore(core);
+                bool active = IsActiveCore(core);
 
-            // A page can navigate away from its fullscreen element without a matching
-            // ContainsFullScreenElementChanged callback reaching this active tab.
-            if (active && _isFullScreen && !core.ContainsFullScreenElement)
-                ApplyFullScreen(false);
+                // A page can navigate away from its fullscreen element without a matching
+                // ContainsFullScreenElementChanged callback reaching this active tab.
+                if (active && _isFullScreen && !core.ContainsFullScreenElement)
+                {
+                    ApplyFullScreen(false);
+                }
 
-            if (e.IsSuccess)
-            {
-                ApplyZoom(core);   // CSS zoom lives in the document, so each navigation drops it
+                if (e.IsSuccess)
+                {
+                    ApplyZoom(core);   // CSS zoom lives in the document, so each navigation drops it
+                    UpdateTabChip(tab);
+                    tab.HasLoaded = true;
+
+                    // Per tab, not per active tab: this is the moment a tab's address is finally real,
+                    // and it is the only one that catches a page the user browsed to rather than one
+                    // opened by a gesture. RefreshTabBar alone recorded only opens, closes and
+                    // switches — so a launcher opened once and browsed within stored the address it
+                    // started at, or nothing. The save compares before writing, so this is cheap.
+                    SaveSession();
+
+                    if (!active)
+                    {
+                        return;
+                    }
+
+                    HideStatus();
+
+                    // about:blank is where a new-tab request is answered (see BrowserPages), and it
+                    // completes like any other navigation, so without these the notice raised on
+                    // creation, and the address bar an empty tab forces on, are both taken straight
+                    // back down again.
+                    ApplyAddressBarVisibility();
+                    ShowEmptyTabStatus(tab);
+
+                    UpdateNavigationButtons();
+                    RevealWebViewIfPending();
+                    CompletePreload();   // loaded off screen at startup: collapse it, keep it connected
+                    return;
+                }
+
                 UpdateTabChip(tab);
-                tab.HasLoaded = true;
+                if (!active)
+                {
+                    return;
+                }
 
-                // Per tab, not per active tab: this is the moment a tab's address is finally real,
-                // and it is the only one that catches a page the user browsed to rather than one
-                // opened by a gesture. RefreshTabBar alone recorded only opens, closes and
-                // switches — so a launcher opened once and browsed within stored the address it
-                // started at, or nothing. The save compares before writing, so this is cheap.
-                SaveSession();
-
-                if (!active) return;
-
-                HideStatus();
-
-                // about:blank is where a new-tab request is answered (see BrowserPages), and it
-                // completes like any other navigation, so without these the notice raised on
-                // creation, and the address bar an empty tab forces on, are both taken straight
-                // back down again.
-                ApplyAddressBarVisibility();
-                ShowEmptyTabStatus(tab);
-
-                UpdateNavigationButtons();
+                // A failed navigation still has to give the browser back, or the flyout is stuck
+                // showing a spinner over a hidden page with no way out but Reload.
                 RevealWebViewIfPending();
-                CompletePreload();   // loaded off screen at startup: collapse it, keep it connected
-                return;
-            }
 
-            UpdateTabChip(tab);
-            if (!active) return;
+                // A preload that could not load — no network yet at sign-in, typically — still has to
+                // stop rendering. The error is left on screen for whenever it is opened.
+                CompletePreload();
 
-            // A failed navigation still has to give the browser back, or the flyout is stuck
-            // showing a spinner over a hidden page with no way out but Reload.
-            RevealWebViewIfPending();
-
-            // A preload that could not load — no network yet at sign-in, typically — still has to
-            // stop rendering. The error is left on screen for whenever it is opened.
-            CompletePreload();
-
-            SetStatus(
-                UiText.Format("web.loadFailed",
-                    ("address", NormalizeUrl(_launcher.WebAddress)),
-                    ("error", e.WebErrorStatus)),
-                busy: false, showRetry: true);
+                SetStatus(
+                    UiText.Format("web.loadFailed",
+                        ("address", NormalizeUrl(_launcher.WebAddress)),
+                        ("error", e.WebErrorStatus)),
+                    busy: false, showRetry: true);
             }
             finally { ReleaseWebViewObject(e); }
         };
 
         core.ProcessFailed += (_, _) =>
         {
-            if (!IsActiveCore(core)) return;
+            if (!IsActiveCore(core))
+            {
+                return;
+            }
+
             SetStatus(UiText.Get("web.pageUnresponsive"), busy: false, showRetry: true);
             RevealWebViewIfPending();
         };
@@ -2590,7 +2914,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     internal static bool MayAdoptPageIcon(Launcher launcher)
     {
-        if (launcher.TrayIconMode == TrayIconModes.Composite) return true;
+        if (launcher.TrayIconMode == TrayIconModes.Composite)
+        {
+            return true;
+        }
 
         return launcher.TrayIconMode == TrayIconModes.Custom &&
                string.Equals(launcher.CustomTrayIconPath, GetPageIconPath(launcher.Id), StringComparison.OrdinalIgnoreCase);
@@ -2620,7 +2947,10 @@ public sealed partial class WebFlyoutWindow : Window
         try
         {
             var stream = await core.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png);
-            if (stream == null || stream.Size == 0) return;
+            if (stream == null || stream.Size == 0)
+            {
+                return;
+            }
 
             uint size = (uint)stream.Size;
             var buffer = new byte[size];
@@ -2651,7 +2981,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// <summary>Saves the page's declared icon and makes it the launcher's tray icon.</summary>
     private async Task AdoptPageIconAsync(CoreWebView2 core, WebTab tab)
     {
-        if (string.IsNullOrEmpty(core.FaviconUri)) return;
+        if (string.IsNullOrEmpty(core.FaviconUri))
+        {
+            return;
+        }
 
         // The chip's icon is per tab and is written nowhere, so every tab gets it.
         await UpdateTabIconAsync(core, tab);
@@ -2659,27 +2992,41 @@ public sealed partial class WebFlyoutWindow : Window
         // A link tab is showing whatever site the page sent the user to. It must never rewrite the
         // launcher's tray icon or a bookmark's — both stand for an address the *user* chose, and an
         // icon quietly replaced by a page they merely passed through reads as data corruption.
-        if (tab.HomeKey == null) return;
+        if (tab.HomeKey == null)
+        {
+            return;
+        }
 
         // Whichever bookmark this page *is* — matched on its own address rather than remembered,
         // since the bar no longer tracks what is showing, and matching also declines to write an
         // icon onto a bookmark the user has navigated away from.
         string source = NormalizeUrl(core.Source);
         if (FindBookmark(source) is { } bookmark)
+        {
             await AdoptBookmarkIconAsync(core, bookmark);
+        }
 
         // The tray icon stands for the launcher, and the launcher is its address — its first
         // bookmark. Any page further along the bar is one of several this launcher holds, and
         // letting each one rewrite the tray icon as it was visited would leave the icon meaning
         // "the last thing I looked at" rather than "this launcher".
-        if (!string.Equals(source, NormalizeUrl(_launcher.WebAddress), StringComparison.OrdinalIgnoreCase)) return;
+        if (!string.Equals(source, NormalizeUrl(_launcher.WebAddress), StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
 
-        if (!MayAdoptPageIcon(_launcher)) return;
+        if (!MayAdoptPageIcon(_launcher))
+        {
+            return;
+        }
 
         try
         {
             var stream = await core.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png);
-            if (stream == null || stream.Size == 0) return;
+            if (stream == null || stream.Size == 0)
+            {
+                return;
+            }
 
             // A WinRT stream, not a .NET one — read it through DataReader rather than reaching
             // for the interop extension methods.
@@ -2769,19 +3116,28 @@ public sealed partial class WebFlyoutWindow : Window
 
         string dataUrl = message?["icon"]?.GetValue<string>() ?? "";
         int comma = dataUrl.IndexOf(',', StringComparison.Ordinal);
-        if (comma < 0 || !dataUrl.StartsWith("data:", StringComparison.Ordinal)) return;
+        if (comma < 0 || !dataUrl.StartsWith("data:", StringComparison.Ordinal))
+        {
+            return;
+        }
 
         try
         {
             byte[] raw = Convert.FromBase64String(dataUrl[(comma + 1)..]);
-            if (raw.Length == 0) return;
+            if (raw.Length == 0)
+            {
+                return;
+            }
 
             // What the page declared is not necessarily what anything downstream can read. An .ico
             // has to be unpacked to its largest frame - System.Drawing dispatches on the file
             // extension, so ICO bytes in a file named .png would be decoded as a bitmap and give
             // back whichever frame came first, usually the 16px one.
             byte[]? bytes = NormalizeAdoptedIcon(raw);
-            if (bytes == null) return;
+            if (bytes == null)
+            {
+                return;
+            }
 
             string iconPath = GetPageIconPath(_launcher.Id);
             if (WouldShrinkIcon(bytes, iconPath))
@@ -2836,7 +3192,10 @@ public sealed partial class WebFlyoutWindow : Window
         {
             // ICO: 2 reserved bytes, then type 1.
             bool isIcon = raw.Length > 4 && raw[0] == 0 && raw[1] == 0 && raw[2] == 1 && raw[3] == 0;
-            if (isIcon && LargestIcoFrame(raw) is { } frame) return frame;
+            if (isIcon && LargestIcoFrame(raw) is { } frame)
+            {
+                return frame;
+            }
 
             using var source = new MemoryStream(raw);
             using System.Drawing.Bitmap bitmap = isIcon
@@ -2871,13 +3230,22 @@ public sealed partial class WebFlyoutWindow : Window
     {
         try
         {
-            if (!File.Exists(existingPath)) return false;
+            if (!File.Exists(existingPath))
+            {
+                return false;
+            }
 
             int existing = IconPixelSize(File.ReadAllBytes(existingPath));
-            if (existing <= 0) return false;
+            if (existing <= 0)
+            {
+                return false;
+            }
 
             int incoming = IconPixelSize(candidate);
-            if (incoming <= 0) return false;
+            if (incoming <= 0)
+            {
+                return false;
+            }
 
             return incoming < existing;
         }
@@ -2907,14 +3275,20 @@ public sealed partial class WebFlyoutWindow : Window
         try
         {
             int count = BitConverter.ToUInt16(raw, 4);
-            if (count == 0) return null;
+            if (count == 0)
+            {
+                return null;
+            }
 
             int bestSize = 0, bestOffset = 0, bestLength = 0;
 
             for (int i = 0; i < count; i++)
             {
                 int entry = 6 + (i * 16);
-                if (entry + 16 > raw.Length) break;
+                if (entry + 16 > raw.Length)
+                {
+                    break;
+                }
 
                 // A zero width or height means 256: the field is one byte and 256 does not fit.
                 int width = raw[entry] == 0 ? 256 : raw[entry];
@@ -2924,15 +3298,25 @@ public sealed partial class WebFlyoutWindow : Window
                 int length = BitConverter.ToInt32(raw, entry + 8);
                 int offset = BitConverter.ToInt32(raw, entry + 12);
 
-                if (size <= bestSize) continue;
-                if (offset < 0 || length <= 0 || offset + length > raw.Length) continue;
+                if (size <= bestSize)
+                {
+                    continue;
+                }
+
+                if (offset < 0 || length <= 0 || offset + length > raw.Length)
+                {
+                    continue;
+                }
 
                 bestSize = size;
                 bestOffset = offset;
                 bestLength = length;
             }
 
-            if (bestSize == 0) return null;
+            if (bestSize == 0)
+            {
+                return null;
+            }
 
             // Only a PNG frame is ours to hand back directly; a device-independent bitmap frame is
             // a headerless DIB and needs the header Icon would rebuild for it.
@@ -2989,7 +3373,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void NavigateTab(WebTab? tab, string url)
     {
         var core = tab?.View.CoreWebView2;
-        if (core == null || string.IsNullOrEmpty(url)) return;
+        if (core == null || string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         tab!.NavigatedUrl = url;
         SaveSession();
@@ -3023,8 +3410,15 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void BeginWindowMove(object sender, PointerRoutedEventArgs e)
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
-        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
+
+        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
 
         // Double-clicking a title bar maximizes it and double-clicking it again puts it back, on
         // every other window on this desktop. These strips are the title bar this window does not
@@ -3038,9 +3432,20 @@ public sealed partial class WebFlyoutWindow : Window
         }
 
         // Display fullscreen stays fixed until explicitly exited with Restore.
-        if (_isFullScreen && !_fullScreenInWindow) return;
-        if (_isMaximized) return;
-        if (!GetWindowRect(_hwnd, out _moveStartRect)) return;
+        if (_isFullScreen && !_fullScreenInWindow)
+        {
+            return;
+        }
+
+        if (_isMaximized)
+        {
+            return;
+        }
+
+        if (!GetWindowRect(_hwnd, out _moveStartRect))
+        {
+            return;
+        }
 
         GetCursorPos(out _moveStartCursor);
         _isMovingWindow = true;
@@ -3051,7 +3456,11 @@ public sealed partial class WebFlyoutWindow : Window
         _isShowing = false;
         _isHiding = false;
 
-        if (sender is UIElement element) element.CapturePointer(e.Pointer);
+        if (sender is UIElement element)
+        {
+            element.CapturePointer(e.Pointer);
+        }
+
         e.Handled = true;
     }
 
@@ -3090,7 +3499,10 @@ public sealed partial class WebFlyoutWindow : Window
 
     private void ContinueWindowMove(object sender, PointerRoutedEventArgs e)
     {
-        if (!_isMovingWindow) return;
+        if (!_isMovingWindow)
+        {
+            return;
+        }
 
         GetCursorPos(out var cursor);
         int width = _moveStartRect.Right - _moveStartRect.Left;
@@ -3106,7 +3518,11 @@ public sealed partial class WebFlyoutWindow : Window
 
     private void EndWindowMove(object sender, PointerRoutedEventArgs e)
     {
-        if (!_isMovingWindow) return;
+        if (!_isMovingWindow)
+        {
+            return;
+        }
+
         _isMovingWindow = false;
 
         // A fitted video's normal-size destination follows the drag too, so
@@ -3121,7 +3537,11 @@ public sealed partial class WebFlyoutWindow : Window
             _preFullScreenRect.Bottom += deltaY;
         }
 
-        if (sender is UIElement element) element.ReleasePointerCapture(e.Pointer);
+        if (sender is UIElement element)
+        {
+            element.ReleasePointerCapture(e.Pointer);
+        }
+
         RememberFlyoutPosition();
         e.Handled = true;
     }
@@ -3136,11 +3556,21 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void RememberFlyoutPosition()
     {
-        if (WebAnchors.Normalize(_launcher.WebAnchor) != WebAnchors.LastPosition) return;
-        if (!GetWindowRect(_hwnd, out var rect)) return;
+        if (WebAnchors.Normalize(_launcher.WebAnchor) != WebAnchors.LastPosition)
+        {
+            return;
+        }
+
+        if (!GetWindowRect(_hwnd, out var rect))
+        {
+            return;
+        }
 
         string position = $"{rect.Left},{rect.Top}";
-        if (position == _launcher.WebFlyoutPosition) return;
+        if (position == _launcher.WebFlyoutPosition)
+        {
+            return;
+        }
 
         _launcher.WebFlyoutPosition = position;
         SettingsManager.SaveSettings();
@@ -3159,12 +3589,23 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void ApplyFullScreen(bool fullScreen)
     {
-        if (fullScreen == _isFullScreen) return;
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (fullScreen == _isFullScreen)
+        {
+            return;
+        }
+
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         if (fullScreen)
         {
-            if (!GetWindowRect(_hwnd, out _preFullScreenRect)) return;
+            if (!GetWindowRect(_hwnd, out _preFullScreenRect))
+            {
+                return;
+            }
+
             _isFullScreen = true;
             _videoFitVersion++;
             _videoFitApplied = false;
@@ -3188,7 +3629,10 @@ public sealed partial class WebFlyoutWindow : Window
             if (_fullScreenInWindow)
             {
                 if (_launcher.WebFitFullscreenToVideo && !_isMaximized && _webView?.CoreWebView2 is { } core)
+                {
                     _ = FitFullscreenToVideoAsync(core, _videoFitVersion);
+                }
+
                 return;
             }
 
@@ -3230,7 +3674,10 @@ public sealed partial class WebFlyoutWindow : Window
         // A contained fullscreen session may have been resized. Keep its current bounds,
         // including temporary drags made with Remember size changes turned off.
         _dismissedFullScreenRect = null;
-        if (!restoreBounds || !_isOpen) return;
+        if (!restoreBounds || !_isOpen)
+        {
+            return;
+        }
 
         SetWindowPos(_hwnd, IntPtr.Zero, _preFullScreenRect.Left, _preFullScreenRect.Top,
             _preFullScreenRect.Right - _preFullScreenRect.Left,
@@ -3255,7 +3702,11 @@ public sealed partial class WebFlyoutWindow : Window
 
         if (_fullScreenInWindow)
         {
-            if (_dismissedFullScreenRect is not { } saved) return normal;
+            if (_dismissedFullScreenRect is not { } saved)
+            {
+                return normal;
+            }
+
             return CalculatePlacement(screenX, screenY,
                 sizeOverride: (saved.Right - saved.Left, saved.Bottom - saved.Top));
         }
@@ -3263,7 +3714,9 @@ public sealed partial class WebFlyoutWindow : Window
         var monitor = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
         var point = new POINT { X = screenX, Y = screenY };
         if (!GetMonitorInfo(MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST), ref monitor))
+        {
             return normal;
+        }
 
         var bounds = monitor.rcMonitor;
         return normal with
@@ -3280,7 +3733,11 @@ public sealed partial class WebFlyoutWindow : Window
     private void GoBack()
     {
         var core = _webView?.CoreWebView2;
-        if (core?.CanGoBack != true) return;
+        if (core?.CanGoBack != true)
+        {
+            return;
+        }
+
         core.GoBack();
     }
 
@@ -3288,7 +3745,11 @@ public sealed partial class WebFlyoutWindow : Window
     private void GoForward()
     {
         var core = _webView?.CoreWebView2;
-        if (core?.CanGoForward != true) return;
+        if (core?.CanGoForward != true)
+        {
+            return;
+        }
+
         core.GoForward();
     }
 
@@ -3351,10 +3812,15 @@ public sealed partial class WebFlyoutWindow : Window
                 UiText.Get(_launcher.WebShowAddressBar ? "web.hideAddressBar" : "web.showAddressBar"));
 
             if (_addressBarButton.Content is FontIcon glyph)
+            {
                 glyph.Opacity = _launcher.WebShowAddressBar ? 1.0 : 0.6;
+            }
         }
 
-        if (visible) SyncAddressBox();
+        if (visible)
+        {
+            SyncAddressBox();
+        }
 
         // Unconditional: the star is hidden for a launcher with no bookmark bar to write into, and
         // that is a launcher setting rather than something the address bar's own visibility decides.
@@ -3366,7 +3832,10 @@ public sealed partial class WebFlyoutWindow : Window
     {
         get
         {
-            if (_activeTab == null) return false;
+            if (_activeTab == null)
+            {
+                return false;
+            }
 
             // Told to go somewhere counts as not blank, even before it arrives. A tab reports an
             // empty Source until its first response commits, so reading Source alone called every
@@ -3377,7 +3846,10 @@ public sealed partial class WebFlyoutWindow : Window
             // Which is only worth anything because a tab is built knowing where it is going: read
             // after the fact, this said nothing at all until the page arrived, and the bar came and
             // went for every cold open and every link opened in a tab. See CreateTabAsync.
-            if (!IsBlankAddress(_activeTab.NavigatedUrl)) return false;
+            if (!IsBlankAddress(_activeTab.NavigatedUrl))
+            {
+                return false;
+            }
 
             try
             {
@@ -3396,7 +3868,10 @@ public sealed partial class WebFlyoutWindow : Window
     {
         // Never while it has focus: this runs from HistoryChanged, which a single-page app raises
         // freely, and overwriting a half-typed address would be indistinguishable from a bug.
-        if (_addressBox.FocusState != FocusState.Unfocused) return;
+        if (_addressBox.FocusState != FocusState.Unfocused)
+        {
+            return;
+        }
 
         string source = _webView?.CoreWebView2?.Source ?? "";
         // "about:blank" is what a browser that has not navigated yet reports. Showing it would
@@ -3425,7 +3900,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void GoToTypedAddress()
     {
         string url = NormalizeUrl(_addressBox.Text);
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         if (_webView?.CoreWebView2 == null)
         {
@@ -3442,7 +3920,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// </summary>
     private bool CancelAddressEditing()
     {
-        if (_addressBox.FocusState == FocusState.Unfocused) return false;
+        if (_addressBox.FocusState == FocusState.Unfocused)
+        {
+            return false;
+        }
 
         MoveFocusOffAddressBox();
         SyncAddressBox();   // only lands once focus has actually left, which the call above does
@@ -3464,7 +3945,11 @@ public sealed partial class WebFlyoutWindow : Window
     {
         try
         {
-            if (_webView is { Visibility: Visibility.Visible } view && view.Focus(FocusState.Programmatic)) return;
+            if (_webView is { Visibility: Visibility.Visible } view && view.Focus(FocusState.Programmatic))
+            {
+                return;
+            }
+
             _pinButton.Focus(FocusState.Programmatic);
         }
         catch (Exception ex)
@@ -3485,14 +3970,25 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void RestorePageFocus()
     {
-        if (!_pageHadFocus || IsPromptOpen) return;
-        if (_webView == null || _webView.Visibility != Visibility.Visible) return;
+        if (!_pageHadFocus || IsPromptOpen)
+        {
+            return;
+        }
+
+        if (_webView == null || _webView.Visibility != Visibility.Visible)
+        {
+            return;
+        }
 
         // Queued rather than called inline: the browser has just been made visible, and focusing a
         // control in the same layout pass that revealed it does not take.
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!_isOpen || _webView == null || _webView.Visibility != Visibility.Visible) return;
+            if (!_isOpen || _webView == null || _webView.Visibility != Visibility.Visible)
+            {
+                return;
+            }
+
             try { _webView.Focus(FocusState.Programmatic); }
             catch (Exception ex) { Logger.Debug(ex, "Restoring page focus failed for launcher {Name}", _launcher.Name); }
         });
@@ -3500,9 +3996,17 @@ public sealed partial class WebFlyoutWindow : Window
 
     private void RevealWebViewIfPending()
     {
-        if (!_revealOnNavigationCompleted) return;
+        if (!_revealOnNavigationCompleted)
+        {
+            return;
+        }
+
         _revealOnNavigationCompleted = false;
-        if (_webView != null) _webView.Visibility = Visibility.Visible;
+        if (_webView != null)
+        {
+            _webView.Visibility = Visibility.Visible;
+        }
+
         RestorePageFocus();
     }
 
@@ -3526,7 +4030,11 @@ public sealed partial class WebFlyoutWindow : Window
 
     private static void OpenExternally(string url)
     {
-        if (string.IsNullOrWhiteSpace(url)) return;
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -3556,7 +4064,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// </remarks>
     private void ApplyZoom(CoreWebView2? core)
     {
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         double factor = _launcher.ResolvedWebZoomFactor;
         string script = factor == 1.0
@@ -3584,7 +4095,10 @@ public sealed partial class WebFlyoutWindow : Window
         UpdatePinButton();
         SetMinimizable(_launcher.WebRegularWindow);
         UpdateMinimizeButton();
-        if (_isOpen) ApplyTaskbarButton(true);
+        if (_isOpen)
+        {
+            ApplyTaskbarButton(true);
+        }
 
         // CurrentTargetUrl, not WebUrl. This runs whenever the launcher changes — including
         // after a bookmark's favicon fetch completes — so reading the launcher's single address
@@ -3605,9 +4119,13 @@ public sealed partial class WebFlyoutWindow : Window
             !string.Equals(home.NavigatedUrl, url, StringComparison.OrdinalIgnoreCase))
         {
             if (home.View.CoreWebView2 != null)
+            {
                 Navigate(url);
+            }
             else
+            {
                 home.NavigatedUrl = "";
+            }
         }
 
         // Not while the window has deliberately been grown past its configured size. This runs
@@ -3615,7 +4133,9 @@ public sealed partial class WebFlyoutWindow : Window
         // without the guard a maximized flyout snapped back to its normal size with no user
         // action at all, exactly as the navigation above once did.
         if (_isOpen && !_isMaximized && !_isFullScreen)
+        {
             ResizeToConfiguredSize();
+        }
     }
 
     private void ResizeToConfiguredSize()
@@ -3632,7 +4152,11 @@ public sealed partial class WebFlyoutWindow : Window
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b)) return false;
+            if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+            {
+                return false;
+            }
+
             return string.Equals(new Uri(NormalizeUrl(a)).Host, new Uri(NormalizeUrl(b)).Host,
                 StringComparison.OrdinalIgnoreCase);
         }
@@ -3646,9 +4170,21 @@ public sealed partial class WebFlyoutWindow : Window
     internal static string NormalizeUrl(string? url)
     {
         string trimmed = (url ?? "").Trim();
-        if (trimmed.Length == 0) return "";
-        if (trimmed.Contains("://", StringComparison.Ordinal)) return trimmed;
-        if (trimmed.StartsWith("about:", StringComparison.OrdinalIgnoreCase)) return trimmed;
+        if (trimmed.Length == 0)
+        {
+            return "";
+        }
+
+        if (trimmed.Contains("://", StringComparison.Ordinal))
+        {
+            return trimmed;
+        }
+
+        if (trimmed.StartsWith("about:", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+
         return "https://" + trimmed;
     }
 
@@ -3740,7 +4276,10 @@ public sealed partial class WebFlyoutWindow : Window
             // the user has looked at: warm-up and preload both leave one activated in the Win32
             // sense, and sweeping there would silently discard everything that arrived before the
             // app was restarted.
-            if (_isOpen) ClearNotificationBacklog();
+            if (_isOpen)
+            {
+                ClearNotificationBacklog();
+            }
 
             // WinUI replaces WM_SETICON as it initialises and activates the window, so the icon
             // has to be re-asserted here rather than only when it was first applied. Cheap: two
@@ -3756,7 +4295,10 @@ public sealed partial class WebFlyoutWindow : Window
         // same rule the item flyout applies to edit mode and its editors.
         // An open question pins the flyout too: a prompt that disappears when the user clicks
         // elsewhere is a request the page never gets an answer to.
-        if (_isShowing || !_isOpen || _launcher.WebPinFlyout || StaysOpenAsWindow || IsMinimized || _isModalOpen || _isResizing || _isMovingWindow || _isStripDragging || _isFullScreen || IsPromptOpen || _isMenuOpen) return;
+        if (_isShowing || !_isOpen || _launcher.WebPinFlyout || StaysOpenAsWindow || IsMinimized || _isModalOpen || _isResizing || _isMovingWindow || _isStripDragging || _isFullScreen || IsPromptOpen || _isMenuOpen)
+        {
+            return;
+        }
 
         // The browser's own HWNDs are children of this window, so clicking into the page
         // deactivates the XAML window without the user having gone anywhere. Read the
@@ -3768,8 +4310,15 @@ public sealed partial class WebFlyoutWindow : Window
             // in between — a pin toggled, a modal opened, a resize begun. Evaluating a condition
             // at one moment and acting on it at another is exactly how a pinned flyout ends up
             // dismissed anyway.
-            if (!_isOpen || _isShowing || _isHiding) return;
-            if (_launcher.WebPinFlyout || StaysOpenAsWindow || IsMinimized || _isModalOpen || _isResizing || _isMovingWindow || _isStripDragging || _isFullScreen || IsPromptOpen || _isMenuOpen) return;
+            if (!_isOpen || _isShowing || _isHiding)
+            {
+                return;
+            }
+
+            if (_launcher.WebPinFlyout || StaysOpenAsWindow || IsMinimized || _isModalOpen || _isResizing || _isMovingWindow || _isStripDragging || _isFullScreen || IsPromptOpen || _isMenuOpen)
+            {
+                return;
+            }
 
             if (IsForegroundStillOurs())
             {
@@ -3805,22 +4354,39 @@ public sealed partial class WebFlyoutWindow : Window
     private bool IsForegroundStillOurs()
     {
         var foreground = GetForegroundWindow();
-        if (foreground == IntPtr.Zero) return false;
-        if (foreground == _hwnd || IsChild(_hwnd, foreground)) return true;
+        if (foreground == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (foreground == _hwnd || IsChild(_hwnd, foreground))
+        {
+            return true;
+        }
 
         // Bounded: an owner chain is short, and a malformed one must not spin here.
         var owner = foreground;
         for (int depth = 0; depth < 8; depth++)
         {
             owner = GetWindow(owner, GW_OWNER);
-            if (owner == IntPtr.Zero) break;
-            if (owner == _hwnd || IsChild(_hwnd, owner)) return true;
+            if (owner == IntPtr.Zero)
+            {
+                break;
+            }
+
+            if (owner == _hwnd || IsChild(_hwnd, owner))
+            {
+                return true;
+            }
         }
 
         try
         {
             uint browserPid = _webView?.CoreWebView2?.BrowserProcessId ?? 0;
-            if (browserPid == 0) return false;
+            if (browserPid == 0)
+            {
+                return false;
+            }
 
             GetWindowThreadProcessId(foreground, out uint foregroundPid);
             return foregroundPid == browserPid;
@@ -3848,7 +4414,10 @@ public sealed partial class WebFlyoutWindow : Window
     private void StartForegroundWatch()
     {
         _foregroundWatchTimer ??= DispatcherQueue.CreateTimer();
-        if (_foregroundWatchTimer.IsRunning) return;
+        if (_foregroundWatchTimer.IsRunning)
+        {
+            return;
+        }
 
         _foregroundWatchTimer.Interval = TimeSpan.FromMilliseconds(400);
         _foregroundWatchTimer.IsRepeating = true;
@@ -3859,7 +4428,11 @@ public sealed partial class WebFlyoutWindow : Window
 
     private void StopForegroundWatch()
     {
-        if (_foregroundWatchTimer == null) return;
+        if (_foregroundWatchTimer == null)
+        {
+            return;
+        }
+
         _foregroundWatchTimer.Stop();
         _foregroundWatchTimer.Tick -= ForegroundWatchTimer_Tick;
     }
@@ -3882,7 +4455,10 @@ public sealed partial class WebFlyoutWindow : Window
             return;
         }
 
-        if (IsForegroundStillOurs()) return;   // still up
+        if (IsForegroundStillOurs())
+        {
+            return;   // still up
+        }
 
         StopForegroundWatch();
         HideFlyout();
@@ -3897,7 +4473,10 @@ public sealed partial class WebFlyoutWindow : Window
         }
 
         // In regular-window mode the taskbar button's click arrives as a minimize request.
-        if (HandleTaskbarMinimize(msg, wParam)) return IntPtr.Zero;
+        if (HandleTaskbarMinimize(msg, wParam))
+        {
+            return IntPtr.Zero;
+        }
 
         return DefSubclassProc(hwnd, msg, wParam, lParam);
     }
@@ -3931,7 +4510,10 @@ public sealed partial class WebFlyoutWindow : Window
 
         GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
         double scale = dpiX / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         var monitorInfo = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
         GetMonitorInfo(hMonitor, ref monitorInfo);
@@ -3968,10 +4550,25 @@ public sealed partial class WebFlyoutWindow : Window
             top = screenY - height / 2;
         }
 
-        if (left < workArea.Left) left = workArea.Left;
-        if (left + width > workArea.Right) left = workArea.Right - width;
-        if (top + height > workArea.Bottom) top = workArea.Bottom - height;
-        if (top < workArea.Top) top = workArea.Top;
+        if (left < workArea.Left)
+        {
+            left = workArea.Left;
+        }
+
+        if (left + width > workArea.Right)
+        {
+            left = workArea.Right - width;
+        }
+
+        if (top + height > workArea.Bottom)
+        {
+            top = workArea.Bottom - height;
+        }
+
+        if (top < workArea.Top)
+        {
+            top = workArea.Top;
+        }
 
         // Anchored to its last position, and there is one — clamped into the work area so a screen
         // that has since gone away cannot strand it. Nothing dragged yet falls through to the tray
@@ -4063,7 +4660,9 @@ public sealed partial class WebFlyoutWindow : Window
             int currentTop = (int)Math.Round(startTop + ((endTop - startTop) * eased));
 
             if (parkAtEnd)
+            {
                 SetFadeAlpha(1 - Math.Min(1, progress / FadeOutCompleteAt));
+            }
 
             SetWindowPos(_hwnd, IntPtr.Zero, left, currentTop, width, height,
                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
@@ -4081,7 +4680,9 @@ public sealed partial class WebFlyoutWindow : Window
     private void CompleteWindowAnimation(int animationVersion, int left, int top, int width, int height, bool parkAtEnd)
     {
         if (animationVersion != _animationVersion || _hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
             return;
+        }
 
         MoveResize(left, top, width, height);
 
@@ -4108,7 +4709,10 @@ public sealed partial class WebFlyoutWindow : Window
     /// <summary>Per-window alpha for the hide fade. See the flyout's <c>SetFadeAlpha</c>.</summary>
     private void SetFadeAlpha(double opacity)
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         if (!_fadeStyleApplied)
         {
@@ -4123,10 +4727,17 @@ public sealed partial class WebFlyoutWindow : Window
 
     private void ClearFade()
     {
-        if (!_fadeStyleApplied) return;
+        if (!_fadeStyleApplied)
+        {
+            return;
+        }
+
         _fadeStyleApplied = false;
 
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         SetLayeredWindowAttributes(_hwnd, 0, 255, LWA_ALPHA);
         int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);

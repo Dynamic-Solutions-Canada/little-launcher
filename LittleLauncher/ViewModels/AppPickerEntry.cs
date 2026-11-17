@@ -21,11 +21,16 @@ public partial class AppPickerEntry : ObservableObject
     {
         get
         {
-            if (!HasDuplicateName) return Name;
+            if (!HasDuplicateName)
+            {
+                return Name;
+            }
 
             string identity = LaunchTarget;
             if (ContainingFolder != null)
+            {
                 identity = Path.GetFileName(LaunchPath);
+            }
 
             return $"{Name} ({identity})";
         }

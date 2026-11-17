@@ -17,7 +17,10 @@ public sealed class FlyoutItemTemplateSelector : DataTemplateSelector
         if (item is LauncherItem { IsGroup: true } group)
         {
             if (SyntheticGroupTemplate != null && SyntheticGroups?.Contains(group) == true)
+            {
                 return SyntheticGroupTemplate;
+            }
+
             return GroupTemplate!;
         }
 

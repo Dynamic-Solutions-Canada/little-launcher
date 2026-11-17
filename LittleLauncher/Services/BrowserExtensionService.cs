@@ -66,7 +66,10 @@ internal static class BrowserExtensionService
                 ? await CopyFolderAsync(sourcePath)
                 : await TryInstallFromArchiveAsync(sourcePath);
 
-            if (unpacked == null) return null;
+            if (unpacked == null)
+            {
+                return null;
+            }
 
             if (!File.Exists(Path.Combine(unpacked, "manifest.json")))
             {
@@ -96,7 +99,10 @@ internal static class BrowserExtensionService
     /// </remarks>
     internal static async Task<string?> TryInstallFromArchiveAsync(string archivePath)
     {
-        if (!File.Exists(archivePath)) return null;
+        if (!File.Exists(archivePath))
+        {
+            return null;
+        }
 
         byte[] bytes = await File.ReadAllBytesAsync(archivePath);
         int zipStart = 0;
@@ -149,7 +155,10 @@ internal static class BrowserExtensionService
         foreach (var entry in zip.Entries)
         {
             // Directory entries have an empty name and are created by the file entries below.
-            if (string.IsNullOrEmpty(entry.Name)) continue;
+            if (string.IsNullOrEmpty(entry.Name))
+            {
+                continue;
+            }
 
             string destination = Path.GetFullPath(Path.Combine(target, entry.FullName));
             if (!destination.StartsWith(root, StringComparison.OrdinalIgnoreCase))
@@ -170,12 +179,16 @@ internal static class BrowserExtensionService
         await Task.Run(() =>
         {
             foreach (string dir in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
+            {
                 Directory.CreateDirectory(dir.Replace(source, target, StringComparison.OrdinalIgnoreCase));
+            }
 
             Directory.CreateDirectory(target);
 
             foreach (string file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+            {
                 File.Copy(file, file.Replace(source, target, StringComparison.OrdinalIgnoreCase), overwrite: true);
+            }
         });
 
         return target;
@@ -209,7 +222,10 @@ internal static class BrowserExtensionService
     private static void RepairMissingFolders(List<Models.BrowserExtension> list)
     {
         var broken = list.Where(e => string.IsNullOrEmpty(e.Folder) || !Directory.Exists(e.Folder)).ToList();
-        if (broken.Count == 0 || !Directory.Exists(ExtensionsRoot)) return;
+        if (broken.Count == 0 || !Directory.Exists(ExtensionsRoot))
+        {
+            return;
+        }
 
         var claimed = list.Select(e => e.Folder)
             .Where(f => !string.IsNullOrEmpty(f))
@@ -221,8 +237,15 @@ internal static class BrowserExtensionService
         {
             foreach (string folder in SafeDirectories(ExtensionsRoot))
             {
-                if (claimed.Contains(folder)) continue;
-                if (!string.Equals(ReadName(folder), extension.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                if (claimed.Contains(folder))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(ReadName(folder), extension.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
                 extension.Folder = folder;
                 claimed.Add(folder);
@@ -233,7 +256,10 @@ internal static class BrowserExtensionService
             }
         }
 
-        if (repaired) SettingsManager.SaveSettings();
+        if (repaired)
+        {
+            SettingsManager.SaveSettings();
+        }
     }
 
     /// <summary>Folders still on disk, for the code that only needs paths.</summary>
@@ -251,11 +277,18 @@ internal static class BrowserExtensionService
     private static void MigrateFolders(List<Models.BrowserExtension> list)
     {
         var folders = SettingsManager.Current.BrowserExtensionFolders;
-        if (folders == null || folders.Count == 0) return;
+        if (folders == null || folders.Count == 0)
+        {
+            return;
+        }
 
         foreach (string folder in folders)
         {
-            if (list.Any(e => string.Equals(e.Folder, folder, StringComparison.OrdinalIgnoreCase))) continue;
+            if (list.Any(e => string.Equals(e.Folder, folder, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
             list.Add(new Models.BrowserExtension { Name = ReadName(folder), Folder = folder });
         }
 
@@ -295,7 +328,10 @@ internal static class BrowserExtensionService
 
         // Only ever a folder this service made, under its own root — never the source the user
         // picked from, which may be anywhere and is not ours to delete.
-        if (folder.StartsWith(ExtensionsRoot, StringComparison.OrdinalIgnoreCase)) TryDelete(folder);
+        if (folder.StartsWith(ExtensionsRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            TryDelete(folder);
+        }
     }
 
     /// <summary>
@@ -318,25 +354,41 @@ internal static class BrowserExtensionService
         // that simply never had it.
         foreach (var extension in local.Where(e => e.IsPortable).ToList())
         {
-            if (wanted.Any(w => string.Equals(w.Id, extension.Id, StringComparison.OrdinalIgnoreCase))) continue;
+            if (wanted.Any(w => string.Equals(w.Id, extension.Id, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
 
             Logger.Info("Removing browser extension {Name}: it was uninstalled on another machine", extension.Name);
             local.Remove(extension);
-            if (!string.IsNullOrEmpty(extension.Folder)) TryDelete(extension.Folder);
+            if (!string.IsNullOrEmpty(extension.Folder))
+            {
+                TryDelete(extension.Folder);
+            }
+
             changed = true;
         }
 
         foreach (var extension in wanted.Where(w => w.IsPortable))
         {
-            if (local.Any(e => string.Equals(e.Id, extension.Id, StringComparison.OrdinalIgnoreCase))) continue;
+            if (local.Any(e => string.Equals(e.Id, extension.Id, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
 
             Logger.Info("Fetching browser extension {Name} ({Id}): installed on another machine",
                 extension.Name, extension.Id);
 
-            if (await TryFetchFromStoreAsync(extension.Id) != null) changed = true;
+            if (await TryFetchFromStoreAsync(extension.Id) != null)
+            {
+                changed = true;
+            }
         }
 
-        if (changed) SettingsManager.SaveSettings();
+        if (changed)
+        {
+            SettingsManager.SaveSettings();
+        }
     }
 
     /// <summary>What crosses to another machine: identity and name, never a path.</summary>
@@ -368,7 +420,10 @@ internal static class BrowserExtensionService
             await File.WriteAllBytesAsync(temp, bytes);
 
             string? folder = await TryInstallFromArchiveAsync(temp);
-            if (folder == null) return null;
+            if (folder == null)
+            {
+                return null;
+            }
 
             Remember(folder, id);
             return folder;
@@ -380,7 +435,13 @@ internal static class BrowserExtensionService
         }
         finally
         {
-            try { if (File.Exists(temp)) File.Delete(temp); }
+            try
+            {
+                if (File.Exists(temp))
+                {
+                    File.Delete(temp);
+                }
+            }
             catch (Exception ex) { Logger.Debug(ex, "Could not delete {Path}", temp); }
         }
     }
@@ -407,7 +468,9 @@ internal static class BrowserExtensionService
             using var json = JsonDocument.Parse(stream, new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
 
             if (!json.RootElement.TryGetProperty("name", out var name) || name.GetString() is not { } text)
+            {
                 return Path.GetFileName(folder);
+            }
 
             string? locale = json.RootElement.TryGetProperty("default_locale", out var declared)
                 ? declared.GetString()
@@ -437,16 +500,24 @@ internal static class BrowserExtensionService
         const string suffix = "__";
 
         if (!value.StartsWith(prefix, StringComparison.Ordinal) || !value.EndsWith(suffix, StringComparison.Ordinal))
+        {
             return value;
+        }
 
         string key = value[prefix.Length..^suffix.Length];
 
         foreach (string? locale in new[] { defaultLocale, "en", "en_US", "en_GB" })
         {
-            if (string.IsNullOrEmpty(locale)) continue;
+            if (string.IsNullOrEmpty(locale))
+            {
+                continue;
+            }
 
             string path = Path.Combine(folder, "_locales", locale, "messages.json");
-            if (!File.Exists(path)) continue;
+            if (!File.Exists(path))
+            {
+                continue;
+            }
 
             try
             {
@@ -456,9 +527,15 @@ internal static class BrowserExtensionService
                 // Keys are matched case-insensitively, which the extension platform also does.
                 foreach (var entry in json.RootElement.EnumerateObject())
                 {
-                    if (!string.Equals(entry.Name, key, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!string.Equals(entry.Name, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     if (entry.Value.TryGetProperty("message", out var message) && message.GetString() is { } resolved)
+                    {
                         return resolved;
+                    }
                 }
             }
             catch (Exception ex)
@@ -489,10 +566,14 @@ internal static class BrowserExtensionService
             // extension side-loaded from an old archive is exactly the case this has to survive.
             if (!json.RootElement.TryGetProperty("action", out var action) &&
                 !json.RootElement.TryGetProperty("browser_action", out action))
+            {
                 return null;
+            }
 
             if (!action.TryGetProperty("default_popup", out var popup) || popup.GetString() is not { } page)
+            {
                 return null;
+            }
 
             string? icon = null;
             if (action.TryGetProperty("default_icon", out var icons))
@@ -529,7 +610,10 @@ internal static class BrowserExtensionService
     internal static async Task ApplyAsync(CoreWebView2 core)
     {
         var folders = InstalledFolders;
-        if (folders.Count == 0) return;
+        if (folders.Count == 0)
+        {
+            return;
+        }
 
         try
         {
@@ -544,7 +628,10 @@ internal static class BrowserExtensionService
                     continue;
                 }
 
-                if (present.Contains(ReadName(folder))) continue;
+                if (present.Contains(ReadName(folder)))
+                {
+                    continue;
+                }
 
                 await core.Profile.AddBrowserExtensionAsync(folder);
                 Logger.Info("Loaded browser extension from {Folder}", folder);
@@ -571,7 +658,13 @@ internal static class BrowserExtensionService
 
     private static void TryDelete(string folder)
     {
-        try { if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true); }
+        try
+        {
+            if (Directory.Exists(folder))
+            {
+                Directory.Delete(folder, recursive: true);
+            }
+        }
         catch (Exception ex) { Logger.Debug(ex, "Could not delete {Folder}", folder); }
     }
 }

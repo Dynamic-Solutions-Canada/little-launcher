@@ -13,26 +13,39 @@ internal static class PortableLauncherIcon
     internal static byte[] Decode(string data)
     {
         if (data.Length > 4 * ((MaxBytes + 2) / 3))
+        {
             throw new InvalidDataException(UiText.Get("syncService.syncedIcon.tooLarge"));
+        }
+
         byte[] bytes = Convert.FromBase64String(data);
         if (bytes.Length == 0 || bytes.Length > MaxBytes)
+        {
             throw new InvalidDataException(UiText.Get("syncService.syncedIcon.emptyOrTooLarge"));
+        }
+
         bool supported = bytes.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })
             || bytes.AsSpan().StartsWith(new byte[] { 0, 0, 1, 0 })
             || bytes.AsSpan().StartsWith(new byte[] { 255, 216, 255 })
             || bytes.AsSpan().StartsWith("GIF87a"u8) || bytes.AsSpan().StartsWith("GIF89a"u8)
             || bytes.AsSpan().StartsWith("BM"u8);
-        if (!supported) throw new InvalidDataException(UiText.Get("syncService.syncedIcon.unsupported"));
+        if (!supported)
+        {
+            throw new InvalidDataException(UiText.Get("syncService.syncedIcon.unsupported"));
+        }
+
         return bytes;
     }
 
     internal static byte[] DecodePreview(string data)
     {
         byte[] bytes = Decode(data);
-        if (bytes.Length < 24 || !bytes.AsSpan().StartsWith(new byte[] { 137,80,78,71,13,10,26,10 })
-            || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(16,4)) is 0 or > 1024
-            || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(20,4)) is 0 or > 1024)
+        if (bytes.Length < 24 || !bytes.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })
+            || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(16, 4)) is 0 or > 1024
+            || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(20, 4)) is 0 or > 1024)
+        {
             throw new InvalidDataException("A portable glyph preview must be a bounded PNG image.");
+        }
+
         return bytes;
     }
 
@@ -57,25 +70,41 @@ internal static class PortableLauncherIcon
         if (File.Exists(launcher.CustomTrayIconPath))
         {
             if (new FileInfo(launcher.CustomTrayIconPath).Length > MaxBytes)
+            {
                 throw new InvalidDataException(UiText.Get("syncService.iconTooLarge"));
+            }
+
             string data = Convert.ToBase64String(File.ReadAllBytes(launcher.CustomTrayIconPath));
             Decode(data);
             launcher.CustomTrayIconData = data;
         }
         else if (!string.IsNullOrEmpty(launcher.CustomTrayIconData))
+        {
             Decode(launcher.CustomTrayIconData);
+        }
     }
 
     internal static void Materialize(Launcher launcher)
     {
-        if (!string.IsNullOrEmpty(launcher.TrayIconPreviewData)) DecodePreview(launcher.TrayIconPreviewData);
-        if (launcher.TrayIconMode != TrayIconModes.Custom || string.IsNullOrEmpty(launcher.CustomTrayIconData)) return;
+        if (!string.IsNullOrEmpty(launcher.TrayIconPreviewData))
+        {
+            DecodePreview(launcher.TrayIconPreviewData);
+        }
+
+        if (launcher.TrayIconMode != TrayIconModes.Custom || string.IsNullOrEmpty(launcher.CustomTrayIconData))
+        {
+            return;
+        }
+
         byte[] bytes = Decode(launcher.CustomTrayIconData);
         string suffix = bytes.AsSpan().StartsWith(new byte[] { 0, 0, 1, 0 }) ? ".ico" : ".img";
         string path = Path.Combine(MainWindow.GetPhysicalAppDataDir(), "icons", "sync-" + Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant() + suffix);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         if (!File.Exists(path) || !File.ReadAllBytes(path).AsSpan().SequenceEqual(bytes))
+        {
             LauncherPayload.WriteAtomic(path, bytes);
+        }
+
         string data = launcher.CustomTrayIconData;
         launcher.CustomTrayIconPath = path;
         launcher.CustomTrayIconData = data; // Path changes clear an obsolete embedded choice.

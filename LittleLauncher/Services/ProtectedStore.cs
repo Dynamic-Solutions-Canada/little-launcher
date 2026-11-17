@@ -34,7 +34,10 @@ internal static class ProtectedStore
         string path = PathFor(name);
         try
         {
-            if (!File.Exists(path)) return null;
+            if (!File.Exists(path))
+            {
+                return null;
+            }
 
             byte[] plain = ProtectedData.Unprotect(
                 File.ReadAllBytes(path), Entropy, DataProtectionScope.CurrentUser);
@@ -75,7 +78,10 @@ internal static class ProtectedStore
         string path = PathFor(name);
         try
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
         }
         catch (Exception ex)
         {

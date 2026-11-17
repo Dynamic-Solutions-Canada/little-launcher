@@ -71,7 +71,9 @@ internal static class SharedLauncherPayload
         {
             var envelope = JsonSerializer.Deserialize<SharedEnvelope>(bytes, JsonOptions);
             if (envelope?.Items != null)
+            {
                 return new SharedLauncherFile(envelope.Items, envelope.TwoWay, envelope.Name);
+            }
         }
         catch (JsonException) { }
 
@@ -109,10 +111,14 @@ internal static class SharedLauncherPayload
         App.MainDispatcherQueue.TryEnqueue(() =>
         {
             if (file.TwoWay.HasValue && !launcher.IsSharedOwner)
+            {
                 launcher.SharedTwoWay = file.TwoWay.Value;
+            }
 
             foreach (var item in file.Items)
+            {
                 item.NormalizeGlyph();
+            }
 
             // Only when the pull actually carries something different. This runs on every
             // periodic sync, and refilling the collection with equal-valued copies leaves the
@@ -123,7 +129,9 @@ internal static class SharedLauncherPayload
             {
                 launcher.Items.Clear();
                 foreach (var item in file.Items)
+                {
                     launcher.Items.Add(item);
+                }
 
                 Windows.FlyoutWindow.InvalidateItems(launcher.Id, force: true);
             }

@@ -31,7 +31,10 @@ public partial class FlyoutWindow
         IntPtr monitor = MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST);
         GetDpiForMonitor(monitor, MonitorDpiType.MDT_EFFECTIVE_DPI, out uint dpi, out _);
         double scale = dpi / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         var info = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
         GetMonitorInfo(monitor, ref info);

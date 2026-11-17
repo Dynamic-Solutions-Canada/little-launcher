@@ -23,7 +23,10 @@ public sealed partial class LauncherSettingsWindow
             (Label: UiText.Get("launcherSettings.hiddenPolicy.keepRunning"), Value: WebHiddenPolicies.KeepRunning),
         };
         foreach (var policy in policies)
+        {
             policyCombo.Items.Add(new ComboBoxItem { Content = policy.Label, Tag = policy.Value });
+        }
+
         policyCombo.SelectedIndex = Array.FindIndex(policies, p => p.Value == WebHiddenPolicies.Normalize(launcher.WebHiddenPolicy));
 
         var policyRow = BuildRow(
@@ -42,7 +45,11 @@ public sealed partial class LauncherSettingsWindow
         };
         idleBox.ValueChanged += (_, _) =>
         {
-            if (double.IsNaN(idleBox.Value)) return;
+            if (double.IsNaN(idleBox.Value))
+            {
+                return;
+            }
+
             launcher.WebIdleUnloadMinutes = (int)idleBox.Value;
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
@@ -61,7 +68,11 @@ public sealed partial class LauncherSettingsWindow
 
         policyCombo.SelectionChanged += (_, _) =>
         {
-            if (policyCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int policy) return;
+            if (policyCombo.SelectedItem is not ComboBoxItem selected || selected.Tag is not int policy)
+            {
+                return;
+            }
+
             launcher.WebHiddenPolicy = policy;
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();
@@ -130,7 +141,11 @@ public sealed partial class LauncherSettingsWindow
         clickCombo.SelectedIndex = launcher.WebTaskbarClickCloses ? 1 : 0;
         clickCombo.SelectionChanged += (_, _) =>
         {
-            if (clickCombo.SelectedItem is not ComboBoxItem { Tag: bool closes }) return;
+            if (clickCombo.SelectedItem is not ComboBoxItem { Tag: bool closes })
+            {
+                return;
+            }
+
             launcher.WebTaskbarClickCloses = closes;
             SettingsManager.SaveSettings();
             Services.AutoSyncService.NotifyLaunchersChanged();

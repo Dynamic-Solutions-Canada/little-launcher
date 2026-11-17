@@ -127,12 +127,19 @@ internal static class JumpListService
     internal static void RequestRefresh()
     {
         var queue = _queue;
-        if (queue == null) return;
+        if (queue == null)
+        {
+            return;
+        }
 
         if (queue.HasThreadAccess)
+        {
             RestartDebounce();
+        }
         else
+        {
             queue.TryEnqueue(RestartDebounce);
+        }
     }
 
     /// <summary>
@@ -146,7 +153,10 @@ internal static class JumpListService
     internal static void Remove(Launcher launcher)
     {
         string aumid = ResolvePinAumid(launcher);
-        if (string.IsNullOrEmpty(aumid)) return;
+        if (string.IsNullOrEmpty(aumid))
+        {
+            return;
+        }
 
         PublishedSignatures.Remove(launcher.Id);
         RunOnStaThread(() => DeleteList(aumid));
@@ -225,28 +235,43 @@ internal static class JumpListService
             foreach (var launcher in SettingsManager.Current.Launchers.ToList())
             {
                 string aumid = ResolvePinAumid(launcher);
-                if (string.IsNullOrEmpty(aumid)) continue;
+                if (string.IsNullOrEmpty(aumid))
+                {
+                    continue;
+                }
 
                 var plan = BuildPlan(launcher, aumid, companion, dark);
                 foreach (var task in plan.Entries.Concat(plan.Actions))
+                {
                     live.Add(CacheFileName(task.IconSource));
+                }
 
                 if (!PublishedSignatures.TryGetValue(launcher.Id, out var previous) || previous != plan.Signature)
+                {
                     stale.Add(launcher.Id);
+                }
 
                 plans.Add(plan);
             }
 
-            if (plans.Count == 0) return;
+            if (plans.Count == 0)
+            {
+                return;
+            }
 
             RunOnStaThread(() =>
             {
                 foreach (var plan in plans)
                 {
-                    if (!stale.Contains(plan.LauncherId)) continue;
+                    if (!stale.Contains(plan.LauncherId))
+                    {
+                        continue;
+                    }
 
                     if (Publish(plan))
+                    {
                         MarkPublished(plan);
+                    }
                 }
 
                 SweepIconCache(live);
@@ -261,7 +286,10 @@ internal static class JumpListService
     private static void MarkPublished(JumpListPlan plan)
     {
         var queue = _queue;
-        if (queue == null) return;
+        if (queue == null)
+        {
+            return;
+        }
 
         queue.TryEnqueue(() => PublishedSignatures[plan.LauncherId] = plan.Signature);
     }
@@ -351,13 +379,19 @@ internal static class JumpListService
     /// </remarks>
     private static string ResolvePinAumid(Launcher launcher)
     {
-        if (!string.IsNullOrEmpty(launcher.PinAumid)) return launcher.PinAumid;
+        if (!string.IsNullOrEmpty(launcher.PinAumid))
+        {
+            return launcher.PinAumid;
+        }
 
         try
         {
             using var key = Registry.CurrentUser.OpenSubKey(
                 @"Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband");
-            if (key == null) return "";
+            if (key == null)
+            {
+                return "";
+            }
 
             var pattern = new Regex(
                 $@"LittleLauncher\.Launcher\.{Regex.Escape(launcher.Id)}\.\d+",
@@ -365,7 +399,10 @@ internal static class JumpListService
 
             foreach (string name in new[] { "Favorites", "FavoritesResolve" })
             {
-                if (key.GetValue(name) is not byte[] blob || blob.Length < 4) continue;
+                if (key.GetValue(name) is not byte[] blob || blob.Length < 4)
+                {
+                    continue;
+                }
 
                 // Both byte alignments, because the AUMID sits at whatever offset the surrounding
                 // binary structure put it at, and a UTF-16 read that starts one byte out finds
@@ -373,7 +410,10 @@ internal static class JumpListService
                 for (int offset = 0; offset < 2; offset++)
                 {
                     var match = pattern.Match(Encoding.Unicode.GetString(blob, offset, blob.Length - offset));
-                    if (match.Success) return match.Value;
+                    if (match.Success)
+                    {
+                        return match.Value;
+                    }
                 }
             }
         }
@@ -420,7 +460,10 @@ internal static class JumpListService
     {
         // Asked of the bookmarks rather than of the bar: a launcher with one page has nothing to
         // list whether or not its bar is on screen, which is the whole point of this gate.
-        if (!launcher.HoldsSeveralSites) return [];
+        if (!launcher.HoldsSeveralSites)
+        {
+            return [];
+        }
 
         // Flattened: a jump list is one flat menu with no submenus, so a folder can only appear
         // as what is inside it. Order is preserved, so a folder's contents sit where the folder did.
@@ -486,7 +529,9 @@ internal static class JumpListService
         // Nothing to show at all. Publishing an empty list is not the same as leaving the old one
         // alone: a launcher whose list was never dropped keeps offering entries it no longer has.
         if (plan.Entries.Count == 0 && plan.Actions.Count == 0)
+        {
             return DeleteList(plan.Aumid);
+        }
 
         object? listObj = null;
         object? collectionObj = null;
@@ -497,11 +542,18 @@ internal static class JumpListService
             var list = (NativeMethods.ICustomDestinationList)listObj;
 
             int hr = list.SetAppID(plan.Aumid);
-            if (hr != 0) return false;
+            if (hr != 0)
+            {
+                return false;
+            }
 
             var iidObjectArray = NativeMethods.IID_IObjectArray;
             hr = list.BeginList(out uint slots, ref iidObjectArray, out object removed);
-            if (removed != null) Marshal.ReleaseComObject(removed);
+            if (removed != null)
+            {
+                Marshal.ReleaseComObject(removed);
+            }
+
             if (hr != 0)
             {
                 Logger.Debug("BeginList failed for {Aumid}: 0x{Hr:X8}", plan.Aumid, hr);
@@ -522,7 +574,10 @@ internal static class JumpListService
             foreach (var task in entries)
             {
                 object? link = CreateShellLink(task);
-                if (link == null) continue;
+                if (link == null)
+                {
+                    continue;
+                }
 
                 collection.AddObject(link);
                 added++;
@@ -531,7 +586,10 @@ internal static class JumpListService
             foreach (var task in plan.Actions)
             {
                 object? link = CreateShellLink(task);
-                if (link == null) continue;
+                if (link == null)
+                {
+                    continue;
+                }
 
                 collection.AddObject(link);
                 added++;
@@ -568,8 +626,15 @@ internal static class JumpListService
         }
         finally
         {
-            if (collectionObj != null) Marshal.ReleaseComObject(collectionObj);
-            if (listObj != null) Marshal.ReleaseComObject(listObj);
+            if (collectionObj != null)
+            {
+                Marshal.ReleaseComObject(collectionObj);
+            }
+
+            if (listObj != null)
+            {
+                Marshal.ReleaseComObject(listObj);
+            }
         }
     }
 
@@ -590,7 +655,10 @@ internal static class JumpListService
         }
         finally
         {
-            if (listObj != null) Marshal.ReleaseComObject(listObj);
+            if (listObj != null)
+            {
+                Marshal.ReleaseComObject(listObj);
+            }
         }
     }
 
@@ -609,11 +677,15 @@ internal static class JumpListService
             // The shell truncates a description itself, but only after copying it, so keep it
             // inside the documented limit rather than relying on that.
             if (!string.IsNullOrEmpty(task.Tooltip))
+            {
                 link.SetDescription(task.Tooltip.Length > 259 ? task.Tooltip[..259] : task.Tooltip);
+            }
 
             var (iconPath, iconIndex) = ResolveTaskIcon(task.IconSource);
             if (!string.IsNullOrEmpty(iconPath))
+            {
                 link.SetIconLocation(iconPath, iconIndex);
+            }
 
             NativeMethods.SetShellLinkTitle(linkObj, task.Title);
             return linkObj;
@@ -621,7 +693,11 @@ internal static class JumpListService
         catch (Exception ex)
         {
             Logger.Warn(ex, "Failed to build jump list task {Title}", task.Title);
-            if (linkObj != null) Marshal.ReleaseComObject(linkObj);
+            if (linkObj != null)
+            {
+                Marshal.ReleaseComObject(linkObj);
+            }
+
             return null;
         }
     }
@@ -664,11 +740,17 @@ internal static class JumpListService
             }
 
             string cached = Path.Combine(IconCacheDir(), CacheFileName(source));
-            if (File.Exists(cached)) return (cached, 0);
+            if (File.Exists(cached))
+            {
+                return (cached, 0);
+            }
 
             using var bitmap = MainWindow.ResolveItemIconBitmap(
                 source.IconPath, source.Glyph, source.Color, 256, source.Dark);
-            if (bitmap == null) return ("", 0);
+            if (bitmap == null)
+            {
+                return ("", 0);
+            }
 
             Directory.CreateDirectory(IconCacheDir());
             File.WriteAllBytes(cached, MainWindow.BitmapToIcoBytes(bitmap));
@@ -699,12 +781,17 @@ internal static class JumpListService
         try
         {
             string dir = IconCacheDir();
-            if (!Directory.Exists(dir)) return;
+            if (!Directory.Exists(dir))
+            {
+                return;
+            }
 
             foreach (string file in Directory.EnumerateFiles(dir, "task-*.ico"))
             {
                 if (!live.Contains(Path.GetFileName(file)))
+                {
                     File.Delete(file);
+                }
             }
         }
         catch (Exception ex)

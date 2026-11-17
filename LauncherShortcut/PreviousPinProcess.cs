@@ -38,7 +38,10 @@ internal static class PreviousPinProcess
             TaskbarPinning.Log($"previous-pin-process: could not start; state unknown; {ex.Message}");
             return ExistingPinState.Unknown;
         }
-        if (child == null) return ExistingPinState.Unknown;
+        if (child == null)
+        {
+            return ExistingPinState.Unknown;
+        }
 
         using (child)
         {
@@ -55,8 +58,16 @@ internal static class PreviousPinProcess
                 return ExistingPinState.Unknown;
             }
             TaskbarPinning.Log($"previous-pin-process: pid={child.Id}; exit={child.ExitCode}");
-            if (child.ExitCode == 4) return ExistingPinState.Pinned;
-            if (child.ExitCode == 5) return ExistingPinState.NotPinned;
+            if (child.ExitCode == 4)
+            {
+                return ExistingPinState.Pinned;
+            }
+
+            if (child.ExitCode == 5)
+            {
+                return ExistingPinState.NotPinned;
+            }
+
             return ExistingPinState.Unknown;
         }
     }

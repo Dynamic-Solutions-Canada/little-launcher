@@ -46,7 +46,11 @@ internal sealed unsafe class PinShortcut
             }
 
             string safeName = new string(displayName.Where(c => !Path.GetInvalidFileNameChars().Contains(c)).ToArray()).Trim().TrimEnd('.');
-            if (safeName.Length == 0) safeName = "Little Launcher";
+            if (safeName.Length == 0)
+            {
+                safeName = "Little Launcher";
+            }
+
             Write(Path.Combine(_directory, safeName + ".lnk"), exe, launcherId, displayName, icon, aumid);
             SHChangeNotify(0x08000000 /* SHCNE_ASSOCCHANGED */, 0, 0, 0);
         }
@@ -92,8 +96,14 @@ internal sealed unsafe class PinShortcut
     /// <summary>Cancellation restores any unresolved marker that predates the current attempt.</summary>
     private void RestorePending()
     {
-        if (_previousPending == null) File.Delete(_pending);
-        else File.WriteAllBytes(_pending, _previousPending);
+        if (_previousPending == null)
+        {
+            File.Delete(_pending);
+        }
+        else
+        {
+            File.WriteAllBytes(_pending, _previousPending);
+        }
     }
 
     private void Restore()
@@ -113,7 +123,11 @@ internal sealed unsafe class PinShortcut
     internal static bool HasMatchingIdentity(string launcherId, string aumid)
     {
         string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Little Launcher Pins", launcherId);
-        if (!Directory.Exists(directory)) return false;
+        if (!Directory.Exists(directory))
+        {
+            return false;
+        }
+
         foreach (string path in Directory.GetFiles(directory, "*.lnk"))
         {
             nint link = CreateLink();
@@ -132,11 +146,18 @@ internal sealed unsafe class PinShortcut
                 string? id;
                 try { id = GetAppId(store); }
                 finally { Release(store); }
-                if (id != aumid) continue;
+                if (id != aumid)
+                {
+                    continue;
+                }
+
                 string target = ReadLinkText(link, path: true);
                 string arguments = ReadLinkText(link, path: false);
                 if (string.Equals(Path.GetFullPath(target), Environment.ProcessPath, StringComparison.OrdinalIgnoreCase)
-                    && arguments == $"--launcher {launcherId}") return true;
+                    && arguments == $"--launcher {launcherId}")
+                {
+                    return true;
+                }
             }
             finally { Release(link); }
         }

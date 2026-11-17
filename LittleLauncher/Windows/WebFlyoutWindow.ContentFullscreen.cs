@@ -50,16 +50,25 @@ public sealed partial class WebFlyoutWindow
     /// </summary>
     private async Task RefreshFullscreenAvailabilityAsync()
     {
-        if (_enterFullscreenButton is not { } button) return;
+        if (_enterFullscreenButton is not { } button)
+        {
+            return;
+        }
+
         int version = ++_fullscreenAvailabilityVersion;
         button.Visibility = Visibility.Collapsed;
-        if (!_isOpen || _isFullScreen || _webView?.CoreWebView2 is not { } core) return;
+        if (!_isOpen || _isFullScreen || _webView?.CoreWebView2 is not { } core)
+        {
+            return;
+        }
 
         try
         {
             string result = await core.ExecuteScriptAsync($"Boolean({FullscreenVideoTargetScript})");
             if (version == _fullscreenAvailabilityVersion && IsActiveCore(core) && _isOpen && !_isFullScreen)
+            {
                 button.Visibility = result == "true" ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
         catch (Exception ex)
         {
@@ -73,7 +82,10 @@ public sealed partial class WebFlyoutWindow
     /// </summary>
     private async Task EnterContentFullscreenAsync()
     {
-        if (!_isOpen || _isFullScreen || _webView?.CoreWebView2 is not { } core) return;
+        if (!_isOpen || _isFullScreen || _webView?.CoreWebView2 is not { } core)
+        {
+            return;
+        }
 
         try
         {
@@ -91,13 +103,17 @@ public sealed partial class WebFlyoutWindow
             bool succeeded = response.RootElement.TryGetProperty("result", out var evaluation)
                 && evaluation.TryGetProperty("value", out var value) && value.ValueKind == JsonValueKind.True;
             if (!succeeded && IsActiveCore(core) && _isOpen)
+            {
                 ShowNotice(UiText.Get("webFullscreen.contentFullscreenUnavailable"));
+            }
         }
         catch (Exception ex)
         {
             Logger.Debug(ex, "Entering content fullscreen failed for launcher {Name}", _launcher.Name);
             if (IsActiveCore(core) && _isOpen)
+            {
                 ShowNotice(UiText.Get("webFullscreen.contentFullscreenUnavailable"));
+            }
         }
 
         await RefreshFullscreenAvailabilityAsync();

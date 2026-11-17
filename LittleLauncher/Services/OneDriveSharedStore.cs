@@ -48,8 +48,15 @@ public static class OneDriveSharedStore
     /// </summary>
     public static async Task<(bool Success, string Message)> PushAsync(Launcher launcher)
     {
-        if (!Store.IsSignedIn) return (false, UiText.Get("sharing.oneDrive.signInFirst"));
-        if (!HasConsent) return (false, UiText.Get("sharing.oneDrive.consentMissing"));
+        if (!Store.IsSignedIn)
+        {
+            return (false, UiText.Get("sharing.oneDrive.signInFirst"));
+        }
+
+        if (!HasConsent)
+        {
+            return (false, UiText.Get("sharing.oneDrive.consentMissing"));
+        }
 
         try
         {
@@ -67,7 +74,9 @@ public static class OneDriveSharedStore
 
             using var response = await Http.SendAsync(request);
             if (!response.IsSuccessStatusCode)
+            {
                 return (false, await DescribeAsync(response, "publish"));
+            }
 
             // Remember the ids so later syncs skip the path lookup, and so a rename of the
             // launcher does not orphan the file it has been publishing to.
@@ -77,7 +86,11 @@ public static class OneDriveSharedStore
             if (launcher.SharedLinkUrl.Length == 0)
             {
                 var (linkOk, link) = await CreateLinkAsync(launcher);
-                if (!linkOk) return (false, link);
+                if (!linkOk)
+                {
+                    return (false, link);
+                }
+
                 launcher.SharedLinkUrl = link;
             }
 
@@ -114,7 +127,9 @@ public static class OneDriveSharedStore
 
         using var response = await Http.SendAsync(request);
         if (!response.IsSuccessStatusCode)
+        {
             return (false, await DescribeAsync(response, "create a share link"));
+        }
 
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         string? link = doc.RootElement.TryGetProperty("link", out var l)
@@ -132,12 +147,17 @@ public static class OneDriveSharedStore
     /// <summary>Fetch the shared items and apply them.</summary>
     public static async Task<(bool Success, string Message)> PullAsync(Launcher launcher)
     {
-        if (!Store.IsSignedIn) return (false, UiText.Get("sharing.oneDrive.signInFirst"));
+        if (!Store.IsSignedIn)
+        {
+            return (false, UiText.Get("sharing.oneDrive.signInFirst"));
+        }
 
         try
         {
             if (!await EnsureResolvedAsync(launcher))
+            {
                 return (false, UiText.Get("sharing.oneDrive.linkUnresolved"));
+            }
 
             using var request = await AuthorizedAsync(
                 HttpMethod.Get,
@@ -145,12 +165,20 @@ public static class OneDriveSharedStore
 
             using var response = await Http.SendAsync(request);
             if (response.StatusCode == HttpStatusCode.NotFound)
+            {
                 return (false, UiText.Get("sharing.fileNoLongerExists"));
+            }
+
             if (!response.IsSuccessStatusCode)
+            {
                 return (false, await DescribeAsync(response, "download"));
+            }
 
             var file = SharedLauncherPayload.Deserialize(await response.Content.ReadAsByteArrayAsync());
-            if (file == null) return (false, UiText.Get("sharing.couldNotParse"));
+            if (file == null)
+            {
+                return (false, UiText.Get("sharing.couldNotParse"));
+            }
 
             await SharedLauncherPayload.ApplyAsync(launcher, file);
             return (true, UiText.Get("sharing.updated"));
@@ -165,13 +193,22 @@ public static class OneDriveSharedStore
     /// <summary>Check a link resolves and holds valid data, before someone subscribes to it.</summary>
     public static async Task<(bool Success, int ItemCount, string Error)> VerifyAsync(Launcher launcher)
     {
-        if (!Store.IsSignedIn) return (false, 0, UiText.Get("sharing.oneDrive.signInFirst"));
-        if (launcher.SharedLinkUrl.Length == 0) return (false, 0, UiText.Get("sharing.oneDrive.pasteLink"));
+        if (!Store.IsSignedIn)
+        {
+            return (false, 0, UiText.Get("sharing.oneDrive.signInFirst"));
+        }
+
+        if (launcher.SharedLinkUrl.Length == 0)
+        {
+            return (false, 0, UiText.Get("sharing.oneDrive.pasteLink"));
+        }
 
         try
         {
             if (!await EnsureResolvedAsync(launcher))
+            {
                 return (false, 0, UiText.Get("sharing.oneDrive.linkUnopenable"));
+            }
 
             using var request = await AuthorizedAsync(
                 HttpMethod.Get,
@@ -179,7 +216,9 @@ public static class OneDriveSharedStore
 
             using var response = await Http.SendAsync(request);
             if (!response.IsSuccessStatusCode)
+            {
                 return (false, 0, await DescribeAsync(response, "read"));
+            }
 
             var file = SharedLauncherPayload.Deserialize(await response.Content.ReadAsByteArrayAsync());
             return file == null
@@ -201,7 +240,10 @@ public static class OneDriveSharedStore
     /// </remarks>
     private static async Task<bool> EnsureResolvedAsync(Launcher launcher)
     {
-        if (launcher.SharedItemId.Length > 0 && launcher.SharedDriveId.Length > 0) return true;
+        if (launcher.SharedItemId.Length > 0 && launcher.SharedDriveId.Length > 0)
+        {
+            return true;
+        }
 
         string encoded = "u!" + Convert.ToBase64String(Encoding.UTF8.GetBytes(launcher.SharedLinkUrl))
             .TrimEnd('=').Replace('+', '-').Replace('/', '_');
@@ -224,7 +266,9 @@ public static class OneDriveSharedStore
     private static void CacheIds(Launcher launcher, JsonElement item)
     {
         if (item.TryGetProperty("id", out var id) && id.GetString() is { Length: > 0 } itemId)
+        {
             launcher.SharedItemId = itemId;
+        }
 
         if (item.TryGetProperty("parentReference", out var parent)
             && parent.TryGetProperty("driveId", out var drive)
@@ -239,7 +283,10 @@ public static class OneDriveSharedStore
     {
         string name = string.IsNullOrWhiteSpace(launcher.Name) ? "launcher" : launcher.Name.Trim();
         foreach (char invalid in Path.GetInvalidFileNameChars())
+        {
             name = name.Replace(invalid, '-');
+        }
+
         return Uri.EscapeDataString(name + ".json");
     }
 
@@ -247,7 +294,9 @@ public static class OneDriveSharedStore
     {
         string? token = await OAuthPkceClient.GetAccessTokenAsync(Provider, OneDriveEndpoint);
         if (token == null)
+        {
             throw new InvalidOperationException(UiText.Format("cloud.signInAgain", ("provider", "OneDrive")));
+        }
 
         var request = new HttpRequestMessage(method, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

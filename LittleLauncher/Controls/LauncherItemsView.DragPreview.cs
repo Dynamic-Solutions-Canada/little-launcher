@@ -36,7 +36,9 @@ public sealed partial class LauncherItemsView
     private Task<SoftwareBitmap?> GetDragPreviewAsync(string caption)
     {
         if (_dragPreviewTask != null && _dragPreviewCaption == caption && _dragPreviewMode == _launcher.ViewMode)
+        {
             return _dragPreviewTask;
+        }
 
         ReleaseDragPreviewBitmap();
         _dragPreviewCaption = caption;
@@ -51,13 +53,23 @@ public sealed partial class LauncherItemsView
     {
         if (IsSmallIconMode)
         {
-            if (isGroup) return (136, 36);
+            if (isGroup)
+            {
+                return (136, 36);
+            }
+
             return (128, 28);
         }
         if (IsIconMode)
+        {
             return (176, 44);
+        }
+
         if (isGroup)
+        {
             return (156, 40);
+        }
+
         return (156, 32);
     }
 
@@ -115,7 +127,10 @@ public sealed partial class LauncherItemsView
             visual.Height = DragHintHeight + DragHintGap + dimensions.BodyHeight;
             // Two compact group lines need 28 DIPs inside the 36-DIP body.
             if (IsSmallIconMode && item.IsGroup)
+            {
                 ((Border)visual.FindName("PreviewBody")).Padding = new Thickness(6, 3, 6, 3);
+            }
+
             ((TextBlock)visual.FindName("DragHint")).Text = caption;
             var icon = (FontIcon)visual.FindName("KindIcon");
             icon.Glyph = item.IsGroup ? "\uE8B7" : "\uE8A5";
@@ -141,7 +156,9 @@ public sealed partial class LauncherItemsView
             onLayout = (_, _) =>
             {
                 if (visual.ActualWidth > 0 && visual.ActualHeight > 0)
+                {
                     laidOut.TrySetResult();
+                }
             };
             visual.LayoutUpdated += onLayout;
             using var registration = cancellation.Register(() => laidOut.TrySetCanceled(cancellation));
@@ -152,7 +169,9 @@ public sealed partial class LauncherItemsView
             await rendered.RenderAsync(visual);
             cancellation.ThrowIfCancellationRequested();
             if (rendered.PixelWidth == 0 || rendered.PixelHeight == 0)
+            {
                 return null;
+            }
 
             var pixels = await rendered.GetPixelsAsync();
             cancellation.ThrowIfCancellationRequested();
@@ -171,9 +190,14 @@ public sealed partial class LauncherItemsView
         finally
         {
             if (visual != null && onLayout != null)
+            {
                 visual.LayoutUpdated -= onLayout;
+            }
+
             if (host != null)
+            {
                 RootGrid.Children.Remove(host);
+            }
         }
     }
 
@@ -181,7 +205,10 @@ public sealed partial class LauncherItemsView
     private static string DragPreviewDetail(LauncherItem item)
     {
         if (!item.IsGroup)
+        {
             return UiText.Get("items.dragItem");
+        }
+
         return UiText.Plural("items.dragGroupCount", item.Children.Count);
     }
 
@@ -213,7 +240,9 @@ public sealed partial class LauncherItemsView
             var bitmap = await pending.WaitAsync(TimeSpan.FromSeconds(1), _dragPreviewCancellation!.Token);
             if (bitmap == null || _disposed || token != _dragToken || _dragItem == null
                 || feedbackVersion != _dragPreviewFeedbackVersion || caption != _dragPreviewCaption)
+            {
                 return;
+            }
 
             e.DragUIOverride.SetContentFromSoftwareBitmap(bitmap,
                 new global::Windows.Foundation.Point(8, DragHintHeight + DragHintGap + 8));
@@ -263,7 +292,10 @@ public sealed partial class LauncherItemsView
         _dragPreviewCancellation?.Dispose();
         _dragPreviewCancellation = null;
         if (_dragPreviewTask is { } pending)
+        {
             _ = DisposeDragPreviewAsync(pending);
+        }
+
         _dragPreviewTask = null;
     }
 

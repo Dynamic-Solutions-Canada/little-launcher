@@ -35,7 +35,9 @@ public sealed partial class LauncherItemsView
     private void ResizeGrip_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         if (!IsIconMode || sender is not ResizeGrip grip)
+        {
             return;
+        }
 
         _isResizingIconWidth = true;
         _resizeFromLeft = ReferenceEquals(sender, _leftResizeGrip);
@@ -52,7 +54,9 @@ public sealed partial class LauncherItemsView
     private void ResizeGrip_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
         if (!_isResizingIconWidth)
+        {
             return;
+        }
 
         double cursorX = _host.GetResizePointerX(e);
         double dragDistance = _resizeFromLeft ? _resizeStartCursorX - cursorX : cursorX - _resizeStartCursorX;
@@ -77,7 +81,10 @@ public sealed partial class LauncherItemsView
 
     private void CompleteIconResize(ResizeGrip? grip)
     {
-        if (!_isResizingIconWidth) return;
+        if (!_isResizingIconWidth)
+        {
+            return;
+        }
 
         grip?.ReleasePointerCaptures();
 
@@ -98,7 +105,9 @@ public sealed partial class LauncherItemsView
     {
         int clamped = Launcher.ClampIconModeIconsPerRow(iconsPerRow);
         if (_launcher.IconModeIconsPerRow == clamped)
+        {
             return;
+        }
 
         _launcher.IconModeIconsPerRow = clamped;
         _resizeChangedSetting = true;
@@ -110,10 +119,14 @@ public sealed partial class LauncherItemsView
     private void ColumnListView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
         if (sender is not ListViewBase listView || listView.Tag is not int columnIndex)
+        {
             return;
+        }
 
         if (e.Items.FirstOrDefault() is not LauncherItem item)
+        {
             return;
+        }
 
         // Reordering is an edit-mode-only affordance.
         if (!_isEditMode || IsReadOnlyLauncher)
@@ -140,12 +153,16 @@ public sealed partial class LauncherItemsView
     private void ColumnListView_DragOver(object sender, DragEventArgs e)
     {
         if (sender is not ListViewBase listView)
+        {
             return;
+        }
 
         // No _dragItem means the drag didn't start in this flyout , it came from Explorer,
         // the desktop, the Start Menu or a browser.
         if (RejectStaleInternalDrag(e))
+        {
             return;
+        }
 
         if (_dragItem == null || _dragSourceCollection == null)
         {
@@ -167,10 +184,14 @@ public sealed partial class LauncherItemsView
         ClearInsertionIndicator();
         if (sender is not ListViewBase listView || listView.Tag is not int columnIndex
             || columnIndex < 0 || columnIndex >= _columnLists.Count)
+        {
             return;
+        }
 
         if (RejectStaleInternalDrag(e))
+        {
             return;
+        }
 
         if (_dragItem == null || _dragSourceCollection == null)
         {
@@ -180,9 +201,14 @@ public sealed partial class LauncherItemsView
 
         var target = ResolveItemDropTarget(listView, e);
         if (target.List.ItemsSource is ObservableCollection<LauncherItem> collection)
+        {
             CompleteInternalDrop(collection, target.Index);
+        }
         else
+        {
             RejectInternalDrag(e);
+        }
+
         e.Handled = true;
     }
 
@@ -195,10 +221,14 @@ public sealed partial class LauncherItemsView
     private void GroupChildList_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
         if (sender is not ListView listView || listView.Tag is not LauncherItem group)
+        {
             return;
+        }
 
         if (e.Items.FirstOrDefault() is not LauncherItem item)
+        {
             return;
+        }
 
         // Reordering is an edit-mode-only affordance.
         if (!_isEditMode || IsReadOnlyLauncher)
@@ -218,10 +248,14 @@ public sealed partial class LauncherItemsView
     private void GroupChildList_DragOver(object sender, DragEventArgs e)
     {
         if (sender is not ListView listView || listView.Tag is not LauncherItem group)
+        {
             return;
+        }
 
         if (RejectStaleInternalDrag(e))
+        {
             return;
+        }
 
         if (_dragItem == null || _dragSourceCollection == null)
         {
@@ -246,10 +280,14 @@ public sealed partial class LauncherItemsView
     {
         ClearInsertionIndicator();
         if (sender is not ListView listView || listView.Tag is not LauncherItem group)
+        {
             return;
+        }
 
         if (RejectStaleInternalDrag(e))
+        {
             return;
+        }
 
         if (_dragItem == null || _dragSourceCollection == null)
         {
@@ -259,9 +297,14 @@ public sealed partial class LauncherItemsView
 
         var target = ResolveItemDropTarget(listView, e);
         if (target.List.ItemsSource is ObservableCollection<LauncherItem> collection)
+        {
             CompleteInternalDrop(collection, target.Index);
+        }
         else
+        {
             RejectInternalDrag(e);
+        }
+
         e.Handled = true;
     }
 
@@ -278,7 +321,9 @@ public sealed partial class LauncherItemsView
         AutoSyncService.NotifyItemsChanged();
 
         if (_launcher.TrayIconMode == TrayIconModes.Composite)
+        {
             MainWindow.Current?.UpdateTrayIcon(_launcher);
+        }
 
         // Full rebuild rather than an in-place update. Synthetic groups are derived from which
         // items are loose, so moving an item between a group and the top level invalidates
@@ -302,11 +347,15 @@ public sealed partial class LauncherItemsView
     private bool RejectStaleInternalDrag(DragEventArgs e)
     {
         if (!e.DataView.Properties.TryGetValue(InternalItemDragFormat, out var token))
+        {
             return false;
+        }
 
         if (_isEditMode && !IsReadOnlyLauncher && _dragToken != null && Equals(token, _dragToken)
             && _dragItem != null && _dragSourceCollection != null)
+        {
             return false;
+        }
 
         RejectInternalDrag(e);
         return true;
@@ -335,7 +384,9 @@ public sealed partial class LauncherItemsView
         if (_isEditMode && !IsReadOnlyLauncher && _dragItem != null && _dragSourceCollection != null
             && LauncherItemReorder.TryMove(_dragItem, _dragSourceCollection, target, dropIndex,
                 _columnLists, _syntheticGroups))
+        {
             PersistFlyoutReorder();
+        }
 
         ClearDragState();
     }
@@ -352,7 +403,9 @@ public sealed partial class LauncherItemsView
     private static string GetItemDisplayName(LauncherItem item)
     {
         if (item.IsGroup && string.IsNullOrWhiteSpace(item.Name))
+        {
             return UiText.Get("items.unnamedGroup");
+        }
 
         return string.IsNullOrWhiteSpace(item.Name) ? UiText.Get("items.unnamedItem") : item.Name;
     }
@@ -383,7 +436,9 @@ public sealed partial class LauncherItemsView
         private void ResizeGrip_PointerExited(object sender, PointerRoutedEventArgs e)
         {
             if (_forceResizeCursor)
+            {
                 return;
+            }
 
             ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow);
         }

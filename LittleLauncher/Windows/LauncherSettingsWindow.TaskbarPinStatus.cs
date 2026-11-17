@@ -34,14 +34,21 @@ public sealed partial class LauncherSettingsWindow
         SettingsManager.Saved += QueuePinStatusRefresh;
         MainWindow.LauncherIconSaved += PinIconSaved;
         Activated += PinStatusActivated;
-        if (_nameBox != null) _nameBox.TextChanged += PinNameEdited;
+        if (_nameBox != null)
+        {
+            _nameBox.TextChanged += PinNameEdited;
+        }
+
         MainWindow.EnsureLauncherIconSaved(_launcher);
         QueuePinStatusRefresh();
     }
 
     private void PinIconSaved(string launcherId)
     {
-        if (launcherId == _launcher.Id) QueuePinStatusRefresh();
+        if (launcherId == _launcher.Id)
+        {
+            QueuePinStatusRefresh();
+        }
     }
 
     private void PinNameEdited(object sender, TextChangedEventArgs args) => QueuePinStatusRefresh();
@@ -62,12 +69,20 @@ public sealed partial class LauncherSettingsWindow
     /// <summary>Coalesces saves/name/icon events; a cached identity does not launch another process.</summary>
     private void QueuePinStatusRefresh()
     {
-        if (_pinStatusClosed || _pinStatusQueued) return;
+        if (_pinStatusClosed || _pinStatusQueued)
+        {
+            return;
+        }
+
         _pinStatusQueued = true;
         if (!DispatcherQueue.TryEnqueue(() =>
         {
             _pinStatusQueued = false;
-            if (_pinStatusClosed) return;
+            if (_pinStatusClosed)
+            {
+                return;
+            }
+
             RequestPinStateRefresh(force: false);
             RefreshPinStatus();
         }))
@@ -82,7 +97,11 @@ public sealed partial class LauncherSettingsWindow
     /// </summary>
     private void RequestPinStateRefresh(bool force)
     {
-        if (_pinStatusClosed || _pinning || _pinStateQueryFailure != null) return;
+        if (_pinStatusClosed || _pinning || _pinStateQueryFailure != null)
+        {
+            return;
+        }
+
         string aumid = _launcher.PinAumid;
         if (string.IsNullOrEmpty(aumid))
         {
@@ -96,7 +115,10 @@ public sealed partial class LauncherSettingsWindow
             _pinStateChecking = false;
             return;
         }
-        if (!force && _pinStateAumid == aumid) return;
+        if (!force && _pinStateAumid == aumid)
+        {
+            return;
+        }
 
         Task previousQuery = _pinStateQuery;
         _pinStateCancellation?.Cancel();
@@ -117,10 +139,18 @@ public sealed partial class LauncherSettingsWindow
         {
             await previousQuery;
             cancellation.Token.ThrowIfCancellationRequested();
-            if (_pinStateQueryFailure != null) return;
+            if (_pinStateQueryFailure != null)
+            {
+                return;
+            }
+
             var state = await TaskbarPinStatusService.QueryAsync(
                 MainWindow.GetFlyoutCompanionPath(), _launcher.Id, aumid, cancellation.Token);
-            if (_pinStatusClosed || generation != _pinStateGeneration || _launcher.PinAumid != aumid) return;
+            if (_pinStatusClosed || generation != _pinStateGeneration || _launcher.PinAumid != aumid)
+            {
+                return;
+            }
+
             _pinState = state;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -134,7 +164,11 @@ public sealed partial class LauncherSettingsWindow
         }
         finally
         {
-            if (ReferenceEquals(_pinStateCancellation, cancellation)) _pinStateCancellation = null;
+            if (ReferenceEquals(_pinStateCancellation, cancellation))
+            {
+                _pinStateCancellation = null;
+            }
+
             cancellation.Dispose();
             if (!_pinStatusClosed && generation == _pinStateGeneration)
             {
@@ -152,8 +186,10 @@ public sealed partial class LauncherSettingsWindow
         await _pinStateQuery;
         _pinStateChecking = false;
         if (_pinStateQueryFailure != null)
+        {
             // The message reaches the pin error dialog, so it is in the interface language.
             throw new InvalidOperationException(UiText.Get("taskbarPin.statusCheckFailed"), _pinStateQueryFailure);
+        }
     }
 
     /// <summary>Native success/already-pinned is itself a fresh live result; no duplicate query is needed.</summary>
@@ -172,13 +208,20 @@ public sealed partial class LauncherSettingsWindow
         SettingsManager.Saved -= QueuePinStatusRefresh;
         MainWindow.LauncherIconSaved -= PinIconSaved;
         Activated -= PinStatusActivated;
-        if (_nameBox != null) _nameBox.TextChanged -= PinNameEdited;
+        if (_nameBox != null)
+        {
+            _nameBox.TextChanged -= PinNameEdited;
+        }
     }
 
     /// <summary>Uses the standard row/action unless Windows confirms a current pin exists.</summary>
     private void RefreshPinStatus()
     {
-        if (_pinStatus == null || _pinButton == null) return;
+        if (_pinStatus == null || _pinButton == null)
+        {
+            return;
+        }
+
         string key = "taskbarPin.description";
         string action = "taskbarPin.pin";
         bool alreadyPinned = false;
@@ -191,14 +234,20 @@ public sealed partial class LauncherSettingsWindow
             PinSnapshot? baseline = PinSnapshot.Read(MainWindow.GetPhysicalAppDataDir(), _launcher.Id);
             PinDetailsState details = ComparePinDetails(baseline);
             action = "taskbarPin.pinAgain";
-            if (details == PinDetailsState.Changed) key = "taskbarPin.changedHint";
+            if (details == PinDetailsState.Changed)
+            {
+                key = "taskbarPin.changedHint";
+            }
             else if (details == PinDetailsState.Unchanged)
             {
                 key = "taskbarPin.alreadyPinned";
                 action = "taskbarPin.pinned";
                 alreadyPinned = true;
             }
-            else key = "taskbarPin.detailsUnknown";
+            else
+            {
+                key = "taskbarPin.detailsUnknown";
+            }
         }
         // Unknown is not proof of absence; product policy simply permits a fresh pin without an
         // old-pin warning. Keep the diagnostic state intact and let the user clean up duplicates.
@@ -211,12 +260,20 @@ public sealed partial class LauncherSettingsWindow
     /// <summary>Compares effective ICO bytes and the uncommitted typed name; missing metadata stays unknown.</summary>
     private PinDetailsState ComparePinDetails(PinSnapshot? baseline)
     {
-        if (baseline == null || baseline.Aumid != _launcher.PinAumid) return PinDetailsState.Unknown;
+        if (baseline == null || baseline.Aumid != _launcher.PinAumid)
+        {
+            return PinDetailsState.Unknown;
+        }
+
         try
         {
             string icon = Path.Combine(MainWindow.GetPhysicalAppDataDir(), $"app-icon-{_launcher.Id}.ico");
             string name = _nameBox?.Text.Trim() ?? _launcher.Name;
-            if (name.Length == 0) name = _launcher.Name;
+            if (name.Length == 0)
+            {
+                name = _launcher.Name;
+            }
+
             var current = PinSnapshot.Capture(_launcher.PinAumid, $"Little Launcher - {name}",
                 MainWindow.GetFlyoutCompanionPath(), $"--launcher {_launcher.Id}", icon);
             return baseline.HasSameDetails(current) ? PinDetailsState.Unchanged : PinDetailsState.Changed;

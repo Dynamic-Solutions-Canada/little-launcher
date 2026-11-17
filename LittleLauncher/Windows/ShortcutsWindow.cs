@@ -69,7 +69,9 @@ public sealed class ShortcutsWindow : Window
         // Owned windows always sit above their owner — required because the flyout sets
         // IsAlwaysOnTop and would otherwise cover this.
         if (ownerHwnd != IntPtr.Zero)
+        {
             NativeMethods.SetWindowLongPtr(_hwnd, NativeMethods.GWLP_HWNDPARENT, ownerHwnd);
+        }
 
         var list = new StackPanel { Spacing = 2 };
 
@@ -87,7 +89,9 @@ public sealed class ShortcutsWindow : Window
             });
 
             foreach (var (_, keys, description) in group)
+            {
                 list.Children.Add(BuildRow(keys, description));
+            }
         }
 
         var body = new ScrollViewer
@@ -187,7 +191,9 @@ public sealed class ShortcutsWindow : Window
             }
 
             foreach (string key in alternative.Split('+', StringSplitOptions.TrimEntries))
+            {
                 caps.Children.Add(BuildKeyCap(key));
+            }
         }
 
         var label = new TextBlock

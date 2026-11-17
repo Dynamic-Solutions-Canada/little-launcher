@@ -131,9 +131,15 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     {
         // Edit mode (and any modal it owns) pins the flyout open , otherwise opening the
         // item editor or a file picker would dismiss the very window being edited.
-        if (_isShowing || IsResizingIconWidth || SuppressDismiss) return;
+        if (_isShowing || IsResizingIconWidth || SuppressDismiss)
+        {
+            return;
+        }
+
         if (args.WindowActivationState == WindowActivationState.Deactivated)
+        {
             HideFlyout();
+        }
     }
 
     private IntPtr WndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, nuint dwRefData)
@@ -158,7 +164,10 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     internal static FlyoutWindow? GetCurrent(string? launcherId = null)
     {
         if (launcherId != null)
+        {
             return Instances.TryGetValue(launcherId, out var fw) ? fw : null;
+        }
+
         return Instances.Values.FirstOrDefault();
     }
 
@@ -173,12 +182,20 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         string launcherId,
         global::Windows.Graphics.RectInt32? setupBounds)
     {
-        if (LauncherItemsEditorWindow.TryFocus(launcherId)) return;
+        if (LauncherItemsEditorWindow.TryFocus(launcherId))
+        {
+            return;
+        }
+
         if (!Instances.TryGetValue(launcherId, out var instance) || instance == null)
         {
             // Find the launcher
             var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
-            if (launcher == null) return;
+            if (launcher == null)
+            {
+                return;
+            }
+
             instance = new FlyoutWindow(owner, launcher);
             Instances[launcherId] = instance;
         }
@@ -189,12 +206,17 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         if (instance._isOpen && instance._hwnd != IntPtr.Zero && IsWindow(instance._hwnd))
         {
             if (!instance._isHiding)
+            {
                 instance.HideFlyout();
+            }
+
             return;
         }
 
         if (!instance._isHiding && (DateTime.UtcNow - instance._lastDismissed).TotalMilliseconds < 300)
+        {
             return;
+        }
 
         instance._owner = owner;
         instance._setupEditBounds = setupBounds;
@@ -202,7 +224,11 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
 
         // Calculate DPI-aware dimensions
         double dpiScale = GetDpiForWindow(instance._hwnd) / 96.0;
-        if (dpiScale <= 0) dpiScale = 1.0;
+        if (dpiScale <= 0)
+        {
+            dpiScale = 1.0;
+        }
+
         int flyoutWidthPx = (int)Math.Ceiling(instance.GetFlyoutWidth() * dpiScale);
         int flyoutHeightPx = (int)Math.Ceiling(instance.MeasureContentHeight() * dpiScale);
 
@@ -219,15 +245,21 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         var placement = instance.CalculatePlacement(screenX, screenY);
         instance._lastEntranceEdge = placement.Edge;
         if (AreAnimationsEnabled)
+        {
             instance.ShowAnimated(placement);
+        }
         else
+        {
             instance.ShowWithoutAnimation(placement);
+        }
     }
 
     public static void DismissIfOpen()
     {
         foreach (var fw in Instances.Values)
+        {
             fw.HideFlyout();
+        }
     }
 
     public static void WarmUp(MainWindow owner, IEnumerable<Launcher> launchers)
@@ -265,10 +297,17 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     /// </remarks>
     private void PreRenderOffScreen()
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         double dpiScale = GetDpiForWindow(_hwnd) / 96.0;
-        if (dpiScale <= 0) dpiScale = 1.0;
+        if (dpiScale <= 0)
+        {
+            dpiScale = 1.0;
+        }
+
         int width = (int)Math.Ceiling(GetFlyoutWidth() * dpiScale);
         int height = (int)Math.Ceiling(MeasureContentHeight() * dpiScale);
 
@@ -292,7 +331,11 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     /// </summary>
     private void EndPreRender()
     {
-        if (!_isPreRendering) return;
+        if (!_isPreRendering)
+        {
+            return;
+        }
+
         _isPreRendering = false;
 
         _preRenderTimer?.Stop();
@@ -325,7 +368,10 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         // screen starts opaque, without each having to remember.
         ClearFade();
 
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         GetWindowRect(_hwnd, out var rect);
         int width = Math.Max(1, rect.Right - rect.Left);
@@ -355,14 +401,18 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private void HideFlyout()
     {
         if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
             return;
+        }
 
         // Ends a warm-up render rather than animating it off screen; the check below then
         // returns, since a warming window was never on screen to dismiss.
         EndPreRender();
 
         if (!_isOpen)
+        {
             return;
+        }
 
         _setupEditBounds = null;
         // Closing ends editing, so the flyout never reopens mid-edit and the off-screen
@@ -427,7 +477,9 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         // placement's off-edge position, since its parked rect is nowhere near the screen.
         int startTop = placement.StartTop;
         if (_isOpen && GetWindowRect(_hwnd, out var rect))
+        {
             startTop = rect.Top;
+        }
 
         _isOpen = true;
 
@@ -476,7 +528,9 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
             int currentTop = (int)Math.Round(Lerp(startTop, endTop, eased));
 
             if (hideAtEnd)
+            {
                 SetFadeAlpha(1 - Math.Min(1, progress / FadeOutCompleteAt));
+            }
 
             SetWindowPos(_hwnd, 0, left, currentTop, width, height,
                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
@@ -494,7 +548,9 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private void CompleteWindowAnimation(int animationVersion, int left, int top, int width, int height, bool hideAtEnd)
     {
         if (animationVersion != _animationVersion || _hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
             return;
+        }
 
         SetWindowPos(_hwnd, 0, left, top, width, height,
             SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
@@ -529,7 +585,10 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     /// </remarks>
     private void SetFadeAlpha(double opacity)
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         if (!_fadeStyleApplied)
         {
@@ -545,10 +604,17 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     /// <summary>Restores full opacity and drops the layered style. See <see cref="SetFadeAlpha"/>.</summary>
     private void ClearFade()
     {
-        if (!_fadeStyleApplied) return;
+        if (!_fadeStyleApplied)
+        {
+            return;
+        }
+
         _fadeStyleApplied = false;
 
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         SetLayeredWindowAttributes(_hwnd, 0, 255, LWA_ALPHA);
         int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);
@@ -558,7 +624,11 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private int GetSlideDistancePx()
     {
         double scale = GetDpiForWindow(_hwnd) / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
+
         return Math.Max(18, (int)Math.Round(SlideDistanceDip * scale));
     }
 
@@ -605,14 +675,19 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private FlyoutPlacement CalculatePlacement(int screenX, int screenY)
     {
         if (_setupEditBounds is { } setupBounds)
+        {
             return CalculateSetupPlacement(setupBounds);
+        }
 
         var pt = new POINT { X = screenX, Y = screenY };
         IntPtr hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
 
         GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
         double scale = dpiX / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         var monitorInfo = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
         GetMonitorInfo(hMonitor, ref monitorInfo);
@@ -670,7 +745,9 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private void ResizeWindowToCurrentContent(bool keepRightEdge, double? explicitHeightDips = null)
     {
         if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
             return;
+        }
 
         if (_setupEditBounds is { } setupBounds)
         {
@@ -682,7 +759,10 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
 
         GetWindowRect(_hwnd, out var rect);
         double dpiScale = GetDpiForWindow(_hwnd) / 96.0;
-        if (dpiScale <= 0) dpiScale = 1.0;
+        if (dpiScale <= 0)
+        {
+            dpiScale = 1.0;
+        }
 
         int newWidth = (int)Math.Ceiling(GetFlyoutWidth() * dpiScale);
         int newHeight = (int)Math.Ceiling((explicitHeightDips ?? MeasureContentHeight()) * dpiScale);
@@ -831,7 +911,9 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         MainWindow.CollectLaunchableItems(launcher.Items, items, int.MaxValue);
 
         if (index >= 0 && index < items.Count && JumpListService.ItemToken(items[index]) == token)
+        {
             return items[index];
+        }
 
         return items.FirstOrDefault(i => JumpListService.ItemToken(i) == token);
     }
@@ -844,11 +926,15 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     {
         var extension = System.IO.Path.GetExtension(path);
         if (string.IsNullOrEmpty(extension))
+        {
             return false;
+        }
 
         if (extension.Equals(".exe", StringComparison.OrdinalIgnoreCase)
             || extension.Equals(".com", StringComparison.OrdinalIgnoreCase))
+        {
             return false;
+        }
 
         return File.Exists(path);
     }
@@ -862,7 +948,9 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         }
 
         if (TryLaunchInAppWindow(item.Path, item.AppWindowBrowser, item.AppWindowBrowserProfile))
+        {
             return;
+        }
 
         Process.Start(new ProcessStartInfo(item.Path) { UseShellExecute = true });
     }
@@ -871,7 +959,10 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     {
         string profileId = GetAppWindowProfileId(url);
         string browserExe = ResolveBrowserExe(browserPath);
-        if (browserExe == "") return false;
+        if (browserExe == "")
+        {
+            return false;
+        }
 
         var engine = BrowserCatalog.DetectEngine(browserExe);
         var existingWindows = GetBrowserWindows(engine);
@@ -939,7 +1030,10 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private static string ResolveBrowserExe(string browserPath)
     {
         if (!string.IsNullOrEmpty(browserPath))
+        {
             return File.Exists(browserPath) ? browserPath : "";
+        }
+
         return BrowserCatalog.GetDefaultBrowserExePath() ?? "";
     }
 
@@ -966,13 +1060,19 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private static async Task RestoreAndTrackWindowBoundsAsync(HashSet<IntPtr> existingWindows, string profileId, BrowserEngine engine)
     {
         IntPtr hwnd = await WaitForNewBrowserWindowAsync(existingWindows, engine, TimeSpan.FromSeconds(10));
-        if (hwnd == IntPtr.Zero) return;
+        if (hwnd == IntPtr.Zero)
+        {
+            return;
+        }
 
         if (TryGetSavedBounds(profileId, out var savedBounds))
         {
             SetWindowPos(hwnd, 0, savedBounds.Left, savedBounds.Top, savedBounds.Width, savedBounds.Height,
                 SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-            if (savedBounds.IsMaximized) ShowWindow(hwnd, SW_MAXIMIZE);
+            if (savedBounds.IsMaximized)
+            {
+                ShowWindow(hwnd, SW_MAXIMIZE);
+            }
         }
 
         InstallBoundsTrackingHooks(hwnd, profileId);
@@ -990,7 +1090,11 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
 
         handler = (hHook, eventType, eventHwnd, idObject, idChild, eventThread, time) =>
         {
-            if (eventHwnd != hwnd || idObject != OBJID_WINDOW) return;
+            if (eventHwnd != hwnd || idObject != OBJID_WINDOW)
+            {
+                return;
+            }
+
             if (eventType == EVENT_OBJECT_LOCATIONCHANGE)
             {
                 if (GetWindowRect(hwnd, out RECT rect))
@@ -999,19 +1103,39 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
                     int w = rect.Right - rect.Left;
                     int h = rect.Bottom - rect.Top;
                     if (w >= 320 && h >= 240)
+                    {
                         lastBounds = new WindowBounds(rect.Left, rect.Top, w, h, maximized);
+                    }
                 }
             }
             else if (eventType == EVENT_OBJECT_DESTROY)
             {
-                if (lastBounds is not null) SaveBounds(profileId, lastBounds);
-                if (hookLocation != IntPtr.Zero) UnhookWinEvent(hookLocation);
-                if (hookDestroy != IntPtr.Zero) UnhookWinEvent(hookDestroy);
-                lock (ActiveHookDelegates) ActiveHookDelegates.Remove(handler!);
+                if (lastBounds is not null)
+                {
+                    SaveBounds(profileId, lastBounds);
+                }
+
+                if (hookLocation != IntPtr.Zero)
+                {
+                    UnhookWinEvent(hookLocation);
+                }
+
+                if (hookDestroy != IntPtr.Zero)
+                {
+                    UnhookWinEvent(hookDestroy);
+                }
+
+                lock (ActiveHookDelegates)
+                {
+                    ActiveHookDelegates.Remove(handler!);
+                }
             }
         };
 
-        lock (ActiveHookDelegates) ActiveHookDelegates.Add(handler);
+        lock (ActiveHookDelegates)
+        {
+            ActiveHookDelegates.Add(handler);
+        }
 
         hookLocation = SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
             IntPtr.Zero, handler, processId, threadId, WINEVENT_OUTOFCONTEXT);
@@ -1027,11 +1151,22 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
             var currentWindows = GetBrowserWindows(engine);
             foreach (var hwnd in currentWindows)
             {
-                if (existingWindows.Contains(hwnd)) continue;
-                if (!GetWindowRect(hwnd, out RECT rect)) continue;
+                if (existingWindows.Contains(hwnd))
+                {
+                    continue;
+                }
+
+                if (!GetWindowRect(hwnd, out RECT rect))
+                {
+                    continue;
+                }
+
                 int width = rect.Right - rect.Left;
                 int height = rect.Bottom - rect.Top;
-                if (width >= 200 && height >= 120) return hwnd;
+                if (width >= 200 && height >= 120)
+                {
+                    return hwnd;
+                }
             }
             await Task.Delay(200);
         }
@@ -1067,7 +1202,11 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         {
             if (CachedBounds.TryGetValue(profileId, out var cachedBounds)) { bounds = cachedBounds; return true; }
             var all = LoadAllBounds();
-            foreach (var kv in all) CachedBounds[kv.Key] = kv.Value;
+            foreach (var kv in all)
+            {
+                CachedBounds[kv.Key] = kv.Value;
+            }
+
             if (CachedBounds.TryGetValue(profileId, out var loadedBounds)) { bounds = loadedBounds; return true; }
             return false;
         }
@@ -1090,7 +1229,11 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private static Dictionary<string, WindowBounds> LoadAllBounds()
     {
         string filePath = GetBoundsFilePath();
-        if (!File.Exists(filePath)) return new Dictionary<string, WindowBounds>(StringComparer.OrdinalIgnoreCase);
+        if (!File.Exists(filePath))
+        {
+            return new Dictionary<string, WindowBounds>(StringComparer.OrdinalIgnoreCase);
+        }
+
         try
         {
             string json = File.ReadAllText(filePath);
@@ -1121,7 +1264,10 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
 
         GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_EFFECTIVE_DPI, out uint dpiY, out _);
         double scale = dpiY / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         var monitorInfo = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
         GetMonitorInfo(hMonitor, ref monitorInfo);

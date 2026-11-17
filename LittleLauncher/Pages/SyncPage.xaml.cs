@@ -71,8 +71,15 @@ public partial class SyncPage : Page
 
     private void Destination_Toggled(object sender, RoutedEventArgs e)
     {
-        if (_initializing || sender is not ToggleSwitch { Tag: string tag } toggle) return;
-        if (!int.TryParse(tag, out int provider)) return;
+        if (_initializing || sender is not ToggleSwitch { Tag: string tag } toggle)
+        {
+            return;
+        }
+
+        if (!int.TryParse(tag, out int provider))
+        {
+            return;
+        }
 
         SettingsManager.Current.SetSyncProviderEnabled(provider, toggle.IsOn);
         SettingsManager.SaveSettings();
@@ -80,7 +87,9 @@ public partial class SyncPage : Page
         // Open the panel of something just switched on: it almost certainly needs setting up,
         // and a toggle that appears to do nothing is worse than one that shows you the next step.
         if (toggle.IsOn && !IsConfigured(provider))
+        {
             ExpanderFor(provider).IsExpanded = true;
+        }
 
         RefreshDestinations();
     }
@@ -116,8 +125,16 @@ public partial class SyncPage : Page
 
             default:
                 var store = CloudSyncService.StoreFor(provider);
-                if (store == null) return "";
-                if (!store.IsAvailable) return UiText.Get("sync.status.notAvailable");
+                if (store == null)
+                {
+                    return "";
+                }
+
+                if (!store.IsAvailable)
+                {
+                    return UiText.Get("sync.status.notAvailable");
+                }
+
                 if (!store.IsSignedIn)
                 {
                     return provider == SyncProviders.WebDav
@@ -133,7 +150,10 @@ public partial class SyncPage : Page
         int provider, TextBlock hint, Button signIn, Button signOut, InfoBar notice)
     {
         var store = CloudSyncService.StoreFor(provider);
-        if (store == null) return;
+        if (store == null)
+        {
+            return;
+        }
 
         notice.IsOpen = false;
 
@@ -206,10 +226,16 @@ public partial class SyncPage : Page
 
     private async void SignIn_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: string tag } button || !int.TryParse(tag, out int provider)) return;
+        if (sender is not Button { Tag: string tag } button || !int.TryParse(tag, out int provider))
+        {
+            return;
+        }
 
         var store = CloudSyncService.StoreFor(provider);
-        if (store == null) return;
+        if (store == null)
+        {
+            return;
+        }
 
         button.IsEnabled = false;
         ShowStatus(UiText.Format("sync.message.waitingForSignIn", ("provider", store.ProviderName)), InfoBarSeverity.Informational);
@@ -221,7 +247,10 @@ public partial class SyncPage : Page
 
             // Signing in is a strong signal the destination is wanted; switching it on saves a
             // second step, and a sign-in that changed nothing visible would read as a failure.
-            if (success) SettingsManager.Current.SetSyncProviderEnabled(provider, true);
+            if (success)
+            {
+                SettingsManager.Current.SetSyncProviderEnabled(provider, true);
+            }
         }
         catch (Exception ex)
         {
@@ -238,10 +267,16 @@ public partial class SyncPage : Page
 
     private void SignOut_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button { Tag: string tag } || !int.TryParse(tag, out int provider)) return;
+        if (sender is not Button { Tag: string tag } || !int.TryParse(tag, out int provider))
+        {
+            return;
+        }
 
         var store = CloudSyncService.StoreFor(provider);
-        if (store == null) return;
+        if (store == null)
+        {
+            return;
+        }
 
         store.SignOut();
 
@@ -280,8 +315,14 @@ public partial class SyncPage : Page
 
             // Do not leave a password that was just proven wrong sitting in the store — a later
             // background sync would keep replaying it against the server.
-            if (!success) store.SignOut();
-            else SettingsManager.Current.SetSyncProviderEnabled(SyncProviders.WebDav, true);
+            if (!success)
+            {
+                store.SignOut();
+            }
+            else
+            {
+                SettingsManager.Current.SetSyncProviderEnabled(SyncProviders.WebDav, true);
+            }
 
             ShowStatus(message, success ? InfoBarSeverity.Success : InfoBarSeverity.Error);
         }
@@ -328,7 +369,10 @@ public partial class SyncPage : Page
         picker.SuggestedFileName = "ssh-connection";
         InitializePicker(picker);
         var file = await picker.PickSaveFileAsync();
-        if (file == null) return;
+        if (file == null)
+        {
+            return;
+        }
 
         try
         {
@@ -353,7 +397,10 @@ public partial class SyncPage : Page
         picker.FileTypeFilter.Add(".xml");
         InitializePicker(picker);
         var file = await picker.PickSingleFileAsync();
-        if (file == null) return;
+        if (file == null)
+        {
+            return;
+        }
 
         try
         {
@@ -453,7 +500,10 @@ public partial class SyncPage : Page
         ShowStatus(UiText.Get("sync.message.uploading"), InfoBarSeverity.Informational);
         var (success, message) = await LauncherSyncService.UploadLaunchersAsync(password);
         if (success)
+        {
             AutoSyncService.ClearPendingLocalItemChanges();
+        }
+
         ShowStatus(message, success ? InfoBarSeverity.Success : InfoBarSeverity.Error);
     }
 
@@ -481,11 +531,15 @@ public partial class SyncPage : Page
     private bool NeedsPassword()
     {
         if (!LauncherSyncService.UsesCredentials)
+        {
             return false;
+        }
 
         string? keyPath = SettingsManager.Current.SftpPrivateKeyPath;
         if (!string.IsNullOrWhiteSpace(keyPath) && File.Exists(keyPath))
+        {
             return false;
+        }
 
         string sshDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ssh");
@@ -494,7 +548,9 @@ public partial class SyncPage : Page
             foreach (var name in new[] { "id_ed25519", "id_rsa", "id_ecdsa", "id_dsa" })
             {
                 if (File.Exists(Path.Combine(sshDir, name)))
+                {
                     return false;
+                }
             }
         }
 
@@ -511,7 +567,11 @@ public partial class SyncPage : Page
     private static void InitializePicker(object picker)
     {
         var window = SettingsWindow.GetCurrent();
-        if (window == null) return;
+        if (window == null)
+        {
+            return;
+        }
+
         var hwnd = WindowNative.GetWindowHandle(window);
         InitializeWithWindow.Initialize(picker, hwnd);
     }

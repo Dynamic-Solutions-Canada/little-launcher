@@ -46,7 +46,10 @@ public sealed partial class WebFlyoutWindow
         {
             // Left button only: middle-click closes a tab and opens a bookmark behind, and neither
             // should arm a drag.
-            if (!e.GetCurrentPoint(button).Properties.IsLeftButtonPressed) return;
+            if (!e.GetCurrentPoint(button).Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
 
             tracking = true;
             start = e.GetCurrentPoint(button).Position;
@@ -54,7 +57,10 @@ public sealed partial class WebFlyoutWindow
 
         button.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler((_, e) =>
         {
-            if (!tracking) return;
+            if (!tracking)
+            {
+                return;
+            }
 
             var point = e.GetCurrentPoint(button);
             if (!point.Properties.IsLeftButtonPressed)
@@ -65,7 +71,9 @@ public sealed partial class WebFlyoutWindow
 
             if (Math.Abs(point.Position.X - start.X) < DragThresholdDips &&
                 Math.Abs(point.Position.Y - start.Y) < DragThresholdDips)
+            {
                 return;
+            }
 
             // Armed once per press: StartDragAsync runs the whole gesture, and a second call while
             // one is in flight throws.

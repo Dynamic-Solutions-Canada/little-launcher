@@ -63,7 +63,9 @@ public sealed partial class LaunchersPage : Page
         LauncherCardsPanel.Children.Clear();
 
         foreach (var launcher in SettingsManager.Current.Launchers)
+        {
             LauncherCardsPanel.Children.Add(BuildLauncherCard(launcher));
+        }
     }
 
     private static int CountLauncherItems(IEnumerable<LauncherItem> items)
@@ -71,11 +73,19 @@ public sealed partial class LaunchersPage : Page
         int count = 0;
         foreach (var item in items)
         {
-            if (item.IsColumnBreak) continue;
+            if (item.IsColumnBreak)
+            {
+                continue;
+            }
+
             if (item.IsGroup)
+            {
                 count += CountLauncherItems(item.Children);
+            }
             else
+            {
                 count++;
+            }
         }
         return count;
     }
@@ -136,7 +146,10 @@ public sealed partial class LaunchersPage : Page
             int itemCount = CountLauncherItems(launcher.Items);
             string subtitle = UiText.Plural("launchers.itemCount", itemCount);
             if (!launcher.IsSupportedOnThisOperatingSystem)
+            {
                 subtitle += " · " + UiText.Get("launchers.card.hiddenOnOperatingSystem");
+            }
+
             string editActionName = UiText.Format("launchers.card.editItems", ("launcher", launcher.Name));
             var itemsRow = CreateLauncherActionButton(UiText.Get("launchers.card.items"), subtitle, editActionName);
             itemsRow.Tag = launcher;
@@ -207,7 +220,9 @@ public sealed partial class LaunchersPage : Page
         var content = new StackPanel { Spacing = 8 };
         content.Children.Add(settingsRow);
         if (itemsActions != null)
+        {
             content.Children.Add(itemsActions);
+        }
 
         var headerIconElement = BuildLauncherHeaderIcon(launcher);
         var headerTitle = new TextBlock { Text = launcher.Name, FontSize = 14, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
@@ -234,7 +249,9 @@ public sealed partial class LaunchersPage : Page
                 VerticalAlignment = VerticalAlignment.Center,
             };
             if (isAccent)
+            {
                 badge.Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+            }
             else
             {
                 badge.BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
@@ -403,7 +420,9 @@ public sealed partial class LaunchersPage : Page
         IntPtr owner = IntPtr.Zero;
         var settingsWindow = SettingsWindow.GetCurrent();
         if (settingsWindow != null)
+        {
             owner = WinRT.Interop.WindowNative.GetWindowHandle(settingsWindow);
+        }
 
         global::Windows.Graphics.RectInt32? closingBounds = null;
         await LauncherSettingsWindow.ShowAsync(
@@ -444,13 +463,21 @@ public sealed partial class LaunchersPage : Page
             if (IconGallery.IsFluentGlyph(glyph))
             {
                 var icon = new FontIcon { Glyph = glyph, FontSize = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
-                if (colorBrush != null) icon.Foreground = colorBrush;
+                if (colorBrush != null)
+                {
+                    icon.Foreground = colorBrush;
+                }
+
                 return icon;
             }
             else
             {
                 var tb = new TextBlock { Text = glyph, FontSize = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
-                if (colorBrush != null) tb.Foreground = colorBrush;
+                if (colorBrush != null)
+                {
+                    tb.Foreground = colorBrush;
+                }
+
                 return tb;
             }
         }
@@ -472,7 +499,9 @@ public sealed partial class LaunchersPage : Page
         {
             string pngPath = Path.Combine(iconsDir, $"{mode}.png");
             if (File.Exists(pngPath))
+            {
                 return new Image { Source = new BitmapImage(new Uri(pngPath)), Width = 16, Height = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+            }
         }
 
         (string glyph, string label)[] namedGlyphs = [
@@ -481,7 +510,9 @@ public sealed partial class LaunchersPage : Page
         ];
         var match = namedGlyphs.FirstOrDefault(g => g.label == mode);
         if (match.glyph != null)
+        {
             return new FontIcon { Glyph = match.glyph, FontSize = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+        }
 
         // Default: composite icon
         return new FontIcon { Glyph = "\uF0E2", FontSize = 16, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
@@ -511,7 +542,11 @@ public sealed partial class LaunchersPage : Page
     /// <summary>Creates a complete preset and opens its page after the Add menu dismisses.</summary>
     private void AddWebPreset_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not MenuFlyoutItem { Tag: WebLauncherPreset preset }) return;
+        if (sender is not MenuFlyoutItem { Tag: WebLauncherPreset preset })
+        {
+            return;
+        }
+
         var launcher = preset.Create(SettingsManager.Current.Launchers.Select(item => item.Name));
         RegisterLauncher(launcher);
 
@@ -519,7 +554,11 @@ public sealed partial class LaunchersPage : Page
         _ = WebFlyoutWindow.FetchBookmarkIconAsync(launcher, launcher.WebBookmarks[0]);
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (MainWindow.Current is not { } owner) return;
+            if (MainWindow.Current is not { } owner)
+            {
+                return;
+            }
+
             GetCursorPos(out var point);
             LauncherPanels.Toggle(owner, point.X, point.Y, launcher.Id);
         });
@@ -602,7 +641,11 @@ public sealed partial class LaunchersPage : Page
     /// <summary>Opens the regular item editor directly from the primary Items action.</summary>
     private async void EditLauncherItems_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { Tag: Launcher launcher }) return;
+        if (sender is not FrameworkElement { Tag: Launcher launcher })
+        {
+            return;
+        }
+
         if (MainWindow.Current is { } main && SettingsWindow.GetCurrent() is { } settings)
         {
             await settings.ShowItemEditor(main, launcher.Id);
@@ -616,7 +659,10 @@ public sealed partial class LaunchersPage : Page
     /// </summary>
     private void ItemsBulkOps_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher) return;
+        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher)
+        {
+            return;
+        }
 
         // Shared launchers the user does not own must not be modified locally.
         bool readOnly = launcher is { IsShared: true, IsSharedOwner: false };
@@ -642,10 +688,18 @@ public sealed partial class LaunchersPage : Page
 
     private void MoveLauncherUp_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher) return;
+        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher)
+        {
+            return;
+        }
+
         var launchers = SettingsManager.Current.Launchers;
         int idx = launchers.IndexOf(launcher);
-        if (idx <= 0) return;
+        if (idx <= 0)
+        {
+            return;
+        }
+
         launchers.Move(idx, idx - 1);
         SettingsManager.SaveSettings();
         AutoSyncService.NotifyLaunchersChanged();
@@ -655,10 +709,18 @@ public sealed partial class LaunchersPage : Page
 
     private void MoveLauncherDown_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher) return;
+        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher)
+        {
+            return;
+        }
+
         var launchers = SettingsManager.Current.Launchers;
         int idx = launchers.IndexOf(launcher);
-        if (idx < 0 || idx >= launchers.Count - 1) return;
+        if (idx < 0 || idx >= launchers.Count - 1)
+        {
+            return;
+        }
+
         launchers.Move(idx, idx + 1);
         SettingsManager.SaveSettings();
         AutoSyncService.NotifyLaunchersChanged();
@@ -700,10 +762,16 @@ public sealed partial class LaunchersPage : Page
     /// </summary>
     private async void EnabledOnDevice_Toggled(object sender, RoutedEventArgs e)
     {
-        if (sender is not ToggleSwitch toggle || toggle.Tag is not Launcher launcher) return;
+        if (sender is not ToggleSwitch toggle || toggle.Tag is not Launcher launcher)
+        {
+            return;
+        }
 
         bool enable = toggle.IsOn;
-        if (enable == SettingsManager.Current.IsLauncherEnabled(launcher.Id)) return;
+        if (enable == SettingsManager.Current.IsLauncherEnabled(launcher.Id))
+        {
+            return;
+        }
 
         if (!enable)
         {
@@ -725,8 +793,15 @@ public sealed partial class LaunchersPage : Page
         }
 
         var disabled = new HashSet<string>(SettingsManager.Current.DisabledLauncherIds ?? []);
-        if (enable) disabled.Remove(launcher.Id);
-        else disabled.Add(launcher.Id);
+        if (enable)
+        {
+            disabled.Remove(launcher.Id);
+        }
+        else
+        {
+            disabled.Add(launcher.Id);
+        }
+
         SettingsManager.Current.DisabledLauncherIds = disabled.ToArray();
         SettingsManager.SaveSettings();
         RebuildLauncherCards();
@@ -734,7 +809,10 @@ public sealed partial class LaunchersPage : Page
 
     private async void DeleteLauncher_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher) return;
+        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher)
+        {
+            return;
+        }
 
         if (SettingsManager.Current.Launchers.Count <= 1)
         {
@@ -753,7 +831,10 @@ public sealed partial class LaunchersPage : Page
         };
 
         var result = await dialog.ShowAsync();
-        if (result != ContentDialogResult.Primary) return;
+        if (result != ContentDialogResult.Primary)
+        {
+            return;
+        }
 
         // Dispose whichever panel this launcher owns
         LauncherPanels.Dispose(launcher.Id);
@@ -786,18 +867,26 @@ public sealed partial class LaunchersPage : Page
     private async void ShareLauncher_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement fe && fe.Tag is Launcher launcher)
+        {
             await ShowShareLauncherDialog(launcher);
+        }
     }
 
     private async void SyncSharedLauncher_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher) return;
+        if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher)
+        {
+            return;
+        }
 
         string? password = null;
         if (!SftpSyncService.HasAutoKeyForShared(launcher))
         {
             password = await ShowPasswordPrompt();
-            if (password == null) return; // user cancelled
+            if (password == null)
+            {
+                return; // user cancelled
+            }
         }
 
         bool canPush = launcher.SharedTwoWay || launcher.IsSharedOwner;
@@ -879,7 +968,10 @@ public sealed partial class LaunchersPage : Page
             return;
         }
 
-        if (result != ContentDialogResult.Primary) return;
+        if (result != ContentDialogResult.Primary)
+        {
+            return;
+        }
 
         int mode = modeCombo.SelectedIndex;
         string path = pathBox.Text.Trim();
@@ -922,7 +1014,9 @@ public sealed partial class LaunchersPage : Page
             // An empty box means "keep what is stored", so re-opening the dialog to change the
             // direction does not silently wipe a working password.
             if (davPasswordBox.Password.Length > 0)
+            {
                 WebDavSharedStore.SetPassword(launcher, davPasswordBox.Password);
+            }
 
             if (!WebDavSharedStore.HasCredentials(launcher))
             {
@@ -958,12 +1052,17 @@ public sealed partial class LaunchersPage : Page
         // owner switches it to 2-way, drop the old link so the push below mints an editable one.
         bool replacesOneDriveLink = NeedsNewOneDriveLink(launcher, mode, isTwoWay);
         if (replacesOneDriveLink)
+        {
             launcher.SharedLinkUrl = "";
+        }
 
         launcher.SharedTwoWay = isTwoWay;
         launcher.IsShared = true;
         if (!isTwoWay)
+        {
             launcher.IsSharedOwner = true;
+        }
+
         SettingsManager.SaveSettings();
 
         // Initial push
@@ -976,9 +1075,13 @@ public sealed partial class LaunchersPage : Page
 
         var (ok, msg) = await SftpSyncService.ShareLauncherAsync(launcher, password);
         if (!ok)
+        {
             await ShowErrorDialog(msg);
+        }
         else if (launcher.IsOneDriveSync && launcher.SharedLinkUrl.Length > 0)
+        {
             await ShowShareLinkDialog(launcher, replacesOneDriveLink);
+        }
 
         SettingsManager.SaveSettings();
         RebuildLauncherCards();
@@ -1085,7 +1188,10 @@ public sealed partial class LaunchersPage : Page
         };
 
         var result = await dialog.ShowAsync();
-        if (result != ContentDialogResult.Primary) return;
+        if (result != ContentDialogResult.Primary)
+        {
+            return;
+        }
 
         int mode = modeCombo.SelectedIndex;
         string path = pathBox.Text.Trim();
@@ -1152,14 +1258,19 @@ public sealed partial class LaunchersPage : Page
         // The password has to be stored before verifying — it is keyed by launcher id, and
         // verification is what proves the whole set of details actually works.
         if (mode == SharedSyncModes.WebDav)
+        {
             WebDavSharedStore.SetPassword(newLauncher, davPasswordBox.Password);
+        }
 
         // Verify remote before adding
         string? password = null;
         if (!SftpSyncService.HasAutoKeyForShared(newLauncher))
         {
             password = await ShowPasswordPrompt();
-            if (password == null) return;
+            if (password == null)
+            {
+                return;
+            }
         }
 
         var (verified, itemCount, error) = await SftpSyncService.VerifySharedLauncherAsync(newLauncher, password);
@@ -1177,7 +1288,9 @@ public sealed partial class LaunchersPage : Page
         // Initial pull
         var (ok, msg) = await SftpSyncService.SyncSharedLauncherAsync(newLauncher, password);
         if (!ok)
+        {
             await ShowErrorDialog(msg);
+        }
 
         MainWindow.Current?.RefreshTrayIcons();
         RebuildLauncherCards();
@@ -1294,7 +1407,10 @@ public sealed partial class LaunchersPage : Page
         // was previously shown a box captioned "leave this empty" — a field that exists to be
         // ignored, in a dialog whose whole purpose is the thing it would have contained.
         if (isSubscribing)
+        {
             AddField(oneDrivePanel, UiText.Get("launchers.share.shareLink"), oneDriveLinkBox);
+        }
+
         oneDrivePanel.Children.Add(oneDriveNote);
 
         AddField(davPanel, UiText.Get("launchers.share.fileUrl"), davUrlBox);
@@ -1363,7 +1479,9 @@ public sealed partial class LaunchersPage : Page
 
             // Say before saving that the link will change, not only afterwards.
             if (!isSubscribing && NeedsNewOneDriveLink(launcher, mode, directionCombo.SelectedIndex == 0))
+            {
                 directionCaption.Text += "\n\n" + UiText.Get("launchers.sharing.oneDriveLinkWillChange");
+            }
 
             oneDriveNote.Text = UiText.Get("launchers.sharing.oneDriveFileWarning");
             oneDriveNote.Visibility = isOneDrive ? Visibility.Visible : Visibility.Collapsed;
@@ -1391,7 +1509,10 @@ public sealed partial class LaunchersPage : Page
         // that was meant to be read-only, so they are told rather than asked: the answer is
         // published in the file and adopted on the first pull.
         if (!isSubscribing)
+        {
             AddField(panel, UiText.Get("launchers.share.direction"), directionCombo);
+        }
+
         panel.Children.Add(directionCaption);
 
         ApplyMode(modeCombo.SelectedIndex);
@@ -1417,7 +1538,11 @@ public sealed partial class LaunchersPage : Page
         };
 
         var result = await dialog.ShowAsync();
-        if (result != ContentDialogResult.Primary) return null;
+        if (result != ContentDialogResult.Primary)
+        {
+            return null;
+        }
+
         return passwordBox.Password;
     }
 
@@ -1440,9 +1565,15 @@ public sealed partial class LaunchersPage : Page
         {
             var child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(parent, i);
             if (child is T fe && fe.Name == name)
+            {
                 return fe;
+            }
+
             var result = FindChild<T>(child, name);
-            if (result != null) return result;
+            if (result != null)
+            {
+                return result;
+            }
         }
         return null;
     }

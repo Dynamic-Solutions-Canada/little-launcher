@@ -26,7 +26,9 @@ public sealed partial class LauncherSettingsWindow
         {
             var content = new StackPanel { Spacing = 12 };
             foreach (var row in sectionRows[definition.Id])
+            {
                 content.Children.Add(row);
+            }
 
             var expander = new Expander
             {
@@ -51,14 +53,20 @@ public sealed partial class LauncherSettingsWindow
     internal void ShowSection(LauncherSettingsSection section)
     {
         if (_settingsClosed)
+        {
             return;
+        }
 
         _requestedSection = section;
         if (!_formLoaded)
+        {
             return;
+        }
 
         if (!_sectionExpanders.TryGetValue(section, out var expander) || expander.Visibility != Visibility.Visible)
+        {
             expander = _sectionExpanders[LauncherSettingsSection.General];
+        }
 
         expander.IsExpanded = true;
         expander.StartBringIntoView();

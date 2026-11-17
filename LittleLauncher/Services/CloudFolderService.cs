@@ -55,7 +55,9 @@ public static class CloudFolderService
         // The environment variables OneDrive sets for its own clients. `OneDrive` points at
         // whichever account the user made primary, so it goes first.
         foreach (var variable in new[] { "OneDrive", "OneDriveConsumer", "OneDriveCommercial" })
+        {
             AddIfDirectory(found, Environment.GetEnvironmentVariable(variable));
+        }
 
         // Accounts registered with the sync client. Covers the case where the app was started
         // from a context that did not inherit OneDrive's environment variables — a scheduled
@@ -129,7 +131,9 @@ public static class CloudFolderService
             try
             {
                 if (drive.IsReady && drive.VolumeLabel.StartsWith("Google Drive", StringComparison.OrdinalIgnoreCase))
+                {
                     AddGoogleDriveMount(found, drive.RootDirectory.FullName);
+                }
             }
             catch (Exception ex)
             {
@@ -148,7 +152,10 @@ public static class CloudFolderService
     /// <summary>Add a Drive mount point, preferring its <c>My Drive</c> subfolder.</summary>
     private static void AddGoogleDriveMount(List<string> found, string mountPath)
     {
-        if (string.IsNullOrWhiteSpace(mountPath)) return;
+        if (string.IsNullOrWhiteSpace(mountPath))
+        {
+            return;
+        }
 
         string myDrive = Path.Combine(mountPath, "My Drive");
         if (Directory.Exists(myDrive))
@@ -182,11 +189,17 @@ public static class CloudFolderService
     /// </summary>
     private static void AddIfDirectory(List<string> found, string? path)
     {
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
 
         try
         {
-            if (!Directory.Exists(path)) return;
+            if (!Directory.Exists(path))
+            {
+                return;
+            }
         }
         catch (Exception ex)
         {
@@ -196,6 +209,8 @@ public static class CloudFolderService
 
         string normalized = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (!found.Any(existing => string.Equals(existing, normalized, StringComparison.OrdinalIgnoreCase)))
+        {
             found.Add(normalized);
+        }
     }
 }

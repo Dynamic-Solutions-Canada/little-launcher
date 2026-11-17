@@ -35,20 +35,37 @@ public static class AppCatalog
         try
         {
             var shellType = Type.GetTypeFromProgID("Shell.Application");
-            if (shellType == null) return pwas;
+            if (shellType == null)
+            {
+                return pwas;
+            }
+
             dynamic shell = Activator.CreateInstance(shellType)!;
             dynamic folder = shell.NameSpace("shell:AppsFolder");
-            if (folder == null) return pwas;
+            if (folder == null)
+            {
+                return pwas;
+            }
 
             foreach (dynamic item in folder.Items())
             {
                 string? path = item.Path as string;
                 string? name = item.Name as string;
-                if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(name)) continue;
-                if (!path.EndsWith("!App", StringComparison.Ordinal)) continue;
+                if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(name))
+                {
+                    continue;
+                }
+
+                if (!path.EndsWith("!App", StringComparison.Ordinal))
+                {
+                    continue;
+                }
 
                 var match = Regex.Match(path, PwaAumidPattern);
-                if (!match.Success) continue;
+                if (!match.Success)
+                {
+                    continue;
+                }
 
                 string domain = match.Groups[1].Value;
                 pwas.Add(new InstalledPwa(name, path, domain));
@@ -78,7 +95,11 @@ public static class AppCatalog
 
         foreach (var dir in startMenuDirs)
         {
-            if (!Directory.Exists(dir)) continue;
+            if (!Directory.Exists(dir))
+            {
+                continue;
+            }
+
             try
             {
                 foreach (var lnk in Directory.EnumerateFiles(dir, "*.lnk", SearchOption.AllDirectories))
@@ -86,15 +107,31 @@ public static class AppCatalog
                     try
                     {
                         var target = ResolveShortcutTarget(lnk);
-                        if (string.IsNullOrEmpty(target)) continue;
-                        if (!target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
-                        if (!File.Exists(target)) continue;
+                        if (string.IsNullOrEmpty(target))
+                        {
+                            continue;
+                        }
+
+                        if (!target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        if (!File.Exists(target))
+                        {
+                            continue;
+                        }
 
                         var name = Path.GetFileNameWithoutExtension(lnk);
-                        if (IsNonAppName(name)) continue;
+                        if (IsNonAppName(name))
+                        {
+                            continue;
+                        }
 
                         if (!apps.ContainsKey(target))
+                        {
                             apps[target] = new InstalledApp(name, target);
+                        }
                     }
                     catch { }
                 }
@@ -115,31 +152,60 @@ public static class AppCatalog
                 try
                 {
                     using var key = root.OpenSubKey(keyPath);
-                    if (key == null) continue;
+                    if (key == null)
+                    {
+                        continue;
+                    }
 
                     foreach (var subName in key.GetSubKeyNames())
                     {
                         try
                         {
                             using var sub = key.OpenSubKey(subName);
-                            if (sub == null) continue;
+                            if (sub == null)
+                            {
+                                continue;
+                            }
 
                             var systemComponent = sub.GetValue("SystemComponent");
-                            if (systemComponent is int sc && sc == 1) continue;
+                            if (systemComponent is int sc && sc == 1)
+                            {
+                                continue;
+                            }
+
                             var parentName = sub.GetValue("ParentDisplayName") as string;
-                            if (!string.IsNullOrEmpty(parentName)) continue;
+                            if (!string.IsNullOrEmpty(parentName))
+                            {
+                                continue;
+                            }
+
                             var releaseType = sub.GetValue("ReleaseType") as string;
-                            if (!string.IsNullOrEmpty(releaseType)) continue;
+                            if (!string.IsNullOrEmpty(releaseType))
+                            {
+                                continue;
+                            }
 
                             var displayName = sub.GetValue("DisplayName") as string;
-                            if (string.IsNullOrWhiteSpace(displayName)) continue;
-                            if (IsNonAppName(displayName)) continue;
+                            if (string.IsNullOrWhiteSpace(displayName))
+                            {
+                                continue;
+                            }
+
+                            if (IsNonAppName(displayName))
+                            {
+                                continue;
+                            }
 
                             var exePath = ResolveAppExePath(sub);
-                            if (string.IsNullOrEmpty(exePath)) continue;
+                            if (string.IsNullOrEmpty(exePath))
+                            {
+                                continue;
+                            }
 
                             if (!apps.ContainsKey(exePath))
+                            {
                                 apps[exePath] = new InstalledApp(displayName, exePath);
+                            }
                         }
                         catch { }
                     }
@@ -170,19 +236,33 @@ public static class AppCatalog
                     {
                         string? path = item.Path as string;
                         string? name = item.Name as string;
-                        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(name)) continue;
+                        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(name))
+                        {
+                            continue;
+                        }
 
                         // Skip Chromium PWAs (handled by the PWA picker)
-                        if (pwaPattern.IsMatch(path)) continue;
+                        if (pwaPattern.IsMatch(path))
+                        {
+                            continue;
+                        }
 
-                        if (IsNonAppName(name)) continue;
+                        if (IsNonAppName(name))
+                        {
+                            continue;
+                        }
 
                         // Skip if already discovered via Start Menu / Registry
-                        if (existingNames.Contains(name)) continue;
+                        if (existingNames.Contains(name))
+                        {
+                            continue;
+                        }
 
                         string launchPath = $"shell:AppsFolder\\{path}";
                         if (!apps.ContainsKey(launchPath))
+                        {
                             apps[launchPath] = new InstalledApp(name, launchPath);
+                        }
                     }
 
                     System.Runtime.InteropServices.Marshal.FinalReleaseComObject(folder);
@@ -215,11 +295,15 @@ public static class AppCatalog
         foreach (var filter in filters)
         {
             if (name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
         }
 
         if (name.StartsWith('{') || name.StartsWith("KB"))
+        {
             return true;
+        }
 
         return false;
     }
@@ -237,7 +321,11 @@ public static class AppCatalog
         try
         {
             var shellType = Type.GetTypeFromProgID("WScript.Shell");
-            if (shellType == null) return (null, null);
+            if (shellType == null)
+            {
+                return (null, null);
+            }
+
             dynamic shell = Activator.CreateInstance(shellType)!;
             dynamic shortcut = shell.CreateShortcut(lnkPath);
             string? target = shortcut.TargetPath;
@@ -264,7 +352,9 @@ public static class AppCatalog
         {
             var iconPath = displayIcon.Split(',')[0].Trim('"', ' ');
             if (iconPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && File.Exists(iconPath))
+            {
                 return iconPath;
+            }
         }
 
         var installLoc = sub.GetValue("InstallLocation") as string;
@@ -276,10 +366,15 @@ public static class AppCatalog
                 var fn = Path.GetFileNameWithoutExtension(exe);
                 if (displayName.Contains(fn, StringComparison.OrdinalIgnoreCase)
                     || fn.Contains(displayName.Replace(" ", ""), StringComparison.OrdinalIgnoreCase))
+                {
                     return exe;
+                }
             }
             var firstExe = Directory.EnumerateFiles(installLoc, "*.exe", SearchOption.TopDirectoryOnly).FirstOrDefault();
-            if (firstExe != null) return firstExe;
+            if (firstExe != null)
+            {
+                return firstExe;
+            }
         }
 
         return null;

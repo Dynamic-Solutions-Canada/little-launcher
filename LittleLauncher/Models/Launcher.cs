@@ -34,21 +34,35 @@ public static class TrayIconModes
     /// <summary>Extracts the glyph character(s) from a "Glyph:X" or "Glyph:#RRGGBB:X" mode string.</summary>
     public static string? GetGlyphCharacter(string? mode)
     {
-        if (!IsGlyphMode(mode)) return null;
+        if (!IsGlyphMode(mode))
+        {
+            return null;
+        }
+
         string payload = mode![GlyphPrefix.Length..];
         // If payload starts with "#", color is encoded: "#RRGGBB:glyph"
         if (payload.StartsWith('#') && payload.Length > 8 && payload[7] == ':')
+        {
             return payload[8..];
+        }
+
         return payload;
     }
 
     /// <summary>Extracts the optional hex color from a "Glyph:#RRGGBB:X" mode string. Returns null if no color.</summary>
     public static string? GetGlyphColor(string? mode)
     {
-        if (!IsGlyphMode(mode)) return null;
+        if (!IsGlyphMode(mode))
+        {
+            return null;
+        }
+
         string payload = mode![GlyphPrefix.Length..];
         if (payload.StartsWith('#') && payload.Length > 8 && payload[7] == ':')
+        {
             return payload[..7]; // "#RRGGBB"
+        }
+
         return null;
     }
 
@@ -61,9 +75,20 @@ public static class TrayIconModes
     /// <summary>Maps legacy integer TrayIconMode values to string constants.</summary>
     internal static string FromLegacyInt(int mode) => mode switch
     {
-        0 => Blue, 1 => Green, 2 => Teal, 3 => Red, 4 => Orange, 5 => Purple,
-        6 => Pin, 7 => Star, 8 => Heart, 9 => Lightning, 10 => Search, 11 => Globe,
-        12 => Custom, 13 => Composite,
+        0 => Blue,
+        1 => Green,
+        2 => Teal,
+        3 => Red,
+        4 => Orange,
+        5 => Purple,
+        6 => Pin,
+        7 => Star,
+        8 => Heart,
+        9 => Lightning,
+        10 => Search,
+        11 => Globe,
+        12 => Custom,
+        13 => Composite,
         _ => Blue,
     };
 }
@@ -182,7 +207,10 @@ public class TrayIconModeJsonConverter : JsonConverter<string>
     public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Number)
+        {
             return TrayIconModes.FromLegacyInt(reader.GetInt32());
+        }
+
         return reader.GetString() ?? TrayIconModes.Blue;
     }
 
@@ -236,7 +264,10 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// </remarks>
     public static int[] WebZoomLevelsIncluding(int percent)
     {
-        if (Array.IndexOf(WebZoomLevels, percent) >= 0) return WebZoomLevels;
+        if (Array.IndexOf(WebZoomLevels, percent) >= 0)
+        {
+            return WebZoomLevels;
+        }
 
         int[] levels = [.. WebZoomLevels, percent];
         Array.Sort(levels);
@@ -712,8 +743,16 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     public (int X, int Y)? GetWebFlyoutPosition()
     {
         string[] parts = (WebFlyoutPosition ?? "").Split(',');
-        if (parts.Length != 2) return null;
-        if (!int.TryParse(parts[0], out int x) || !int.TryParse(parts[1], out int y)) return null;
+        if (parts.Length != 2)
+        {
+            return null;
+        }
+
+        if (!int.TryParse(parts[0], out int x) || !int.TryParse(parts[1], out int y))
+        {
+            return null;
+        }
+
         return (x, y);
     }
 
@@ -764,15 +803,24 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     /// </remarks>
     public void MigrateWebModel()
     {
-        if (!IsWebLauncher) return;
+        if (!IsWebLauncher)
+        {
+            return;
+        }
 
         if (!string.IsNullOrWhiteSpace(WebUrl))
         {
             var existing = WebBookmarks.FirstOrDefault(
                 b => string.Equals(b.Url, WebUrl, StringComparison.OrdinalIgnoreCase));
 
-            if (existing != null) WebBookmarks.Move(WebBookmarks.IndexOf(existing), 0);
-            else WebBookmarks.Insert(0, new WebBookmark(HostOfUrl(WebUrl), WebUrl));
+            if (existing != null)
+            {
+                WebBookmarks.Move(WebBookmarks.IndexOf(existing), 0);
+            }
+            else
+            {
+                WebBookmarks.Insert(0, new WebBookmark(HostOfUrl(WebUrl), WebUrl));
+            }
 
             WebUrl = "";
         }
@@ -791,7 +839,11 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
         // from an older build cannot keep re-applying it over a home the user has since changed.
         if (!string.IsNullOrWhiteSpace(WebDefaultBookmarkUrl))
         {
-            if (string.IsNullOrWhiteSpace(WebHomeUrl)) WebHomeUrl = WebDefaultBookmarkUrl;
+            if (string.IsNullOrWhiteSpace(WebHomeUrl))
+            {
+                WebHomeUrl = WebDefaultBookmarkUrl;
+            }
+
             WebDefaultBookmarkUrl = "";
         }
 
@@ -801,8 +853,9 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
         // separates them: the value is identical, so nothing moves, and afterwards that bookmark is
         // an ordinary bookmark like any other.
         if (string.IsNullOrWhiteSpace(WebHomeUrl))
+        {
             WebHomeUrl = WebBookmarks.FirstOrDefault(b => !b.IsFolder)?.Url ?? "";
-
+        }
     }
 
     /// <summary>
@@ -820,7 +873,9 @@ public partial class Launcher : ObservableObject, IJsonOnDeserializing, IJsonOnD
     {
         string trimmed = (url ?? "").Trim();
         if (trimmed.Length > 0 && !trimmed.Contains("://", StringComparison.Ordinal))
+        {
             trimmed = "https://" + trimmed;
+        }
 
         try { return new Uri(trimmed).Host; }
         catch (UriFormatException) { return url ?? ""; }

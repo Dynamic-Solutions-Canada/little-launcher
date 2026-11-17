@@ -48,7 +48,11 @@ internal static partial class FaviconService
     /// <summary>Forces origin revalidation only for preview requests, leaving normal fetches unchanged.</summary>
     private static void ApplyIconFetchOptions(HttpRequestMessage request, IconFetchOptions? options)
     {
-        if (options == null) return;
+        if (options == null)
+        {
+            return;
+        }
+
         options.CancellationToken.ThrowIfCancellationRequested();
         request.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true, NoStore = true };
     }
@@ -75,8 +79,16 @@ internal static partial class FaviconService
         while (true)
         {
             int count = await stream.ReadAsync(chunk.AsMemory(), options.CancellationToken);
-            if (count == 0) break;
-            if (buffer.Length + count > options.MaxBytes) return null;
+            if (count == 0)
+            {
+                break;
+            }
+
+            if (buffer.Length + count > options.MaxBytes)
+            {
+                return null;
+            }
+
             buffer.Write(chunk, 0, count);
         }
         options.CancellationToken.ThrowIfCancellationRequested();

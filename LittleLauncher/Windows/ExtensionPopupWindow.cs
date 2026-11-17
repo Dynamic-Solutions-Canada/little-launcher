@@ -105,8 +105,15 @@ public sealed class ExtensionPopupWindow : Window
     /// </remarks>
     public void LoadIfIdle(string url)
     {
-        if (_navigated || string.IsNullOrEmpty(url)) return;
-        if (_webView.CoreWebView2 is not { } core) return;
+        if (_navigated || string.IsNullOrEmpty(url))
+        {
+            return;
+        }
+
+        if (_webView.CoreWebView2 is not { } core)
+        {
+            return;
+        }
 
         try
         {
@@ -130,7 +137,9 @@ public sealed class ExtensionPopupWindow : Window
 
         // Above the flyout, which is always-on-top — the same rule every window it raises follows.
         if (ownerHwnd != IntPtr.Zero)
+        {
             NativeMethods.SetWindowLongPtr(_hwnd, NativeMethods.GWLP_HWNDPARENT, ownerHwnd);
+        }
 
         var root = new Grid();
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -210,7 +219,10 @@ public sealed class ExtensionPopupWindow : Window
             core.WindowCloseRequested += (_, _) => Close();
 
             // An adopted popup is navigated by whoever asked for it, so it arrives with no address.
-            if (!string.IsNullOrEmpty(url)) core.Navigate(url);
+            if (!string.IsNullOrEmpty(url))
+            {
+                core.Navigate(url);
+            }
 
             _ready.TrySetResult(core);
         }
@@ -246,7 +258,10 @@ public sealed class ExtensionPopupWindow : Window
                 + " Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0)])");
 
             var size = System.Text.Json.JsonSerializer.Deserialize<double[]>(json);
-            if (size is not { Length: 2 }) return;
+            if (size is not { Length: 2 })
+            {
+                return;
+            }
 
             double width = Math.Clamp(size[0], 240, 800);
             double height = Math.Clamp(size[1], 160, 600);

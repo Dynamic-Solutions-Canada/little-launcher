@@ -69,7 +69,10 @@ public sealed partial class WebFlyoutWindow
             path.EndsWith(".crx", StringComparison.OrdinalIgnoreCase) ||
             uri.Contains("/service/update2/crx", StringComparison.OrdinalIgnoreCase);
 
-        if (!isExtension) return;
+        if (!isExtension)
+        {
+            return;
+        }
 
         // Its own dialog would announce a file the user never has to think about again.
         e.Handled = true;
@@ -77,7 +80,10 @@ public sealed partial class WebFlyoutWindow
         var operation = e.DownloadOperation;
         operation.StateChanged += async (sender, _) =>
         {
-            if (sender is not CoreWebView2DownloadOperation download) return;
+            if (sender is not CoreWebView2DownloadOperation download)
+            {
+                return;
+            }
 
             if (download.State == CoreWebView2DownloadState.Completed)
             {
@@ -88,7 +94,9 @@ public sealed partial class WebFlyoutWindow
             // Interrupted is the *expected* ending for a Chrome Web Store install rather than a
             // failure to report as one — the package never reaches disk. See HandleInterruptedAsync.
             if (download.State == CoreWebView2DownloadState.Interrupted)
+            {
                 await HandleInterruptedAsync(uri);
+            }
         };
     }
 
@@ -121,7 +129,9 @@ public sealed partial class WebFlyoutWindow
     private async Task HandleInterruptedAsync(string url)
     {
         if (url.Contains(RemovedStoreHost, StringComparison.OrdinalIgnoreCase))
+        {
             url = RestoreStoreEndpoint(url);
+        }
 
         await InstallFromUrlAsync(url);
     }
@@ -150,7 +160,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private async Task InstallFromUrlAsync(string url)
     {
-        if (string.IsNullOrWhiteSpace(url)) return;
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
 
         string temp = Path.Combine(Path.GetTempPath(), $"ll-extension-{Guid.NewGuid():N}.crx");
 
@@ -174,7 +187,13 @@ public sealed partial class WebFlyoutWindow
         }
         finally
         {
-            try { if (File.Exists(temp)) File.Delete(temp); }
+            try
+            {
+                if (File.Exists(temp))
+                {
+                    File.Delete(temp);
+                }
+            }
             catch (Exception ex) { Logger.Debug(ex, "Could not delete {Path}", temp); }
         }
     }
@@ -192,13 +211,21 @@ public sealed partial class WebFlyoutWindow
         // Onto this browser now, so it takes effect without reopening — every other profile picks
         // it up as its own browser next starts. See BrowserExtensionService.ApplyAsync.
         if (_webView?.CoreWebView2 is { } core)
+        {
             await BrowserExtensionService.ApplyAsync(core);
+        }
 
         RefreshExtensionButtons();
 
         // The package was only ever a delivery mechanism; the unpacked copy is what runs. Deleting
         // it is best-effort — InstallFromUrlAsync cleans up its own temp file regardless.
-        try { if (File.Exists(archivePath)) File.Delete(archivePath); }
+        try
+        {
+            if (File.Exists(archivePath))
+            {
+                File.Delete(archivePath);
+            }
+        }
         catch (Exception ex) { Logger.Debug(ex, "Could not delete the package {Path}", archivePath); }
 
         string name = BrowserExtensionService.ReadName(folder);
@@ -227,7 +254,9 @@ public sealed partial class WebFlyoutWindow
     private void RefreshExtensionButtons()
     {
         foreach (var button in _extensionButtons)
+        {
             _headerButtons.Children.Remove(button);
+        }
 
         _extensionButtons.Clear();
 
@@ -260,7 +289,10 @@ public sealed partial class WebFlyoutWindow
 
         foreach (var extension in installed.Where(e => IsPinned(e.Id, e.Name)))
         {
-            if (BrowserExtensionService.ReadAction(extension.Folder) is not { } action) continue;
+            if (BrowserExtensionService.ReadAction(extension.Folder) is not { } action)
+            {
+                continue;
+            }
 
             var pinned = BuildExtensionButton(extension.Folder, extension.Name, action.Icon);
             _headerButtons.Children.Insert(slot++, pinned);
@@ -293,7 +325,10 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Opens the list of extensions, each with its popup and a pin.</summary>
     private void ShowExtensionsMenu()
     {
-        if (_extensionsButton == null) return;
+        if (_extensionsButton == null)
+        {
+            return;
+        }
 
         var menu = new MenuFlyout
         {
@@ -303,7 +338,10 @@ public sealed partial class WebFlyoutWindow
 
         foreach (var extension in BrowserExtensionService.Installed.ToList())
         {
-            if (string.IsNullOrEmpty(extension.Folder) || !Directory.Exists(extension.Folder)) continue;
+            if (string.IsNullOrEmpty(extension.Folder) || !Directory.Exists(extension.Folder))
+            {
+                continue;
+            }
 
             var action = BrowserExtensionService.ReadAction(extension.Folder);
             var item = new MenuFlyoutSubItem { Text = extension.Name };
@@ -339,7 +377,10 @@ public sealed partial class WebFlyoutWindow
             menu.Items.Add(item);
         }
 
-        if (menu.Items.Count == 0) return;
+        if (menu.Items.Count == 0)
+        {
+            return;
+        }
 
         menu.Opened += (_, _) => _isMenuOpen = true;
         menu.Closed += (_, _) => _isMenuOpen = false;
@@ -365,7 +406,10 @@ public sealed partial class WebFlyoutWindow
         string key = PinKey(id, name);
 
         list.RemoveAll(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
-        if (pinned) list.Add(key);
+        if (pinned)
+        {
+            list.Add(key);
+        }
 
         Classes.Settings.SettingsManager.SaveSettings();
     }
@@ -376,10 +420,16 @@ public sealed partial class WebFlyoutWindow
         // icon of its own — the same fallback role the globe plays for a bookmark.
         var button = BuildHeaderButton("", name, (_, _) => _ = ShowExtensionPopupAsync(folder, name));
 
-        if (iconPath == null) return button;
+        if (iconPath == null)
+        {
+            return button;
+        }
 
         string full = Path.Combine(folder, iconPath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(full)) return button;
+        if (!File.Exists(full))
+        {
+            return button;
+        }
 
         try
         {
@@ -412,9 +462,15 @@ public sealed partial class WebFlyoutWindow
     private async Task ShowExtensionPopupAsync(string folder, string name)
     {
         var core = _webView?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
-        if (BrowserExtensionService.ReadAction(folder) is not { } action) return;
+        if (BrowserExtensionService.ReadAction(folder) is not { } action)
+        {
+            return;
+        }
 
         try
         {

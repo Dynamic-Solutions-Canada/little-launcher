@@ -71,7 +71,9 @@ public partial class SystemPage : Page
         });
 
         foreach (string locale in SupportedLanguages.Ordered)
+        {
             LanguageCombo.Items.Add(new ComboBoxItem { Content = SupportedLanguages.NativeNames[locale], Tag = locale });
+        }
 
         string saved = SupportedLanguages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? "";
         LanguageCombo.SelectedItem = LanguageCombo.Items
@@ -88,8 +90,15 @@ public partial class SystemPage : Page
     /// </summary>
     private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingLanguage || LanguageCombo.SelectedItem is not ComboBoxItem { Tag: string choice }) return;
-        if (choice == (SupportedLanguages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? "")) return;
+        if (_updatingLanguage || LanguageCombo.SelectedItem is not ComboBoxItem { Tag: string choice })
+        {
+            return;
+        }
+
+        if (choice == (SupportedLanguages.NormalizeOverride(SettingsManager.Current.LanguageOverride) ?? ""))
+        {
+            return;
+        }
 
         SettingsManager.Current.LanguageOverride = choice;
         SettingsManager.SaveSettings();
@@ -187,7 +196,10 @@ public partial class SystemPage : Page
         InitializePicker(picker);
 
         var folder = await picker.PickSingleFolderAsync();
-        if (folder == null) return;
+        if (folder == null)
+        {
+            return;
+        }
 
         string? installed = await Services.BrowserExtensionService.InstallAsync(folder.Path);
         RefreshExtensionList();
@@ -236,7 +248,10 @@ public partial class SystemPage : Page
     /// </remarks>
     private async void ProfileCleanupButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_reclaimableProfiles.Count == 0) return;
+        if (_reclaimableProfiles.Count == 0)
+        {
+            return;
+        }
 
         var lines = _reclaimableProfiles
             .Select(f => $"• {f.Description} ({Services.WebProfileCleanupService.FormatSize(f.Bytes)})");
@@ -251,7 +266,10 @@ public partial class SystemPage : Page
             DefaultButton = ContentDialogButton.Close,
         };
 
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        {
+            return;
+        }
 
         ProfileCleanupButton.IsEnabled = false;
         ProfileCleanupButton.Content = UiText.Get("system.profiles.deleting");
@@ -274,7 +292,10 @@ public partial class SystemPage : Page
     {
         // Setting IsOn from code raises Toggled exactly as a click does, so the initial sync above
         // would otherwise write the setting back over itself.
-        if (_updatingShortcutsSwitch) return;
+        if (_updatingShortcutsSwitch)
+        {
+            return;
+        }
 
         SettingsManager.Current.DisableWebLauncherShortcuts = !WebShortcutsToggle.IsOn;
         SettingsManager.SaveSettings();
@@ -283,7 +304,9 @@ public partial class SystemPage : Page
     private async void StartupSwitch_Toggled(object sender, RoutedEventArgs e)
     {
         if (_updatingStartupSwitch || !_startupStateInitialized)
+        {
             return;
+        }
 
         await SetStartupAsync(StartupSwitch.IsOn);
     }
@@ -368,7 +391,9 @@ public partial class SystemPage : Page
         }
 
         if (startupTask.State is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy)
+        {
             return true;
+        }
 
         StartupTaskState result = await startupTask.RequestEnableAsync();
         return result is StartupTaskState.Enabled or StartupTaskState.EnabledByPolicy;
@@ -378,7 +403,10 @@ public partial class SystemPage : Page
     {
         using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
             @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-        if (key == null) return;
+        if (key == null)
+        {
+            return;
+        }
 
         const string appName = "Little Launcher";
         string executablePath = Environment.ProcessPath ?? string.Empty;
@@ -386,9 +414,13 @@ public partial class SystemPage : Page
         if (enable)
         {
             if (File.Exists(executablePath))
+            {
                 key.SetValue(appName, $"\"{executablePath}\" --silent");
+            }
             else
+            {
                 throw new FileNotFoundException("Application executable not found.");
+            }
         }
         else if (key.GetValue(appName) != null)
         {
@@ -443,7 +475,10 @@ public partial class SystemPage : Page
                 // Restart to apply imported settings
                 var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
                 if (exePath != null)
+                {
                     System.Diagnostics.Process.Start(exePath);
+                }
+
                 Environment.Exit(0);
             }
             catch (Exception ex)
@@ -456,7 +491,11 @@ public partial class SystemPage : Page
     private static void InitializePicker(object picker)
     {
         var window = SettingsWindow.GetCurrent();
-        if (window == null) return;
+        if (window == null)
+        {
+            return;
+        }
+
         var hwnd = WindowNative.GetWindowHandle(window);
         InitializeWithWindow.Initialize(picker, hwnd);
     }

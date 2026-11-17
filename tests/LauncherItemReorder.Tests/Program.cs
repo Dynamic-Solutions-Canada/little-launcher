@@ -257,7 +257,9 @@ Case("short groups retain an interior instead of overlapping sibling zones", () 
 Case("group zones reject points outside the full container", () =>
 {
     foreach (var point in new[] { (-1d, 50d), (100d, 50d), (50d, -1d), (50d, 100d) })
+    {
         Check(LauncherDropGeometry.GetGroupZone(point.Item1, point.Item2, 100, 100) == LauncherDropGeometry.GroupZone.Outside);
+    }
 });
 Case("detached or non-finite group geometry never becomes a target", () =>
 {
@@ -329,7 +331,9 @@ return failures == 0 ? 0 : 1;
 static void Check(bool condition)
 {
     if (!condition)
+    {
         throw new InvalidOperationException("Assertion failed");
+    }
 }
 
 /// <summary>Compares references, ensuring moves do not silently replace observable objects.</summary>
@@ -338,7 +342,9 @@ static void Order(IEnumerable<LauncherItem> actual, params LauncherItem[] expect
     var items = actual.ToArray();
     Check(items.Length == expected.Length);
     for (int index = 0; index < items.Length; index++)
+    {
         Check(ReferenceEquals(items[index], expected[index]));
+    }
 }
 
 sealed class Fixture

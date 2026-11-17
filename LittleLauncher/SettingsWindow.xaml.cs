@@ -44,7 +44,10 @@ public sealed partial class SettingsWindow : Window
         // itself before this window's Closed event necessarily arrives.
         Closed += (s, e) =>
         {
-            if (_instance == this) _instance = null;
+            if (_instance == this)
+            {
+                _instance = null;
+            }
         };
 
         RootNavigation.Loaded += (_, _) =>
@@ -73,7 +76,10 @@ public sealed partial class SettingsWindow : Window
         string settingsIcon = Path.Combine(
             MainWindow.GetPhysicalAppDataDir(), "settings-icon.ico");
         if (!File.Exists(settingsIcon))
+        {
             MainWindow.SaveSettingsIconToAppData();
+        }
+
         string iconPath = File.Exists(settingsIcon)
             ? settingsIcon
             : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "LittleLauncher.ico");
@@ -121,7 +127,9 @@ public sealed partial class SettingsWindow : Window
         if (settings.SettingsWindowMaximized)
         {
             if (appWindow.Presenter is OverlappedPresenter presenter)
+            {
                 presenter.Maximize();
+            }
         }
 
         // Re-apply icon after WinUI finishes initializing (it can override WM_SETICON)
@@ -164,7 +172,10 @@ public sealed partial class SettingsWindow : Window
     /// </remarks>
     internal static void ReopenAfterLanguageChange(Type pageType)
     {
-        if (_instance?._owner is not MainWindow owner) return;
+        if (_instance?._owner is not MainWindow owner)
+        {
+            return;
+        }
 
         var current = _instance;
         _instance = null;
@@ -278,7 +289,11 @@ public sealed partial class SettingsWindow : Window
     {
         string settingsIcon = Path.Combine(
             MainWindow.GetPhysicalAppDataDir(), "settings-icon.ico");
-        if (!File.Exists(settingsIcon)) return;
+        if (!File.Exists(settingsIcon))
+        {
+            return;
+        }
+
         var hwnd = WindowNative.GetWindowHandle(this);
         var wndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
         var appWindow = AppWindow.GetFromWindowId(wndId);
@@ -295,7 +310,11 @@ public sealed partial class SettingsWindow : Window
     {
         // Load at native size (0,0) so the OS picks the best resolution
         var hIcon = LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE);
-        if (hIcon == IntPtr.Zero) return;
+        if (hIcon == IntPtr.Zero)
+        {
+            return;
+        }
+
         try
         {
             var iconId = Microsoft.UI.Win32Interop.GetIconIdFromIcon(hIcon);
@@ -321,9 +340,14 @@ public sealed partial class SettingsWindow : Window
         _hIconBig = LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
 
         if (_hIconSmall != IntPtr.Zero)
+        {
             SendMessage(hwnd, WM_SETICON, ICON_SMALL, _hIconSmall);
+        }
+
         if (_hIconBig != IntPtr.Zero)
+        {
             SendMessage(hwnd, WM_SETICON, ICON_BIG, _hIconBig);
+        }
     }
 
     /// <summary>
@@ -350,10 +374,16 @@ public sealed partial class SettingsWindow : Window
             pageType = GetPageTypeFromTag(tag);
         }
 
-        if (pageType == null) return;
+        if (pageType == null)
+        {
+            return;
+        }
 
         // Don't re-navigate if we're already on this page type
-        if (ContentFrame.Content?.GetType() == pageType) return;
+        if (ContentFrame.Content?.GetType() == pageType)
+        {
+            return;
+        }
 
         ContentFrame.Navigate(pageType);
     }
@@ -398,7 +428,9 @@ public sealed partial class SettingsWindow : Window
 
         // If SelectionChanged didn't navigate (e.g. already selected), force it
         if (ContentFrame.Content is not LaunchersPage)
+        {
             ContentFrame.Navigate(typeof(LaunchersPage));
+        }
     }
 
     private void SettingsWindow_Closed(object sender, WindowEventArgs e)
@@ -467,7 +499,9 @@ public sealed partial class SettingsWindow : Window
 
             var info = new MONITORINFOEX { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<MONITORINFOEX>() };
             if (!GetMonitorInfo(monitor, ref info))
+            {
                 return new global::Windows.Graphics.PointInt32(x, y);
+            }
 
             var work = info.rcWork;
             int left = Math.Clamp(x, work.Left, Math.Max(work.Left, work.Right - width));

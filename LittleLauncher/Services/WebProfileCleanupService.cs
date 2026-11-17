@@ -46,7 +46,10 @@ internal static class WebProfileCleanupService
         var found = new List<Reclaimable>();
 
         string root = System.IO.Path.Combine(MainWindow.GetPhysicalAppDataDir(), "WebProfiles");
-        if (!Directory.Exists(root)) return found;
+        if (!Directory.Exists(root))
+        {
+            return found;
+        }
 
         // By id, because the folder name *is* the launcher id — that is the only thing tying a
         // folder to a launcher, and it is why a deleted launcher's folder is unfindable by hand.
@@ -58,10 +61,16 @@ internal static class WebProfileCleanupService
 
             // The shared profile is in use by every launcher set to share, and its name is not a
             // launcher id — so it would otherwise look exactly like an orphan.
-            if (string.Equals(name, "Shared", StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.Equals(name, "Shared", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
 
             string? description = Describe(name, byId);
-            if (description == null) continue;
+            if (description == null)
+            {
+                continue;
+            }
 
             found.Add(new Reclaimable(folder, description, DirectorySize(folder)));
         }
@@ -73,10 +82,15 @@ internal static class WebProfileCleanupService
     private static string? Describe(string folderName, Dictionary<string, Launcher> byId)
     {
         if (!byId.TryGetValue(folderName, out var launcher))
+        {
             return UiText.Get("browserData.profileCleanup.deletedLauncher");
+        }
 
         // Still private: this is its live profile and its sign-ins.
-        if (!launcher.WebSharedProfile) return null;
+        if (!launcher.WebSharedProfile)
+        {
+            return null;
+        }
 
         return UiText.Format("browserData.profileCleanup.nowShared", ("launcher", launcher.Name));
     }
@@ -100,7 +114,10 @@ internal static class WebProfileCleanupService
             {
                 try
                 {
-                    if (!Directory.Exists(folder.Path)) continue;
+                    if (!Directory.Exists(folder.Path))
+                    {
+                        continue;
+                    }
 
                     Directory.Delete(folder.Path, recursive: true);
                     deleted++;
@@ -132,7 +149,10 @@ internal static class WebProfileCleanupService
         try
         {
             string folder = WebFlyoutWindow.GetUserDataFolder(launcher.Id);
-            if (!Directory.Exists(folder)) return;
+            if (!Directory.Exists(folder))
+            {
+                return;
+            }
 
             Directory.Delete(folder, recursive: true);
             Logger.Info("Removed the web profile of deleted launcher {Name}", launcher.Name);

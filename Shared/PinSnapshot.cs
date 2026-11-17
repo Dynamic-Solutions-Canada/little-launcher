@@ -39,7 +39,11 @@ internal sealed class PinSnapshot
         try
         {
             string path = MetadataPath(directory, launcherId);
-            if (!File.Exists(path)) return null;
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
             var snapshot = JsonSerializer.Deserialize(File.ReadAllText(path), PinSnapshotJsonContext.Default.PinSnapshot);
             return snapshot?.IsValid == true ? snapshot : null;
         }
@@ -71,7 +75,10 @@ internal sealed class PinSnapshot
         }
         finally
         {
-            if (File.Exists(temporary)) File.Delete(temporary);
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
         }
     }
 

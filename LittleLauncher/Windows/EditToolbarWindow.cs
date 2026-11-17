@@ -44,7 +44,9 @@ internal sealed class EditToolbarWindow : Window
             presenter.IsAlwaysOnTop = true;
             GetAppWindow().SetPresenter(presenter);
             if (sessionOwner != IntPtr.Zero)
+            {
                 BeginOwnedSession(sessionOwner);
+            }
 
             SystemBackdrop = new DesktopAcrylicBackdrop();
             Content = content;
@@ -85,12 +87,17 @@ internal sealed class EditToolbarWindow : Window
     public void PositionAbove(IntPtr ownerHwnd, int contentWidthDips, int contentHeightDips)
     {
         if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd) || !IsWindow(ownerHwnd))
+        {
             return;
+        }
 
         // The bar may still be on a different monitor before this move. Size it for the
         // flyout it follows, so the first placement is correct on a mixed-DPI desktop.
         double scale = GetDpiForWindow(ownerHwnd) / 96.0;
-        if (scale <= 0) scale = 1.0;
+        if (scale <= 0)
+        {
+            scale = 1.0;
+        }
 
         int width = (int)Math.Ceiling(contentWidthDips * scale);
         int height = (int)Math.Ceiling(contentHeightDips * scale);
@@ -105,25 +112,42 @@ internal sealed class EditToolbarWindow : Window
         GetMonitorInfo(monitor, ref info);
         var work = info.rcWork;
 
-        if (left < work.Left) left = work.Left;
-        if (left + width > work.Right) left = work.Right - width;
+        if (left < work.Left)
+        {
+            left = work.Left;
+        }
+
+        if (left + width > work.Right)
+        {
+            left = work.Right - width;
+        }
 
         // If there is no room above (flyout anchored to the top of the screen), sit below it.
         if (top < work.Top)
+        {
             top = owner.Bottom + (int)(GapDips * scale);
+        }
 
         // A Settings-owned bar follows its owner's stacking order, including app switches.
         // Repositioning it must not raise the session above whichever app is now foreground.
         IntPtr insertAfter = _hasSessionOwner ? IntPtr.Zero : HWND_TOPMOST;
         uint flags = SWP_NOACTIVATE | SWP_SHOWWINDOW;
-        if (_hasSessionOwner) flags |= SWP_NOZORDER;
+        if (_hasSessionOwner)
+        {
+            flags |= SWP_NOZORDER;
+        }
+
         SetWindowPos(_hwnd, insertAfter, left, top, width, height, flags);
     }
 
     /// <summary>Temporarily follows the editor as an owned, non-topmost Settings session bar.</summary>
     internal void BeginOwnedSession(IntPtr ownerHwnd)
     {
-        if (_hasSessionOwner) return;
+        if (_hasSessionOwner)
+        {
+            return;
+        }
+
         var presenter = GetAppWindow().Presenter as OverlappedPresenter;
         bool previousTopmost = presenter?.IsAlwaysOnTop ?? false;
         _previousOwner = SetWindowLongPtr(_hwnd, GWLP_HWNDPARENT, ownerHwnd);
@@ -131,7 +155,10 @@ internal sealed class EditToolbarWindow : Window
         _hasSessionOwner = true;
         try
         {
-            if (presenter != null) presenter.IsAlwaysOnTop = false;
+            if (presenter != null)
+            {
+                presenter.IsAlwaysOnTop = false;
+            }
         }
         catch
         {
@@ -143,16 +170,24 @@ internal sealed class EditToolbarWindow : Window
     /// <summary>Restores the hidden toolbar's previous owner and normal topmost policy.</summary>
     internal void EndOwnedSession()
     {
-        if (!_hasSessionOwner) return;
+        if (!_hasSessionOwner)
+        {
+            return;
+        }
+
         _hasSessionOwner = false;
         SetWindowLongPtr(_hwnd, GWLP_HWNDPARENT, _previousOwner);
         if (GetAppWindow().Presenter is OverlappedPresenter presenter)
+        {
             presenter.IsAlwaysOnTop = _previousTopmost;
+        }
     }
 
     public void HideBar()
     {
         if (_hwnd != IntPtr.Zero && IsWindow(_hwnd))
+        {
             ShowWindow(_hwnd, SW_HIDE);
+        }
     }
 }

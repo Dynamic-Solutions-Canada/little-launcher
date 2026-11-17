@@ -38,7 +38,9 @@ public static class FolderSyncService
     {
         string folder = SettingsManager.Current.SyncFolderPath;
         if (string.IsNullOrWhiteSpace(folder))
+        {
             return (false, UiText.Get("syncService.folder.notConfigured"));
+        }
 
         return await Task.Run(() =>
         {
@@ -72,7 +74,9 @@ public static class FolderSyncService
     {
         string folder = SettingsManager.Current.SyncFolderPath;
         if (string.IsNullOrWhiteSpace(folder))
+        {
             return (false, UiText.Get("syncService.folder.notConfigured"));
+        }
 
         try
         {
@@ -108,14 +112,18 @@ public static class FolderSyncService
     {
         string folder = SettingsManager.Current.SyncFolderPath;
         if (string.IsNullOrWhiteSpace(folder))
+        {
             return (false, UiText.Get("syncService.folder.notConfigured"));
+        }
 
         string file = Path.Combine(folder, LauncherPayload.FileName);
 
         try
         {
             if (!await Task.Run(() => File.Exists(file)))
+            {
                 return (false, UiText.Get("syncService.folder.noLaunchersFile"));
+            }
 
             // Read into memory before parsing: on OneDrive and Drive for desktop the file may be
             // a placeholder, and touching it blocks while the client hydrates it.
@@ -124,10 +132,14 @@ public static class FolderSyncService
             using var stream = new MemoryStream(bytes, writable: false);
             var (launchers, remoteTimestamp, extensions) = LauncherPayload.Deserialize(stream);
             if (launchers == null)
+            {
                 return (false, UiText.Get("syncService.folder.parseFailed"));
+            }
 
             if (LauncherPayload.ShouldSkipDownload(remoteTimestamp, force, out string reason))
+            {
                 return (false, reason);
+            }
 
             await LauncherPayload.ApplyAsync(launchers, extensions);
 
@@ -151,7 +163,10 @@ public static class FolderSyncService
     public static async Task<DateTimeOffset?> GetRemoteModifiedAsync()
     {
         string folder = SettingsManager.Current.SyncFolderPath;
-        if (string.IsNullOrWhiteSpace(folder)) return null;
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            return null;
+        }
 
         return await Task.Run<DateTimeOffset?>(() =>
         {
@@ -184,9 +199,21 @@ public static class FolderSyncService
         try
         {
             var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(file);
-            if (age < TimeSpan.FromMinutes(1)) return UiText.Get("syncService.age.justNow");
-            if (age < TimeSpan.FromHours(1)) return UiText.Plural("syncService.age.minutes", (int)age.TotalMinutes);
-            if (age < TimeSpan.FromDays(1)) return UiText.Plural("syncService.age.hours", (int)age.TotalHours);
+            if (age < TimeSpan.FromMinutes(1))
+            {
+                return UiText.Get("syncService.age.justNow");
+            }
+
+            if (age < TimeSpan.FromHours(1))
+            {
+                return UiText.Plural("syncService.age.minutes", (int)age.TotalMinutes);
+            }
+
+            if (age < TimeSpan.FromDays(1))
+            {
+                return UiText.Plural("syncService.age.hours", (int)age.TotalHours);
+            }
+
             return UiText.Plural("syncService.age.days", (int)age.TotalDays);
         }
         catch

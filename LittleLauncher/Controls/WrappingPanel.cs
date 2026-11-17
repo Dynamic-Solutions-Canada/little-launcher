@@ -27,7 +27,9 @@ internal sealed class WrappingPanel : Panel
             // unconstrained width to report its natural size instead of filling the row.
             child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             if (child.DesiredSize.Width > availableSize.Width)
+            {
                 child.Measure(new Size(availableSize.Width, double.PositiveInfinity));
+            }
         }
 
         return LayoutRows(availableSize.Width, arrange: false);
@@ -50,7 +52,11 @@ internal sealed class WrappingPanel : Panel
 
         foreach (UIElement child in Children)
         {
-            if (child.Visibility == Visibility.Collapsed) continue;
+            if (child.Visibility == Visibility.Collapsed)
+            {
+                continue;
+            }
+
             var desired = child.DesiredSize;
             double gap = hasRowItem ? Spacing : 0;
 
@@ -65,7 +71,9 @@ internal sealed class WrappingPanel : Panel
 
             left += gap;
             if (arrange)
+            {
                 child.Arrange(new Rect(left, top, desired.Width, desired.Height));
+            }
 
             left += desired.Width;
             rowHeight = Math.Max(rowHeight, desired.Height);

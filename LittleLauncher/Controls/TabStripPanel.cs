@@ -84,7 +84,10 @@ public sealed class TabStripPanel : Panel
         _widths.Clear();
 
         int count = Children.Count;
-        if (count == 0) return new Size(0, 0);
+        if (count == 0)
+        {
+            return new Size(0, 0);
+        }
 
         double gaps = Spacing * (count - 1);
         double budget = double.IsInfinity(availableSize.Width) ? AvailableWidth : availableSize.Width;
@@ -100,8 +103,14 @@ public sealed class TabStripPanel : Panel
             total += natural[i];
         }
 
-        if (budget <= 0 || total + gaps <= budget) _widths.AddRange(natural);
-        else AllocateWidths(natural, Math.Max(0, budget - gaps));
+        if (budget <= 0 || total + gaps <= budget)
+        {
+            _widths.AddRange(natural);
+        }
+        else
+        {
+            AllocateWidths(natural, Math.Max(0, budget - gaps));
+        }
 
         double width = 0;
         double height = 0;
@@ -110,7 +119,9 @@ public sealed class TabStripPanel : Panel
             // Re-measured at the width it will actually get, so its label trims to the room it has
             // rather than to the room it wanted. Only the ones that lost width need it.
             if (_widths[i] < natural[i])
+            {
                 Children[i].Measure(new Size(_widths[i], availableSize.Height));
+            }
 
             width += _widths[i];
             height = Math.Max(height, Children[i].DesiredSize.Height);
@@ -157,7 +168,10 @@ public sealed class TabStripPanel : Panel
 
             for (int i = 0; i < count; i++)
             {
-                if (settled[i] || natural[i] > share) continue;
+                if (settled[i] || natural[i] > share)
+                {
+                    continue;
+                }
 
                 settled[i] = true;
                 unsettled--;
@@ -172,11 +186,16 @@ public sealed class TabStripPanel : Panel
         // padding a chip out past its own content is the one way this can produce a gap rather than
         // close one.
         for (int i = 0; i < count; i++)
+        {
             _widths.Add(settled[i] ? natural[i] : Math.Min(natural[i], squeezed));
+        }
     }
 
     private static void OnLayoutPropertyChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
     {
-        if (sender is TabStripPanel panel) panel.InvalidateMeasure();
+        if (sender is TabStripPanel panel)
+        {
+            panel.InvalidateMeasure();
+        }
     }
 }

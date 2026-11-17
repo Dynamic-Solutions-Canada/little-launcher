@@ -24,14 +24,21 @@ public sealed partial class WebFlyoutWindow
     {
         _fullscreenMaximizeButton = BuildHeaderButton(MaximizeGlyph(false), "", (_, _) =>
         {
-            if (!_isFullScreen || !_fullScreenInWindow) return;
+            if (!_isFullScreen || !_fullScreenInWindow)
+            {
+                return;
+            }
 
             // A pending video fit must not undo a maximize followed quickly by restore.
             _videoFitVersion++;
             if (_isMaximized)
+            {
                 ExitMaximized(restoreGeometry: true);
+            }
             else
+            {
                 EnterMaximized();
+            }
         });
         UpdateFullscreenMaximizeButton();
         return _fullscreenMaximizeButton;
@@ -40,12 +47,17 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Distinguishes resizing the launcher from exiting the page's fullscreen mode.</summary>
     private void UpdateFullscreenMaximizeButton()
     {
-        if (_fullscreenMaximizeButton is not { } button) return;
+        if (_fullscreenMaximizeButton is not { } button)
+        {
+            return;
+        }
 
         button.Visibility = _isFullScreen && _fullScreenInWindow
             ? Visibility.Visible : Visibility.Collapsed;
         if (button.Content is FontIcon icon)
+        {
             icon.Glyph = MaximizeGlyph(_isMaximized);
+        }
 
         string label = _isMaximized
             ? UiText.Get("webFullscreen.restoreLauncherSize")
@@ -81,7 +93,10 @@ public sealed partial class WebFlyoutWindow
             _fullscreenHeaderTimer.Interval = TimeSpan.FromMilliseconds(100);
             _fullscreenHeaderTimer.Tick -= FullscreenHeaderTimer_Tick;
             _fullscreenHeaderTimer.Tick += FullscreenHeaderTimer_Tick;
-            if (_isOpen) _fullscreenHeaderTimer.Start();
+            if (_isOpen)
+            {
+                _fullscreenHeaderTimer.Start();
+            }
         }
         else if (_normalHeaderParent is { } parent)
         {
@@ -108,7 +123,11 @@ public sealed partial class WebFlyoutWindow
             return;
         }
 
-        if (!GetCursorPos(out var point) || !GetWindowRect(_hwnd, out var rect)) return;
+        if (!GetCursorPos(out var point) || !GetWindowRect(_hwnd, out var rect))
+        {
+            return;
+        }
+
         double scale = GetScale();
         bool shown = _header.Visibility == Visibility.Visible;
         int revealHeight = (int)Math.Ceiling((shown ? HeaderHeightDips : 6) * scale);
@@ -133,7 +152,9 @@ public sealed partial class WebFlyoutWindow
         try
         {
             if (core != null)
+            {
                 await core.ExecuteScriptAsync("if (document.fullscreenElement) document.exitFullscreen();");
+            }
         }
         catch (Exception ex)
         {
@@ -145,7 +166,9 @@ public sealed partial class WebFlyoutWindow
             // fullscreen after the active document has changed. Restore the window on an
             // explicit exit gesture even when the page cannot answer the script above.
             if (_isFullScreen && (core == null || IsActiveCore(core)))
+            {
                 ApplyFullScreen(false);
+            }
         }
     }
 }

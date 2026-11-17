@@ -132,7 +132,9 @@ internal sealed class BookmarkPickerView
         // ── Source pickers ──────────────────────────────────────────
         var browserCombo = new ComboBox { PlaceholderText = UiText.Get("bookmarkPicker.browser"), MinWidth = 180 };
         foreach (var browser in browsers)
+        {
             browserCombo.Items.Add(browser.DisplayName);
+        }
 
         var profileCombo = new ComboBox { PlaceholderText = UiText.Get("bookmarkPicker.profile"), MinWidth = 180, IsEnabled = false };
 
@@ -179,7 +181,9 @@ internal sealed class BookmarkPickerView
             // Capped because the list is rebuilt on every keystroke and a large profile runs to
             // thousands of bookmarks; the search is how you reach the rest.
             foreach (var match in matches.Take(300))
+            {
                 results.Add(match);
+            }
 
             if (all.Count == 0)
             {
@@ -232,7 +236,10 @@ internal sealed class BookmarkPickerView
             profileCombo.Items.Clear();
             profileCombo.IsEnabled = false;
             profiles = [];
-            if (browserCombo.SelectedIndex < 0) return;
+            if (browserCombo.SelectedIndex < 0)
+            {
+                return;
+            }
 
             profiles = BrowserCatalog.GetBrowserProfiles(browsers[browserCombo.SelectedIndex].ProfileDataDir,
                 browsers[browserCombo.SelectedIndex].Engine);
@@ -243,7 +250,10 @@ internal sealed class BookmarkPickerView
             }
 
             foreach (var profile in profiles)
+            {
                 profileCombo.Items.Add(profile.DisplayName);
+            }
+
             profileCombo.IsEnabled = true;
 
             int remembered = profiles.FindIndex(p => p.DirectoryName == _lastProfileDirectory);
@@ -257,7 +267,11 @@ internal sealed class BookmarkPickerView
 
         _list.DoubleTapped += (_, _) =>
         {
-            if (Selected == null) return;
+            if (Selected == null)
+            {
+                return;
+            }
+
             Confirmed?.Invoke();
         };
 

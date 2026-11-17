@@ -52,7 +52,9 @@ public static class WebDavSharedStore
     public static async Task<(bool Success, string Message)> PushAsync(Launcher launcher)
     {
         if (!HasCredentials(launcher))
+        {
             return (false, UiText.Get("sharing.webDav.noCredentials"));
+        }
 
         try
         {
@@ -64,7 +66,9 @@ public static class WebDavSharedStore
 
             using var response = await Http.SendAsync(request);
             if (!response.IsSuccessStatusCode)
+            {
                 return (false, Describe(response.StatusCode, "upload"));
+            }
 
             Logger.Info($"Shared launcher '{launcher.Name}' pushed to WebDAV");
             string? host = HostOf(launcher);
@@ -84,7 +88,9 @@ public static class WebDavSharedStore
     public static async Task<(bool Success, string Message)> PullAsync(Launcher launcher)
     {
         if (!HasCredentials(launcher))
+        {
             return (false, UiText.Get("sharing.webDav.noCredentials"));
+        }
 
         try
         {
@@ -92,14 +98,21 @@ public static class WebDavSharedStore
             using var response = await Http.SendAsync(request);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
+            {
                 return (false, UiText.Get("sharing.webDav.fileNotOnServerYet"));
+            }
+
             if (!response.IsSuccessStatusCode)
+            {
                 return (false, Describe(response.StatusCode, "download"));
+            }
 
             byte[] bytes = await response.Content.ReadAsByteArrayAsync();
             var file = SharedLauncherPayload.Deserialize(bytes);
             if (file == null)
+            {
                 return (false, UiText.Get("sharing.couldNotParse"));
+            }
 
             await SharedLauncherPayload.ApplyAsync(launcher, file);
             Logger.Info($"Shared launcher '{launcher.Name}' pulled from WebDAV");
@@ -118,9 +131,14 @@ public static class WebDavSharedStore
     public static async Task<(bool Success, int ItemCount, string Error)> VerifyAsync(Launcher launcher)
     {
         if (string.IsNullOrWhiteSpace(launcher.SharedWebDavUrl))
+        {
             return (false, 0, UiText.Get("sharing.webDav.enterFileUrl"));
+        }
+
         if (!HasCredentials(launcher))
+        {
             return (false, 0, UiText.Get("sharing.webDav.enterCredentials"));
+        }
 
         try
         {
@@ -128,11 +146,19 @@ public static class WebDavSharedStore
             using var response = await Http.SendAsync(request);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
                 return (false, 0, UiText.Get("cloud.webDav.credentialsRejected"));
+            }
+
             if (response.StatusCode == HttpStatusCode.NotFound)
+            {
                 return (false, 0, UiText.Get("sharing.webDav.fileMissing"));
+            }
+
             if (!response.IsSuccessStatusCode)
+            {
                 return (false, 0, Describe(response.StatusCode, "read"));
+            }
 
             var file = SharedLauncherPayload.Deserialize(await response.Content.ReadAsByteArrayAsync());
             return file == null
@@ -156,7 +182,10 @@ public static class WebDavSharedStore
     {
         string url = launcher.SharedWebDavUrl.Trim();
         int slash = url.LastIndexOf('/');
-        if (slash <= 0) return (false, UiText.Get("sharing.webDav.notFileUrl"));
+        if (slash <= 0)
+        {
+            return (false, UiText.Get("sharing.webDav.notFileUrl"));
+        }
 
         try
         {

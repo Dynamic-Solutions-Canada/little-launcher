@@ -42,7 +42,9 @@ public sealed partial class LauncherItemsView
     private static DataPackageOperation ExternalDropOperation(DragEventArgs e)
     {
         if (e.AllowedOperations.HasFlag(DataPackageOperation.Link))
+        {
             return DataPackageOperation.Link;
+        }
 
         return e.AllowedOperations.HasFlag(DataPackageOperation.Copy)
             ? DataPackageOperation.Copy
@@ -58,7 +60,9 @@ public sealed partial class LauncherItemsView
     private void ExternalDragOver(ListViewBase listView, DragEventArgs e)
     {
         if (!AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
+        {
             return;
+        }
 
         e.AcceptedOperation = ExternalDropOperation(e);
 
@@ -72,11 +76,17 @@ public sealed partial class LauncherItemsView
         {
             string name = GetItemDisplayName(target.Group);
             if (target.Zone == LauncherDropGeometry.GroupZone.Before)
+            {
                 caption = UiText.Format("items.dropBeforeGroup", ("group", name));
+            }
             else if (target.Zone == LauncherDropGeometry.GroupZone.After)
+            {
                 caption = UiText.Format("items.dropAfterGroup", ("group", name));
+            }
             else
+            {
                 caption = UiText.Format("items.dropIntoGroup", ("group", name));
+            }
         }
         e.DragUIOverride.Caption = caption;
         e.Handled = true;
@@ -89,7 +99,9 @@ public sealed partial class LauncherItemsView
     private void RootGrid_DragOver(object sender, DragEventArgs e)
     {
         if (RejectStaleInternalDrag(e))
+        {
             return;
+        }
 
         ClearInsertionIndicator();
         if (_dragItem != null)
@@ -100,7 +112,9 @@ public sealed partial class LauncherItemsView
 
         // Only external payloads may append through otherwise empty root space.
         if (!AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
+        {
             return;
+        }
 
         e.AcceptedOperation = ExternalDropOperation(e);
         e.DragUIOverride.IsCaptionVisible = true;
@@ -122,13 +136,17 @@ public sealed partial class LauncherItemsView
     private void ExternalDrop(ListViewBase listView, DragEventArgs e)
     {
         if (!AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
+        {
             return;
+        }
 
         // e.GetPosition is only meaningful while the event is on the stack, so the
         // insertion point has to be resolved before the deferral takes this async.
         var target = ResolveItemDropTarget(listView, e);
         if (target.List.ItemsSource is ObservableCollection<LauncherItem> collection)
+        {
             BeginExternalDrop(e, collection, target.Index, PersistFlyoutReorder);
+        }
     }
 
     /// <summary>
@@ -140,10 +158,14 @@ public sealed partial class LauncherItemsView
     {
         ClearInsertionIndicator();
         if (RejectStaleInternalDrag(e))
+        {
             return;
+        }
 
         if (_dragItem != null || !AcceptsExternalDrops || !DroppedItemFactory.CanAccept(e.DataView))
+        {
             return;
+        }
 
         // Appending to _launcher.Items is a structural edit, so it must NOT persist via
         // PersistFlyoutReorder: that regenerates the flat list from the column lists,
@@ -194,7 +216,10 @@ public sealed partial class LauncherItemsView
             deferral.Complete();
         }
 
-        if (!IsCurrentSession(version) || !AcceptsExternalDrops || !IsCurrentDropTarget(target)) return;
+        if (!IsCurrentSession(version) || !AcceptsExternalDrops || !IsCurrentDropTarget(target))
+        {
+            return;
+        }
 
         if (added.Count == 0)
         {
@@ -204,7 +229,9 @@ public sealed partial class LauncherItemsView
 
         int index = Math.Clamp(dropIndex, 0, target.Count);
         foreach (var item in added)
+        {
             target.Insert(index++, item);
+        }
 
         persist();
 
@@ -219,7 +246,10 @@ public sealed partial class LauncherItemsView
         var affected = SettingsManager.Current.Launchers
             .Where(launcher => !launcher.IsWebLauncher && ContainsAnyItem(launcher.Items, enriched))
             .ToArray();
-        if (affected.Length > 0) PersistItemChanges(affected);
+        if (affected.Length > 0)
+        {
+            PersistItemChanges(affected);
+        }
 
         Logger.Info($"Added {added.Count} item(s) to {_launcher.Name} by drag-and-drop");
     }
@@ -227,7 +257,11 @@ public sealed partial class LauncherItemsView
     /// <summary>Rejects a payload targeting a derived column discarded during its async read.</summary>
     private bool IsCurrentDropTarget(ObservableCollection<LauncherItem> target)
     {
-        if (_launcher.IsWebLauncher || !SettingsManager.Current.Launchers.Contains(_launcher)) return false;
+        if (_launcher.IsWebLauncher || !SettingsManager.Current.Launchers.Contains(_launcher))
+        {
+            return false;
+        }
+
         return ReferenceEquals(target, _launcher.Items)
             || _columnLists.Contains(target)
             || _launcher.Items.Any(item => item.IsGroup && ReferenceEquals(item.Children, target))

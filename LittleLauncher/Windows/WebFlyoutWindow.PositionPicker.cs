@@ -122,8 +122,15 @@ public sealed partial class WebFlyoutWindow
 
     private void SchedulePickerOpen()
     {
-        if (_isFullScreen) return;
-        if (_positionPicker?.IsOpen == true) return;
+        if (_isFullScreen)
+        {
+            return;
+        }
+
+        if (_positionPicker?.IsOpen == true)
+        {
+            return;
+        }
 
         _pickerOpenTimer ??= DispatcherQueue.CreateTimer();
         _pickerOpenTimer.Stop();
@@ -183,7 +190,10 @@ public sealed partial class WebFlyoutWindow
             return;
         }
 
-        if (++_pickerMisses >= PickerWatchMisses) HidePositionPicker();
+        if (++_pickerMisses >= PickerWatchMisses)
+        {
+            HidePositionPicker();
+        }
     }
 
     /// <summary>Hit-tests the cursor against the maximize button, in screen pixels.</summary>
@@ -194,9 +204,20 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private bool IsPointerOverMaximizeButton()
     {
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return false;
-        if (_maximizeButton.XamlRoot == null || _maximizeButton.ActualWidth <= 0) return false;
-        if (!GetWindowRect(_hwnd, out var window) || !GetCursorPos(out var cursor)) return false;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return false;
+        }
+
+        if (_maximizeButton.XamlRoot == null || _maximizeButton.ActualWidth <= 0)
+        {
+            return false;
+        }
+
+        if (!GetWindowRect(_hwnd, out var window) || !GetCursorPos(out var cursor))
+        {
+            return false;
+        }
 
         var origin = _maximizeButton
             .TransformToVisual(null)
@@ -240,9 +261,20 @@ public sealed partial class WebFlyoutWindow
     private void ShowPositionPicker()
     {
         _pickerOpenTimer?.Stop();
-        if (_positionPicker?.IsOpen == true) return;
-        if (!_isOpen || _isFullScreen || _isMovingWindow || _isResizing || IsMinimized) return;
-        if (_maximizeButton.XamlRoot == null) return;
+        if (_positionPicker?.IsOpen == true)
+        {
+            return;
+        }
+
+        if (!_isOpen || _isFullScreen || _isMovingWindow || _isResizing || IsMinimized)
+        {
+            return;
+        }
+
+        if (_maximizeButton.XamlRoot == null)
+        {
+            return;
+        }
 
         var picker = _positionPicker = new Flyout
         {
@@ -259,7 +291,10 @@ public sealed partial class WebFlyoutWindow
             _isMenuOpen = false;
             _pointerInPicker = false;
             _pickerWatchTimer?.Stop();
-            if (ReferenceEquals(_positionPicker, picker)) _positionPicker = null;
+            if (ReferenceEquals(_positionPicker, picker))
+            {
+                _positionPicker = null;
+            }
         };
 
         // The pin goes on before the popup exists, so a show that never happens would leave the
@@ -391,7 +426,10 @@ public sealed partial class WebFlyoutWindow
     {
         foreach (var (labelKey, value) in AnchorChoices)
         {
-            if (value == anchor) return UiText.Get(labelKey);
+            if (value == anchor)
+            {
+                return UiText.Get(labelKey);
+            }
         }
 
         return "";
@@ -462,11 +500,17 @@ public sealed partial class WebFlyoutWindow
     {
         HidePositionPicker();
 
-        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd)) return;
+        if (_hwnd == IntPtr.Zero || !IsWindow(_hwnd))
+        {
+            return;
+        }
 
         // The page owns the geometry while it is fullscreen and gets it back on exit, so a move from
         // here would be undone — and would leave _preFullScreenRect pointing somewhere else.
-        if (_isFullScreen) return;
+        if (_isFullScreen)
+        {
+            return;
+        }
 
         // A slide still in flight would otherwise keep writing its own geometry over this one.
         _animationVersion++;

@@ -174,7 +174,9 @@ public sealed partial class MainWindow : Window
                 // when the app is already running.
                 int msg = RegisterWindowMessage("LittleLauncher_ShowSettings");
                 if (target != IntPtr.Zero && msg != 0)
+                {
                     PostMessage(target, msg, IntPtr.Zero, IntPtr.Zero);
+                }
             }
             // --silent second instance: just exit quietly
 
@@ -256,7 +258,9 @@ public sealed partial class MainWindow : Window
         _uiSettings.ColorValuesChanged += OnSystemThemeChanged;
 
         if (!IsSilentLaunch())
+        {
             SettingsWindow.ShowInstance(this);
+        }
     }
 
     private AppWindow GetAppWindow()
@@ -325,7 +329,11 @@ public sealed partial class MainWindow : Window
 
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (WebFlyoutWindow.HandleNotificationActivation(arguments, reply)) return;
+            if (WebFlyoutWindow.HandleNotificationActivation(arguments, reply))
+            {
+                return;
+            }
+
             SettingsWindow.ShowInstance(this);
         });
     }
@@ -342,7 +350,10 @@ public sealed partial class MainWindow : Window
     {
         GetCursorPos(out var pt);
         if (!TryResolveTrayAnchorPoint(launcherId, pt.X, pt.Y, out int anchorX, out int anchorY))
+        {
             TryResolveLauncherAnchorPoint(launcherId, pt.X, pt.Y, out anchorX, out anchorY);
+        }
+
         DispatcherQueue.TryEnqueue(() => LauncherPanels.Toggle(this, anchorX, anchorY, launcherId));
     }
 
@@ -357,7 +368,10 @@ public sealed partial class MainWindow : Window
     /// </remarks>
     private void ShowUpgradeNoticeToast()
     {
-        if (!SettingsManager.Current.UpgradeNoticesJustRaised) return;
+        if (!SettingsManager.Current.UpgradeNoticesJustRaised)
+        {
+            return;
+        }
 
         try
         {
@@ -401,7 +415,11 @@ public sealed partial class MainWindow : Window
     /// <summary>Register the default once, preserving later app and OS opt-outs.</summary>
     private static async Task ApplyFirstRunStartupAsync()
     {
-        if (!SettingsManager.IsFirstRun || !SettingsManager.Current.Startup) return;
+        if (!SettingsManager.IsFirstRun || !SettingsManager.Current.Startup)
+        {
+            return;
+        }
+
         try
         {
             if (IsPackaged)
@@ -409,16 +427,24 @@ public sealed partial class MainWindow : Window
                 var task = await global::Windows.ApplicationModel.StartupTask.GetAsync("LittleLauncherStartup");
                 // Never override DisabledByUser or policy. The manifest supplies the fresh default.
                 if (task.State == global::Windows.ApplicationModel.StartupTaskState.Disabled)
+                {
                     await task.RequestEnableAsync();
+                }
             }
             else
             {
                 string? executable = Environment.ProcessPath;
-                if (string.IsNullOrEmpty(executable) || !File.Exists(executable)) return;
+                if (string.IsNullOrEmpty(executable) || !File.Exists(executable))
+                {
+                    return;
+                }
+
                 using var run = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(
                     @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run");
                 if (run.GetValue("Little Launcher") is null)
+                {
                     run.SetValue("Little Launcher", $"\"{executable}\" --silent");
+                }
             }
         }
         catch (Exception error) { Logger.Warn(error, "Default login startup could not be registered"); }
@@ -428,7 +454,10 @@ public sealed partial class MainWindow : Window
     {
         _wmTrayCallback = RegisterWindowMessage("LittleLauncher_TrayCallback");
         foreach (var launcher in SettingsManager.Current.Launchers)
+        {
             CreateTrayIconForLauncher(launcher);
+        }
+
         SaveSettingsIconToAppData();
     }
 
@@ -454,7 +483,9 @@ public sealed partial class MainWindow : Window
         _trayIcons[launcher.Id] = entry;
 
         if (SettingsManager.Current.IsLauncherEnabled(launcher.Id) && !launcher.NIconHide && !IsHiddenOnThisOperatingSystem(launcher))
+        {
             AddNativeIcon(entry, launcher.Name);
+        }
 
         // Subscribe to launcher property changes to live-update the icon
         launcher.PropertyChanged += (s, e) =>
@@ -472,7 +503,11 @@ public sealed partial class MainWindow : Window
                 case nameof(Launcher.Kind):
                     DispatcherQueue.TryEnqueue(() =>
                     {
-                        if (!launcher.IsSupportedOnThisOperatingSystem) FlyoutWindow.DisposeLauncher(launcher.Id);
+                        if (!launcher.IsSupportedOnThisOperatingSystem)
+                        {
+                            FlyoutWindow.DisposeLauncher(launcher.Id);
+                        }
+
                         UpdateTrayIconVisibility(launcher);
                     });
                     break;
@@ -489,7 +524,11 @@ public sealed partial class MainWindow : Window
     private void AddNativeIcon(TrayIconEntry entry, string? tooltip)
     {
         var tip = (tooltip ?? "");
-        if (tip.Length > 127) tip = tip[..127];
+        if (tip.Length > 127)
+        {
+            tip = tip[..127];
+        }
+
         var data = new NOTIFYICONDATA
         {
             cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
@@ -529,7 +568,10 @@ public sealed partial class MainWindow : Window
         foreach (var entry in _trayIcons.Values)
         {
             if (entry.IsAdded)
+            {
                 RemoveNativeIcon(entry);
+            }
+
             entry.Icon?.Dispose();
         }
         _trayIcons.Clear();
@@ -587,7 +629,11 @@ public sealed partial class MainWindow : Window
             if (!currentIds.Contains(id))
             {
                 var entry = _trayIcons[id];
-                if (entry.IsAdded) RemoveNativeIcon(entry);
+                if (entry.IsAdded)
+                {
+                    RemoveNativeIcon(entry);
+                }
+
                 entry.Icon?.Dispose();
                 _trayIcons.Remove(id);
                 _wmShowFlyoutPerLauncher.Remove(id);
@@ -602,9 +648,13 @@ public sealed partial class MainWindow : Window
         foreach (var launcher in SettingsManager.Current.Launchers)
         {
             if (!_trayIcons.ContainsKey(launcher.Id))
+            {
                 CreateTrayIconForLauncher(launcher);
+            }
             else
+            {
                 RefreshLauncherIcon(launcher);
+            }
         }
 
         SaveSettingsIconToAppData();
@@ -612,7 +662,9 @@ public sealed partial class MainWindow : Window
 
         // A launcher that has been switched between kinds still owns the panel it used to use.
         foreach (var launcher in SettingsManager.Current.Launchers)
+        {
             LauncherPanels.SyncKind(launcher);
+        }
 
         LauncherPanels.WarmUp(this, SettingsManager.Current.Launchers);
 
@@ -632,7 +684,9 @@ public sealed partial class MainWindow : Window
         {
             using var bitmap = ResolveBaseIconBitmap(launcher);
             if (bitmap != null)
+            {
                 return BitmapToIcon(bitmap);
+            }
         }
         catch (Exception ex)
         {
@@ -676,9 +730,17 @@ public sealed partial class MainWindow : Window
     /// </summary>
     internal static byte[]? ExportLauncherGlyphPng(Launcher launcher)
     {
-        if (!TrayIconModes.IsGlyphMode(launcher.TrayIconMode)) return null;
+        if (!TrayIconModes.IsGlyphMode(launcher.TrayIconMode))
+        {
+            return null;
+        }
+
         using var bitmap = ResolveBaseIconBitmap(launcher);
-        if (bitmap is null) return null;
+        if (bitmap is null)
+        {
+            return null;
+        }
+
         using var stream = new MemoryStream();
         bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
         return stream.ToArray();
@@ -692,7 +754,9 @@ public sealed partial class MainWindow : Window
         {
             // Composite mode — 2×2 grid of first 4 item icons
             if (mode == TrayIconModes.Composite)
+            {
                 return RenderCompositeIconBitmap(launcher);
+            }
 
             // Custom user image
             if (mode == TrayIconModes.Custom)
@@ -749,7 +813,10 @@ public sealed partial class MainWindow : Window
 
             // Color presets (fallback to Blue if unknown)
             if (!PresetIcons.TryGetValue(mode, out var name))
+            {
                 name = PresetIcons[TrayIconModes.Blue];
+            }
+
             string pngPath = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcons", $"{name}.png");
             if (File.Exists(pngPath))
             {
@@ -877,7 +944,10 @@ public sealed partial class MainWindow : Window
         // Collect first 4 launchable items (flatten groups)
         var items = new List<LauncherItem>();
         CollectLaunchableItems(launcher.Items, items, 4);
-        if (items.Count == 0) return null;
+        if (items.Count == 0)
+        {
+            return null;
+        }
 
         // 2×2 grid positions, centered on canvas
         int gridWidth = cellSize * 2 + gap;
@@ -905,7 +975,10 @@ public sealed partial class MainWindow : Window
 
             var subIcon = ResolveItemIconBitmap(item.IconPath, item.IconGlyph, item.IconColor, cellSize, dark);
 
-            if (subIcon == null) continue;
+            if (subIcon == null)
+            {
+                continue;
+            }
 
             using (subIcon)
             {
@@ -927,15 +1000,27 @@ public sealed partial class MainWindow : Window
     {
         foreach (var item in source)
         {
-            if (result.Count >= max) return;
-            if (item.IsColumnBreak) continue;
+            if (result.Count >= max)
+            {
+                return;
+            }
+
+            if (item.IsColumnBreak)
+            {
+                continue;
+            }
+
             if (item.IsGroup)
             {
                 CollectLaunchableItems(item.Children, result, max);
                 continue;
             }
             // Headings have no Path and aren't launchable
-            if (string.IsNullOrEmpty(item.Path)) continue;
+            if (string.IsNullOrEmpty(item.Path))
+            {
+                continue;
+            }
+
             result.Add(item);
         }
     }
@@ -961,7 +1046,10 @@ public sealed partial class MainWindow : Window
     {
         var bounds = GetOpaqueContentBounds(original);
         int contentSize = Math.Max(bounds.Width, bounds.Height);
-        if (contentSize <= 0) contentSize = original.Width;
+        if (contentSize <= 0)
+        {
+            contentSize = original.Width;
+        }
 
         // Fill 100% of the canvas so icons appear full-size in tray/taskbar
         float scale = 256f / contentSize;
@@ -997,14 +1085,33 @@ public sealed partial class MainWindow : Window
             {
                 if (bmp.GetPixel(x, y).A > 0)
                 {
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
+                    if (x < minX)
+                    {
+                        minX = x;
+                    }
+
+                    if (x > maxX)
+                    {
+                        maxX = x;
+                    }
+
+                    if (y < minY)
+                    {
+                        minY = y;
+                    }
+
+                    if (y > maxY)
+                    {
+                        maxY = y;
+                    }
                 }
             }
         }
-        if (maxX < minX) return new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height);
+        if (maxX < minX)
+        {
+            return new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height);
+        }
+
         return new System.Drawing.Rectangle(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
@@ -1073,7 +1180,9 @@ public sealed partial class MainWindow : Window
 
             // PNG payloads
             for (int i = 0; i < sizes.Length; i++)
+            {
                 bw.Write(pngEntries[i]);
+            }
         }
 
         return ms.ToArray();
@@ -1120,7 +1229,10 @@ public sealed partial class MainWindow : Window
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
             using var bitmap = ResolveBaseIconBitmap(launcher);
-            if (bitmap == null) return null;
+            if (bitmap == null)
+            {
+                return null;
+            }
 
             bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
             return path;
@@ -1156,7 +1268,10 @@ public sealed partial class MainWindow : Window
             string launcherIcoPath = Path.Combine(appDataDir, $"app-icon-{launcher.Id}.ico");
 
             using var bitmap = ResolveBaseIconBitmap(launcher);
-            if (bitmap == null) return null;
+            if (bitmap == null)
+            {
+                return null;
+            }
 
             var icoBytes = BitmapToIcoBytes(bitmap);
 
@@ -1195,10 +1310,17 @@ public sealed partial class MainWindow : Window
 
             // Always use the blue rocket (app identity) as the base icon
             string bluePng = Path.Combine(AppContext.BaseDirectory, "Resources", "AppIcons", "Blue.png");
-            if (!File.Exists(bluePng)) return null;
+            if (!File.Exists(bluePng))
+            {
+                return null;
+            }
+
             using var original = new System.Drawing.Bitmap(bluePng);
             using var baseBitmap = TrimAndResizeTo256(original);
-            if (baseBitmap == null) return null;
+            if (baseBitmap == null)
+            {
+                return null;
+            }
 
             // Draw gear overlay in the bottom-right corner
             const int overlaySize = 112; // ~44% of 256
@@ -1263,7 +1385,11 @@ public sealed partial class MainWindow : Window
         // wearing a stale icon.
         SaveToastIconToAppData(launcher);
 
-        if (!_trayIcons.TryGetValue(launcher.Id, out var entry)) return;
+        if (!_trayIcons.TryGetValue(launcher.Id, out var entry))
+        {
+            return;
+        }
+
         UpdateTrayIconVisibility(launcher);
         entry.Icon?.Dispose();
         entry.Icon = ResolveTrayIcon(launcher);
@@ -1306,17 +1432,24 @@ public sealed partial class MainWindow : Window
             string appDataDir = GetPhysicalAppDataDir();
             // Remove versioned icon copies (app-icon-{id}-v*.ico)
             foreach (string f in Directory.GetFiles(appDataDir, "app-icon-*-v*.ico"))
+            {
                 try { File.Delete(f); } catch { }
+            }
 
             // Retain every pin snapshot. A cancelled re-pin or an older manual pin may still
             // reference any one of them; the newest file is not evidence that older pins are gone.
 
             // Legacy single-icon versioned files
             foreach (string f in Directory.GetFiles(appDataDir, "app-icon-v*.ico"))
+            {
                 try { File.Delete(f); } catch { }
+            }
+
             string altPath = Path.Combine(appDataDir, "app-icon-alt.ico");
             if (File.Exists(altPath))
+            {
                 try { File.Delete(altPath); } catch { }
+            }
         }
         catch (Exception ex)
         {
@@ -1330,19 +1463,35 @@ public sealed partial class MainWindow : Window
 
     internal void UpdateTrayIconVisibility(Launcher launcher)
     {
-        if (!_trayIcons.TryGetValue(launcher.Id, out var entry)) return;
+        if (!_trayIcons.TryGetValue(launcher.Id, out var entry))
+        {
+            return;
+        }
+
         bool hidden = !SettingsManager.Current.IsLauncherEnabled(launcher.Id) || launcher.NIconHide || IsHiddenOnThisOperatingSystem(launcher);
         if (hidden && entry.IsAdded)
+        {
             RemoveNativeIcon(entry);
+        }
         else if (!hidden && !entry.IsAdded)
+        {
             AddNativeIcon(entry, launcher.Name);
+        }
     }
 
     private void UpdateTrayIconTooltip(Launcher launcher)
     {
-        if (!_trayIcons.TryGetValue(launcher.Id, out var entry) || !entry.IsAdded) return;
+        if (!_trayIcons.TryGetValue(launcher.Id, out var entry) || !entry.IsAdded)
+        {
+            return;
+        }
+
         var tip = (launcher.Name ?? "");
-        if (tip.Length > 127) tip = tip[..127];
+        if (tip.Length > 127)
+        {
+            tip = tip[..127];
+        }
+
         var data = new NOTIFYICONDATA
         {
             cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
@@ -1360,7 +1509,9 @@ public sealed partial class MainWindow : Window
     private static Guid GetTrayIconGuid(string launcherId)
     {
         if (Guid.TryParse(launcherId, out var parsedGuid))
+        {
             return parsedGuid;
+        }
 
         byte[] hash = MD5.HashData(System.Text.Encoding.UTF8.GetBytes("LittleLauncher.Tray." + launcherId));
         hash[6] = (byte)((hash[6] & 0x0F) | 0x30);
@@ -1371,13 +1522,20 @@ public sealed partial class MainWindow : Window
     private void OnSystemThemeChanged(global::Windows.UI.ViewManagement.UISettings sender, object args)
     {
         bool dark = Classes.ThemeManager.IsDarkTheme();
-        if (dark == _lastDarkTheme) return;
+        if (dark == _lastDarkTheme)
+        {
+            return;
+        }
+
         _lastDarkTheme = dark;
 
         DispatcherQueue.TryEnqueue(() =>
         {
             foreach (var launcher in SettingsManager.Current.Launchers)
+            {
                 RefreshLauncherIcon(launcher);
+            }
+
             SaveSettingsIconToAppData();
             SettingsWindow.GetCurrent()?.RefreshIcon();
         });
@@ -1417,12 +1575,17 @@ public sealed partial class MainWindow : Window
             if (anyMissing)
             {
                 foreach (var launcher in SettingsManager.Current.Launchers)
+                {
                     await FaviconService.FetchMissingItemIconsAsync(launcher.Items);
+                }
             }
 
             bool anyRefreshed = await RefreshStaleIconsCoreAsync();
 
-            if (!anyMissing && !anyRefreshed) return;
+            if (!anyMissing && !anyRefreshed)
+            {
+                return;
+            }
 
             ApplyItemIconChanges();
         }
@@ -1441,7 +1604,10 @@ public sealed partial class MainWindow : Window
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         bool changed = false;
         foreach (var launcher in SettingsManager.Current.Launchers)
+        {
             changed |= await FaviconService.RefreshStaleItemIconsAsync(launcher.Items, visited);
+        }
+
         return changed;
     }
 
@@ -1458,7 +1624,10 @@ public sealed partial class MainWindow : Window
         // Composite mode, whose bitmap is built from the first 4 item icons.
         // Use RefreshLauncherIcon (batch-friendly) and SaveSettingsIconToAppData once.
         foreach (var launcher in SettingsManager.Current.Launchers)
+        {
             RefreshLauncherIcon(launcher);
+        }
+
         SaveSettingsIconToAppData();
         SettingsWindow.GetCurrent()?.RefreshIcon();
     }
@@ -1472,7 +1641,11 @@ public sealed partial class MainWindow : Window
     {
         try
         {
-            if (!await RefreshStaleIconsCoreAsync()) return;
+            if (!await RefreshStaleIconsCoreAsync())
+            {
+                return;
+            }
+
             ApplyItemIconChanges();
         }
         catch (Exception ex)
@@ -1487,12 +1660,18 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private async Task CheckForUpdateOnStartupAsync()
     {
-        if (IsPackaged) return;
+        if (IsPackaged)
+        {
+            return;
+        }
 
         try
         {
             var result = await UpdateService.CheckForUpdateAsync();
-            if (result is not { UpdateAvailable: true }) return;
+            if (result is not { UpdateAvailable: true })
+            {
+                return;
+            }
 
             // Tagged, because this one fires on every launch until the update is actually taken.
             // Untagged, a user who ignores it collects one more undismissed toast per start, all
@@ -1527,7 +1706,9 @@ public sealed partial class MainWindow : Window
         for (int i = 1; i < args.Length; i++)
         {
             if (args[i].Equals("--silent", StringComparison.OrdinalIgnoreCase))
+            {
                 return true;
+            }
         }
 
         // MSIX StartupTask activation. The manifest declares a StartupTask
@@ -1538,7 +1719,9 @@ public sealed partial class MainWindow : Window
         {
             var activatedArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
             if (activatedArgs?.Kind == Microsoft.Windows.AppLifecycle.ExtendedActivationKind.StartupTask)
+            {
                 return true;
+            }
         }
         catch { /* Not available or not packaged — treat as normal launch */ }
 
@@ -1571,7 +1754,9 @@ public sealed partial class MainWindow : Window
             changed |= ClearStaleItemIconPaths(launcher.Items);
         }
         if (changed)
+        {
             SettingsManager.SaveSettings();
+        }
     }
 
     private static bool ClearStaleItemIconPaths(IEnumerable<LauncherItem> items)
@@ -1611,7 +1796,10 @@ public sealed partial class MainWindow : Window
 
             using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
-            if (key == null) return;
+            if (key == null)
+            {
+                return;
+            }
 
             const string appName = "Little Launcher";
             var currentValue = key.GetValue(appName) as string;
@@ -1619,7 +1807,9 @@ public sealed partial class MainWindow : Window
             {
                 var executablePath = Environment.ProcessPath;
                 if (!string.IsNullOrEmpty(executablePath) && File.Exists(executablePath))
+                {
                     key.SetValue(appName, $"\"{executablePath}\" --silent");
+                }
             }
         }
         catch { /* best-effort migration */ }
@@ -1632,7 +1822,9 @@ public sealed partial class MainWindow : Window
             using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
             if (key?.GetValue("Little Launcher") != null)
+            {
                 key.DeleteValue("Little Launcher", false);
+            }
         }
         catch { /* best-effort cleanup */ }
     }
@@ -1646,7 +1838,10 @@ public sealed partial class MainWindow : Window
     {
         anchorX = fallbackX;
         anchorY = fallbackY;
-        if (!_trayIcons.TryGetValue(launcherId, out var entry) || !entry.IsAdded) return false;
+        if (!_trayIcons.TryGetValue(launcherId, out var entry) || !entry.IsAdded)
+        {
+            return false;
+        }
 
         var identifier = new NOTIFYICONIDENTIFIER
         {
@@ -1674,17 +1869,23 @@ public sealed partial class MainWindow : Window
 
         var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
         if (launcher == null)
+        {
             return false;
+        }
 
         try
         {
             var element = FindTaskbarLauncherElement(launcher.Name);
             if (element == null)
+            {
                 return false;
+            }
 
             var bounds = element.Current.BoundingRectangle;
             if (bounds.IsEmpty || bounds.Width <= 0 || bounds.Height <= 0)
+            {
                 return false;
+            }
 
             anchorX = (int)Math.Round(bounds.Left + (bounds.Width / 2.0));
             anchorY = (int)Math.Round(bounds.Top + (bounds.Height / 2.0));
@@ -1706,11 +1907,15 @@ public sealed partial class MainWindow : Window
 
         var focusedMatch = MatchLauncherElementOrAncestor(AutomationElement.FocusedElement, expectedName, launcherName);
         if (focusedMatch != null)
+        {
             return focusedMatch;
+        }
 
         var root = AutomationElement.RootElement;
         if (root == null)
+        {
             return null;
+        }
 
         foreach (string taskbarClass in new[] { "Shell_TrayWnd", "Shell_SecondaryTrayWnd" })
         {
@@ -1718,17 +1923,23 @@ public sealed partial class MainWindow : Window
                 TreeScope.Children,
                 new PropertyCondition(AutomationElement.ClassNameProperty, taskbarClass));
             if (taskbar == null)
+            {
                 continue;
+            }
 
             var exactMatch = taskbar.FindFirst(
                 TreeScope.Descendants,
                 BuildLauncherButtonCondition(expectedName));
             if (exactMatch != null)
+            {
                 return exactMatch;
+            }
 
             var partialMatch = FindLauncherButtonBySubstring(taskbar, launcherName);
             if (partialMatch != null)
+            {
                 return partialMatch;
+            }
         }
 
         return null;
@@ -1739,7 +1950,9 @@ public sealed partial class MainWindow : Window
         while (element != null)
         {
             if (IsLauncherButtonMatch(element, expectedName, launcherName))
+            {
                 return element;
+            }
 
             try
             {
@@ -1771,7 +1984,9 @@ public sealed partial class MainWindow : Window
         {
             var button = buttons[i];
             if (IsLauncherButtonMatch(button, null, launcherName))
+            {
                 return button;
+            }
         }
 
         return null;
@@ -1790,7 +2005,9 @@ public sealed partial class MainWindow : Window
         }
 
         if (string.IsNullOrWhiteSpace(name))
+        {
             return false;
+        }
 
         if (!string.IsNullOrEmpty(expectedName) &&
             string.Equals(name, expectedName, StringComparison.OrdinalIgnoreCase))
@@ -1845,7 +2062,10 @@ public sealed partial class MainWindow : Window
                 // Resolve which launcher to show: use named launcherId, fall back to first launcher
                 var targetId = launcherId;
                 if (string.IsNullOrEmpty(targetId))
+                {
                     targetId = SettingsManager.Current.Launchers.FirstOrDefault()?.Id ?? string.Empty;
+                }
+
                 int anchorX = (int)wParam;
                 int anchorY = (int)lParam;
                 TryResolveLauncherAnchorPoint(targetId, anchorX, anchorY, out anchorX, out anchorY);
@@ -1920,14 +2140,20 @@ public sealed partial class MainWindow : Window
         CleanUpStaleFlyoutShortcuts(GetStartMenuProgramsDir());
 
         if (IsPackaged)
+        {
             CleanUpStaleFlyoutShortcuts(GetLegacySharedStartMenuProgramsDir());
+        }
     }
 
     private static void CleanUpStaleFlyoutShortcuts(string startMenuDir)
     {
         try
         {
-            if (!Directory.Exists(startMenuDir)) return;
+            if (!Directory.Exists(startMenuDir))
+            {
+                return;
+            }
+
             foreach (var pattern in new[] { "Little Launcher - *.lnk", "Little Launcher Flyout - *.lnk", "Little Launcher Flyout.lnk" })
             {
                 foreach (var lnk in Directory.GetFiles(startMenuDir, pattern))
@@ -1960,7 +2186,9 @@ public sealed partial class MainWindow : Window
 
             string exePath = Environment.ProcessPath ?? "";
             if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
+            {
                 return;
+            }
 
             Directory.CreateDirectory(startMenuDir);
 
@@ -1969,7 +2197,9 @@ public sealed partial class MainWindow : Window
             {
                 string oldLnk = Path.Combine(startMenuDir, old);
                 if (File.Exists(oldLnk))
+                {
                     File.Delete(oldLnk);
+                }
             }
 
             // Remove MSI-era shortcut that lived in a "Little Launcher" subfolder
@@ -1995,13 +2225,18 @@ public sealed partial class MainWindow : Window
         try
         {
             string startMenuDir = GetLegacySharedStartMenuProgramsDir();
-            if (!Directory.Exists(startMenuDir)) return;
+            if (!Directory.Exists(startMenuDir))
+            {
+                return;
+            }
 
             foreach (string shortcutName in new[] { "Little Launcher.lnk", "LittleLauncher.lnk", "LittleLauncher Settings.lnk" })
             {
                 string shortcutPath = Path.Combine(startMenuDir, shortcutName);
                 if (File.Exists(shortcutPath))
+                {
                     File.Delete(shortcutPath);
+                }
             }
 
             RemoveLegacyMsiSubfolderShortcut(startMenuDir);
@@ -2025,16 +2260,24 @@ public sealed partial class MainWindow : Window
         try
         {
             string subfolder = Path.Combine(startMenuDir, Services.StartMenuShortcutService.FolderName);
-            if (!Directory.Exists(subfolder)) return;
+            if (!Directory.Exists(subfolder))
+            {
+                return;
+            }
 
             foreach (string legacy in new[] { "Little Launcher.lnk", "LittleLauncher.lnk", "LittleLauncher Settings.lnk" })
             {
                 string path = Path.Combine(subfolder, legacy);
-                if (File.Exists(path)) File.Delete(path);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
             }
 
             if (Directory.GetFileSystemEntries(subfolder).Length == 0)
+            {
                 Directory.Delete(subfolder);
+            }
         }
         catch { /* best-effort */ }
     }
@@ -2136,11 +2379,19 @@ public sealed partial class MainWindow : Window
     /// </summary>
     internal static bool HasPinShortcutIdentity(Launcher launcher)
     {
-        if (string.IsNullOrEmpty(launcher.PinAumid)) return false;
+        if (string.IsNullOrEmpty(launcher.PinAumid))
+        {
+            return false;
+        }
+
         try
         {
             string pending = Path.Combine(GetPhysicalAppDataDir(), $"pin-pending-{launcher.Id}.txt");
-            if (File.Exists(pending)) return false;
+            if (File.Exists(pending))
+            {
+                return false;
+            }
+
             string record = Path.Combine(GetPhysicalAppDataDir(), $"pin-shortcut-{launcher.Id}.txt");
             string directory = Path.Combine(GetPhysicalStartMenuProgramsDir(), "Little Launcher Pins", launcher.Id);
             return File.Exists(record)
@@ -2162,7 +2413,10 @@ public sealed partial class MainWindow : Window
             // Source: the companion exe next to the main exe
             string sourceExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LittleLauncherFlyout.exe");
             if (!File.Exists(sourceExe))
+            {
                 return;
+            }
+
             string mainExePath = Environment.ProcessPath ?? "";
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 
@@ -2179,13 +2433,17 @@ public sealed partial class MainWindow : Window
             {
                 string src = Path.Combine(baseDir, "LittleLauncherFlyout" + ext);
                 if (File.Exists(src))
+                {
                     File.Copy(src, Path.Combine(targetDir, "LittleLauncherFlyout" + ext), overwrite: true);
+                }
             }
 
             // Write a breadcrumb so the companion exe can launch the main app
             // if it isn't running (FindWindow returns null).
             if (!string.IsNullOrEmpty(mainExePath))
+            {
                 File.WriteAllText(Path.Combine(targetDir, "main-exe-path.txt"), mainExePath);
+            }
 
             WriteCompanionLanguage();
             UiText.Changed -= OnLanguageChanged;
@@ -2197,7 +2455,9 @@ public sealed partial class MainWindow : Window
                 GetStartMenuProgramsDir(),
                 "Little Launcher Flyout.lnk");
             if (File.Exists(oldLnk))
+            {
                 File.Delete(oldLnk);
+            }
         }
         catch (Exception ex)
         {
@@ -2225,10 +2485,16 @@ public sealed partial class MainWindow : Window
         string description, string iconLocation)
     {
         var shellType = Type.GetTypeFromProgID("WScript.Shell");
-        if (shellType == null) return;
+        if (shellType == null)
+        {
+            return;
+        }
 
         dynamic? shell = Activator.CreateInstance(shellType);
-        if (shell == null) return;
+        if (shell == null)
+        {
+            return;
+        }
 
         try
         {
@@ -2237,7 +2503,10 @@ public sealed partial class MainWindow : Window
             {
                 shortcut.TargetPath = exePath;
                 if (arguments != null)
+                {
                     shortcut.Arguments = arguments;
+                }
+
                 shortcut.WorkingDirectory = Path.GetDirectoryName(exePath);
                 shortcut.Description = description;
                 shortcut.IconLocation = iconLocation;

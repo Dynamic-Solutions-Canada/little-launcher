@@ -43,7 +43,10 @@ public static class SyncDestinations
         foreach (int provider in SyncProviders.Selectable)
         {
             var destination = For(provider);
-            if (destination != null) yield return destination;
+            if (destination != null)
+            {
+                yield return destination;
+            }
         }
     }
 

@@ -42,14 +42,21 @@ internal static class LauncherBulkOps
     private static void InitializePicker(object picker)
     {
         var window = SettingsWindow.GetCurrent();
-        if (window == null) return;
+        if (window == null)
+        {
+            return;
+        }
+
         InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(window));
     }
 
     public static async Task ExportItemsAsync(XamlRoot xamlRoot, Launcher launcher)
     {
         var items = launcher.Items;
-        if (items.Count == 0) return;
+        if (items.Count == 0)
+        {
+            return;
+        }
 
         var picker = new FileSavePicker();
         InitializePicker(picker);
@@ -58,7 +65,10 @@ internal static class LauncherBulkOps
         picker.FileTypeChoices.Add(UiText.Get("launchers.bulk.jsonFiles"), [".json"]);
 
         var file = await picker.PickSaveFileAsync();
-        if (file == null) return;
+        if (file == null)
+        {
+            return;
+        }
 
         try
         {
@@ -81,7 +91,10 @@ internal static class LauncherBulkOps
         picker.FileTypeFilter.Add(".xml");
 
         var file = await picker.PickSingleFileAsync();
-        if (file == null) return;
+        if (file == null)
+        {
+            return;
+        }
 
         List<LauncherItem>? imported;
         try
@@ -123,10 +136,15 @@ internal static class LauncherBulkOps
         };
 
         var result = await modeDialog.ShowAsync();
-        if (result == ContentDialogResult.None) return;
+        if (result == ContentDialogResult.None)
+        {
+            return;
+        }
 
         if (result == ContentDialogResult.Primary)
+        {
             launcher.Items.Clear();
+        }
 
         foreach (var item in imported)
         {
@@ -186,7 +204,11 @@ internal static class LauncherBulkOps
         while (true)
         {
             var step1 = await ShowBookmarkBrowserPickerAsync(xamlRoot, allBrowsers, lastBrowser, lastProfile);
-            if (step1 == null) return;
+            if (step1 == null)
+            {
+                return;
+            }
+
             (lastBrowser, lastProfile) = step1.Value;
 
             // Shared with the single-bookmark picker, so the engine switch and the
@@ -207,18 +229,29 @@ internal static class LauncherBulkOps
             }
 
             var (selected, goBack) = await ShowBookmarkSelectorAsync(xamlRoot, bookmarkRoots);
-            if (goBack) continue;
-            if (selected == null || selected.Count == 0) return;
+            if (goBack)
+            {
+                continue;
+            }
+
+            if (selected == null || selected.Count == 0)
+            {
+                return;
+            }
 
             var newItems = selected
                 .Select(b => new LauncherItem { Name = b.Name, Path = b.Url!, IsWebsite = true })
                 .ToList();
 
             foreach (var item in newItems)
+            {
                 item.NormalizeGlyph();
+            }
 
             foreach (var item in newItems)
+            {
                 launcher.Items.Add(item);
+            }
 
             PersistBulkChange(launcher);
             await FaviconService.FetchMissingItemIconsAsync(newItems);
@@ -241,7 +274,9 @@ internal static class LauncherBulkOps
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         foreach (var b in browsers)
+        {
             browserCombo.Items.Add(b.DisplayName);
+        }
 
         var profileCombo = new ComboBox
         {
@@ -277,7 +312,10 @@ internal static class LauncherBulkOps
                 return;
             }
             foreach (var p in currentProfiles)
+            {
                 profileCombo.Items.Add(p.DisplayName);
+            }
+
             profileCombo.IsEnabled = true;
             profileCombo.SelectedIndex = 0;
         }
@@ -302,7 +340,10 @@ internal static class LauncherBulkOps
                 if (defaultProfile != null)
                 {
                     int pidx = currentProfiles.FindIndex(p => p.DirectoryName == defaultProfile.DirectoryName);
-                    if (pidx >= 0) profileCombo.SelectedIndex = pidx;
+                    if (pidx >= 0)
+                    {
+                        profileCombo.SelectedIndex = pidx;
+                    }
                 }
             }
         }
@@ -328,8 +369,15 @@ internal static class LauncherBulkOps
         dialog.Content = content;
 
         var result = await dialog.ShowAsync();
-        if (result != ContentDialogResult.Primary) return null;
-        if (browserCombo.SelectedIndex < 0 || profileCombo.SelectedIndex < 0) return null;
+        if (result != ContentDialogResult.Primary)
+        {
+            return null;
+        }
+
+        if (browserCombo.SelectedIndex < 0 || profileCombo.SelectedIndex < 0)
+        {
+            return null;
+        }
 
         return (browsers[browserCombo.SelectedIndex], currentProfiles[profileCombo.SelectedIndex]);
     }
@@ -402,8 +450,16 @@ internal static class LauncherBulkOps
         {
             foreach (string term in terms)
             {
-                if (bm.Name.Contains(term, StringComparison.OrdinalIgnoreCase)) continue;
-                if (bm.Url?.Contains(term, StringComparison.OrdinalIgnoreCase) == true) continue;
+                if (bm.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (bm.Url?.Contains(term, StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    continue;
+                }
+
                 return false;
             }
             return true;
@@ -427,7 +483,10 @@ internal static class LauncherBulkOps
         // The tree speaks only for the rows it is showing; anything filtered out keeps its state.
         void SyncChosenFromTree()
         {
-            if (batchUpdating) return;
+            if (batchUpdating)
+            {
+                return;
+            }
 
             var selectedNow = treeView.SelectedNodes
                 .Where(n => nodeMap.TryGetValue(n, out var bm) && !bm.IsFolder)
@@ -437,8 +496,14 @@ internal static class LauncherBulkOps
             foreach (var leaf in visibleLeaves)
             {
                 var bm = nodeMap[leaf];
-                if (selectedNow.Contains(bm)) chosen.Add(bm);
-                else chosen.Remove(bm);
+                if (selectedNow.Contains(bm))
+                {
+                    chosen.Add(bm);
+                }
+                else
+                {
+                    chosen.Remove(bm);
+                }
             }
 
             UpdateCount(visibleLeaves.Count);
@@ -452,7 +517,11 @@ internal static class LauncherBulkOps
 
             if (!bm.IsFolder)
             {
-                if (!selfMatches && !ancestorMatched) return null;
+                if (!selfMatches && !ancestorMatched)
+                {
+                    return null;
+                }
+
                 var leafLabel = new BookmarkLabel(bm.Name);
                 var leafNode = new TreeViewNode { Content = leafLabel };
                 nodeMap[leafNode] = bm;
@@ -466,12 +535,19 @@ internal static class LauncherBulkOps
             foreach (var child in bm.Children)
             {
                 var built = Build(child, terms, isRoot: false, ancestorMatched || selfMatches);
-                if (built == null) continue;
+                if (built == null)
+                {
+                    continue;
+                }
+
                 children.Add(built.Value.Node);
                 leaves += built.Value.Leaves;
             }
 
-            if (children.Count == 0) return null;
+            if (children.Count == 0)
+            {
+                return null;
+            }
 
             var label = new BookmarkLabel($"{bm.Name}  ({leaves})");
             // Searching expands everything: a match buried three folders deep is no use hidden.
@@ -479,7 +555,10 @@ internal static class LauncherBulkOps
             nodeMap[node] = bm;
             contentToNode[label] = node;
             foreach (var child in children)
+            {
                 node.Children.Add(child);
+            }
+
             return (node, leaves);
         }
 
@@ -496,14 +575,19 @@ internal static class LauncherBulkOps
             foreach (var root in roots)
             {
                 var built = Build(root, terms, isRoot: true, ancestorMatched: false);
-                if (built != null) treeView.RootNodes.Add(built.Value.Node);
+                if (built != null)
+                {
+                    treeView.RootNodes.Add(built.Value.Node);
+                }
             }
 
             // Re-tick whatever was already chosen and is visible again.
             foreach (var leaf in visibleLeaves)
             {
                 if (chosen.Contains(nodeMap[leaf]))
+                {
                     treeView.SelectedNodes.Add(leaf);
+                }
             }
 
             batchUpdating = false;
@@ -536,7 +620,9 @@ internal static class LauncherBulkOps
             {
                 chosen.Add(nodeMap[leaf]);
                 if (!treeView.SelectedNodes.Contains(leaf))
+                {
                     treeView.SelectedNodes.Add(leaf);
+                }
             }
             batchUpdating = false;
             UpdateCount(visibleLeaves.Count);
@@ -545,7 +631,10 @@ internal static class LauncherBulkOps
         {
             batchUpdating = true;
             foreach (var leaf in visibleLeaves)
+            {
                 chosen.Remove(nodeMap[leaf]);
+            }
+
             treeView.SelectedNodes.Clear();
             batchUpdating = false;
             UpdateCount(visibleLeaves.Count);
@@ -570,8 +659,15 @@ internal static class LauncherBulkOps
 
         var result = await dialog.ShowAsync();
 
-        if (result == ContentDialogResult.Secondary) return (null, true);   // Back
-        if (result != ContentDialogResult.Primary) return (null, false);    // Cancel
+        if (result == ContentDialogResult.Secondary)
+        {
+            return (null, true);   // Back
+        }
+
+        if (result != ContentDialogResult.Primary)
+        {
+            return (null, false);    // Cancel
+        }
 
         return (chosen.ToList(), false);
     }

@@ -146,7 +146,9 @@ public sealed partial class WebFlyoutWindow
         ClearBookmarkButtons();
 
         foreach (var bookmark in _launcher.WebBookmarks)
+        {
             _bookmarkStrip.Children.Add(BuildBookmarkButton(bookmark));
+        }
 
         ApplyBookmarkBarVisibility();
     }
@@ -188,13 +190,18 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private bool BarHoldsLiveBookmarks()
     {
-        if (_bookmarkStrip.Children.Count != _launcher.WebBookmarks.Count) return false;
+        if (_bookmarkStrip.Children.Count != _launcher.WebBookmarks.Count)
+        {
+            return false;
+        }
 
         for (int i = 0; i < _launcher.WebBookmarks.Count; i++)
         {
             if (_bookmarkStrip.Children[i] is not Button { Tag: WebBookmark bookmark } ||
                 !ReferenceEquals(bookmark, _launcher.WebBookmarks[i]))
+            {
                 return false;
+            }
         }
 
         return true;
@@ -215,7 +222,9 @@ public sealed partial class WebFlyoutWindow
     private void ClearBookmarkButtons()
     {
         foreach (var (bookmark, handler) in _bookmarkHandlers)
+        {
             bookmark.PropertyChanged -= handler;
+        }
 
         _bookmarkHandlers.Clear();
         _bookmarkStrip.Children.Clear();
@@ -225,7 +234,9 @@ public sealed partial class WebFlyoutWindow
     {
         var icon = new Image { Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center };
         if (!bookmark.IsFolder && !string.IsNullOrEmpty(bookmark.IconPath) && File.Exists(bookmark.IconPath))
+        {
             icon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(bookmark.IconPath));
+        }
 
         // A page with no icon yet gets a globe rather than a hole in the row — U+E774, Segoe
         // Fluent's Globe. A folder gets U+E8B7, Segoe Fluent's Folder, and never a favicon: it
@@ -297,7 +308,9 @@ public sealed partial class WebFlyoutWindow
         // nothing.
         // A folder opens its contents; everything else opens a page.
         if (bookmark.IsFolder)
+        {
             button.Click += (_, _) => ShowFolderPopup(bookmark, button);
+        }
         else
         {
             button.Click += (_, _) =>
@@ -312,13 +325,19 @@ public sealed partial class WebFlyoutWindow
         // subscription is skipped once the Button has claimed the press.
         button.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, e) =>
         {
-            if (!e.GetCurrentPoint(button).Properties.IsMiddleButtonPressed) return;
+            if (!e.GetCurrentPoint(button).Properties.IsMiddleButtonPressed)
+            {
+                return;
+            }
 
             e.Handled = true;
 
             // A folder has no page to put in a tab. Still handled, so the gesture does not fall
             // through to the strip's window-move handler.
-            if (!bookmark.IsFolder) OpenBookmark(bookmark, newTab: true);
+            if (!bookmark.IsFolder)
+            {
+                OpenBookmark(bookmark, newTab: true);
+            }
         }), handledEventsToo: true);
 
         // Right-click carries everything that is not "open this", which is the same idiom the item
@@ -340,7 +359,11 @@ public sealed partial class WebFlyoutWindow
             {
                 if (changed == nameof(WebBookmark.IconPath))
                 {
-                    if (string.IsNullOrEmpty(bookmark.IconPath) || !File.Exists(bookmark.IconPath)) return;
+                    if (string.IsNullOrEmpty(bookmark.IconPath) || !File.Exists(bookmark.IconPath))
+                    {
+                        return;
+                    }
+
                     icon.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(bookmark.IconPath))
                     {
                         // The file is rewritten in place when a page reports a new icon, so the
@@ -403,7 +426,10 @@ public sealed partial class WebFlyoutWindow
     private void OpenBookmark(WebBookmark bookmark, bool newTab)
     {
         string url = NormalizeUrl(bookmark.Url);
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         // Behind whatever is on screen, as every browser does for these three gestures: asking for
         // a second tab is not asking to leave the first.
@@ -428,7 +454,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void SendFrontTabTo(string url)
     {
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         _rememberedUrl = url;
 
@@ -441,7 +470,10 @@ public sealed partial class WebFlyoutWindow
         }
 
         // Still starting: its own creation navigates it, and a second Navigate here would race it.
-        if (_activeTab.View.CoreWebView2 == null) return;
+        if (_activeTab.View.CoreWebView2 == null)
+        {
+            return;
+        }
 
         Navigate(url);
     }
@@ -511,7 +543,9 @@ public sealed partial class WebFlyoutWindow
         var bookmarks = launcher.WebBookmarks;
 
         if (index >= 0 && index < bookmarks.Count && JumpListService.BookmarkToken(bookmarks[index]) == token)
+        {
             return bookmarks[index];
+        }
 
         return bookmarks.FirstOrDefault(b => JumpListService.BookmarkToken(b) == token);
     }
@@ -539,12 +573,19 @@ public sealed partial class WebFlyoutWindow
         bool empty = _tabs.Count == 0 && !HasSessionToRestore;
 
         if (empty && !string.IsNullOrEmpty(url))
+        {
             _rememberedUrl = url;
+        }
 
         if (!_isOpen)
+        {
             ShowFlyout(screenX, screenY);
+        }
 
-        if (empty || string.IsNullOrEmpty(url)) return;
+        if (empty || string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         if (_contentPreparation != null)
         {
@@ -575,7 +616,10 @@ public sealed partial class WebFlyoutWindow
             {
                 var sub = new MenuFlyoutSubItem { Text = caption };
                 foreach (var nested in BuildFolderContents(captured))
+                {
                     sub.Items.Add(nested);
+                }
+
                 rows.Add(sub);
                 continue;
             }
@@ -620,7 +664,10 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Shows the star's current answer: is this address in the bar, and can it be?</summary>
     private void UpdateBookmarkStar()
     {
-        if (_bookmarkStar is not { Content: FontIcon glyph }) return;
+        if (_bookmarkStar is not { Content: FontIcon glyph })
+        {
+            return;
+        }
 
         // Always offered. Every web launcher is a list of bookmarks now, so there is always
         // somewhere for this to write — a launcher showing "one address" is one with a single
@@ -637,8 +684,14 @@ public sealed partial class WebFlyoutWindow
         // ClearValue rather than assigning null on the way back. A null local value is not "no
         // local value" — it is a brush of none, which paints nothing, and the star would simply
         // vanish the moment its bookmark was removed.
-        if (saved) glyph.Foreground = (Brush)Application.Current.Resources["AccentTextFillColorPrimaryBrush"];
-        else glyph.ClearValue(IconElement.ForegroundProperty);
+        if (saved)
+        {
+            glyph.Foreground = (Brush)Application.Current.Resources["AccentTextFillColorPrimaryBrush"];
+        }
+        else
+        {
+            glyph.ClearValue(IconElement.ForegroundProperty);
+        }
 
         ToolTipService.SetToolTip(_bookmarkStar,
             saved ? UiText.Get("webBookmarks.removeFromBar") : UiText.Get("webBookmarks.addToBar"));
@@ -661,7 +714,10 @@ public sealed partial class WebFlyoutWindow
     private void ToggleBookmarkForAddress()
     {
         string url = CurrentAddressUrl();
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         if (FindBookmark(url) is { } existing)
         {
@@ -694,7 +750,10 @@ public sealed partial class WebFlyoutWindow
             catch (Exception ex) { Logger.Debug(ex, "Reading the document title failed for launcher {Name}", _launcher.Name); }
         }
 
-        if (string.IsNullOrWhiteSpace(name)) name = HostOf(url);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = HostOf(url);
+        }
 
         var bookmark = new WebBookmark(name, url);
         _launcher.WebBookmarks.Add(bookmark);
@@ -704,8 +763,14 @@ public sealed partial class WebFlyoutWindow
         // it to the front is, which is a gesture with the consequence visible in it.
         PersistBookmarks();
 
-        if (onThisPage) _ = AdoptBookmarkIconAsync(core!, bookmark);
-        else _ = FetchBookmarkIconAsync(_launcher, bookmark);
+        if (onThisPage)
+        {
+            _ = AdoptBookmarkIconAsync(core!, bookmark);
+        }
+        else
+        {
+            _ = FetchBookmarkIconAsync(_launcher, bookmark);
+        }
     }
 
     /// <summary>
@@ -763,7 +828,10 @@ public sealed partial class WebFlyoutWindow
     {
         foreach (var bookmark in within ?? _launcher.WebBookmarks)
         {
-            if (!bookmark.IsFolder) continue;
+            if (!bookmark.IsFolder)
+            {
+                continue;
+            }
 
             string name = string.IsNullOrWhiteSpace(bookmark.Name) ? UiText.Get("webBookmarks.defaultFolderName") : bookmark.Name;
             string path = prefix.Length == 0 ? name : prefix + " / " + name;
@@ -771,7 +839,9 @@ public sealed partial class WebFlyoutWindow
             yield return (bookmark, path);
 
             foreach (var nested in AllFolders(bookmark.Children, path))
+            {
                 yield return nested;
+            }
         }
     }
 
@@ -779,7 +849,10 @@ public sealed partial class WebFlyoutWindow
     private async Task RenameFolderAsync(WebBookmark folder)
     {
         string? renamed = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.renameFolder"), UiText.Get("common.name"), folder.Name, UiText.Get("common.rename"));
-        if (string.IsNullOrWhiteSpace(renamed)) return;
+        if (string.IsNullOrWhiteSpace(renamed))
+        {
+            return;
+        }
 
         folder.Name = renamed.Trim();
         PersistBookmarks();
@@ -789,12 +862,21 @@ public sealed partial class WebFlyoutWindow
     private async Task AddFolderAsync(WebBookmark? parent = null)
     {
         string? name = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.addFolder"), UiText.Get("common.name"), "", UiText.Get("common.add"));
-        if (string.IsNullOrWhiteSpace(name)) return;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
 
         var folder = WebBookmark.CreateFolder(name.Trim());
 
-        if (parent != null) parent.Children.Add(folder);
-        else _launcher.WebBookmarks.Add(folder);
+        if (parent != null)
+        {
+            parent.Children.Add(folder);
+        }
+        else
+        {
+            _launcher.WebBookmarks.Add(folder);
+        }
 
         PersistBookmarks();
     }
@@ -803,10 +885,16 @@ public sealed partial class WebFlyoutWindow
     private async Task AddBookmarkToFolderAsync(WebBookmark folder)
     {
         string? entered = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.addBookmark"), "https://…", "", UiText.Get("common.add"));
-        if (string.IsNullOrWhiteSpace(entered)) return;
+        if (string.IsNullOrWhiteSpace(entered))
+        {
+            return;
+        }
 
         string url = NormalizeUrl(entered);
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         if (FindBookmark(url) != null)
         {
@@ -833,17 +921,25 @@ public sealed partial class WebFlyoutWindow
         // a word, so Remove folder did nothing at all - the third time a top-level-only lookup has
         // silently disabled an action in this file. OwnerOf is the answer to all of them.
         var owner = OwnerOf(folder);
-        if (owner == null) return;
+        if (owner == null)
+        {
+            return;
+        }
 
         int at = owner.IndexOf(folder);
-        if (at < 0) return;
+        if (at < 0)
+        {
+            return;
+        }
 
         owner.RemoveAt(at);
 
         // Its contents come out where it was, in the same collection: deleting a folder is not a
         // request to delete the bookmarks inside it, and there is no undo here.
         foreach (var child in folder.Children.ToList())
+        {
             owner.Insert(at++, child);
+        }
 
         folder.Children.Clear();
         PersistBookmarks();
@@ -856,14 +952,27 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Files a bookmark into a folder, taking it out of wherever it was.</summary>
     private void MoveIntoFolder(WebBookmark bookmark, WebBookmark folder)
     {
-        if (!folder.IsFolder || ReferenceEquals(bookmark, folder)) return;
+        if (!folder.IsFolder || ReferenceEquals(bookmark, folder))
+        {
+            return;
+        }
 
         // A folder cannot be moved into itself or into anything it contains, which would take that
         // whole branch off the bar with no way back to it.
-        if (bookmark.IsFolder && bookmark.Flatten().Contains(folder)) return;
-        if (bookmark.IsFolder && Contains(bookmark, folder)) return;
+        if (bookmark.IsFolder && bookmark.Flatten().Contains(folder))
+        {
+            return;
+        }
 
-        if (!DetachBookmark(bookmark)) return;
+        if (bookmark.IsFolder && Contains(bookmark, folder))
+        {
+            return;
+        }
+
+        if (!DetachBookmark(bookmark))
+        {
+            return;
+        }
 
         folder.Children.Add(bookmark);
         PersistBookmarks();
@@ -894,7 +1003,10 @@ public sealed partial class WebFlyoutWindow
         // At any depth: the bar only shows the top level, but the overflow menu, launcher settings
         // and a folder's own menu all reach further in, and a remove that silently does nothing is
         // a failure this window has already been bitten by once.
-        if (!DetachBookmark(bookmark)) return;
+        if (!DetachBookmark(bookmark))
+        {
+            return;
+        }
 
         PersistBookmarks();
     }
@@ -923,7 +1035,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void UpdateBookmarkOverflowButton()
     {
-        if (_bookmarkOverflow == null) return;
+        if (_bookmarkOverflow == null)
+        {
+            return;
+        }
 
         bool any = _bookmarkStrip.VisibleCount < _bookmarkStrip.Children.Count;
         _bookmarkOverflow.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
@@ -946,7 +1061,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void ShowBookmarkOverflowMenu()
     {
-        if (_bookmarkOverflow == null) return;
+        if (_bookmarkOverflow == null)
+        {
+            return;
+        }
 
         var menu = new MenuFlyout
         {
@@ -957,7 +1075,10 @@ public sealed partial class WebFlyoutWindow
         };
 
         FillBookmarkOverflowMenu(menu);
-        if (menu.Items.Count == 0) return;
+        if (menu.Items.Count == 0)
+        {
+            return;
+        }
 
         menu.Opened += (_, _) => _isMenuOpen = true;
         menu.Closed += (_, _) => _isMenuOpen = false;
@@ -992,7 +1113,10 @@ public sealed partial class WebFlyoutWindow
     {
         for (int i = _bookmarkStrip.VisibleCount; i < _bookmarkStrip.Children.Count; i++)
         {
-            if (_bookmarkStrip.Children[i] is not Button { Tag: WebBookmark bookmark }) continue;
+            if (_bookmarkStrip.Children[i] is not Button { Tag: WebBookmark bookmark })
+            {
+                continue;
+            }
 
             var captured = bookmark;
             string caption = string.IsNullOrWhiteSpace(captured.Name) ? captured.Url : captured.Name;
@@ -1003,7 +1127,9 @@ public sealed partial class WebFlyoutWindow
             {
                 var sub = new MenuFlyoutSubItem { Text = caption };
                 foreach (var row in BuildFolderContents(captured))
+                {
                     sub.Items.Add(row);
+                }
 
                 menu.Items.Add(sub);
                 continue;
@@ -1029,7 +1155,10 @@ public sealed partial class WebFlyoutWindow
 
             item.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, e) =>
             {
-                if (!e.GetCurrentPoint(item).Properties.IsMiddleButtonPressed) return;
+                if (!e.GetCurrentPoint(item).Properties.IsMiddleButtonPressed)
+                {
+                    return;
+                }
 
                 e.Handled = true;
                 menu.Hide();
@@ -1065,7 +1194,10 @@ public sealed partial class WebFlyoutWindow
     {
         row.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, e) =>
         {
-            if (!e.GetCurrentPoint(row).Properties.IsRightButtonPressed) return;
+            if (!e.GetCurrentPoint(row).Properties.IsRightButtonPressed)
+            {
+                return;
+            }
 
             e.Handled = true;
             invoke();
@@ -1073,7 +1205,10 @@ public sealed partial class WebFlyoutWindow
 
         row.ContextRequested += (_, e) =>
         {
-            if (e.TryGetPosition(row, out var _)) return;
+            if (e.TryGetPosition(row, out var _))
+            {
+                return;
+            }
 
             e.Handled = true;
             invoke();
@@ -1096,7 +1231,10 @@ public sealed partial class WebFlyoutWindow
         FlyoutPlacementMode placement = FlyoutPlacementMode.Top)
     {
         var items = BuildBookmarkMenuItems(bookmark);
-        if (items.Count == 0) return;
+        if (items.Count == 0)
+        {
+            return;
+        }
 
         var menu = new MenuFlyout
         {
@@ -1108,7 +1246,9 @@ public sealed partial class WebFlyoutWindow
         };
 
         foreach (var item in items)
+        {
             menu.Items.Add(item);
+        }
 
         menu.Opened += (_, _) => _isMenuOpen = true;
         menu.Closed += (_, _) => _isMenuOpen = false;
@@ -1132,12 +1272,21 @@ public sealed partial class WebFlyoutWindow
         // folder's children. Asking the launcher's top level returned -1 for those and handed back
         // an empty list, so a right-click inside a folder opened nothing at all.
         var owner = OwnerOf(bookmark);
-        if (owner == null) return items;
+        if (owner == null)
+        {
+            return items;
+        }
 
         int index = owner.IndexOf(bookmark);
-        if (index < 0) return items;
+        if (index < 0)
+        {
+            return items;
+        }
 
-        if (bookmark.IsFolder) return BuildFolderMenuItems(bookmark, owner, index, items);
+        if (bookmark.IsFolder)
+        {
+            return BuildFolderMenuItems(bookmark, owner, index, items);
+        }
 
         MenuFlyoutItem Item(string text, Action invoke, bool enabled = true)
         {
@@ -1295,9 +1444,13 @@ public sealed partial class WebFlyoutWindow
         // Where the pointer actually is, not the middle of the bar: the menu is an answer to a
         // right-click, so it belongs where the click was.
         if (e.TryGetPosition(_bookmarkBar, out var point))
+        {
             menu.ShowAt(_bookmarkBar, new FlyoutShowOptions { Position = point });
+        }
         else
+        {
             menu.ShowAt(_bookmarkBar);
+        }
     }
 
     /// <summary>
@@ -1312,10 +1465,16 @@ public sealed partial class WebFlyoutWindow
     private async Task AddBookmarkByAddressAsync()
     {
         string? entered = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.addBookmark"), "https://…", "", UiText.Get("common.add"));
-        if (string.IsNullOrWhiteSpace(entered)) return;
+        if (string.IsNullOrWhiteSpace(entered))
+        {
+            return;
+        }
 
         string url = NormalizeUrl(entered);
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         // Already in the bar: adding it twice is never what was meant, and silently doing nothing
         // reads as the prompt having failed.
@@ -1338,10 +1497,16 @@ public sealed partial class WebFlyoutWindow
         }
 
         var picked = await RunBookmarkPickerAsync();
-        if (picked == null) return;
+        if (picked == null)
+        {
+            return;
+        }
 
         string url = NormalizeUrl(picked.Url);
-        if (string.IsNullOrEmpty(url)) return;
+        if (string.IsNullOrEmpty(url))
+        {
+            return;
+        }
 
         if (FindBookmark(url) != null)
         {
@@ -1362,7 +1527,10 @@ public sealed partial class WebFlyoutWindow
     private async Task RenameBookmarkAsync(WebBookmark bookmark)
     {
         string? renamed = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.renameBookmark"), UiText.Get("common.name"), bookmark.Name, UiText.Get("common.rename"));
-        if (renamed == null) return;
+        if (renamed == null)
+        {
+            return;
+        }
 
         bookmark.Name = string.IsNullOrWhiteSpace(renamed) ? HostOf(bookmark.Url) : renamed.Trim();
         PersistBookmarks();
@@ -1379,10 +1547,16 @@ public sealed partial class WebFlyoutWindow
     private async Task EditBookmarkAddressAsync(WebBookmark bookmark)
     {
         string? entered = await RunTextPromptAsync(UiText.Get("webBookmarks.prompt.editAddress"), "https://…", bookmark.Url, UiText.Get("common.save"));
-        if (entered == null) return;
+        if (entered == null)
+        {
+            return;
+        }
 
         string url = NormalizeUrl(entered);
-        if (string.IsNullOrEmpty(url) || string.Equals(url, bookmark.Url, StringComparison.OrdinalIgnoreCase)) return;
+        if (string.IsNullOrEmpty(url) || string.Equals(url, bookmark.Url, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
 
         bool namedAfterItsHost = string.Equals(bookmark.Name, HostOf(bookmark.Url), StringComparison.OrdinalIgnoreCase);
 
@@ -1390,10 +1564,16 @@ public sealed partial class WebFlyoutWindow
 
         bookmark.Url = url;
         bookmark.IconPath = "";
-        if (wasWhereItOpens) _rememberedUrl = url;
+        if (wasWhereItOpens)
+        {
+            _rememberedUrl = url;
+        }
 
         // A name the user never chose follows the address; one they typed is theirs and stays.
-        if (namedAfterItsHost) bookmark.Name = HostOf(url);
+        if (namedAfterItsHost)
+        {
+            bookmark.Name = HostOf(url);
+        }
 
         PersistBookmarks();
         _ = FetchBookmarkIconAsync(_launcher, bookmark);
@@ -1407,13 +1587,22 @@ public sealed partial class WebFlyoutWindow
     private void MoveBookmark(WebBookmark bookmark, int delta)
     {
         var owner = OwnerOf(bookmark);
-        if (owner == null) return;
+        if (owner == null)
+        {
+            return;
+        }
 
         int from = owner.IndexOf(bookmark);
-        if (from < 0) return;
+        if (from < 0)
+        {
+            return;
+        }
 
         int to = Math.Clamp(from + delta, 0, owner.Count - 1);
-        if (to == from) return;
+        if (to == from)
+        {
+            return;
+        }
 
         owner.Move(from, to);
         PersistBookmarks();
@@ -1422,11 +1611,17 @@ public sealed partial class WebFlyoutWindow
     /// <summary>The collection holding a bookmark, at any depth, or null when nothing does.</summary>
     private ObservableCollection<WebBookmark>? OwnerOf(WebBookmark bookmark)
     {
-        if (_launcher.WebBookmarks.Contains(bookmark)) return _launcher.WebBookmarks;
+        if (_launcher.WebBookmarks.Contains(bookmark))
+        {
+            return _launcher.WebBookmarks;
+        }
 
         foreach (var (folder, _) in AllFolders())
         {
-            if (folder.Children.Contains(bookmark)) return folder.Children;
+            if (folder.Children.Contains(bookmark))
+            {
+                return folder.Children;
+            }
         }
 
         return null;
@@ -1434,7 +1629,11 @@ public sealed partial class WebFlyoutWindow
 
     private static void CopyToClipboard(string text)
     {
-        if (string.IsNullOrWhiteSpace(text)) return;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
         try
         {
             var package = new global::Windows.ApplicationModel.DataTransfer.DataPackage();
@@ -1537,7 +1736,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void ShowFolderDropTarget(Button? button)
     {
-        if (ReferenceEquals(_folderDropTarget, button)) return;
+        if (ReferenceEquals(_folderDropTarget, button))
+        {
+            return;
+        }
 
         if (_folderDropTarget != null)
         {
@@ -1545,7 +1747,10 @@ public sealed partial class WebFlyoutWindow
             _folderDropTarget = null;
         }
 
-        if (button == null) return;
+        if (button == null)
+        {
+            return;
+        }
 
         // Background only, never a border: a border insets the content and reflows the row, which
         // is the non-reflowing rule the flyout's edit-mode affordances follow for the same reason.
@@ -1560,7 +1765,10 @@ public sealed partial class WebFlyoutWindow
 
     private void BookmarkStrip_DragOver(object sender, DragEventArgs e)
     {
-        if (_draggingBookmark == null) return;
+        if (_draggingBookmark == null)
+        {
+            return;
+        }
 
         e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
         e.Handled = true;
@@ -1599,7 +1807,10 @@ public sealed partial class WebFlyoutWindow
         var dragged = _draggingBookmark;
         HideDropCaret();
         ShowFolderDropTarget(null);
-        if (dragged == null) return;
+        if (dragged == null)
+        {
+            return;
+        }
 
         e.Handled = true;
         e.AcceptedOperation = global::Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
@@ -1628,7 +1839,10 @@ public sealed partial class WebFlyoutWindow
         if (from < 0)
         {
             int at = DropIndexFor(e.GetPosition(_bookmarkStrip).X);
-            if (!DetachBookmark(dragged)) return;
+            if (!DetachBookmark(dragged))
+            {
+                return;
+            }
 
             _launcher.WebBookmarks.Insert(Math.Clamp(at, 0, _launcher.WebBookmarks.Count), dragged);
             PersistBookmarks();
@@ -1643,7 +1857,10 @@ public sealed partial class WebFlyoutWindow
         // started and appeared to do nothing, while drops to the left (where the subtraction never
         // applied) worked.
         int to = DropIndexFor(e.GetPosition(_bookmarkStrip).X);
-        if (to == from) return;
+        if (to == from)
+        {
+            return;
+        }
 
         _launcher.WebBookmarks.Move(from, to);
         PersistBookmarks();
@@ -1666,8 +1883,15 @@ public sealed partial class WebFlyoutWindow
 
         foreach (var child in _bookmarkStrip.Children)
         {
-            if (child is not Button { Tag: WebBookmark bookmark } button) continue;
-            if (!bookmark.IsFolder) continue;
+            if (child is not Button { Tag: WebBookmark bookmark } button)
+            {
+                continue;
+            }
+
+            if (!bookmark.IsFolder)
+            {
+                continue;
+            }
 
             var origin = button.TransformToVisual(_bookmarkStrip)
                 .TransformPoint(new global::Windows.Foundation.Point(0, 0));
@@ -1681,11 +1905,21 @@ public sealed partial class WebFlyoutWindow
     {
         foreach (var child in _bookmarkStrip.Children)
         {
-            if (child is not Button { Tag: WebBookmark bookmark } button) continue;
-            if (!bookmark.IsFolder || ReferenceEquals(bookmark, _draggingBookmark)) continue;
+            if (child is not Button { Tag: WebBookmark bookmark } button)
+            {
+                continue;
+            }
+
+            if (!bookmark.IsFolder || ReferenceEquals(bookmark, _draggingBookmark))
+            {
+                continue;
+            }
 
             double width = button.ActualWidth;
-            if (width <= 0) continue;
+            if (width <= 0)
+            {
+                continue;
+            }
 
             // The button's own arranged position, exactly as DropIndexFor reads it. Adding widths
             // up from zero instead was the bug: the row is centred while its bookmarks fit, so
@@ -1698,7 +1932,10 @@ public sealed partial class WebFlyoutWindow
             // target the pointer skids across. Capping the inset makes a wide folder nearly all
             // target while a narrow one keeps just enough edge to drop *beside* it.
             double inset = Math.Min(width * 0.25, 12);
-            if (x >= origin.X + inset && x <= origin.X + width - inset) return bookmark;
+            if (x >= origin.X + inset && x <= origin.X + width - inset)
+            {
+                return bookmark;
+            }
         }
 
         return null;
@@ -1715,16 +1952,31 @@ public sealed partial class WebFlyoutWindow
         int index = 0;
         foreach (var child in _bookmarkStrip.Children)
         {
-            if (child is not Button { Tag: WebBookmark bookmark } button) continue;
-            if (ReferenceEquals(bookmark, _draggingBookmark)) continue;
-            if (button.ActualWidth <= 0) break;
+            if (child is not Button { Tag: WebBookmark bookmark } button)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(bookmark, _draggingBookmark))
+            {
+                continue;
+            }
+
+            if (button.ActualWidth <= 0)
+            {
+                break;
+            }
 
             var origin = button.TransformToVisual(_bookmarkStrip)
                 .TransformPoint(new global::Windows.Foundation.Point(0, 0));
 
             // Laid out left to right, so the first button whose midpoint is past the pointer is
             // the one it lands in front of.
-            if (x <= origin.X + button.ActualWidth / 2) break;
+            if (x <= origin.X + button.ActualWidth / 2)
+            {
+                break;
+            }
+
             index++;
         }
 
@@ -1733,7 +1985,10 @@ public sealed partial class WebFlyoutWindow
 
     private void ShowDropCaretAt(int index)
     {
-        if (_barOverlay == null || _dropCaret == null) return;
+        if (_barOverlay == null || _dropCaret == null)
+        {
+            return;
+        }
 
         // On the row only: an overflowed button is arranged to a zero rect, so anchoring the caret
         // on one would draw it at the left edge of the bar with the pointer at the right.
@@ -1763,7 +2018,10 @@ public sealed partial class WebFlyoutWindow
 
     private void HideDropCaret()
     {
-        if (_dropCaret != null) _dropCaret.Visibility = Visibility.Collapsed;
+        if (_dropCaret != null)
+        {
+            _dropCaret.Visibility = Visibility.Collapsed;
+        }
     }
 
     // ── Plumbing ────────────────────────────────────────────────────
@@ -1796,7 +2054,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private async Task<string?> RunTextPromptAsync(string title, string placeholder, string? initial, string accept)
     {
-        if (_isModalOpen) return null;
+        if (_isModalOpen)
+        {
+            return null;
+        }
 
         _isModalOpen = true;
         SetTopmost(false);
@@ -1829,7 +2090,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private async Task<Services.FlatBookmark?> RunBookmarkPickerAsync()
     {
-        if (_isModalOpen) return null;
+        if (_isModalOpen)
+        {
+            return null;
+        }
 
         _isModalOpen = true;
         SetTopmost(false);
@@ -1869,7 +2133,10 @@ public sealed partial class WebFlyoutWindow
         try
         {
             string? cached = await Services.FaviconService.FetchAndCacheAsync(bookmark.Url);
-            if (string.IsNullOrEmpty(cached) || !File.Exists(cached)) return;
+            if (string.IsNullOrEmpty(cached) || !File.Exists(cached))
+            {
+                return;
+            }
 
             string dest = GetBookmarkIconPath(launcher.Id, bookmark.Url);
             Directory.CreateDirectory(Path.GetDirectoryName(dest)!);

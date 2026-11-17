@@ -24,7 +24,9 @@ internal static class LauncherItemReorder
         ISet<LauncherItem> syntheticGroups)
     {
         if (item.IsColumnBreak || syntheticGroups.Contains(item) || !source.Contains(item))
+        {
             return false;
+        }
 
         bool sourceIsLive = false;
         bool targetIsLive = false;
@@ -46,7 +48,9 @@ internal static class LauncherItemReorder
         }
 
         if (!sourceIsLive || !targetIsLive || (item.IsGroup && !targetIsColumn))
+        {
             return false;
+        }
 
         // Do not duplicate an object if an intervening operation already moved it here.
         return ReferenceEquals(source, target) || !target.Contains(item);
@@ -65,17 +69,23 @@ internal static class LauncherItemReorder
         ISet<LauncherItem> syntheticGroups)
     {
         if (!CanMove(item, source, target, columns, syntheticGroups))
+        {
             return false;
+        }
 
         int sourceIndex = source.IndexOf(item);
         int destinationIndex = System.Math.Clamp(insertionIndex, 0, target.Count);
         if (ReferenceEquals(source, target))
         {
             if (sourceIndex < destinationIndex)
+            {
                 destinationIndex--;
+            }
 
             if (sourceIndex == destinationIndex)
+            {
                 return false;
+            }
 
             source.Move(sourceIndex, destinationIndex);
         }
@@ -100,7 +110,10 @@ internal static class LauncherItemReorder
         foreach (var column in columns)
         {
             if (!firstColumn)
+            {
                 yield return LauncherItem.CreateColumnBreak();
+            }
+
             firstColumn = false;
 
             foreach (var item in column)
@@ -108,7 +121,9 @@ internal static class LauncherItemReorder
                 if (syntheticGroups.Contains(item))
                 {
                     foreach (var child in item.Children)
+                    {
                         yield return child;
+                    }
                 }
                 else
                 {

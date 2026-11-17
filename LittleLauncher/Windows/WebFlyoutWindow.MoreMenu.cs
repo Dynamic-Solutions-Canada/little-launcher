@@ -79,7 +79,9 @@ public sealed partial class WebFlyoutWindow
 
         // Both surfaces enumerate the same definitions, so labels and order cannot drift.
         foreach (var definition in LauncherSettingsSections.All)
+        {
             menu.Items.Add(BuildSettingsSectionMenu(definition));
+        }
 
         menu.Items.Add(new MenuFlyoutSeparator());
 
@@ -176,7 +178,10 @@ public sealed partial class WebFlyoutWindow
     private async Task ReloadIgnoringCacheAsync()
     {
         var core = _webView?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         try
         {
@@ -227,7 +232,10 @@ public sealed partial class WebFlyoutWindow
     private async Task RequestNotificationPermissionAsync()
     {
         var core = _webView?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         string origin;
         try
@@ -280,7 +288,10 @@ public sealed partial class WebFlyoutWindow
         // dismissed, or never drawn because the page declined to ask, would leave the launcher
         // silent with nothing to say why. Only a permission this action itself cleared is restored,
         // and only while it is still unanswered - an answer of Deny is the user's and is left alone.
-        if (cleared) _ = RestoreNotificationPermissionIfUnansweredAsync(core, origin);
+        if (cleared)
+        {
+            _ = RestoreNotificationPermissionIfUnansweredAsync(core, origin);
+        }
     }
 
     /// <summary>How long an unanswered prompt is waited for before the old permission is put back.</summary>
@@ -293,7 +304,9 @@ public sealed partial class WebFlyoutWindow
             await Task.Delay(TimeSpan.FromSeconds(3));
 
             if (await ReadNotificationPermissionAsync(core, origin) != CoreWebView2PermissionState.Default)
+            {
                 return;   // answered, either way round
+            }
         }
 
         try
@@ -319,12 +332,17 @@ public sealed partial class WebFlyoutWindow
         {
             foreach (var setting in await core.Profile.GetNonDefaultPermissionSettingsAsync())
             {
-                if (setting.PermissionKind != CoreWebView2PermissionKind.Notifications) continue;
+                if (setting.PermissionKind != CoreWebView2PermissionKind.Notifications)
+                {
+                    continue;
+                }
 
                 // Stored with a trailing slash; the origin built from Source has none.
                 if (string.Equals(setting.PermissionOrigin.TrimEnd('/'), origin.TrimEnd('/'),
                         StringComparison.OrdinalIgnoreCase))
+                {
                     return setting.PermissionState;
+                }
             }
         }
         catch (Exception ex)
@@ -370,7 +388,10 @@ public sealed partial class WebFlyoutWindow
     private async Task RebuildNotificationBridgeAsync(bool resetPermission = false)
     {
         var core = _webView?.CoreWebView2;
-        if (core == null) return;
+        if (core == null)
+        {
+            return;
+        }
 
         Logger.Info("Rebuilding {Name}'s notification bridge: removing its service worker{Extra}",
             _launcher.Name, resetPermission ? " and resetting notification permission" : "");
@@ -523,12 +544,19 @@ public sealed partial class WebFlyoutWindow
             };
             item.Click += (_, _) =>
             {
-                if (WebAnchors.Normalize(_launcher.WebAnchor) == value) return;
+                if (WebAnchors.Normalize(_launcher.WebAnchor) == value)
+                {
+                    return;
+                }
 
                 _launcher.WebAnchor = value;
 
                 // Except the value that *is* the remembered position — see the settings row.
-                if (value != WebAnchors.LastPosition) _launcher.WebFlyoutPosition = "";
+                if (value != WebAnchors.LastPosition)
+                {
+                    _launcher.WebFlyoutPosition = "";
+                }
+
                 SettingsManager.SaveSettings();
                 Services.AutoSyncService.NotifyLaunchersChanged();
             };
@@ -570,9 +598,15 @@ public sealed partial class WebFlyoutWindow
     private void OpenAppSettings()
     {
         var owner = _owner ?? MainWindow.Current;
-        if (owner == null) return;
+        if (owner == null)
+        {
+            return;
+        }
 
-        if (!_launcher.WebRegularWindow) HideFlyout();
+        if (!_launcher.WebRegularWindow)
+        {
+            HideFlyout();
+        }
 
         SettingsWindow.ShowInstance(owner);
     }

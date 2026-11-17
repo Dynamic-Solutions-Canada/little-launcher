@@ -770,112 +770,128 @@ public sealed partial class WebFlyoutWindow
         // Released on this thread once read; the finalizer releasing it is what kills the process.
         try
         {
-        string? kind = message?["__ll"]?.GetValue<string>();
-        if (kind == "swScript")
-        {
-            string? url = message?["url"]?.GetValue<string>();
-            string type = message?["type"]?.GetValue<string>() ?? "";
-            if (!string.IsNullOrEmpty(url)) _ = WatchServiceWorkerScriptAsync(sender, url, type);
-        }
-        else if (kind == "swBody")
-        {
-            // The script the page fetched, arriving after its announcement rather than with it -
-            // the filter that lets the host mark that request has to exist before it is made.
-            string url = message?["url"]?.GetValue<string>() ?? "";
-            string body = message?["body"]?.GetValue<string>() ?? "";
-
-            Logger.Info("The page fetched {Name}'s worker script {Url}: {Length} chars, starts {Start}",
-                _launcher.Name, url, body.Length, Describe(body));
-
-            if (!string.IsNullOrEmpty(url) && LooksLikeScript(body)) _serviceWorkerBodies[url] = body;
-        }
-        else if (kind == "swAdopt")
-        {
-            bool ok = message?["ok"]?.GetValue<bool>() == true;
-            string url = message?["url"]?.GetValue<string>() ?? "";
-
-            if (ok)
-                Logger.Info("Adopted {Name}'s existing service worker; it now runs wrapped: {Url}", _launcher.Name, url);
-            else
-                Logger.Warn("Could not adopt {Name}'s service worker: {Url} ({Error}). {State}",
-                    _launcher.Name, url, message?["error"]?.GetValue<string>() ?? "",
-                    message?["removed"]?.GetValue<bool>() == true
-                        ? "It had already been unregistered, so the site has none until it registers one again."
-                        : "Left as it was.");
-        }
-        else if (kind == "notifyState")
-        {
-            // The origin is on the line because without it a reading cannot be trusted: the same
-            // launcher reports different answers for its own page and for anything else its browser
-            // happens to load.
-            Logger.Info("Notifications for {Name} on {Origin}: permission {Permission}, {Workers} service worker(s) registered",
-                _launcher.Name,
-                message?["origin"]?.GetValue<string>() ?? "?",
-                message?["permission"]?.GetValue<string>() ?? "",
-                message?["workers"]?.GetValue<int>() ?? 0);
-        }
-        else if (kind == "swStale")
-        {
-            NoteStaleWrap(
-                message?["url"]?.GetValue<string>() ?? "",
-                message?["version"]?.GetValue<string>() ?? "",
-                message?["answered"]?.GetValue<bool>() == true);
-        }
-        else if (kind == "swSkipped")
-        {
-            Logger.Info("Not bridging {Name}'s service worker: {Reason}",
-                _launcher.Name, message?["reason"]?.GetValue<string>() ?? "");
-        }
-        else if (kind == "pageIcon")
-        {
-            AdoptHighResPageIcon(tab, message);
-        }
-        else if (kind == "pageIconProbe")
-        {
-            Logger.Info("Icon probe for {Name}: {Stage} {Size}px {Url} {Detail}",
-                _launcher.Name,
-                message?["stage"]?.GetValue<string>() ?? "",
-                message?["size"]?.GetValue<int>() ?? 0,
-                message?["url"]?.GetValue<string>() ?? "",
-                message?["detail"]?.GetValue<string>() ?? "");
-        }
-        else if (kind == "bgIntent")
-        {
-            _backgroundIntentAt = Environment.TickCount64;
-        }
-        else if (kind == "key")
-        {
-            string? id = message?["id"]?.GetValue<string>();
-            if (!string.IsNullOrEmpty(id)) InvokeShortcut(id);
-        }
-        else if (kind == "notifyRaised")
-        {
-            // Deliberately its own line rather than folded into the toast's. A raise with no
-            // "shown" following it means the notification was lost between the page and Windows,
-            // which is ours; no raise at all means the page never notified, which is not.
-            Logger.Info("Notification: {Name}'s page raised one (tag {Tag}, icon {Icon})",
-                _launcher.Name,
-                message?["tag"]?.GetValue<string>() ?? "",
-                message?["hasIcon"]?.GetValue<bool>() == true ? "yes" : "none");
-        }
-        else if (kind == "notify")
-        {
-            ShowNotificationToast(sender, message!);
-        }
-        else if (kind == "notifyClose")
-        {
-            string? tag = message?["tag"]?.GetValue<string>();
-            if (!string.IsNullOrEmpty(tag)) CloseNotificationToast(tag);
-        }
-        else if (kind == "actions")
-        {
-            string? tag = message?["tag"]?.GetValue<string>();
-            if (!string.IsNullOrEmpty(tag) && message?["actions"] is JsonArray actions)
+            string? kind = message?["__ll"]?.GetValue<string>();
+            if (kind == "swScript")
             {
-                _pendingActions[tag] = (JsonArray)actions.DeepClone();
-                RememberNotificationSource(tag, sender);
+                string? url = message?["url"]?.GetValue<string>();
+                string type = message?["type"]?.GetValue<string>() ?? "";
+                if (!string.IsNullOrEmpty(url))
+                {
+                    _ = WatchServiceWorkerScriptAsync(sender, url, type);
+                }
             }
-        }
+            else if (kind == "swBody")
+            {
+                // The script the page fetched, arriving after its announcement rather than with it -
+                // the filter that lets the host mark that request has to exist before it is made.
+                string url = message?["url"]?.GetValue<string>() ?? "";
+                string body = message?["body"]?.GetValue<string>() ?? "";
+
+                Logger.Info("The page fetched {Name}'s worker script {Url}: {Length} chars, starts {Start}",
+                    _launcher.Name, url, body.Length, Describe(body));
+
+                if (!string.IsNullOrEmpty(url) && LooksLikeScript(body))
+                {
+                    _serviceWorkerBodies[url] = body;
+                }
+            }
+            else if (kind == "swAdopt")
+            {
+                bool ok = message?["ok"]?.GetValue<bool>() == true;
+                string url = message?["url"]?.GetValue<string>() ?? "";
+
+                if (ok)
+                {
+                    Logger.Info("Adopted {Name}'s existing service worker; it now runs wrapped: {Url}", _launcher.Name, url);
+                }
+                else
+                {
+                    Logger.Warn("Could not adopt {Name}'s service worker: {Url} ({Error}). {State}",
+                        _launcher.Name, url, message?["error"]?.GetValue<string>() ?? "",
+                        message?["removed"]?.GetValue<bool>() == true
+                            ? "It had already been unregistered, so the site has none until it registers one again."
+                            : "Left as it was.");
+                }
+            }
+            else if (kind == "notifyState")
+            {
+                // The origin is on the line because without it a reading cannot be trusted: the same
+                // launcher reports different answers for its own page and for anything else its browser
+                // happens to load.
+                Logger.Info("Notifications for {Name} on {Origin}: permission {Permission}, {Workers} service worker(s) registered",
+                    _launcher.Name,
+                    message?["origin"]?.GetValue<string>() ?? "?",
+                    message?["permission"]?.GetValue<string>() ?? "",
+                    message?["workers"]?.GetValue<int>() ?? 0);
+            }
+            else if (kind == "swStale")
+            {
+                NoteStaleWrap(
+                    message?["url"]?.GetValue<string>() ?? "",
+                    message?["version"]?.GetValue<string>() ?? "",
+                    message?["answered"]?.GetValue<bool>() == true);
+            }
+            else if (kind == "swSkipped")
+            {
+                Logger.Info("Not bridging {Name}'s service worker: {Reason}",
+                    _launcher.Name, message?["reason"]?.GetValue<string>() ?? "");
+            }
+            else if (kind == "pageIcon")
+            {
+                AdoptHighResPageIcon(tab, message);
+            }
+            else if (kind == "pageIconProbe")
+            {
+                Logger.Info("Icon probe for {Name}: {Stage} {Size}px {Url} {Detail}",
+                    _launcher.Name,
+                    message?["stage"]?.GetValue<string>() ?? "",
+                    message?["size"]?.GetValue<int>() ?? 0,
+                    message?["url"]?.GetValue<string>() ?? "",
+                    message?["detail"]?.GetValue<string>() ?? "");
+            }
+            else if (kind == "bgIntent")
+            {
+                _backgroundIntentAt = Environment.TickCount64;
+            }
+            else if (kind == "key")
+            {
+                string? id = message?["id"]?.GetValue<string>();
+                if (!string.IsNullOrEmpty(id))
+                {
+                    InvokeShortcut(id);
+                }
+            }
+            else if (kind == "notifyRaised")
+            {
+                // Deliberately its own line rather than folded into the toast's. A raise with no
+                // "shown" following it means the notification was lost between the page and Windows,
+                // which is ours; no raise at all means the page never notified, which is not.
+                Logger.Info("Notification: {Name}'s page raised one (tag {Tag}, icon {Icon})",
+                    _launcher.Name,
+                    message?["tag"]?.GetValue<string>() ?? "",
+                    message?["hasIcon"]?.GetValue<bool>() == true ? "yes" : "none");
+            }
+            else if (kind == "notify")
+            {
+                ShowNotificationToast(sender, message!);
+            }
+            else if (kind == "notifyClose")
+            {
+                string? tag = message?["tag"]?.GetValue<string>();
+                if (!string.IsNullOrEmpty(tag))
+                {
+                    CloseNotificationToast(tag);
+                }
+            }
+            else if (kind == "actions")
+            {
+                string? tag = message?["tag"]?.GetValue<string>();
+                if (!string.IsNullOrEmpty(tag) && message?["actions"] is JsonArray actions)
+                {
+                    _pendingActions[tag] = (JsonArray)actions.DeepClone();
+                    RememberNotificationSource(tag, sender);
+                }
+            }
         }
         finally { ReleaseWebViewObject(e); }
     }
@@ -893,8 +909,14 @@ public sealed partial class WebFlyoutWindow
 
         // Kept both ways round, so a site that switches its worker from a module to a classic one
         // at the same URL is not still served an `import` that a classic worker cannot parse.
-        if (isModule) _moduleWorkerScripts.Add(url);
-        else if (isClassic) _moduleWorkerScripts.Remove(url);
+        if (isModule)
+        {
+            _moduleWorkerScripts.Add(url);
+        }
+        else if (isClassic)
+        {
+            _moduleWorkerScripts.Remove(url);
+        }
 
         // Neither: the page found an already-installed worker and the ServiceWorker interface does
         // not say how it was registered. Guessing is what makes this dangerous rather than merely
@@ -913,10 +935,14 @@ public sealed partial class WebFlyoutWindow
         // Armed before the acknowledgement, because the ack is what releases the page to fetch the
         // script and the interception has to already be running when that request goes out.
         if (!_unwrappableScripts.Contains(url))
+        {
             await InterceptWorkerScriptFetchAsync(core, url);
+        }
 
         if (!_serviceWorkerScripts.TryGetValue(core, out var watched))
+        {
             _serviceWorkerScripts[core] = watched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
 
         if (!watched.Add(url))
         {
@@ -958,9 +984,14 @@ public sealed partial class WebFlyoutWindow
         try
         {
             if (!_fetchInterceptUrls.TryGetValue(core, out var urls))
+            {
                 _fetchInterceptUrls[core] = urls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
 
-            if (!urls.Add(url)) return;
+            if (!urls.Add(url))
+            {
+                return;
+            }
 
             if (!_fetchReceivers.ContainsKey(core))
             {
@@ -973,7 +1004,9 @@ public sealed partial class WebFlyoutWindow
             // and a second enable replaces the first rather than adding to it.
             var patterns = new JsonArray();
             foreach (string pattern in urls)
+            {
                 patterns.Add(new JsonObject { ["urlPattern"] = pattern, ["requestStage"] = "Request" });
+            }
 
             await core.CallDevToolsProtocolMethodAsync(
                 "Fetch.enable", new JsonObject { ["patterns"] = patterns }.ToJsonString());
@@ -995,7 +1028,10 @@ public sealed partial class WebFlyoutWindow
         {
             var parameters = JsonNode.Parse(e.ParameterObjectAsJson);
             requestId = parameters?["requestId"]?.GetValue<string>() ?? "";
-            if (string.IsNullOrEmpty(requestId)) return;
+            if (string.IsNullOrEmpty(requestId))
+            {
+                return;
+            }
 
             var headers = parameters?["request"]?["headers"] as JsonObject;
 
@@ -1010,7 +1046,9 @@ public sealed partial class WebFlyoutWindow
                 foreach (var header in headers)
                 {
                     if (string.Equals(header.Key, PageFetchMarkerHeader, StringComparison.OrdinalIgnoreCase))
+                    {
                         continue;
+                    }
 
                     rewritten.Add(new JsonObject
                     {
@@ -1070,7 +1108,10 @@ public sealed partial class WebFlyoutWindow
     {
         string uri = e.Request.Uri;
 
-        if (!_serviceWorkerScripts.TryGetValue(core, out var watched) || !watched.Contains(uri)) return;
+        if (!_serviceWorkerScripts.TryGetValue(core, out var watched) || !watched.Contains(uri))
+        {
+            return;
+        }
 
         // The page's own fetch of the script, on its way out. It is given the one header a page is
         // not allowed to set for itself and then left to go to the network as it is: what comes back
@@ -1109,7 +1150,10 @@ public sealed partial class WebFlyoutWindow
             ReadHeader(e.Request, "Sec-Fetch-Dest") is { Length: > 0 } dest ? dest : "absent",
             isMainScript ? "wrapping it" : "left alone");
 
-        if (!isMainScript) return;
+        if (!isMainScript)
+        {
+            return;
+        }
 
         // Building the response body is asynchronous, so the request has to be held open — a
         // handler that returns without either a response or a deferral has declined to interfere.
@@ -1186,7 +1230,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private static bool LooksLikeScript(string? body)
     {
-        if (string.IsNullOrWhiteSpace(body)) return false;
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return false;
+        }
 
         string start = body.TrimStart('﻿', ' ', '\t', '\r', '\n');
         return start.Length > 0 && start[0] != '<';
@@ -1213,7 +1260,10 @@ public sealed partial class WebFlyoutWindow
     /// </remarks>
     private void NoteStaleWrap(string url, string version, bool answered)
     {
-        if (_unwrappableScripts.Contains(url) || _wrappedThisSession.Contains(url)) return;
+        if (_unwrappableScripts.Contains(url) || _wrappedThisSession.Contains(url))
+        {
+            return;
+        }
 
         Logger.Info("{Name}'s service worker is not the current wrap ({State}): {Url}",
             _launcher.Name,
@@ -1224,10 +1274,17 @@ public sealed partial class WebFlyoutWindow
     /// <summary>The first line or so of a body, flattened onto one log line.</summary>
     private static string Describe(string? body)
     {
-        if (string.IsNullOrEmpty(body)) return "(nothing)";
+        if (string.IsNullOrEmpty(body))
+        {
+            return "(nothing)";
+        }
 
         string start = body.TrimStart('﻿', ' ', '\t', '\r', '\n');
-        if (start.Length > 120) start = start[..120];
+        if (start.Length > 120)
+        {
+            start = start[..120];
+        }
+
         return "\"" + start.Replace('\r', ' ').Replace('\n', ' ') + "\"";
     }
 
@@ -1275,12 +1332,16 @@ public sealed partial class WebFlyoutWindow
             // servers vary on it, and the browser would have sent it.
             request.Headers.TryAddWithoutValidation("Service-Worker", "script");
             if (!string.IsNullOrEmpty(cookieHeader))
+            {
                 request.Headers.TryAddWithoutValidation("Cookie", cookieHeader);
+            }
 
             try
             {
                 if (!string.IsNullOrEmpty(core.Settings.UserAgent))
+                {
                     request.Headers.TryAddWithoutValidation("User-Agent", core.Settings.UserAgent);
+                }
             }
             catch { }
 
@@ -1402,13 +1463,20 @@ public sealed partial class WebFlyoutWindow
             // is a great deal better than a worker that will not run.
             // Already established that this one cannot be had. Nothing about that changes within a
             // session, so the request goes straight to the site rather than being asked for twice.
-            if (_unwrappableScripts.Contains(original) || _unwrappableScripts.Contains(uri)) return;
+            if (_unwrappableScripts.Contains(original) || _unwrappableScripts.Contains(uri))
+            {
+                return;
+            }
 
             string? originalBody = null;
             if (_serviceWorkerBodies.TryGetValue(original, out string? fromPage) && LooksLikeScript(fromPage))
+            {
                 originalBody = fromPage;
+            }
             else if (_serviceWorkerBodies.TryGetValue(uri, out string? fromPageAtUri) && LooksLikeScript(fromPageAtUri))
+            {
                 originalBody = fromPageAtUri;
+            }
 
             originalBody ??= await TryFetchOriginalScriptAsync(core, original);
 
@@ -1490,13 +1558,22 @@ public sealed partial class WebFlyoutWindow
     /// <summary>The actions a notification declared, if the shim sent any for this tag.</summary>
     private JsonArray? TakePendingActions(string? tag)
     {
-        if (string.IsNullOrEmpty(tag)) return null;
-        if (!_pendingActions.Remove(tag, out var actions)) return null;
+        if (string.IsNullOrEmpty(tag))
+        {
+            return null;
+        }
+
+        if (!_pendingActions.Remove(tag, out var actions))
+        {
+            return null;
+        }
 
         // The dictionary is drained by lookups, and a notification that never arrives would leave
         // its entry behind, so it is also bounded.
         while (_pendingActions.Count > 64)
+        {
             _pendingActions.Remove(_pendingActions.Keys.First());
+        }
 
         return actions;
     }
@@ -1520,19 +1597,32 @@ public sealed partial class WebFlyoutWindow
         Microsoft.Windows.AppNotifications.Builder.AppNotificationBuilder builder, string? tag)
     {
         var actions = TakePendingActions(tag);
-        if (actions == null || string.IsNullOrEmpty(tag)) return;
+        if (actions == null || string.IsNullOrEmpty(tag))
+        {
+            return;
+        }
 
         bool replyBoxAdded = false;
         int added = 0;
 
         foreach (var node in actions)
         {
-            if (added >= MaxNotificationActions) break;
-            if (node is not JsonObject action) continue;
+            if (added >= MaxNotificationActions)
+            {
+                break;
+            }
+
+            if (node is not JsonObject action)
+            {
+                continue;
+            }
 
             string id = action["action"]?.GetValue<string>() ?? "";
             string title = action["title"]?.GetValue<string>() ?? "";
-            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(title)) continue;
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(title))
+            {
+                continue;
+            }
 
             bool wantsText = string.Equals(action["type"]?.GetValue<string>(), "text", StringComparison.Ordinal);
 
@@ -1561,10 +1651,19 @@ public sealed partial class WebFlyoutWindow
     internal static bool TryDeliverAction(string launcherId, IDictionary<string, string> arguments, string reply)
     {
         if (!arguments.TryGetValue("webNotificationAction", out string? action) || string.IsNullOrEmpty(action))
+        {
             return false;
+        }
+
         if (!arguments.TryGetValue("webNotificationTag", out string? tag) || string.IsNullOrEmpty(tag))
+        {
             return false;
-        if (!Instances.TryGetValue(launcherId, out var flyout)) return false;
+        }
+
+        if (!Instances.TryGetValue(launcherId, out var flyout))
+        {
+            return false;
+        }
 
         flyout.DispatchNotificationAction(tag, action, reply);
         return true;
@@ -1581,7 +1680,9 @@ public sealed partial class WebFlyoutWindow
     private void RememberNotificationSource(string tag, CoreWebView2 core)
     {
         while (_notificationSources.Count > 64)
+        {
             _notificationSources.Remove(_notificationSources.Keys.First());
+        }
 
         _notificationSources[tag] = core;
     }
@@ -1591,8 +1692,14 @@ public sealed partial class WebFlyoutWindow
         // The tab that raised it, not the one on screen. Falling back to the active browser covers
         // the single-browser case and a tag whose source has since been closed.
         if (!_notificationSources.TryGetValue(tag, out var core) || core == null)
+        {
             core = _webView?.CoreWebView2;
-        if (core == null) return;
+        }
+
+        if (core == null)
+        {
+            return;
+        }
 
         try
         {

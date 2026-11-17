@@ -10,7 +10,7 @@ Directory.CreateDirectory(root);
 MainWindow.DirectoryPath = Path.Combine(root, "second");
 byte[] png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==");
 int passed = 0;
-void Check(bool value) { if (!value) throw new Exception("Assertion failed"); }
+void Check(bool value) { if (!value) { throw new Exception("Assertion failed"); } }
 async Task Test(string name, Func<Task> body) { await body(); passed++; Console.WriteLine("PASS " + name); }
 try
 {
@@ -191,8 +191,14 @@ try
     {
         var legacy = JsonSerializer.Deserialize<Launcher>("{\"Id\":\"legacy\"}")!;
         Check(legacy.Platform == "windows" && legacy.IsSupportedOnThisOperatingSystem);
-        var source = new Launcher { Id = "platform", Platform = "linux", TrayIconMode = "Glyph:#FF0000:A",
-            TrayIconPreviewMode = "Glyph:#FF0000:A", TrayIconPreviewData = Convert.ToBase64String(png) };
+        var source = new Launcher
+        {
+            Id = "platform",
+            Platform = "linux",
+            TrayIconMode = "Glyph:#FF0000:A",
+            TrayIconPreviewMode = "Glyph:#FF0000:A",
+            TrayIconPreviewData = Convert.ToBase64String(png)
+        };
         Check(!source.IsSupportedOnThisOperatingSystem);
         using var stream = LauncherPayload.Serialize(new ObservableCollection<Launcher> { source });
         var (downloaded, _, _) = LauncherPayload.Deserialize(stream);
@@ -205,8 +211,8 @@ try
         var oldPeer = new Launcher { Id = source.Id, Platform = "linux", TrayIconMode = source.TrayIconMode };
         await LauncherPayload.ApplyAsync([oldPeer]);
         Check(SettingsManager.Current.Launchers.Single().TrayIconPreviewData == source.TrayIconPreviewData);
-        byte[] oversized = (byte[])png.Clone();oversized[16]=0x7f;
-        bool rejected=false;try { PortableLauncherIcon.DecodePreview(Convert.ToBase64String(oversized)); } catch(InvalidDataException) { rejected=true; }
+        byte[] oversized = (byte[])png.Clone(); oversized[16] = 0x7f;
+        bool rejected = false; try { PortableLauncherIcon.DecodePreview(Convert.ToBase64String(oversized)); } catch (InvalidDataException) { rejected = true; }
         Check(rejected);
     });
     Console.WriteLine($"{passed} production sync/model cases passed");

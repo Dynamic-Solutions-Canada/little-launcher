@@ -66,8 +66,9 @@ namespace LittleLauncher.Services
 }
 
 namespace LittleLauncher.Classes { public static class ThemeManager { public static void ApplyAndSaveTheme(int theme) { } } }
-namespace LittleLauncher.Services {
- public static class AutoSyncService { public static void RestartPeriodicTimer() { } }
- public static class StartMenuShortcutService { public static void Sync(ObservableCollection<Launcher> launchers) { } }
+namespace LittleLauncher.Services
+{
+    public static class AutoSyncService { public static void RestartPeriodicTimer() { } }
+    public static class StartMenuShortcutService { public static void Sync(ObservableCollection<Launcher> launchers) { } }
 }
 #pragma warning restore IDE0130

@@ -45,17 +45,35 @@ public sealed partial class WebFlyoutWindow
             // leave non-video fullscreen alone. Never keep polling or fight a manual resize.
             for (int attempt = 0; attempt < 10; attempt++)
             {
-                if (!StillWanted()) return;
+                if (!StillWanted())
+                {
+                    return;
+                }
+
                 string result = await core.ExecuteScriptAsync(FullscreenVideoRatioScript);
-                if (!StillWanted()) return;
+                if (!StillWanted())
+                {
+                    return;
+                }
 
                 if (JsonNode.Parse(result) is JsonValue value && value.TryGetValue<double>(out double ratio) &&
                     double.IsFinite(ratio) && ratio > 0)
                 {
-                    if (!GetWindowRect(_hwnd, out var current)) return;
+                    if (!GetWindowRect(_hwnd, out var current))
+                    {
+                        return;
+                    }
+
                     var monitor = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
-                    if (!GetMonitorInfo(MonitorFromWindow(_hwnd, MONITOR_DEFAULTTONEAREST), ref monitor)) return;
-                    if (!TryFitVideoBounds(current, monitor.rcWork, ratio, GetScale(), _resizeAnchor, out var fitted)) return;
+                    if (!GetMonitorInfo(MonitorFromWindow(_hwnd, MONITOR_DEFAULTTONEAREST), ref monitor))
+                    {
+                        return;
+                    }
+
+                    if (!TryFitVideoBounds(current, monitor.rcWork, ratio, GetScale(), _resizeAnchor, out var fitted))
+                    {
+                        return;
+                    }
 
                     _animationVersion++;
                     _isShowing = false;
@@ -77,7 +95,10 @@ public sealed partial class WebFlyoutWindow
     private static bool TryFitVideoBounds(RECT current, RECT workArea, double ratio, double scale, int anchor, out RECT fitted)
     {
         fitted = current;
-        if (!double.IsFinite(ratio) || ratio <= 0 || !double.IsFinite(scale) || scale <= 0) return false;
+        if (!double.IsFinite(ratio) || ratio <= 0 || !double.IsFinite(scale) || scale <= 0)
+        {
+            return false;
+        }
 
         int inset = (int)Math.Ceiling(GripThickness * scale) * 2;
         int availableWidth = workArea.Right - workArea.Left;
@@ -85,17 +106,28 @@ public sealed partial class WebFlyoutWindow
         double minimumWidth = Math.Max(Math.Ceiling(Launcher.MinWebFlyoutWidth * scale) - inset,
             (Math.Ceiling(Launcher.MinWebFlyoutHeight * scale) - inset) * ratio);
         double maximumWidth = Math.Min(availableWidth - inset, (availableHeight - inset) * ratio);
-        if (minimumWidth > maximumWidth || maximumWidth <= 0) return false;
+        if (minimumWidth > maximumWidth || maximumWidth <= 0)
+        {
+            return false;
+        }
+
         double width = Math.Clamp(current.Right - current.Left - inset, minimumWidth, maximumWidth);
         double height = width / ratio;
-        if (width <= 0 || height <= 0) return false;
+        if (width <= 0 || height <= 0)
+        {
+            return false;
+        }
+
         int outerWidth = (int)Math.Round(width) + inset;
         int outerHeight = (int)Math.Round(height) + inset;
         // Pathological ratios or tiny work areas cannot fit within usable window dimensions.
         // Leave the current size alone rather than inventing a ratio.
         if (outerWidth < Math.Ceiling(Launcher.MinWebFlyoutWidth * scale) ||
             outerHeight < Math.Ceiling(Launcher.MinWebFlyoutHeight * scale) ||
-            outerWidth > availableWidth || outerHeight > availableHeight) return false;
+            outerWidth > availableWidth || outerHeight > availableHeight)
+        {
+            return false;
+        }
 
         // Preserve the point this window was placed around, including temporary preset moves.
         // Work from its current rectangle so a dragged launcher never jumps back to a screen corner.

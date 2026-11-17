@@ -39,7 +39,11 @@ internal static class ShellIcons
             for (int attempt = 0; ; attempt++)
             {
                 hr = factory.GetImage(sz, 0, out hBitmap);
-                if (hr == 0 && hBitmap != IntPtr.Zero) break;
+                if (hr == 0 && hBitmap != IntPtr.Zero)
+                {
+                    break;
+                }
+
                 if (hr == E_PENDING && attempt < 15) { Thread.Sleep(40); continue; }
                 Logger.Debug($"ShellIcons: GetImage 0x{hr:X8} (attempt {attempt}) for {parsingName}");
                 return null;
@@ -73,7 +77,10 @@ internal static class ShellIcons
             IntPtr hDib = CreateDIBSection(hdcDst, ref bmi, DIB_RGB_COLORS, out IntPtr dibBits, IntPtr.Zero, 0);
             try
             {
-                if (hDib == IntPtr.Zero || dibBits == IntPtr.Zero) return null;
+                if (hDib == IntPtr.Zero || dibBits == IntPtr.Zero)
+                {
+                    return null;
+                }
 
                 IntPtr oldSrc = SelectObject(hdcSrc, hBitmap);
                 IntPtr oldDst = SelectObject(hdcDst, hDib);
@@ -87,14 +94,22 @@ internal static class ShellIcons
             }
             finally
             {
-                if (hDib != IntPtr.Zero) DeleteObject(hDib);
+                if (hDib != IntPtr.Zero)
+                {
+                    DeleteObject(hDib);
+                }
+
                 DeleteDC(hdcSrc);
                 DeleteDC(hdcDst);
             }
         }
         finally
         {
-            if (hBitmap != IntPtr.Zero) DeleteObject(hBitmap);
+            if (hBitmap != IntPtr.Zero)
+            {
+                DeleteObject(hBitmap);
+            }
+
             Marshal.ReleaseComObject(factory);
         }
     }

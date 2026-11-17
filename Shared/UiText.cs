@@ -41,7 +41,11 @@ internal static partial class UiText
     internal static void Configure(Func<string?> languageOverride, Func<IEnumerable<string>>? devicePreferences = null)
     {
         _override = languageOverride;
-        if (devicePreferences != null) _devicePreferences = devicePreferences;
+        if (devicePreferences != null)
+        {
+            _devicePreferences = devicePreferences;
+        }
+
         _deviceLocale = null;
     }
 
@@ -68,8 +72,16 @@ internal static partial class UiText
     internal static string Get(string key)
     {
         string catalog = SupportedLanguages.Catalogs[Locale];
-        if (ReadCatalog(catalog).TryGetValue(key, out string? text)) return text;
-        if (ReadCatalog(SupportedLanguages.Default).TryGetValue(key, out text)) return text;
+        if (ReadCatalog(catalog).TryGetValue(key, out string? text))
+        {
+            return text;
+        }
+
+        if (ReadCatalog(SupportedLanguages.Default).TryGetValue(key, out text))
+        {
+            return text;
+        }
+
         return key;
     }
 
@@ -122,7 +134,10 @@ internal static partial class UiText
 
     private static string Fill(string template, (string Name, object? Value)[] values)
     {
-        if (values.Length == 0) return template;
+        if (values.Length == 0)
+        {
+            return template;
+        }
 
         return PlaceholderPattern().Replace(template, match =>
         {
@@ -130,7 +145,9 @@ internal static partial class UiText
             foreach (var (candidate, value) in values)
             {
                 if (candidate == name)
+                {
                     return Convert.ToString(value, FormatCulture) ?? "";
+                }
             }
 
             return match.Value;
@@ -163,7 +180,10 @@ internal static partial class UiText
     {
         lock (Catalogs)
         {
-            if (Catalogs.TryGetValue(locale, out var cached)) return cached;
+            if (Catalogs.TryGetValue(locale, out var cached))
+            {
+                return cached;
+            }
 
             var merged = new Dictionary<string, string>(StringComparer.Ordinal);
             Assembly assembly = typeof(UiText).Assembly;
@@ -173,18 +193,29 @@ internal static partial class UiText
             {
                 // MSBuild's RecursiveDir keeps the folder separator in the logical name.
                 string normalized = name.Replace('\\', '.').Replace('/', '.');
-                if (!normalized.StartsWith(prefix, StringComparison.Ordinal)) continue;
+                if (!normalized.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    continue;
+                }
 
                 try
                 {
                     using Stream? stream = assembly.GetManifestResourceStream(name);
-                    if (stream == null) continue;
+                    if (stream == null)
+                    {
+                        continue;
+                    }
 
                     var entries = JsonSerializer.Deserialize(stream, UiTextJsonContext.Default.DictionaryStringString);
-                    if (entries == null) continue;
+                    if (entries == null)
+                    {
+                        continue;
+                    }
 
                     foreach (var (key, value) in entries)
+                    {
                         merged[key] = value;
+                    }
                 }
                 catch (JsonException)
                 {

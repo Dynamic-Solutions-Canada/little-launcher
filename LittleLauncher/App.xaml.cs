@@ -30,7 +30,9 @@ public partial class App : Application
         // hosted browser silently supports no dragging: not within the page, not from outside.
         int oleResult = NativeMethods.OleInitialize(IntPtr.Zero);
         if (oleResult < 0)
+        {
             NLog.LogManager.GetCurrentClassLogger().Warn("OleInitialize failed (0x{0:X}); drag and drop inside web flyouts will not work", oleResult);
+        }
 
         // Log unhandled exceptions before the process dies
         AppDomain.CurrentDomain.UnhandledException += (sender, a) =>

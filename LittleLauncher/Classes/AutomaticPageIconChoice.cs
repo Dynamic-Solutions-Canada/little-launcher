@@ -44,7 +44,8 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
         var label = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         label.Children.Add(new TextBlock
         {
-            Text = UiText.Get("icons.pageIcon.choice"), FontWeight = Microsoft.UI.Text.FontWeights.Medium,
+            Text = UiText.Get("icons.pageIcon.choice"),
+            FontWeight = Microsoft.UI.Text.FontWeights.Medium,
             TextWrapping = TextWrapping.Wrap
         });
         label.Children.Add(_status);
@@ -59,7 +60,8 @@ internal sealed class AutomaticPageIconChoice : Grid, IDisposable
             Content = content,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            Padding = new Thickness(12, 8, 12, 8), BorderThickness = new Thickness(0)
+            Padding = new Thickness(12, 8, 12, 8),
+            BorderThickness = new Thickness(0)
         };
         AutomationProperties.SetName(SelectButton, UiText.Get("icons.pageIcon.choice"));
         SelectButton.Click += (_, _) => onSelected();

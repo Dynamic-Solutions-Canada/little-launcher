@@ -37,7 +37,10 @@ public sealed partial class WebFlyoutWindow
             return false;
         }
 
-        if (!IsBrowserPage(uri)) return false;
+        if (!IsBrowserPage(uri))
+        {
+            return false;
+        }
 
         e.Cancel = true;
 
