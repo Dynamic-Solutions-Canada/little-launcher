@@ -246,17 +246,12 @@ public partial class SystemPage : Page
         var lines = _reclaimableProfiles
             .Select(f => $"• {f.Description} ({Services.WebProfileCleanupService.FormatSize(f.Bytes)})");
 
-        var dialog = new ContentDialog
-        {
-            XamlRoot = XamlRoot,
-            Title = UiText.Get("system.profiles.deleteTitle"),
-            Content = UiText.Format("system.profiles.deleteMessage", ("profiles", string.Join(NewLine, lines))),
-            PrimaryButtonText = UiText.Get("common.delete"),
-            CloseButtonText = UiText.Get("common.cancel"),
-            DefaultButton = ContentDialogButton.Close,
-        };
-
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+        if (SettingsWindow.GetCurrent() is not { } window
+            || !await WinUIAppKit.Windowing.ConfirmDialog.ConfirmAsync(
+                window,
+                UiText.Get("system.profiles.deleteTitle"),
+                UiText.Format("system.profiles.deleteMessage", ("profiles", string.Join(NewLine, lines))),
+                UiText.Get("common.delete")))
         {
             return;
         }

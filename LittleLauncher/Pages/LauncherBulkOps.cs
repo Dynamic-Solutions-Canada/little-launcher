@@ -78,7 +78,7 @@ internal static class LauncherBulkOps
         }
         catch (Exception ex)
         {
-            await ShowMessageAsync(xamlRoot, UiText.Get("launchers.bulk.exportFailed"), ex.Message);
+            await Classes.MessageDialog.ShowAsync(xamlRoot, UiText.Get("launchers.bulk.exportFailed"), ex.Message);
         }
     }
 
@@ -113,7 +113,7 @@ internal static class LauncherBulkOps
         }
         catch (Exception ex)
         {
-            await ShowMessageAsync(xamlRoot,
+            await Classes.MessageDialog.ShowAsync(xamlRoot,
                 UiText.Get("launchers.bulk.importFailed"),
                 UiText.Format("launchers.bulk.readFailed", ("error", ex.Message)));
             return;
@@ -121,7 +121,7 @@ internal static class LauncherBulkOps
 
         if (imported == null || imported.Count == 0)
         {
-            await ShowMessageAsync(xamlRoot, UiText.Get("launchers.bulk.importTitle"), UiText.Get("launchers.bulk.noItems"));
+            await Classes.MessageDialog.ShowAsync(xamlRoot, UiText.Get("launchers.bulk.importTitle"), UiText.Get("launchers.bulk.noItems"));
             return;
         }
 
@@ -160,18 +160,6 @@ internal static class LauncherBulkOps
         FlyoutWindow.InvalidateItems(launcher.Id);
     }
 
-    private static async Task ShowMessageAsync(XamlRoot xamlRoot, string title, string message)
-    {
-        var dialog = new ContentDialog
-        {
-            XamlRoot = xamlRoot,
-            Title = title,
-            Content = message,
-            CloseButtonText = UiText.Get("common.ok")
-        };
-        await dialog.ShowAsync();
-    }
-
     // -- Bookmark import --
 
     /// <summary>Wraps a bookmark label string so TreeView can display it via ToString()
@@ -187,14 +175,9 @@ internal static class LauncherBulkOps
 
         if (allBrowsers.Count == 0)
         {
-            var d = new ContentDialog
-            {
-                XamlRoot = xamlRoot,
-                Title = UiText.Get("launchers.bookmarks.noBrowsersTitle"),
-                Content = UiText.Get("launchers.bookmarks.noBrowsersMessage"),
-                CloseButtonText = UiText.Get("common.ok")
-            };
-            await d.ShowAsync();
+            await Classes.MessageDialog.ShowAsync(xamlRoot,
+                UiText.Get("launchers.bookmarks.noBrowsersTitle"),
+                UiText.Get("launchers.bookmarks.noBrowsersMessage"));
             return;
         }
 
@@ -217,14 +200,9 @@ internal static class LauncherBulkOps
 
             if (bookmarkRoots.Count == 0 || bookmarkRoots.Sum(r => r.CountLeaves()) == 0)
             {
-                var d = new ContentDialog
-                {
-                    XamlRoot = xamlRoot,
-                    Title = UiText.Get("launchers.bookmarks.noBookmarksTitle"),
-                    Content = UiText.Format("launchers.bookmarks.noBookmarksMessage", ("browser", lastBrowser.DisplayName)),
-                    CloseButtonText = UiText.Get("common.ok")
-                };
-                await d.ShowAsync();
+                await Classes.MessageDialog.ShowAsync(xamlRoot,
+                    UiText.Get("launchers.bookmarks.noBookmarksTitle"),
+                    UiText.Format("launchers.bookmarks.noBookmarksMessage", ("browser", lastBrowser.DisplayName)));
                 continue;
             }
 

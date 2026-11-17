@@ -48,7 +48,7 @@ internal static class BookmarkPicker
     {
         if (!AnyBrowsersInstalled)
         {
-            await ShowMessageAsync(xamlRoot, UiText.Get("bookmarkPicker.noBrowsersTitle"), NoBrowsersMessage);
+            await Classes.MessageDialog.ShowAsync(xamlRoot, UiText.Get("bookmarkPicker.noBrowsersTitle"), NoBrowsersMessage);
             return null;
         }
 
@@ -82,17 +82,6 @@ internal static class BookmarkPicker
         return confirmed ? view.Selected : null;
     }
 
-    private static async Task ShowMessageAsync(XamlRoot xamlRoot, string title, string message)
-    {
-        var dialog = new ContentDialog
-        {
-            XamlRoot = xamlRoot,
-            Title = title,
-            Content = message,
-            CloseButtonText = UiText.Get("common.ok"),
-        };
-        await dialog.ShowAsync();
-    }
 }
 
 /// <summary>

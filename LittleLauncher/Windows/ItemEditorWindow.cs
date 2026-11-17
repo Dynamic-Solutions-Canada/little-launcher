@@ -1289,18 +1289,12 @@ public sealed class ItemEditorWindow : Window
         };
         deleteButton.Click += async (s, ev) =>
         {
-            var confirm = new ContentDialog
-            {
-                XamlRoot = Content.XamlRoot,
-                Title = UiText.Get("itemEditor.delete.title"),
-                Content = string.IsNullOrWhiteSpace(existingItem?.Name)
-                    ? UiText.Get("itemEditor.delete.messageUnnamed")
-                    : UiText.Format("itemEditor.delete.message", ("name", existingItem!.Name)),
-                PrimaryButtonText = UiText.Get("common.delete"),
-                CloseButtonText = UiText.Get("common.cancel"),
-                DefaultButton = ContentDialogButton.Close,
-            };
-            if (await confirm.ShowAsync() != ContentDialogResult.Primary)
+            // The kit's one yes/no question (UI-6): Cancel is the default button.
+            string body = string.IsNullOrWhiteSpace(existingItem?.Name)
+                ? UiText.Get("itemEditor.delete.messageUnnamed")
+                : UiText.Format("itemEditor.delete.message", ("name", existingItem!.Name));
+            if (!await WinUIAppKit.Windowing.ConfirmDialog.ConfirmAsync(
+                this, UiText.Get("itemEditor.delete.title"), body, UiText.Get("common.delete")))
             {
                 return;
             }

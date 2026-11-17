@@ -482,17 +482,7 @@ public sealed partial class LauncherSettingsWindow : Window
         }
     }
 
-    private async Task ShowErrorAsync(string message)
-    {
-        var dialog = new ContentDialog
-        {
-            XamlRoot = Content.XamlRoot,
-            Title = UiText.Get("common.error"),
-            Content = message,
-            CloseButtonText = UiText.Get("common.ok"),
-        };
-        await dialog.ShowAsync();
-    }
+    private Task ShowErrorAsync(string message) => Classes.MessageDialog.ShowErrorAsync(Content.XamlRoot, message);
 
     private FrameworkElement BuildForm(Launcher launcher)
     {

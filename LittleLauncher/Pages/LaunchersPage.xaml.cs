@@ -727,16 +727,10 @@ public sealed partial class LaunchersPage : Page
 
         if (!enable)
         {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = this.XamlRoot,
-                Title = UiText.Get("launchers.disable.title"),
-                Content = UiText.Get("launchers.disable.message"),
-                PrimaryButtonText = UiText.Get("launchers.disable.confirm"),
-                CloseButtonText = UiText.Get("common.cancel"),
-                DefaultButton = ContentDialogButton.Close,
-            };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            if (!await ConfirmAsync(
+                UiText.Get("launchers.disable.title"),
+                UiText.Get("launchers.disable.message"),
+                UiText.Get("launchers.disable.confirm")))
             {
                 // Handler is a no-op on re-entry: the stored state already equals IsOn.
                 toggle.IsOn = true;
@@ -759,6 +753,14 @@ public sealed partial class LaunchersPage : Page
         RebuildLauncherCards();
     }
 
+    /// <summary>
+    /// Asks a yes/no question on the settings window through the kit's <c>ConfirmDialog</c> (UI-6),
+    /// with Cancel as the default. False when the window has gone or the user did not confirm.
+    /// </summary>
+    private static async Task<bool> ConfirmAsync(string title, string body, string confirmText) =>
+        SettingsWindow.GetCurrent() is { } window
+        && await WinUIAppKit.Windowing.ConfirmDialog.ConfirmAsync(window, title, body, confirmText);
+
     private async void DeleteLauncher_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement fe || fe.Tag is not Launcher launcher)
@@ -772,18 +774,10 @@ public sealed partial class LaunchersPage : Page
             return;
         }
 
-        var dialog = new ContentDialog
-        {
-            XamlRoot = this.XamlRoot,
-            Title = UiText.Get("launchers.delete.title"),
-            Content = UiText.Format("launchers.delete.message", ("launcher", launcher.Name)),
-            PrimaryButtonText = UiText.Get("common.delete"),
-            CloseButtonText = UiText.Get("common.cancel"),
-            DefaultButton = ContentDialogButton.Close,
-        };
-
-        var result = await dialog.ShowAsync();
-        if (result != ContentDialogResult.Primary)
+        if (!await ConfirmAsync(
+            UiText.Get("launchers.delete.title"),
+            UiText.Format("launchers.delete.message", ("launcher", launcher.Name)),
+            UiText.Get("common.delete")))
         {
             return;
         }
@@ -1498,17 +1492,7 @@ public sealed partial class LaunchersPage : Page
         return passwordBox.Password;
     }
 
-    private async Task ShowErrorDialog(string message)
-    {
-        var dialog = new ContentDialog
-        {
-            XamlRoot = this.XamlRoot,
-            Title = UiText.Get("common.error"),
-            Content = message,
-            CloseButtonText = UiText.Get("common.ok"),
-        };
-        await dialog.ShowAsync();
-    }
+    private Task ShowErrorDialog(string message) => Classes.MessageDialog.ShowErrorAsync(XamlRoot, message);
 
     private static T? FindChild<T>(DependencyObject parent, string name) where T : FrameworkElement
     {
