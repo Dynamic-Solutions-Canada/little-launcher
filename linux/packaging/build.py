@@ -83,7 +83,7 @@ def stage(appdir,engine,version):
     certificates=appdir/'usr/share/little-launcher';certificates.mkdir(parents=True)
     shutil.copy2('/etc/ssl/certs/ca-certificates.crt',certificates/'ca-certificates.crt')
     licenses=appdir/'usr/share/licenses/little-launcher';licenses.mkdir(parents=True)
-    shutil.copy2(ROOT/'LICENSE.md',licenses/'LICENSE.md')
+    shutil.copy2(ROOT/'LICENSE',licenses/'LICENSE')
     shutil.copytree(SOURCE/'packaging/licenses',licenses/'bundled-runtime')
     system_licenses=appdir/'usr/share/licenses/system';system_licenses.mkdir(parents=True)
     for package in ['python3.11','python3.11-minimal','libpython3.11-stdlib','libpython3.11-minimal','qdbus-qt6','libsecret-tools']:

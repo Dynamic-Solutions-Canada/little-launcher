@@ -15,148 +15,76 @@
 </p>
 
 <p align="center">
-  <a href="#install">Windows downloads</a> &middot; <a href="#linux">Linux AppImage</a>
-</p>
-
-<p align="center">
-  <img src="LittleLauncher/Resources/AppIcons/Blue.png" width="48">&nbsp;
-  <img src="LittleLauncher/Resources/AppIcons/Green.png" width="48">&nbsp;
-  <img src="LittleLauncher/Resources/AppIcons/Teal.png" width="48">&nbsp;
-  <img src="LittleLauncher/Resources/AppIcons/Red.png" width="48">&nbsp;
-  <img src="LittleLauncher/Resources/AppIcons/Orange.png" width="48">&nbsp;
-  <img src="LittleLauncher/Resources/AppIcons/Purple.png" width="48">
-</p>
-
-<p align="center">Screenshots below show the Windows version.</p>
-
-<p align="center">
-  <img src="docs/icon-launcher.png" alt="Flyout — icon view" width="300">
-  &nbsp;&nbsp;
-  <img src="docs/list-launcher.png" alt="Flyout — list view" width="300">
-</p>
-
-<p align="center">
-  <img src="docs/web-launcher.png" alt="Web launcher — a Home Assistant dashboard in the flyout" width="270">
+  <img src="store-assets/web/screenshots/01-icon-flyout-dark.png" alt="A launcher's flyout in icon view, opened from the taskbar" width="250">
   &nbsp;
-  <img src="docs/web-launcher-cameras.png" alt="Web launcher — camera feeds in the flyout" width="270">
+  <img src="store-assets/web/screenshots/04-list-flyout-columns-dark.png" alt="A launcher's flyout in list view, with groups in several columns" width="250">
   &nbsp;
-  <img src="docs/web-launcher-video.png" alt="Web launcher — a video site in the flyout" width="270">
+  <img src="store-assets/web/screenshots/05-launchers-page-dark.png" alt="The Launchers page in Settings" width="250">
 </p>
 
 <p align="center">
-  <img src="docs/icon-launcher-multiple-cols.png" alt="Flyout — icon view with multiple columns" width="720">
+  <img src="store-assets/web/screenshots/09-web-launcher-dashboard-dark.png" alt="Web launcher: a Home Assistant dashboard in the flyout" width="250">
+  &nbsp;
+  <img src="store-assets/web/screenshots/10-web-launcher-cameras-dark.png" alt="Web launcher: camera feeds in the flyout" width="250">
+  &nbsp;
+  <img src="store-assets/web/screenshots/11-web-launcher-video-dark.png" alt="Web launcher: a video site in the flyout" width="250">
 </p>
 
-<p align="center">
-  <img src="docs/list-launcher-multiple-cols.png" alt="Flyout — list view with multiple columns" width="720">
-</p>
+Little Launcher puts named launchers in your system tray. Click one and a flyout opens with your app and website shortcuts, or with a web page of its own, such as a dashboard, webmail or a chat app, one click away and signed in. It is for anyone who keeps reaching for the same handful of apps and sites and wants them a click from the taskbar on every PC they use.
 
-<p align="center">
-  <img src="docs/launchers.png" alt="Launchers page" width="720">
-</p>
+## Features
 
-<p align="center">
-  <img src="docs/icon-launcher-settings.png" alt="Launcher settings dialog" width="720">
-</p>
+- **Several launchers:** each has its own tray icon, name, icon and items, in a list, an icon grid or a compact small-icon grid, with groups and side-by-side columns.
+- **Web launchers:** point a launcher at a web page and its tray icon opens that page in a flyout, with tabs, a bookmark bar, its own sign-in, real notifications and site permissions asked inside the flyout. Hidden pages are suspended so they cost nothing while you are not looking.
+- **Edit in place:** drag items and groups to reorder them, drag files, folders and links in from anywhere, and right-click to move, edit or remove.
+- **Pick any icon:** Fluent glyphs, emoji, bundled app icons, the selfh.st catalog or your own images.
+- **Sync between devices:** keep launchers in step across PCs through OneDrive, Google Drive, WebDAV, a shared folder or your own SSH/SFTP server, and between Windows and Linux through OneDrive.
+- **Share one launcher:** send someone a OneDrive link, or publish it to WebDAV, SFTP or a shared folder, and choose whether they can edit it or only receive it.
+- **Bring your bookmarks:** import from Chrome, Edge, Firefox or an exported bookmarks file.
+- **Fits Windows:** pin launchers to the taskbar, open web launchers from Start, and get Windows notifications with buttons and replies.
 
-<p align="center">
-  <img src="docs/icon-launcher-items.png" alt="Launcher items — icon mode" width="720">
-</p>
+The [full feature list](docs/features.md) covers every option.
 
-<p align="center">
-  <img src="docs/list-launcher-items.png" alt="Launcher items — list mode" width="720">
-</p>
-
-## Overview
-
-Little Launcher puts named launchers in your system tray. Clicking an icon opens a flyout with app and website shortcuts, or a web page of its own. Windows also supports per-launcher taskbar pins. The Linux app uses the desktop's controls, colors and window decorations, with KDE as its primary target and GNOME also in scope.
-
-Web launchers and their selected icons can sync between Windows and Linux. Shortcut launchers belong to their creating operating system and remain listed but disabled on the other; **Enabled on this device** (a switch on each launcher card) can also stop any launcher's local activity without removing its synced configuration. Windows supports OneDrive, Google Drive, WebDAV, shared folders and SSH/SFTP; Linux currently supports OneDrive personal accounts. See [Linux desktop support](#linux-desktop-support) for desktop requirements and platform differences.
-
-**Key features:** Both apps follow the same launcher layouts and workflows. Windows-specific features are identified below; platform differences are tracked in the [parity audit](docs/linux-parity-audit.md).
-
-- **Multiple launchers**; define multiple named launchers, each with its own icon and items.
-- **Web launchers**; point a launcher at a web page instead of a list of shortcuts, and its tray icon opens that page itself: a Home Assistant dashboard, webmail, Teams, WhatsApp, a status board, one click away. Each keeps its own sign-in between restarts, so two launchers can be signed in to the same site as different people; or share one profile if you would rather sign in once.
-- **A bar of pages**; a web launcher holds a list of bookmarks, the first of which is the page it opens. Add a second and they appear as a browser-style bar along the bottom. Clicking one opens it just as a browser's bookmarks bar would; middle-click or Shift-click opens it in a new tab.
-- **Bookmark the page you are looking at**; with the address bar showing, a star at the end of it adds the current page to the launcher's bookmark bar, or takes it back out; the **…** menu carries the same action when the address bar is off. Right-click a bookmark in the bar to open it in a new tab, rename it, change its address, copy it, make it the one that opens by default, or remove it; and drag bookmarks along the bar to reorder them. Right-click the bar's empty space for **Icons only**, which drops every label at once when the sites are familiar enough to go by their logos.
-- **Costs nothing while you are not looking at it**; a dismissed web launcher stops rendering, is suspended, and is then unloaded entirely, so a hidden dashboard uses no CPU, network or memory. Launchers you want to keep receiving are the exception, and they say so.
-- **Real Windows notifications, with buttons and replies**; a web launcher's notifications arrive as ordinary Windows notifications rather than being lost inside a page nobody is looking at. Action buttons work, and a site that offers a reply box gives you one in the notification itself; typing a reply there does exactly what typing it in the app does. Clicking a notification opens the launcher it came from; and a notification goes away once you have dealt with it, whether you clicked it, opened the launcher some other way, or read the message on your phone. One busy launcher cannot bury every other launcher's notifications under a pile nobody ever cleared.
-- **Set up once, not every morning**; launchers set to keep running are opened quietly in the background when Little Launcher starts, so their notifications work from the moment you sign in, without you clicking each tray icon to wake it up.
-- **Site permissions asked in the flyout**; a page that wants your camera, microphone or location asks in a bar inside the flyout rather than a browser-sized prompt, and the answer is remembered for that launcher alone. A launcher you trust can skip the asking entirely.
-- **Sized and placed how you want it**; drag the edges to resize, pin it open, anchor it to a corner or edge instead of the tray, set a zoom level, or lock a size in so a stray drag cannot change it. The header's maximize fills the screen for as long as the flyout is open, then goes back to its usual size next time (double-clicking the header, the tab strip or the bookmark bar does the same thing, as it would on any other window), and resting on that button instead offers a little grid of places to send the window, the way Windows' own snap layouts do.
-- **Whichever one you clicked is the one on top**; several launchers can be kept above everything else at once, and the one you move to comes to the front of them rather than staying buried under a launcher you have not touched in an hour.
-- **Or an ordinary window, if you would rather**; turn on **Regular Window** and a web launcher stops behaving like a flyout: it gets a taskbar button that lights up while it is open, an Alt-Tab entry, and it stays put when you click elsewhere. Clicking its taskbar button minimises or closes it, whichever you prefer, and it can still be told to get out of the way on focus loss if you want both. The header gains a minimise button to match, and the taskbar button can be pinned like any other app's, straight from its own right-click menu.
-- **Open them from Start, or Command Palette**; every web launcher gets a Start Menu entry, so you can reach it the same way you reach any other app: Start search, PowerToys Command Palette, or anything else that reads the Start Menu. They keep themselves in step as you add, rename and remove launchers.
-- **Links open in tabs**; a link that wants a new window opens as another tab of the launcher rather than throwing you out into your browser, and a tab strip appears as soon as there is more than one. Sign-in popups work properly inside the flyout, tabs remember where you were across a dismissal, and if you would rather links just went to your browser, one menu item puts that back.
-- **An address bar when you want one**; a web launcher can show the page address under its header, and type a new one. Off by default, because most launchers open one known page.
-- **Settings grouped by purpose**: General, Appearance, Size and position, Behavior, and Privacy and sign-ins match between launcher settings and the flyout's **…** menu. Quick controls change bars, zoom, position, size memory, and window behavior immediately; section links open the full settings for addresses, icons, dimensions, and sign-in profiles. Expanding a section brings its heading to the top so its controls are ready to read.
-- **Fullscreen videos inside the launcher**: keep page fullscreen inside a resizable launcher and optionally fit the window to the video's proportions from **… > Behavior**.
-- **Fullscreen window controls**: hover at the top edge to exit fullscreen or close, maximize and restore the contained window's size, or drag to reposition it. Display fullscreen stays fixed in place. Reopening preserves fullscreen while the page remains loaded.
-- **Fullscreen video button**: the header offers fullscreen when it detects a visible video. Embedded players may still need their own fullscreen control.
-- **Notification positioning**: clicking a notification opens its launcher beside its tray icon, while respecting the launcher's configured placement.
-- **Messaging presets**: choose WhatsApp, Google Messages, Messenger, Discord, or Teams from **Add Launcher** to open a ready-to-sign-in web launcher. These stay active while hidden for incoming messages; notification permissions are still yours to choose.
-- **Application & website shortcuts**; launch any executable or URL with one click from the flyout.
-- **Identify apps before adding them**: same-named apps show their executable filenames. Hover to see the full target, or right-click to open the app or its containing folder.
-- **Manual icon picker**: choose launcher and item icons from Fluent glyphs, full-color emoji, bundled app icons, custom images, or the selfh.st catalog. Large emoji and Fluent catalogs create tiles as you scroll. Browse is in the first options tab, confirmation stays visible, and reopening reveals the saved choice. Web launchers can preview their saved automatic page icon, retry it from the page or directly from its site, and return to it from the same chooser. Confirm uses the image shown in the preview, even when it is smaller than the saved icon. If the site requires sign-in, the chooser explains how to retry with the launcher open.
-- **View modes**: choose between list view, icon grid view, or a compact tray-sized small-icon grid with no labels. Hover an item to see its full name when the label is hidden or cut off.
-- **Edit launcher items in their own window**: click **Items** in Settings to open a matching editor window. Wide or tall launchers keep their layout and scroll as needed. Add actions wrap when needed, with a compact settings icon at the top right. Changes save as you edit; **Done** closes the editor. The separate **…** button keeps import, export and bookmark import close at hand.
-- **Keep setup in view**: a new shortcut launcher’s item editor opens where you just configured it, on the same monitor. Click **Done** to finish; normal tray or taskbar openings keep their usual placement.
-- **Groups & columns**; organise items into groups and multi-column layouts.
-- **Direct flyout reordering**; drag items or whole groups in the live flyout or regular editor. Hover marks the whole group, and a compact drag card fits the current view mode with the destination hint above it. Drop inside a tinted group to add a child, or use its outer edge to place an item before or after the whole group; the last item fading toward an overlapping inset marker distinguishes the end of a group from the full-width marker after it. Click a group's hover pencil to rename it; finishing tray editing after switching apps restores normal click-away dismissal.
-- **Drag in from anywhere**; while editing a launcher, drag files, folders, shortcuts or browser links straight from File Explorer or the desktop into the flyout to add them, complete with names and icons. (Windows' own Start Menu can't act as a drag source, but its shortcuts can be dragged from `Start Menu\Programs` in Explorer.)
-- **Direct flyout item actions**; right-click items in the live flyout to move, edit, or remove them without opening the settings editor.
-- **System-tray icons**; a tray icon that opens a flyout popup for shortcuts.
-- **Taskbar icons**: pin each launcher through Windows confirmation on supported systems, with manual pinning available elsewhere. Settings warns when a pinned shortcut's name, icon or launch details need refreshing. Pinning checks whether the old pin still exists and keeps an unchanged pin.
-- **Settings sync**; keep all your launchers in sync across machines through **OneDrive**, **Google Drive**, **WebDAV** (Nextcloud, ownCloud, a NAS), a **network file share**, any other folder, or your own **SSH/SFTP** server. OneDrive and Google Drive sign in through your browser and use their own APIs, so no sync client has to be installed and an upload is confirmed by the service rather than handed to a background app. Each is granted only a private folder of its own; nothing else in your drive is visible to Little Launcher.
-- **Shared launchers**; share a single launcher with someone else: create a **OneDrive link** to send them, publish it to a **WebDAV** server, put it on **SFTP**, or drop it in a shared folder. The owner chooses whether subscribers can edit it or only receive it, and that choice travels with the share rather than being something the subscriber has to guess.
-- **Export & import**; back up and restore items locally via JSON.
-- **Bookmark import**; import bookmarks directly from Chrome, Edge, Firefox, or any browser's exported HTML bookmarks file into a launcher.
-- **Pick a web address from your bookmarks**; a web launcher's address, and the bookmarks in its bar, can be chosen from a searchable list of what you have already bookmarked in Chrome, Edge or Firefox, rather than typed from memory.
-- **Updates and startup**; Windows Store installs update through the Store, and Windows portable builds link to GitHub releases. The Linux AppImage includes update checks and explicit download, install and restart controls for compatible published releases. Start at login defaults on for new installations on both platforms and can be turned off in Settings.
-
-## Install
+## Get it
 
 ### Windows
 
-**Microsoft Store (recommended):** [Get Little Launcher from the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf) — installs and updates automatically through the Store.
+**Microsoft Store (recommended):** [Get Little Launcher from the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf). It installs and updates through the Store.
 
-**Portable:** Grab the portable ZIP for your architecture (x64 or ARM64) from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest) and unzip it wherever you like — nothing is installed and no admin rights are needed. It tells you when a new version is out and links you to it; you replace the folder yourself. To remove it, run `cleanup-uninstall.ps1` from the folder with the app closed (it clears settings, browser profiles and sign-ins, the startup entry and any shortcuts), then delete the folder.
+**Portable:** download the ZIP for your architecture (x64 or ARM64) from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest) and unzip it wherever you like; nothing is installed and no admin rights are needed. It tells you when a new version is out and links you to it. To remove it, run `cleanup-uninstall.ps1` from the folder with the app closed (it clears settings, browser profiles and sign-ins, the startup entry and any shortcuts), then delete the folder.
 
-Little Launcher used to ship an MSI installer as well. It has been retired in favour of these two: the Store handles installing, updating and uninstalling properly, and the portable build is for anyone who would rather not use the Store. Older releases keep their `.msi` files, and an existing MSI install keeps working — it will simply point you here when a new version appears.
-
-**Requirements:** Windows build 22000 or later.
+**Requirements:** Windows 11 (build 22000 or later).
 
 ### Linux
 
-Download the **x64 AppImage** from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest), make it executable, and run it. AppImage is the only Linux package format, targeting **Debian 12 / Ubuntu 24.04 LTS or newer**.
+Download the **x64 AppImage** from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest), make it executable, and run it. It targets **Debian 12 / Ubuntu 24.04 LTS or newer**, with KDE as the primary desktop; GNOME needs tray support.
 
 ```bash
 chmod +x LittleLauncher-VERSION-linux-x64.AppImage
 ./LittleLauncher-VERSION-linux-x64.AppImage
 ```
 
-Replace `VERSION` with the downloaded release number. Keep the AppImage in a writable location where you want it to stay. First launch adds application-menu entries and enables login startup; Settings can turn startup off. About offers update checks and download, install and restart controls. KDE is the primary desktop target; GNOME needs tray support. See [Linux delivery and desktop integration](linux/README.md#linux-appimage-delivery) for requirements and troubleshooting. To remove it, quit the app, delete the AppImage and the files it wrote under your home folder; [the uninstall guide](docs/installer.md#uninstall-cleanup) lists them.
+Replace `VERSION` with the release number, and keep the AppImage where you want it to stay. To remove it, quit the app, then delete the AppImage and the files it wrote under your home folder; [the uninstall guide](docs/installer.md#uninstall-cleanup) lists them.
 
-## Building from source
+Little Launcher collects no telemetry or crash reports.
 
-**Windows:** .NET 10, WinUI 3 and WebView2. See [the development guide](docs/development.md) for prerequisites, build commands and architecture.
+## Languages
 
-**Linux:** native Qt/PySide6 desktop controls and a separate sandboxed Electron web engine. See [linux/README.md](linux/README.md) for development dependencies, isolated KDE verification and AppImage builds.
-
-Launcher editing has a [cross-platform policy regression suite](tests/LauncherItemReorder.Tests/README.md) and a guarded [native Windows drag suite](tests/native-drag/README.md) for a dedicated test desktop.
-
-Browse the [documentation index](docs/README.md) for architecture, implementation guides and design decisions.
-
-## License
-
-Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md): free for any
-**personal and other noncommercial use**, including modifying and redistributing it.
-**Commercial use is not permitted.** Copyright © 2024-2026 Ryan Ewen.
+Little Launcher is available in English (United States and Canada), Spanish, French (France and Canada), German, Simplified Chinese, Brazilian Portuguese and Japanese, on both Windows and Linux. It follows the system language unless you pick one in Settings. Translations are machine-generated.
 
 ## Linux desktop support
 
-The Linux app includes native shortcut flyouts and editing, web launchers with tabs and bookmarks, profile-scoped browser extensions, selfh.st and custom icon selection, OneDrive personal-account sign-in, manual and optional automatic sync, device-local launcher enablement, and login startup. Selected custom images and glyph previews travel with the synced launcher configuration.
+The Linux app has native shortcut flyouts and editing, web launchers with tabs and bookmarks, profile-scoped browser extensions, selfh.st and custom icons, OneDrive personal-account sync, device-local launcher enablement and login startup. AppImage updates keep settings and browser profiles.
 
-AppImage update checks and explicit install-and-restart preserve settings and browser profiles. Notification permissions are remembered locally; notification activation restores the owning launcher. Desktop integration depends on the desktop environment: KDE has an optional KWin helper for placement, and GNOME may need tray support. Google sign-in and some passkey flows have known compatibility limitations; notification behavior also varies by site. Other sync destinations and shared-launcher transports are not enabled on Linux yet.
+Shortcut launchers belong to the system that created them and show as disabled on the other; web launchers are shared. Other sync destinations and shared launchers are not available on Linux yet. Google sign-in and some passkey flows have known compatibility limits, and notification behaviour varies by site. The [Linux guide](linux/README.md) and the [UI parity review](docs/linux-ui-parity.md) describe the differences.
 
-See the [Linux guide](linux/README.md), [UI parity review](docs/linux-ui-parity.md) and [current parity audit](docs/linux-parity-audit.md) for supported behavior, verification and remaining platform differences.
+## Developers
+
+- [Development guide](docs/development.md): prerequisites, the Windows build, the tech stack and the project layout.
+- [Linux guide](linux/README.md): Linux development, isolated verification and AppImage builds.
+- [Documentation index](docs/README.md): architecture, implementation guides and design decisions.
+- [Agent instructions](AGENTS.md): conventions and the guidance map.
+
+## License
+
+Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for any **personal and other noncommercial use**, including modifying and redistributing it. **Commercial use is not permitted.** Copyright (c) 2024-2026 Dynamic Solutions.

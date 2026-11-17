@@ -31,13 +31,13 @@ Or open `LittleLauncher.slnx` in Visual Studio / Rider and press F5.
 |---|---|
 | `MainWindow` | Invisible host window. Owns the system-tray icon (`H.NotifyIcon`). Enforces single-instance via Mutex. Cross-process IPC via registered window messages. |
 | `FlyoutWindow` | A popup window that displays launcher items in list view, icon grid view, or a compact tray-sized small-icon grid, positioned above the taskbar. Dismissed on focus loss or Escape. Supports direct drag-and-drop reordering, item right-click move/edit/remove actions, and icon-grid edge resizing. |
-| `SettingsWindow` | WinUI 3 window with `MicaBackdrop` and `NavigationView` — pages for Home, Launchers, Launcher Items, Cloud Sync, Settings, and About. |
+| `SettingsWindow` | WinUI 3 window with `MicaBackdrop` and `NavigationView`: pages for Home, Launchers, Launcher Items, Cloud Sync, Settings, and About. |
 | `SftpSyncService` | Static async methods for upload/download/test-connection using SSH.NET (`Renci.SshNet`). Also handles per-launcher shared sync (file or SFTP). Supports private-key and password auth. |
 | `AutoSyncService` | Manages automatic sync: startup download, debounced upload, periodic download, and shared launcher sync. |
 | `SettingsManager` | Fully static. Serialises `UserSettings` to `%AppData%\LittleLauncher\settings.json` via `System.Text.Json`. Migrates from legacy `settings.xml` on first load. |
 | `ThemeManager` | Sets `RequestedTheme` on root `FrameworkElement` of each window. Detects system dark/light mode via cached `UISettings`. |
 
-See [docs/architecture.md](architecture.md) for detailed flows — launch modes, settings persistence, the launcher-item icon pipeline, SFTP sync, theming, the companion exe, and MSIX packaging.
+See [docs/architecture.md](architecture.md) for detailed flows: launch modes, settings persistence, the launcher-item icon pipeline, SFTP sync, theming, the companion exe, and MSIX packaging.
 
 ## Windows tech stack
 
@@ -97,6 +97,10 @@ Shared/Localization/           # Translation catalogs shared with Linux (see doc
 LauncherShortcut/              # Windows companion exe for pin-to-taskbar helper
 linux/                         # Native Linux Qt host, isolated Electron browser and AppImage packaging
 ```
+
+## Where data lives
+
+The app keeps settings, icons and browser profiles under `%AppData%\LittleLauncher\` and `%LocalAppData%\LittleLauncher\` on Windows (redirected into the package folder for a Store install, so uninstalling removes them) and under `~/.config/little-launcher/` on Linux, plus startup entries, Start Menu shortcuts and taskbar pins. [installer.md](installer.md#uninstall-cleanup) lists every location and what is left after uninstalling. Sync and sharing write only to the destinations the user sets up. The app collects no telemetry or crash reports.
 
 ## Releasing
 

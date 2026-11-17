@@ -1,6 +1,7 @@
 {
   "name": "little-launcher",
   "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "build:desktop": "scripts/windows-build --dev",
     "verify:desktop": "scripts/windows-build --build-only --configuration Debug",

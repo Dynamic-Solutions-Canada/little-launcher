@@ -9,7 +9,7 @@ All launcher item editing uses `LauncherItemsView`. The former `LauncherItemsPag
 
 WinUI 3's `CanReorderItems` takes full internal control of `DragOver` and `Drop` events. Its
 built-in handlers evaluate the drag source at a low level and **cannot be reliably overridden**
-— even `AddHandler` with `handledEventsToo` doesn't work consistently. This makes cross-list
+: even `AddHandler` with `handledEventsToo` doesn't work consistently. This makes cross-list
 drag-drop (between column lists and group child lists) impossible with `CanReorderItems`.
 
 **Solution:** All ListViews use `CanDragItems="True"` (not `CanReorderItems`) with fully custom
@@ -76,7 +76,7 @@ The native popup still supports an optional transient setup anchor through `Flyo
 
 `LauncherItemsView.MeasureContentHeight` / `MeasureIconModeHeight` compute intrinsic height **arithmetically**. The regular editor sets that exact extent inside its viewport; only the native host clamps height to the monitor. This separation must not change item geometry. Arithmetic is also required because forcing a layout pass on a window hidden via `ShowWindow(SW_HIDE)` while another WinUI 3 window is active causes a fatal `ExecutionEngineException`. Do not "fix" this by calling `UpdateLayout()`.
 
-> The flyout is no longer hidden at all — dismissing it now parks it off the virtual screen
+> The flyout is no longer hidden at all: dismissing it now parks it off the virtual screen
 > (`ParkOffScreen`, see `docs/architecture.md`) so its composition surfaces survive. That removes the
 > crash *hazard*, but the arithmetic stays: the reasons below are about correctness, not the
 > crash, and a dismissed window is still the wrong thing to measure.
@@ -85,7 +85,7 @@ The native popup still supports an optional transient setup anchor through `Flyo
 constant that fed its own output back into the arithmetic and grew without bound; a
 `ContentStack` measure taken straight after a rebuild, before the new containers were laid out;
 and a double-counted margin (`DesiredSize` already includes the element's own margin). Edit
-chrome heights are now derived from geometry that is known up front — toolbar rows × slot,
+chrome heights are now derived from geometry that is known up front: toolbar rows × slot,
 header height × 1.
 
 ### Sizing a list column
@@ -134,7 +134,7 @@ list by `BuildColumnLists()`.
 
 **Critical:** `PersistStructuralChange()` must **not** call `SyncColumnsToFlatList()`. That
 method clears `_launcher.Items` and regenerates it from `_columnLists`, so calling it after a
-structural edit resurrects anything just removed — this is exactly how remove was once broken.
+structural edit resurrects anything just removed: this is exactly how remove was once broken.
 Drag-drop is the opposite case and must flush the other way.
 
 Cross-launcher Move to actions accept only live, writable item launchers, excluding web launchers and read-only subscribers. Check that policy when constructing the menu and again before removing the source item. Resolve the current source collection by item identity; an invalid destination or missing source aborts without mutation or persistence.
@@ -175,8 +175,8 @@ be renamed, removed, reordered, or persisted. Guard with `IsEditableGroup(item)`
 
 ### Shared state fields
 
-- `_dragItem` — the `LauncherItem` being dragged
-- `_dragSourceCollection` — the collection it came from
+- `_dragItem`: the `LauncherItem` being dragged
+- `_dragSourceCollection`: the collection it came from
 - `_dragToken` identifies the current internal DataPackage; rebuilt/cancelled packages stay distinguishable from external imports.
 - `_insertionIndicator` is a passive RootGrid overlay with no retained target-container state.
 
@@ -199,7 +199,7 @@ drop index, decrement `dropIndex` by 1 after removal. This applies to both
 
 **Routing:** every per-list `DragOver`/`Drop` handler treats `_dragItem == null` as "this drag
 came from outside" and forwards to `ExternalDragOver` / `ExternalDrop`. There is no separate
-event wiring for the lists — the same `AllowDrop` surfaces serve both.
+event wiring for the lists: the same `AllowDrop` surfaces serve both.
 
 `RootGrid` has its own `AllowDrop` + `RootGrid_DragOver` / `RootGrid_Drop`. It is not redundant:
 an **empty launcher has no list big enough to hit**, since the empty-column `MinHeight` drop
@@ -209,7 +209,7 @@ target is skipped when the whole launcher is empty. Root handlers reject stale i
 edit mode it is already gone by the time the user has switched to Explorer to pick something up.
 `SuppressDismiss` is what makes it a drop target at all.
 
-**Persist direction matters** — the same trap as everywhere else in this file:
+**Persist direction matters**: the same trap as everywhere else in this file:
 
 | Drop lands on | Target collection | Persist via |
 |---|---|---|
@@ -222,7 +222,7 @@ built *before* the drop and silently discard the new items.
 **Deferral and ordering.** `Drop` is synchronous but reading the payload is not, so it takes an
 `e.GetDeferral()`. Two rules: resolve `GetDropIndex` **before** going async (`e.GetPosition` is
 only meaningful while the event is on the stack), and complete the deferral as soon as the
-payload is read — Explorer spins its drag loop until then. Website titles and icons are fetched
+payload is read: Explorer spins its drag loop until then. Website titles and icons are fetched
 *after* the deferral completes and after the items are already visible, then persisted again;
 `LauncherItem` is observable, so they fill in live.
 
@@ -237,23 +237,23 @@ payload is read — Explorer spins its drag loop until then. Website titles and 
 | Any other file | An application item launched via `ShellExecute`. |
 | Browser link or tab | A website item named from the page title (host until the fetch lands). |
 
-**The Windows 11 Start Menu cannot be a drag source here — confirmed, not assumed.** Its data
+**The Windows 11 Start Menu cannot be a drag source here: confirmed, not assumed.** Its data
 package carries no `StorageItems` at all (not even for plain Win32 apps): the shell item lives in
 the `Shell IDList Array` clipboard format, which WinUI 3's `DataPackageView` does not surface.
 All that reaches `DataPackageView` is the app's *name* as text.
 
 This is why `CanAccept` refuses text-only payloads. An earlier version accepted them, and the
 result was the worst possible behaviour: Start Menu drags showed a confident "Add to launcher"
-drop cursor and then silently added nothing. **A drop cursor is a promise — do not accept a
+drop cursor and then silently added nothing. **A drop cursor is a promise: do not accept a
 format you cannot turn into an item.** `CreateItemsAsync` still reads text as a *fallback* for a
 source that advertises a web link but fails to produce it; text alone never triggers acceptance.
 
 Dragging from `%AppData%\Microsoft\Windows\Start Menu\Programs` in an Explorer window works
-fine — those are real `.lnk` files. Supporting the Start Menu itself needs the raw OLE
+fine: those are real `.lnk` files. Supporting the Start Menu itself needs the raw OLE
 `IDataObject`, below the XAML layer.
 
 Icon fetching goes through `FaviconService.FetchMissingItemIconsAsync` like every other import
-path — see [icons.md](icons.md). Do not add a parallel fetch here.
+path: see [icons.md](icons.md). Do not add a parallel fetch here.
 
 ## Visual feedback
 
@@ -273,7 +273,7 @@ Whole-group drags over a group's child body route to its owning column's reorder
 
 These lists are populated via `ItemsSource`, which puts the item in each container's
 **`Content`** and leaves `DataContext` **null**. Use `GetContainerItem(container)` (Content
-first, DataContext as fallback) — checking `DataContext` silently rejects every item. Always
+first, DataContext as fallback): checking `DataContext` silently rejects every item. Always
 re-read on each event rather than capturing, since containers are recycled.
 
 ## Pointer events
@@ -288,7 +288,7 @@ Entry and movement share the same innermost-wired-container resolver, so moving 
 
 
 `ListViewItem` marks `PointerMoved` as **handled** for its own hover visuals, so a handler
-attached to `RootGrid` never fires over an actual item — only over empty space. Attach hover
+attached to `RootGrid` never fires over an actual item: only over empty space. Attach hover
 handlers to the **containers** (via `ContainerContentChanging`, plus an immediate pass over
 `ContainerFromIndex` for already-realised ones). In nested lists, resolve the innermost wired container from OriginalSource and let only that container claim hover. Never set `e.Handled` for hover priority, because native enter state can affect the following press and prevent drag capture.
 
@@ -296,20 +296,20 @@ handlers to the **containers** (via `ContainerContentChanging`, plus an immediat
 
 1. **Never use `CanReorderItems`** for ListViews that need cross-list drag-drop.
 2. **Always adjust drop index** when removing from the same collection before inserting.
-3. **`RebuildColumnsPanel()` re-creates all containers** — any visual state must be model-backed
+3. **`RebuildColumnsPanel()` re-creates all containers**: any visual state must be model-backed
    or re-applied in `Loaded` / `ContainerContentChanging`.
 4. **Groups cannot be dropped into other groups**; whole-group drags over a child list route to the enclosing column for before/after reorder.
 5. **Never persist synthetic groups.**
-6. **Never call `SettingsManager.SaveSettings()` alone** for an item change — always pair it with
+6. **Never call `SettingsManager.SaveSettings()` alone** for an item change: always pair it with
    `AutoSyncService.NotifyItemsChanged()` (use `PersistFlyoutItemChanges` / `PersistFlyoutReorder`),
    or a periodic sync download will silently revert the edit.
-7. **Column breaks are invisible** — they exist only as sentinel items in the flat list.
+7. **Column breaks are invisible**: they exist only as sentinel items in the flat list.
 8. **`_dragItem == null` without an internal DataPackage marker means an external drag**, not a bug; don't "fix" a drag handler by
    early-returning on it without routing to the external-drop path.
 9. **Anything that tracks realised containers in a field must be cleared on rebuild.** The
    `FlyoutWindow` instances are **permanent** (one per launcher in the static `_instances`
-   map), so a per-container collection that only ever grows pins every container — and its
-   native composition surface — for the life of the app. `_hoverWiredContainers` did exactly
+   map), so a per-container collection that only ever grows pins every container, and its
+   native composition surface: for the life of the app. `_hoverWiredContainers` did exactly
    this and leaked gigabytes over a day (the periodic auto-sync rebuilds the flyout every few
    minutes). `RebuildColumnsPanel` now calls `ClearHoverWiring()` alongside
    `_editStyledContainers.Clear()` / `_loadedIconChildLists.Clear()`; detach the pointer

@@ -1,6 +1,3 @@
-// Copyright © 2024-2026 The Little Launcher Authors
-// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;

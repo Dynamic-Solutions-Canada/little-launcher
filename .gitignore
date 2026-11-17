@@ -390,8 +390,8 @@ local.secrets.props
 /linux/browser/vendor/generated/
 
 # Generated local probe evidence and checksum packets. Keep reusable probe source.
-/docs/prototypes/**/evidence/
-/docs/prototypes/**/SHA256SUMS
+/docs/notes/prototypes/**/evidence/
+/docs/notes/prototypes/**/SHA256SUMS
 
 # Linux's bin directory contains a source entry point, not compiled build output.
 !/linux/bin/

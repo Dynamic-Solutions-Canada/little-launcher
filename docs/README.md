@@ -6,6 +6,7 @@ Project documentation lives in this directory. [The root README](../README.md) i
 
 | Document | Purpose |
 | --- | --- |
+| [Features](features.md) | Everything the app can do, in more detail than the README |
 | [Development](development.md) | Windows build prerequisites, project layout and release entry points |
 | [Linux development and use](../linux/README.md) | Linux installation, source runs, isolated verification and AppImage builds |
 | [Architecture](architecture.md) | Application behavior, lifecycle and cross-platform boundaries |
@@ -36,11 +37,13 @@ Project documentation lives in this directory. [The root README](../README.md) i
 
 ## Designs, decisions and verification
 
+Dated investigations, audits and prototypes live in [notes/](notes/); they record what was true when written, not current policy.
+
 - [Linux design](linux-design.md) records agreed requirements and subsequent decisions. Historical requirements may be superseded by the linked decisions.
 - [Architecture decisions](adr/) record deliberate choices, including [native Linux controls and an isolated web engine](adr/0003-native-linux-controls-and-isolated-web-engine.md) and [whole-launcher OS ownership](adr/0004-whole-launcher-platform-ownership.md).
-- [Linux UI parity review](linux-ui-parity.md) and [parity audit](linux-parity-audit.md) distinguish implemented behavior, qualification and outstanding work.
-- [The original KDE capability probe](prototypes/linux-kde-poc/README.md) retains reproducible source and observed results. Raw test evidence remains local and ignored by Git.
-- [Store pricing comparison](store-pricing-comparison-2026-09-23.md) is a dated investigation, not current release policy. Use the packaging guide for the release workflow.
+- [Linux UI parity review](linux-ui-parity.md) and [parity audit](notes/linux-parity-audit.md) distinguish implemented behavior, qualification and outstanding work.
+- [The original KDE capability probe](notes/prototypes/linux-kde-poc/README.md) retains reproducible source and observed results. Raw test evidence remains local and ignored by Git.
+- [Store pricing comparison](notes/store-pricing-comparison-2026-09-23.md) is a dated investigation, not current release policy. Use the packaging guide for the release workflow.
 
 ## Reusable contributor workflows
 

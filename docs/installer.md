@@ -11,7 +11,7 @@ The Windows app ships through **two channels, and neither of them is an installe
 | **Microsoft Store** | MSIX, submitted by CI to Partner Center | the Store | About opens the Store updates page; the Store installs updates |
 
 **There is no MSI.** A per-user WiX installer shipped up to v1.35.1 and was retired: it duplicated
-what the Store already does properly — managed install, silent update, clean uninstall — while
+what the Store already does properly, managed install, silent update, clean uninstall, while
 carrying its own upgrade code, custom actions, uninstall script and signing step. Releases from
 before the cut keep their `.msi` assets, so old download links still resolve, and an installed MSI
 copy keeps working: its updater finds no `.msi` asset on a newer release and falls back to opening
@@ -27,7 +27,7 @@ The native Linux app uses only x64 AppImage, targeting Debian 12 / Ubuntu 24.04 
 | Settings/data | `%AppData%\LittleLauncher\` | the same path, VFS-redirected into `%LocalAppData%\Packages\{PFN}\` |
 | Start Menu shortcut | `%AppData%\...\Start Menu\Programs\Little Launcher.lnk`, written by the app | the package's own manifest entry |
 
-Anything an *external* process opens by path — shell `.lnk` files, the companion exe — has to go
+Anything an *external* process opens by path, shell `.lnk` files, the companion exe, has to go
 through `MainWindow.GetPhysicalAppDataDir()` rather than raw `%AppData%`, which MSIX redirects.
 
 ## Start Menu shortcut lifecycle
@@ -37,20 +37,20 @@ through `MainWindow.GetPhysicalAppDataDir()` rather than raw `%AppData%`, which 
    portable build has no installer to do it, and a packaged one already has its own entry, so
    `EnsureStartMenuShortcuts()` stops early when `IsPackaged`.
 2. **On icon change** `UpdateShortcutIcons()` re-stamps the shortcut with the new icon.
-3. **On uninstall** — MSIX takes its entry with the package; a portable copy leaves the `.lnk`
+3. **On uninstall**: MSIX takes its entry with the package; a portable copy leaves the `.lnk`
    behind until `cleanup-uninstall.ps1` is run (see below).
 
 **Critical:** the shortcut sits directly in `ProgramMenuFolder`, not a subfolder, so the path the
 app writes and the path it later updates are the same one. `RemoveLegacyMsiSubfolderShortcut()`
-still deletes the stale `Little Launcher\` subfolder shortcut the MSI used to create — keep it,
+still deletes the stale `Little Launcher\` subfolder shortcut the MSI used to create: keep it,
 that is the only thing tidying up after a machine that once had the MSI.
 
 ## Portable update flow
 
 `CheckForGitHubUpdateAsync()` reads the latest release tag and compares it against the running
-assembly version. **That is all it does — nothing is downloaded and nothing is installed.** Home
+assembly version. **That is all it does: nothing is downloaded and nothing is installed.** Home
 and About show the new version behind a **View Release** button that opens the release page, and
-unpackaged builds additionally raise the startup toast (packaged ones do not — Store updates
+unpackaged builds additionally raise the startup toast (packaged ones do not: Store updates
 arrive on their own, so there is nothing to interrupt anyone about).
 
 Deliberate: a portable copy is a directory the user chose, may have put somewhere unwritable, and
@@ -75,7 +75,7 @@ The Store handles any update and restart prompt after the page opens.
 
 **Portable:** deleting the folder removes the app but not what it wrote outside it, and there is
 no uninstaller left to tidy that up. `cleanup-uninstall.ps1` ships in the build output for the
-user to run by hand, with the app closed — it used to be an MSI custom action and is now just a
+user to run by hand, with the app closed: it used to be an MSI custom action and is now just a
 script:
 
 | What | Where |
@@ -86,7 +86,7 @@ script:
 | Startup registry entry | `HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\Little Launcher` |
 | Pinned taskbar shortcuts | Any `.lnk` in `User Pinned\TaskBar\` targeting `LittleLauncherFlyout.exe` |
 
-Run it *before* deleting the folder — it lives in that folder, and it does not remove the folder
+Run it *before* deleting the folder: it lives in that folder, and it does not remove the folder
 itself.
 
 **Linux:** the AppImage has no uninstaller either. With the app quit, delete the AppImage file and what it wrote under the home folder. The OneDrive sign-in is kept in the desktop wallet, not in a file.
@@ -101,14 +101,14 @@ itself.
 
 These are the default locations; `XDG_CONFIG_HOME` and `XDG_DATA_HOME` move them when set.
 
-**MSIX limitation:** MSIX has no custom uninstall actions. When an MSIX package is removed, Windows deletes the package files, its own Start Menu entry, **and all VFS-redirected data** (settings, cached icons, companion exe) because the entire `%LocalAppData%\Packages\{PFN}\` tree is removed. Pinned taskbar shortcuts survive as dead `.lnk` files — Windows 11 eventually detects and offers to remove stale pins. Settings **do** survive MSIX upgrades — Windows preserves package data during version updates, including updates initiated in the Store.
+**MSIX limitation:** MSIX has no custom uninstall actions. When an MSIX package is removed, Windows deletes the package files, its own Start Menu entry, **and all VFS-redirected data** (settings, cached icons, companion exe) because the entire `%LocalAppData%\Packages\{PFN}\` tree is removed. Pinned taskbar shortcuts survive as dead `.lnk` files: Windows 11 eventually detects and offers to remove stale pins. Settings **do** survive MSIX upgrades: Windows preserves package data during version updates, including updates initiated in the Store.
 
 ## Building the MSIX (`build-msix.ps1`)
 
 `LittleLauncherMSIX/build-msix.ps1 -Platform {x64|ARM64}` publishes the app (self-contained) + the AOT companion, assembles the layout, runs `makepri`/`makeappx`, and signs with the certificate passed to it (or not at all with `-NoSign`). Toolchain requirements:
 
 - **.NET SDK 10.0.403 or a later 10.0.4xx patch**, selected by root `global.json`. The shared build policy requires runtime 10.0.14 or later for CVE-2026-111497. Rebuild both the self-contained app and NativeAOT helper; an updated host runtime does not repair existing embedded code. See [the build security floor](windows-development.md#net-build-security-floor).
-- **Windows SDK** packaging tools (`makeappx`/`makepri`/`signtool`). The script auto-detects the newest installed `C:\Program Files (x86)\Windows Kits\10\bin\10.*` that has them — don't hardcode a version.
+- **Windows SDK** packaging tools (`makeappx`/`makepri`/`signtool`). The script auto-detects the newest installed `C:\Program Files (x86)\Windows Kits\10\bin\10.*` that has them: don't hardcode a version.
 - **VS C++ build tools** (incl. `VC.Tools.ARM64`) for the Native AOT companion. The script prepends the **VS Installer dir to `PATH`** when `vswhere.exe` isn't resolvable, because the ILCompiler targets shell out to `vswhere`; without it the native link fails with **exit code 123**.
 - **`-NoSign`** is Store mode: skips signing and leaves the Store `Identity`/`Publisher` intact for the Store to re-sign on ingestion. Without it, the manifest publisher is rewritten to the signing certificate's subject so `signtool` can sign locally.
 - Signing material is always passed in (`-TrustedPfxPath` and `-TrustedPfxPassword`; the build tooling passes the shared dev certificate). With neither a certificate nor `-NoSign`, the script fails before building; it never generates a certificate or holds a password (SEC-11, DIST-2). Signed output exports that selected signer as public-only signing.cer and directs trust to Local Computer / Trusted People. The suggested Add-AppxPackage command never forces a downgrade; unsigned Store output is explicitly identified as unsuitable for sideloading.
@@ -152,7 +152,7 @@ extensions on the `<Application>`, which are easy to miss because their absence 
 Plus `xmlns:com` and `com` in `IgnorableNamespaces`.
 
 Without them a clicked toast has no activator and `AppNotificationManager.Register()` can throw,
-which is why registration used to be skipped for packaged builds entirely — a workaround that
+which is why registration used to be skipped for packaged builds entirely: a workaround that
 read like a platform limitation and was not one.
 
 **The CLSID must stay stable.** Changing it orphans the activator for any toast already sitting
@@ -210,7 +210,7 @@ The workflow-generated `.msixupload` is also valid because it contains a real MS
 The secrets come from a Microsoft Entra **app registration** that Partner Center has been told to
 trust. CI uses these credentials; renew the client secret before its configured expiry.
 
-**Step 0 — do you have a tenant?** Partner Center → gear icon → **Account settings** →
+**Step 0: do you have a tenant?** Partner Center → gear icon → **Account settings** →
 **Tenants**. Store dev accounts opened with a personal Microsoft account often have **none**,
 and nothing else works without one.
 
@@ -218,12 +218,12 @@ and nothing else works without one.
   that same page). This becomes the tenant that owns the app registration.
 - Tenant already listed → note its domain and continue.
 
-**Step 1 — register the app.** [entra.microsoft.com](https://entra.microsoft.com) →
+**Step 1: register the app.** [entra.microsoft.com](https://entra.microsoft.com) →
 **Entra ID** → **App registrations** → **New registration**.
 
 - Name: anything (e.g. `LittleLauncher Store Publisher`).
 - Supported account types: **Single tenant**.
-- **Redirect URI: leave blank.** This is a daemon/service credential — there is no interactive
+- **Redirect URI: leave blank.** This is a daemon/service credential: there is no interactive
   sign-in, so a redirect URI is not used.
 - **Do not add any API permissions.** This is the step people over-do: publishing rights do *not*
   come from Graph scopes, they come from the Partner Center role in step 3. An app with Graph
@@ -232,29 +232,29 @@ and nothing else works without one.
 From the app's **Overview**, copy **Application (client) ID** → `AZURE_AD_APPLICATION_CLIENT_ID`,
 and **Directory (tenant) ID** → `AZURE_AD_TENANT_ID`.
 
-**Step 2 — client secret.** In that app → **Certificates & secrets** → **New client secret**.
-Copy the **Value** column (not "Secret ID") **immediately** — it is never shown again. Set a
+**Step 2: client secret.** In that app → **Certificates & secrets** → **New client secret**.
+Copy the **Value** column (not "Secret ID") **immediately**: it is never shown again. Set a
 calendar reminder for the expiry date; an expired secret fails the publish step with an auth
 error and nothing else explains why. → `AZURE_AD_APPLICATION_SECRET`.
 
-**Step 3 — authorize it in Partner Center.** This is the step that actually grants publishing
+**Step 3: authorize it in Partner Center.** This is the step that actually grants publishing
 rights, and the one most often missed. Partner Center → **Account settings** →
 **User management** → **Microsoft Entra applications** → add the app registration from step 1 and
 assign it the **Manager** role. Without this, authentication succeeds and submission is refused.
 
-Note there are three distinct "roles" here and they are easy to conflate — the one that matters
+Note there are three distinct "roles" here and they are easy to conflate: the one that matters
 is the middle row:
 
 | Role | Where | Governs |
 |---|---|---|
 | Your user's Partner Center role | Account settings → User management → **Users** | your own dashboard access |
-| **The app registration's role** | Account settings → User management → **Microsoft Entra applications** | **API publishing rights — must be Manager** |
+| **The app registration's role** | Account settings → User management → **Microsoft Entra applications** | **API publishing rights: must be Manager** |
 | Your directory role | entra.microsoft.com | whether you can create app registrations at all |
 
-**Step 4 — seller ID.** Partner Center → **Account settings** → **Identifiers** (or Developer
+**Step 4: seller ID.** Partner Center → **Account settings** → **Identifiers** (or Developer
 settings). Copy **Seller ID** / **Publisher ID** → `SELLER_ID`.
 
-**Step 5 — load the secrets** (values go over stdin, never into shell history):
+**Step 5: load the secrets** (values go over stdin, never into shell history):
 
 ```powershell
 .\LittleLauncherMSIX\set-store-secrets.ps1
@@ -323,7 +323,7 @@ Manual`. After the user accepted the regional price changes, Partner Center's
 publishing option was changed to publish as soon as certification passes.
 Submission 42 is in certification. The U.S. price remains $0.99,
 but **36 of 240 market prices changed** compared with published Submission 41.
-See the [complete regional comparison](store-pricing-comparison-2026-09-23.md).
+See the [complete regional comparison](notes/store-pricing-comparison-2026-09-23.md).
 The user accepted those regional price changes on September 23, 2026.
 Submission 42 will publish automatically if it passes certification.
 

@@ -1,4 +1,4 @@
-# Windows/Linux parity audit — November 2
+# Windows/Linux parity audit: November 2
 
 The Windows XAML and launcher settings/menu builders define the reference. Native KDE controls, fonts, palette and window decoration remain platform-specific. This is closer source/layout parity, not a rendered Windows pixel comparison or full feature-parity sign-off. No personal browser data was cleared during this audit.
 
@@ -30,7 +30,7 @@ This pass supersedes corresponding open-gap claims in the historical tables belo
 | Missing browser bookmark bulk import | Checkable native browser/profile/folder tree, Select visible/Clear, checked selection retained through search, source-ordered append through one guarded full-document transaction. Firefox uses a bounded read-only SQLite snapshot; HTML retains folder ancestry. | Native selection/import and stale/read-only/hidden-source preservation pass. Browser files are read only; no passwords or cookies are imported. |
 | Missing application row commands | All apps/Applications/Web apps filters and native mouse/keyboard Open/Open containing folder menus; right-click retains pending selection. | Actual private KDE pointer context action passes. Complete browser app-window/profile selection remains open. |
 | Missing website icon choice | Explicit public `/favicon.ico` preview for launcher/item, no account cookies/auth reuse, redirects or third-party service; bounded time/bytes/dimensions and normalized PNG. Confirm alone writes the selected cache file. | Native success, oversized/timeout/cancel and reply lifetime checks pass. No signed-in page icon adoption or manifest discovery. |
-| Linux delivery lacked updates | AppImage-only x64 builder, private runtime, native About update checks/download/install-restart and user login startup enabled by default. | Actual isolated AppImage startup, browser seccomp and file replacement/restart preserve local settings/cookie; native About fits 650/800/1000px. See [delivery details](../linux/README.md#linux-appimage-delivery). No release is published. |
+| Linux delivery lacked updates | AppImage-only x64 builder, private runtime, native About update checks/download/install-restart and user login startup enabled by default. | Actual isolated AppImage startup, browser seccomp and file replacement/restart preserve local settings/cookie; native About fits 650/800/1000px. See [delivery details](../../linux/README.md#linux-appimage-delivery). No release is published. |
 
 Current regression result:137 native/data tests and29 Node cases pass, with native shortcut/update UI drivers and the real AppImage runtime driver. Evidence lives under `.artifacts/linux-native/parity-audit/` and `.artifacts/linux-appimage/`. The private package test uses synthetic data, not personal accounts. Source preview retains its existing data and disables real startup setup.
 

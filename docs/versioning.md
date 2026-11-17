@@ -17,13 +17,13 @@ All other consumers derive from this automatically:
 
 | Consumer | How it gets the version |
 |---|---|
-| **App (in-code display)** | `MainWindow.xaml.cs` reads `Assembly.GetName().Version` at startup — set by MSBuild from `<Version>` |
+| **App (in-code display)** | `MainWindow.xaml.cs` reads `Assembly.GetName().Version` at startup: set by MSBuild from `<Version>` |
 | **MSIX manifest** | `LittleLauncherMSIX/build-msix.ps1` replaces `VERSION_PLACEHOLDER` in `Package.appxmanifest` with the version from `Directory.Build.props` at build time |
 | **Portable zip** | Built from the same `dotnet build` output, so it carries the assembly version |
 | **Linux AppImage** | `linux/packaging/build.py` reads `<Version>` and stages VERSION; asset name is `LittleLauncher-{version}-linux-x64.AppImage` |
 | **Git tag** | Created manually to match: `git tag -a v1.1.0 ...` |
 
-**`Directory.Build.props` is the only file to edit.** There are no fallback version strings left to keep in sync — the WiX `Package.wxs` define was the last one, and it went with the MSI.
+**`Directory.Build.props` is the only file to edit.** There are no fallback version strings left to keep in sync: the WiX `Package.wxs` define was the last one, and it went with the MSI.
 
 ## Release workflow
 
@@ -50,7 +50,7 @@ For a clean Electron 45 install, download the engine explicitly with `node linux
 
 ## How to release
 
-1. Edit `Directory.Build.props` — change `<Version>X.Y.Z</Version>`
+1. Edit `Directory.Build.props`: change `<Version>X.Y.Z</Version>`
 2. Commit: `git commit -am "Bump version to vX.Y.Z"`
 3. Tag: `git tag -a vX.Y.Z -m "vX.Y.Z: <brief summary>"`
 4. Push both: `git push origin main vX.Y.Z`

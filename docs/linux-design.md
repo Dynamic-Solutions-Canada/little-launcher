@@ -52,7 +52,7 @@ The Windows shared item renderer currently binds item collections without an OS-
 
 ## Isolated KDE PoC result
 
-The [retained source and evidence packet](prototypes/linux-kde-poc/README.md) confirms single-click activation for both icons on isolated Plasma 6.3.6 with native Wayland Electron 45 clients. Plain Electron placement requests disagreed with compositor geometry and rendered pixels. A scoped KWin helper demonstrated stable sampled top/bottom-panel placement for shortcut and embedded-web flyouts, and an owned-dialog test drove a correction that preserves parent placement when focus returns. A labelled ordinary-window fallback was also exercised.
+The [retained source and evidence packet](notes/prototypes/linux-kde-poc/README.md) confirms single-click activation for both icons on isolated Plasma 6.3.6 with native Wayland Electron 45 clients. Plain Electron placement requests disagreed with compositor geometry and rendered pixels. A scoped KWin helper demonstrated stable sampled top/bottom-panel placement for shortcut and embedded-web flyouts, and an owned-dialog test drove a correction that preserves parent placement when focus returns. A labelled ordinary-window fallback was also exercised.
 
 The helper uses the click-time cursor as an icon-anchor proxy. Exact icon geometry and the complete production integration remain unproven, as do native application styling, physical desktop acceptance, fractional scale, multiple monitors, and full browser workloads. This is sufficient to continue architectural evaluation, not to declare a production-ready Electron/KWin solution. All private test containers were stopped and removed after preserving evidence; the current GNOME session was not replaced or switched.
 

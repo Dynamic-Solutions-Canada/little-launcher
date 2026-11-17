@@ -25,7 +25,7 @@ Read [localization.md](localization.md). In short:
 
 - Pages are `Page` objects (not `UserControl`)
 - Navigation via WinUI 3 `NavigationView` with `TargetPageType` in XAML
-- No MVVM routing framework — direct page type references
+- No MVVM routing framework: direct page type references
 
 ## Controls
 
@@ -106,10 +106,10 @@ The add/edit item form in `ItemEditorWindow` is built entirely in C# (not XAML).
 
 ### Unified app/PWA picker
 
-There is **no type dropdown**. The target is chosen via a two-item `SelectorBar` tab strip — modelled on the picker in the sibling `CopilotRekey` project:
+There is **no type dropdown**. The target is chosen via a two-item `SelectorBar` tab strip: modelled on the picker in the sibling `CopilotRekey` project:
 
-- **"Apps & web apps"** tab — a single searchable list (`AutoSuggestBox` + `ListView`, fixed `Height = 260`) showing installed applications and PWAs together, each with an icon.
-- **"File or link"** tab — the manual path/link `TextBox` + Browse, the arguments box, and the website "Open as app window" toggle + browser/profile pickers.
+- **"Apps & web apps"** tab: a single searchable list (`AutoSuggestBox` + `ListView`, fixed `Height = 260`) showing installed applications and PWAs together, each with an icon.
+- **"File or link"** tab: the manual path/link `TextBox` + Browse, the arguments box, and the website "Open as app window" toggle + browser/profile pickers.
 
 `Name` and `Icon` live below the tab content (shared across both tabs). `ShowTabPanel(tag)` toggles the two panels' visibility, keeps `tabBar.SelectedItem` in sync, and re-derives the target; the `SelectorBar.SelectionChanged` handler routes through it (a `populating` flag guards re-entrancy, same pattern as `_initializing` in `UserSettings`).
 
@@ -118,7 +118,7 @@ There is **no type dropdown**. The target is chosen via a two-item `SelectorBar`
 - Every row has a tooltip with its full launch target (including the `shell:AppsFolder\` prefix for PWAs). `Windows/AppPickerRowActions.cs` attaches the tooltip and a `ContextFlyout` to the `ListViewItem` during `ContainerContentChanging`, clearing both when containers are recycled. This covers the entire row and supports right-click and the keyboard context-menu gesture.
 - The row menu offers **Open** and **Open containing folder**. Open immediately uses `FlyoutWindow.Launch`, including for uninstallers, with no confirmation or item save. It uses the editor's arguments when the row matches the current target; other rows use their unchanged catalog payload. Containing-folder is disabled for PWAs, virtual shell targets and missing filesystem parents. Opening the menu or invoking an action does not programmatically select the row or overwrite the editor's target.
 - Icons stream in asynchronously via `AppPickerService.LoadIcons` → `ShellIcons.Extract` (an `IShellItemImageFactory` 32px BGRA extraction). The `ListView` `DataTemplate` is built from a XAML string with `XamlReader.Load` and binds `{Binding Icon}` (`ObservableObject` change notification), since the dialog is code-built.
-- **Target resolution:** Selecting or preselecting an app also fills the File or link path, so switching tabs to enter arguments retains the selected target. `ResolveTarget()` keys off the active tab — `custom` → the typed path/link, retaining the picked entry's PWA type while its path matches and otherwise classifying it with `LooksLikeWebUrl` / `LooksLikeFilePath`; `list` → the remembered `pickedEntry`, even if search filtering hides its row. It returns `(path, isPwa, isWebsite)`; `SyncDerived()` pushes that into the derived flags and the app-window options' visibility.
+- **Target resolution:** Selecting or preselecting an app also fills the File or link path, so switching tabs to enter arguments retains the selected target. `ResolveTarget()` keys off the active tab: `custom` → the typed path/link, retaining the picked entry's PWA type while its path matches and otherwise classifying it with `LooksLikeWebUrl` / `LooksLikeFilePath`; `list` → the remembered `pickedEntry`, even if search filtering hides its row. It returns `(path, isPwa, isWebsite)`; `SyncDerived()` pushes that into the derived flags and the app-window options' visibility.
 - Stored values are unchanged from before (PWA → AUMID in `Path` + `IsPwa`; Store app → `shell:AppsFolder\…` path; exe → file path; website URL → `IsWebsite`), so launch behaviour in `FlyoutWindow` is preserved.
 
 ## Settings rows (code-built)
@@ -127,12 +127,12 @@ There is **no type dropdown**. The target is chosen via a two-item `SelectorBar`
 an `Auto` column. Two rules keep it from collapsing:
 
 - **The control is centred vertically, never stretched.** A control with the default alignment
-  grows to the row's height, and the row is as tall as its label — so a subtitle that wraps to two
+  grows to the row's height, and the row is as tall as its label, so a subtitle that wraps to two
   lines silently inflates the input beside it. `BuildRow` sets `VerticalAlignment.Center` on every
   control it lays out, so this cannot come back per-row.
 - **Anything with long, open-ended content uses `BuildStackedRow` instead** (label above,
   full-width control below). An `Auto` column sizes to its content, so a control holding a URL
-  claims the width the text wants and starves the `Star` label column — a long web address once
+  claims the width the text wants and starves the `Star` label column: a long web address once
   squeezed "Web Address" into a three-character ribbon of wrapped text and stretched the box down
   the whole height of it.
 
@@ -142,19 +142,19 @@ an `Auto` column. Two rules keep it from collapsing:
 TextBox template adds **on focus** takes ~30 more. At `Width="130"` that left nothing for the digits:
 the value was visible until you clicked into the field and then vanished behind its own chrome.
 
-Use `Compact` (the placement every other NumberBox in this app uses — the buttons appear over the
+Use `Compact` (the placement every other NumberBox in this app uses: the buttons appear over the
 box rather than reserving width) and leave at least ~140px. If `Inline` is genuinely wanted, budget
 the buttons *and* the focus-only clear button, not just the digits.
 
 ## Owned windows, not ContentDialog
 
-UI opened from the flyout (`ItemEditorWindow`, `TextPromptWindow`, `LauncherSettingsWindow`, `BookmarkPickerWindow`, `ExtensionPopupWindow`) uses standalone `Window`s. A `ContentDialog` renders inside its host window's content area and **cannot overflow the HWND** — hosted in a flyout that is often ~175px wide and ~130 dips tall, even a one-field dialog gets its input and buttons clipped.
+UI opened from the flyout (`ItemEditorWindow`, `TextPromptWindow`, `LauncherSettingsWindow`, `BookmarkPickerWindow`, `ExtensionPopupWindow`) uses standalone `Window`s. A `ContentDialog` renders inside its host window's content area and **cannot overflow the HWND**: hosted in a flyout that is often ~175px wide and ~130 dips tall, even a one-field dialog gets its input and buttons clipped.
 
 Conventions for these windows:
 
 - `ExtendsContentIntoTitleBar = true` with `WindowChrome.BuildTitleBar(...)`. A default WinUI title bar does **not** follow the app's `RequestedTheme`, so it renders light chrome over dark content.
 - `WindowChrome.ApplyIcon(hwnd)` for the app icon. Both paths are needed: `WM_SETICON` drives taskbar/Alt-Tab, `AppWindow.SetIcon` drives the title bar.
-- Set the owner via `SetWindowLongPtr(GWLP_HWNDPARENT)`, **and** have the flyout drop its `IsAlwaysOnTop` flag while the window is open — ownership alone does not beat a topmost owner.
+- Set the owner via `SetWindowLongPtr(GWLP_HWNDPARENT)`, **and** have the flyout drop its `IsAlwaysOnTop` flag while the window is open: ownership alone does not beat a topmost owner.
 - Size to content. Surplus height shows as a large empty gap, because the form is top-aligned above a bottom-anchored button row.
 - When a following setup step needs the closing window's location, capture its actual HWND bounds before closing. `LauncherSettingsWindow.ShowAsync` exposes an optional `onClosing` callback for this; its Done/Escape path captures explicitly, and `AppWindow.Closing` covers system close actions. The close completion result and immediate-save behavior remain unchanged.
 - Don't leak the window: the flyout tracks the open editor and closes it when edit mode ends, so an orphan can't commit into a launcher the user has navigated away from.
@@ -184,7 +184,7 @@ two things the default does not give:
 - **`ShouldConstrainToRootBounds = false`.** The window is often 400px wide with 34px of chrome, so
   a constrained menu is clipped exactly like a `ContentDialog` would be.
 - **Pin the flyout while it is open.** Once unconstrained the menu lives in a popup of its own, so
-  opening it *deactivates* the flyout — which dismisses it and takes the menu down in the same
+  opening it *deactivates* the flyout, which dismisses it and takes the menu down in the same
   motion. `WebFlyoutWindow` sets `_isMenuOpen` from `Opened`/`Closed` and tests it in both
   dismissal guards, alongside `_isModalOpen`. Clear it on `Closed`, which also covers the
   dismissed-by-clicking-away case.
@@ -239,7 +239,7 @@ the header, a `ToggleSwitch` on the right, and that destination's settings as th
 Two rules, both learned the hard way:
 
 - **Enabled and expanded must be separate, visible affordances.** An earlier version used a
-  selected-card highlight to mean "its settings are shown below", and it was not discoverable — a
+  selected-card highlight to mean "its settings are shown below", and it was not discoverable: a
   border colour reads as *state*, not as *"click me, there is more"*. The chevron says it outright,
   and the settings appear inside the thing you clicked rather than detached at the bottom.
 - **Setting `ToggleSwitch.IsOn` from code raises `Toggled` exactly as a click does.** Any refresh
@@ -266,7 +266,7 @@ Advanced section in the settings form.
 
 ## Drag-and-Drop (FlyoutWindow)
 
-ListViews use `CanDragItems="True"` with custom handlers — **never `CanReorderItems`**, which cannot be overridden for cross-list drops. Dragging is gated behind flyout edit mode. See [drag-drop.md](drag-drop.md) for full details.
+ListViews use `CanDragItems="True"` with custom handlers: **never `CanReorderItems`**, which cannot be overridden for cross-list drops. Dragging is gated behind flyout edit mode. See [drag-drop.md](drag-drop.md) for full details.
 
 ## Groups
 

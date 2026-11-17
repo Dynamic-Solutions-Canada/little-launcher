@@ -1,7 +1,7 @@
 > **Scope:** Use when working with app icons, tray icons, shortcut icons, or window icons. Covers which icon files exist, where each icon surface pulls from, and how to update them correctly.
 > **Governs:** `Shared/PinSnapshot.cs`, `**/LauncherSettingsWindow*.cs`, `**/MainWindow.xaml.cs`, `**/SettingsWindow.xaml.cs`, `**/LaunchersPage.xaml*`, `**/LauncherShortcut/**`, `**/HomePage.xaml.cs`, `**/FlyoutConverters.cs`, `**/FlyoutWindow.xaml*`, `Controls/LauncherItemsView*`, `Windows/LauncherItemsEditorWindow.cs`, `**/IconGallery.cs`, `**/IconCatalogView.cs`, `**/SelectionReveal.cs`, `**/AutomaticPageIconChoice.cs`, `**/WebFlyoutWindow.IconPreview.cs`, `Services/PortableLauncherIcon.cs`, `Services/FaviconService*.cs`, `Services/TaskbarPinStatusService.cs`, `**/GlyphIconRenderer.cs`.
 
-> **Note on glyph code points:** Segoe Fluent Icons glyphs below are written in `U+XXXX` code-point notation. In C# they are string escapes — e.g. `U+E840` is written `""`.
+> **Note on glyph code points:** Segoe Fluent Icons glyphs below are written in `U+XXXX` code-point notation. In C# they are string escapes: e.g. `U+E840` is written `""`.
 
 # Icon System
 
@@ -34,21 +34,21 @@ chooser, automatic page-icon adoption, and pin snapshot/lifetime behavior are un
 
 ## Key Files
 
-- **`Resources/LittleLauncher.ico`** — Multi-resolution Blue rocket (16–256px). Embedded into the exe at build time. This is the fallback icon for all surfaces. Generated from `Resources/AppIcons/Blue.png`.
-- **`Resources/AppIcons/*.png`** — Preset icon PNGs (Blue, Green, Teal, Red, Orange, Purple). Flat upright rockets stretched 20% horizontally for a wider profile. Copied to output at build time. Loaded at runtime by `ResolveBaseIconBitmap()`.
-- **`<AppDataDir>/app-icon-{launcherId}.ico`** — Per-launcher runtime icon. Written by `SaveResolvedIconToAppData(Launcher)`. The first launcher's icon is also copied to `app-icon.ico` by this method.
+- **`Resources/LittleLauncher.ico`**: Multi-resolution Blue rocket (16–256px). Embedded into the exe at build time. This is the fallback icon for all surfaces. Generated from `Resources/AppIcons/Blue.png`.
+- **`Resources/AppIcons/*.png`**: Preset icon PNGs (Blue, Green, Teal, Red, Orange, Purple). Flat upright rockets stretched 20% horizontally for a wider profile. Copied to output at build time. Loaded at runtime by `ResolveBaseIconBitmap()`.
+- **`<AppDataDir>/app-icon-{launcherId}.ico`**: Per-launcher runtime icon. Written by `SaveResolvedIconToAppData(Launcher)`. The first launcher's icon is also copied to `app-icon.ico` by this method.
 - **`<AppDataDir>/app-icon-{launcherId}-pin{uniqueStamp}.ico`**: Immutable copy created for each pin attempt. Used by the companion exe for both `LoadImage` (WM_SETICON) and `RelaunchIconResource`. Windows caches icon bitmaps per file path, so each pin gets a unique filename. All pin snapshots are retained because older taskbar pins may still reference them.
-- **`<AppDataDir>/toast-icon-{launcherId}.png`** — Per-launcher notification icon, 256px PNG.
+- **`<AppDataDir>/toast-icon-{launcherId}.png`**: Per-launcher notification icon, 256px PNG.
   Written by `SaveToastIconToAppData(Launcher)` from the same `ResolveBaseIconBitmap` every
   other surface uses. **PNG, not `.ico`:** the notification platform does not render
   multi-image icon files, so pointing `SetAppLogoOverride` at one shows nothing at all.
-- **`<AppDataDir>/app-icon.ico`** — Canonical icon for shortcuts (always mirrors first launcher's icon). Used by `.lnk` shortcuts and the Settings window.
+- **`<AppDataDir>/app-icon.ico`**: Canonical icon for shortcuts (always mirrors first launcher's icon). Used by `.lnk` shortcuts and the Settings window.
   **Not by the app's owned dialogs.** `WindowChrome.ResolveAppIconPath` used to prefer this file, which meant the item editor, the text prompt, launcher settings, the bookmark picker and the extension popup all wore whichever launcher sorted first. It reads the packaged `Resources/LittleLauncher.ico` instead; a window wanting a specific launcher's icon passes the path to `ApplyIcon`.
-- **`<AppDataDir>/settings-icon.ico`** — Runtime-generated icon: the current app icon composited with a gear glyph overlay (dark circle + white gear in bottom-right corner). Written by `SaveSettingsIconToAppData()`. Used by the Settings window.
-- **`<AppDataDir>/LittleLauncherFlyout.exe`** — Copy of the companion exe deployed by `EnsureFlyoutShortcut()` for all build types. Pinning uses this copy.
-- **`<AppDataDir>/main-exe-path.txt`** — Breadcrumb file containing the main exe path. Read by the companion exe as a fallback when `FindWindow` fails.
-- **`%AppData%\LittleLauncher\icons\`** — User-chosen gallery images (`custom-*`, `selfhst-*`). The path stored on the item/launcher points here.
-- **`%AppData%\LittleLauncher\icons\selfhst\`** — The selfh.st **browsing** cache: `index.json` plus one `{reference}.png` per icon the gallery has drawn. Never referenced by settings — see [The selfh.st tab](#the-selfhst-tab).
+- **`<AppDataDir>/settings-icon.ico`**: Runtime-generated icon: the current app icon composited with a gear glyph overlay (dark circle + white gear in bottom-right corner). Written by `SaveSettingsIconToAppData()`. Used by the Settings window.
+- **`<AppDataDir>/LittleLauncherFlyout.exe`**: Copy of the companion exe deployed by `EnsureFlyoutShortcut()` for all build types. Pinning uses this copy.
+- **`<AppDataDir>/main-exe-path.txt`**: Breadcrumb file containing the main exe path. Read by the companion exe as a fallback when `FindWindow` fails.
+- **`%AppData%\LittleLauncher\icons\`**: User-chosen gallery images (`custom-*`, `selfhst-*`). The path stored on the item/launcher points here.
+- **`%AppData%\LittleLauncher\icons\selfhst\`**: The selfh.st **browsing** cache: `index.json` plus one `{reference}.png` per icon the gallery has drawn. Never referenced by settings: see [The selfh.st tab](#the-selfhst-tab).
 
 > **`<AppDataDir>`** = the path returned by `MainWindow.GetPhysicalAppDataDir()`. See [MSIX VFS Redirection](#msix-vfs-redirection) below.
 
@@ -75,7 +75,7 @@ chooser, automatic page-icon adoption, and pin snapshot/lifetime behavior are un
 | `"Glyph:X"` | Gallery glyph/emoji | Arbitrary Fluent icon or emoji from the icon gallery |
 | `"Glyph:#RRGGBB:X"` | Colored gallery glyph/emoji | Gallery glyph with a custom color |
 
-Preset icons are full-color PNGs — they do **not** change with OS theme.
+Preset icons are full-color PNGs: they do **not** change with OS theme.
 Glyph presets render in black (light theme) or white (dark theme) and update automatically on theme change.
 Gallery selections keep the complete Unicode string, including supplementary code points,
 variation selectors and ZWJ sequences. `RenderGlyphBitmap()` keeps the existing GDI path and
@@ -109,25 +109,25 @@ All icon surfaces derive from a single source of truth: `ResolveBaseIconBitmap(L
 7. `SettingsWindow.RefreshIcon()` reloads `settings-icon.ico` into titlebar, taskbar, and overlay
 
 **`RefreshLauncherIcon` is where a *window* icon is re-read too**, alongside the tray HICON and the
-`.ico` write. It is the one method every trigger runs through — a mode or custom-image change, a web
+`.ico` write. It is the one method every trigger runs through: a mode or custom-image change, a web
 launcher adopting its page's favicon, a theme change re-rendering a glyph, a sync download replacing
-the launcher — so `WebFlyoutWindow.InvalidateWindowIcon(id)` hangs off it rather than off a
+the launcher, so `WebFlyoutWindow.InvalidateWindowIcon(id)` hangs off it rather than off a
 `PropertyChanged` subscription that would have to list those triggers again.
 
 Without it a regular-window web launcher's taskbar button and switcher entry showed a *frozen* icon:
 the handles were loaded on the first show and kept for the life of the window, and for a web launcher
-that first show is the worst possible moment to sample — `ShowFlyout` applies the taskbar button
+that first show is the worst possible moment to sample: `ShowFlyout` applies the taskbar button
 before it starts the browser, so what got captured was the placeholder the launcher had before its
 page loaded. The tray then adopted the site's favicon and the window did not.
 
 **A web flyout takes its window icon in its constructor, and that ordering is deliberate.**
 `ApplyWindowIcon()` runs where the window's ex-styles are first set, before the window has ever been
 shown; the call from `ApplyTaskbarButton` is then only a re-assertion, which is still needed because
-WinUI blanks `WM_SETICON` while it finishes initialising (WindowsAppSDK#2730 — measured: the icon
+WinUI blanks `WM_SETICON` while it finishes initialising (WindowsAppSDK#2730: measured: the icon
 disappears for roughly one frame after the show and `PushWindowIcon` puts it back on activation).
 Loading it from the first regular-window show instead left the window on screen for ~250ms carrying
 no icon at all. Windows re-reads a window's icon every time it draws one, so its own taskbar,
-Alt-Tab and Task View never showed that gap — a third-party switcher that samples once, as the
+Alt-Tab and Task View never showed that gap: a third-party switcher that samples once, as the
 window appears, did.
 
 Tray icons are registered with Shell_NotifyIcon using a stable `guidItem` derived from `Launcher.Id`. This keeps Windows' per-icon tray visibility/pin preference stable across app restarts, Store updates, and icon/name changes. Only changing a launcher's `Id` causes Windows to treat it as a new tray icon identity.
@@ -138,7 +138,7 @@ Tray icons are registered with Shell_NotifyIcon using a stable `guidItem` derive
 
 | Method | Purpose |
 |---|---|
-| `ResolveBaseIconBitmap(Launcher)` | Single source of truth — returns 256×256 bitmap for a launcher's `TrayIconMode`. Handles Composite, Custom, named glyph presets, `Glyph:` gallery modes, and color presets (with fallback to Blue) |
+| `ResolveBaseIconBitmap(Launcher)` | Single source of truth: returns 256×256 bitmap for a launcher's `TrayIconMode`. Handles Composite, Custom, named glyph presets, `Glyph:` gallery modes, and color presets (with fallback to Blue) |
 | `RenderGlyphBitmap()` | Renders a complete glyph string: tinted GDI for Fluent icons, `GlyphIconRenderer.RenderEmoji()` for color emoji; shared by launcher and item icon exports |
 | `GlyphIconRenderer.RenderEmoji()` | Shapes full Unicode sequences with DirectWrite, fits their ink bounds, draws native color glyphs with Direct2D, and returns an owned premultiplied-alpha bitmap |
 | `RenderCompositeIconBitmap()` | Renders a 2×2 grid composite from first 4 launchable items (`"Composite"` mode) |
@@ -149,7 +149,7 @@ Tray icons are registered with Shell_NotifyIcon using a stable `guidItem` derive
 | `BitmapToIcon(Bitmap)` | Calls `BitmapToIcoBytes()` then wraps in `System.Drawing.Icon` |
 | `ResolveTrayIcon(Launcher)` | `ResolveBaseIconBitmap(Launcher)` → `BitmapToIcon()` |
 | `SaveToastIconToAppData(Launcher)` | `ResolveBaseIconBitmap(Launcher)` → 256px PNG → write `toast-icon-{id}.png` for Windows notifications |
-| `EnsureToastIconSaved(Launcher)` | Static. Returns that path, writing it first if absent — the notification path calls this |
+| `EnsureToastIconSaved(Launcher)` | Static. Returns that path, writing it first if absent: the notification path calls this |
 | `SaveResolvedIconToAppData(Launcher)` | `ResolveBaseIconBitmap(Launcher)` → `BitmapToIcoBytes()` → write `app-icon-{id}.ico`; copies to `app-icon.ico` for first launcher |
 | `SaveSettingsIconToAppData()` | First launcher's `ResolveBaseIconBitmap()` → gear overlay → `BitmapToIcon()` → write file |
 | `RefreshLauncherIcon(Launcher)` | Batch-friendly: updates tray HICON, writes .ico to disk, re-reads it onto any regular-window web flyout (no settings save, no cleanup, no settings window refresh) |
@@ -162,11 +162,11 @@ Tray icons are registered with Shell_NotifyIcon using a stable `guidItem` derive
 WinUI 3 has a known bug (WindowsAppSDK#2730) where the taskbar ignores `AppWindow.SetIcon()` for
 windows in the same process as the exe's embedded icon. The workaround uses three layers:
 
-1. **`SetWindowAppUserModelId(hwnd, "LittleLauncher.Settings")`** — gives the Settings window its own
+1. **`SetWindowAppUserModelId(hwnd, "LittleLauncher.Settings")`**: gives the Settings window its own
    taskbar group via the Shell `IPropertyStore` COM API, so the taskbar treats it independently.
-2. **`AppWindow.SetIcon(IconId)`** via `GetIconIdFromIcon` interop — sets the app-level icon for
+2. **`AppWindow.SetIcon(IconId)`** via `GetIconIdFromIcon` interop: sets the app-level icon for
    Alt-Tab and the window's identity.
-3. **`WM_SETICON`** (ICON_SMALL + ICON_BIG) — sets the Win32 window icon, re-sent on `Activated`
+3. **`WM_SETICON`** (ICON_SMALL + ICON_BIG): sets the Win32 window icon, re-sent on `Activated`
    to counteract WinUI's framework overrides.
 
 ## Pinned Taskbar Icon Strategy
@@ -349,13 +349,13 @@ reason. This reuses the production query path and requires no mouse/keyboard aut
 **`SHGetPropertyStoreForWindow` does not round-trip across processes.** Reading another process's
 window property store returns `<EMPTY>` for every key, and *writing* to it returns `S_OK` from both
 `SetValue` and `Commit` and still reads back empty. An external tool therefore cannot tell whether
-the companion's relaunch properties were applied — do not conclude "the properties are unset" from
+the companion's relaunch properties were applied: do not conclude "the properties are unset" from
 an outside read, as that is wrong. To actually check, log the HRESULTs and read the values back
 **inside** the companion, in `--pin` mode (which already shows a modal, so it is not on the
 latency-critical flyout path).
 
 What is known good: `WM_SETICON` lands (both icon handles are set, which is why the *title bar*
-icon looks right — it does not come from the relaunch properties), and the per-launcher `.ico`
+icon looks right: it does not come from the relaunch properties), and the per-launcher `.ico`
 exists and loads at the taskbar's requested size. A blank pin was last seen only in a dev
 environment that had been run from several paths and switched between packaged and unpackaged
 builds; treated as dev-only rather than chased further.
@@ -370,7 +370,7 @@ flow. (A temp-folder test run left the Start Menu shortcut aimed into `%Temp%`, 
 
 Debug builds also deploy the **framework-dependent** companion (~175 KB apphost + its `.dll`,
 `.deps.json`, `.runtimeconfig.json`) where Release deploys the self-contained AOT binary (~1.7 MB).
-Both embed the app icon via `<ApplicationIcon>`, so the icon itself is not the difference — but
+Both embed the app icon via `<ApplicationIcon>`, so the icon itself is not the difference, but
 prefer a Release build when validating anything about pinning.
 
 **Pin snapshots are created only by explicit pinning.** They live under `Little Launcher Pins`,
@@ -391,23 +391,23 @@ only the old root-level flyout shortcuts, never the current pin snapshots.
 
 `IconGallery`'s fourth tab lists the [selfh.st](https://selfh.st/icons/) icon set, fetched from
 GitHub (`index.json`) and jsDelivr (the PNGs). **Everything it touches is cached on disk**, in
-`icons\selfhst\` — a folder of its own so that `icons\` stays what it has always been, the icons
+`icons\selfhst\`: a folder of its own so that `icons\` stays what it has always been, the icons
 actually in use.
 
 - **The index** resolves memory → disk → network, with `SelfhStCatalogTtl` (6h) measured on the
   cached file's write time. The in-memory copy dies with the process, and the tab cannot draw
   anything until the whole index has arrived, so without the disk copy every first visit after a
   restart sat on a spinner. If the fetch fails, a **stale** disk copy is served rather than failing
-  the tab, and is treated as current for the rest of the session — otherwise every keystroke in the
+  the tab, and is treated as current for the rest of the session: otherwise every keystroke in the
   search box re-attempts a download that has just timed out.
 - **The icons** are downloaded by `LoadSelfhStThumbnailAsync` and written to
   `icons\selfhst\{reference}.png`, at most `SelfhStDownloadGate` (8) at a time. Binding
-  `BitmapImage.UriSource` straight to the CDN URL — which is what this replaced — kept nothing
+  `BitmapImage.UriSource` straight to the CDN URL, which is what this replaced, kept nothing
   between visits, so the same hundred icons came over the wire again on every open.
 - **Selecting an icon copies** the browse-cache file to `icons\selfhst-{reference}.png` rather than
   downloading it again. That path is what gets stored, and its `selfhst-` prefix is what
   `IsSelfhStImagePath` / `IsMatchingSelfhStImagePath` (pre-selecting the current icon) and
-  `IsAutoFetchedIconPath` (leaving user-chosen icons alone) both key off — do not change the shape
+  `IsAutoFetchedIconPath` (leaving user-chosen icons alone) both key off: do not change the shape
   of that filename without those three.
 - Reference names come from a remote index, so they go through `SelfhStFileName` before being used
   as a filename.
@@ -419,13 +419,13 @@ A selfh.st tile download must also match the latest click within its current tab
 
 ## Regenerating `LittleLauncher.ico`
 
-`Resources/LittleLauncher.ico` is the embedded exe icon. It **must be regenerated** whenever `Resources/AppIcons/Blue.png` changes. The `.ico` is not auto-generated by the build — it's a committed binary.
+`Resources/LittleLauncher.ico` is the embedded exe icon. It **must be regenerated** whenever `Resources/AppIcons/Blue.png` changes. The `.ico` is not auto-generated by the build: it's a committed binary.
 
 To regenerate, create a multi-resolution ICO (16, 24, 32, 48, 64, 256px) from `Blue.png` using System.Drawing or any ICO tool, and overwrite `Resources/LittleLauncher.ico`. If the `.ico` is stale, the exe will show an outdated icon everywhere the shell reads it.
 
 ## Start Menu Shortcut
 
-Nothing creates a Start Menu shortcut before the app runs: the portable build has no installer, and MSIX registers its own entry from the manifest. On first launch, `EnsureStartMenuShortcuts()` in `MainWindow.xaml.cs` writes `Programs\Little Launcher.lnk` with the exe's embedded icon, and `UpdateShortcutIcons()` re-stamps it when the user changes the icon. The shortcut must sit directly in `ProgramMenuFolder` (not a subfolder) so the app's runtime management can find and update it — `RemoveLegacyMsiSubfolderShortcut()` clears the subfolder copy the retired MSI used to create.
+Nothing creates a Start Menu shortcut before the app runs: the portable build has no installer, and MSIX registers its own entry from the manifest. On first launch, `EnsureStartMenuShortcuts()` in `MainWindow.xaml.cs` writes `Programs\Little Launcher.lnk` with the exe's embedded icon, and `UpdateShortcutIcons()` re-stamps it when the user changes the icon. The shortcut must sit directly in `ProgramMenuFolder` (not a subfolder) so the app's runtime management can find and update it: `RemoveLegacyMsiSubfolderShortcut()` clears the subfolder copy the retired MSI used to create.
 
 ## Launcher item names on hover
 
@@ -433,30 +433,30 @@ List and large-icon item templates show the full name in a tooltip only when the
 
 ## Launcher Item Icons (Favicons & App Icons)
 
-`FaviconService.FetchMissingItemIconsAsync(IEnumerable<LauncherItem>)` is the **unified pipeline** for fetching launcher item icons. It handles both websites (favicon download) and apps (exe icon extraction). All bulk import paths must use this single method — do not duplicate the fetch logic.
+`FaviconService.FetchMissingItemIconsAsync(IEnumerable<LauncherItem>)` is the **unified pipeline** for fetching launcher item icons. It handles both websites (favicon download) and apps (exe icon extraction). All bulk import paths must use this single method: do not duplicate the fetch logic.
 
 Entry points that call the pipeline:
-- **Startup**: `MainWindow.FetchMissingIconsOnStartupAsync()` — fire-and-forget, covers settings-import-then-restart and machine migration scenarios. Also runs the stale-icon refresh (below).
-- **Sync download**: `SftpSyncService.DownloadLauncherItemsAsync()` — awaited before save.
-- **File import**: `LauncherBulkOps.ImportItemsAsync()` — awaited before save.
+- **Startup**: `MainWindow.FetchMissingIconsOnStartupAsync()`: fire-and-forget, covers settings-import-then-restart and machine migration scenarios. Also runs the stale-icon refresh (below).
+- **Sync download**: `SftpSyncService.DownloadLauncherItemsAsync()`: awaited before save.
+- **File import**: `LauncherBulkOps.ImportItemsAsync()`: awaited before save.
 - **Manual add/edit**: calls `FaviconService.FetchAndCacheAsync()` / `GetApplicationIcon()` directly for the single item in the dialog.
-- **Drag-and-drop into the flyout**: `DroppedItemFactory.EnrichAsync()` — runs *after* the items are inserted and visible, so the drop itself never waits on the network. Dropped items carry a Segoe Fluent placeholder glyph (open / globe / folder / page) until the fetch lands.
+- **Drag-and-drop into the flyout**: `DroppedItemFactory.EnrichAsync()`: runs *after* the items are inserted and visible, so the drop itself never waits on the network. Dropped items carry a Segoe Fluent placeholder glyph (open / globe / folder / page) until the fetch lands.
 
 ### Getting a *good* icon, not just an icon
 
 Two paths fetch a site's icon, and both must aim higher than the browser favicon:
 
-- **Launcher items and bookmarks** — `FaviconService` reads the page HTML, prefers the **web app
+- **Launcher items and bookmarks**: `FaviconService` reads the page HTML, prefers the **web app
   manifest**'s largest icon, then `<link rel="icon|apple-touch-icon">` picking the largest declared
   `sizes`, then `/favicon.ico`. Only the site itself is contacted (no third-party favicon service), with ordinary certificate validation, matching Linux. An `apple-touch-icon` with no
-  `sizes` attribute is scored **180** rather than 0 — it is 180px by convention, and scoring it zero
+  `sizes` attribute is scored **180** rather than 0: it is 180px by convention, and scoring it zero
   let a 16px shortcut icon that merely appeared first in the HTML win.
-- **Web launchers** — `CoreWebView2.GetFaviconAsync` returns what the page declared for a *browser
+- **Web launchers**: `CoreWebView2.GetFaviconAsync` returns what the page declared for a *browser
   tab*, commonly 32 or 64px, and a tray icon (and far worse, a taskbar pin) is drawn much larger
   than that. Upscaling it is why a freshly created web launcher looked soft enough that picking a
   replacement by hand was the obvious workaround. `AdoptHighResPageIcon` takes a better one instead:
-  the page bridge finds the best icon the site declares — manifest, then apple-touch-icon, then
-  sized link icons — and **fetches it in the page**, because those assets sit behind the same login
+  the page bridge finds the best icon the site declares: manifest, then apple-touch-icon, then
+  sized link icons, and **fetches it in the page**, because those assets sit behind the same login
   as the page and a host-side fetch gets a redirect. Anything under 96px is ignored, since it is not
   worth replacing Chromium's favicon with something no bigger. It still only ever replaces an icon
   that is ours to replace (`MayAdoptPageIcon`), and never in bar mode, where the tray icon stands
@@ -472,11 +472,11 @@ Two paths fetch a site's icon, and both must aim higher than the browser favicon
 - Triggered from `MainWindow`: on startup (inside `FetchMissingIconsOnStartupAsync`) and by `_iconRefreshTimer`, a daily `System.Threading.Timer` (the tray app stays resident for weeks, so launch-only would not be enough). The timer callback marshals to the UI thread via `App.MainDispatcherQueue` before touching `IconPath`. After any change, `ApplyItemIconChanges()` saves settings, invalidates flyouts, and re-renders tray/settings icons (Composite mode embeds item icons).
 - **Cache-busting:** the refresh rewrites cache files in place (same path), so the item-icon `BitmapImage` loads in `IconPathToImageConverter` and `LauncherItemsView.CreateIconTile` set `BitmapCreateOptions.IgnoreImageCache`; without it, WinUI's per-URI decoded-image cache keeps showing the old bitmap for the rest of the session.
 
-The add/edit dialog's unified app/PWA picker shows its own **transient list icons** (not the persisted item icon): `AppPickerService.LoadIcons` extracts them via `ShellIcons.Extract` (`IShellItemImageFactory`, 32px BGRA → `WriteableBitmap`) on a background STA thread. These are display-only — the item's saved `IconPath` is still produced by the `FaviconService` calls above when a row is selected.
+The add/edit dialog's unified app/PWA picker shows its own **transient list icons** (not the persisted item icon): `AppPickerService.LoadIcons` extracts them via `ShellIcons.Extract` (`IShellItemImageFactory`, 32px BGRA → `WriteableBitmap`) on a background STA thread. These are display-only: the item's saved `IconPath` is still produced by the `FaviconService` calls above when a row is selected.
 
-**Gotcha:** `IShellItemImageFactory.GetImage` returns `E_PENDING` (0x8000000A) the first time it's asked for an icon the shell hasn't rasterized into its cache yet — common for a freshly-seen PWA/Store tile. `ShellIcons.Extract` **must retry** on `E_PENDING` (short sleeps) or those icons silently come back blank while already-cached ones (e.g. a PWA you've launched before) work. This is why a PWA can show no list icon for no obvious reason.
+**Gotcha:** `IShellItemImageFactory.GetImage` returns `E_PENDING` (0x8000000A) the first time it's asked for an icon the shell hasn't rasterized into its cache yet: common for a freshly-seen PWA/Store tile. `ShellIcons.Extract` **must retry** on `E_PENDING` (short sleeps) or those icons silently come back blank while already-cached ones (e.g. a PWA you've launched before) work. This is why a PWA can show no list icon for no obvious reason.
 
-**Raster-only:** `FetchAndCacheCoreAsync` saves whatever it downloads to a `.png` file rendered by WinUI `BitmapImage`, which **cannot decode SVG**. A site whose favicon/manifest icon is an SVG would otherwise be cached as a `.png` that displays blank. `RasterOrNull`/`IsRasterImage` (magic-byte check for PNG/JPEG/GIF/BMP/ICO/WEBP) rejects SVG and other non-raster payloads at each fetch step, so websites continue down the favicon fallback chain and **PWAs fall back to the shell-extracted icon** (`GetPwaIconFromShell`) — which is why a PWA could show its list icon (shell) but a blank selection/preview icon (the rejected SVG web icon). `GetPwaIconFromShell` requests 64px and, like the 32px list path, must retry on `E_PENDING`.
+**Raster-only:** `FetchAndCacheCoreAsync` saves whatever it downloads to a `.png` file rendered by WinUI `BitmapImage`, which **cannot decode SVG**. A site whose favicon/manifest icon is an SVG would otherwise be cached as a `.png` that displays blank. `RasterOrNull`/`IsRasterImage` (magic-byte check for PNG/JPEG/GIF/BMP/ICO/WEBP) rejects SVG and other non-raster payloads at each fetch step, so websites continue down the favicon fallback chain and **PWAs fall back to the shell-extracted icon** (`GetPwaIconFromShell`), which is why a PWA could show its list icon (shell) but a blank selection/preview icon (the rejected SVG web icon). `GetPwaIconFromShell` requests 64px and, like the 32px list path, must retry on `E_PENDING`.
 
 For Chromium PWAs, prefer the site's own icon/manifest asset when the AUMID encodes a domain (for example `example.com-HEX_hash!App`). The shell image factory often returns a softer rasterized bitmap than the original web icon. `GetBestPwaIconAsync()` handles this preference, but it must reject off-origin login redirects; when the site does not expose a real app icon, it should fall back to `GetPwaIconFromShell()`.
 
@@ -484,7 +484,7 @@ After any bulk icon change, call `FlyoutWindow.InvalidateItems()`. That compatib
 
 ## Gotchas
 
-- **MSIX VFS redirection** — see the [dedicated section below](#msix-vfs-redirection). All file paths referenced by external processes (shell `.lnk` files, companion exe) **must** use the physical path from `MainWindow.GetPhysicalAppDataDir()`, never raw `Environment.GetFolderPath(ApplicationData)`. The latter is VFS-redirected inside MSIX and invisible to the shell.
+- **MSIX VFS redirection**: see the [dedicated section below](#msix-vfs-redirection). All file paths referenced by external processes (shell `.lnk` files, companion exe) **must** use the physical path from `MainWindow.GetPhysicalAppDataDir()`, never raw `Environment.GetFolderPath(ApplicationData)`. The latter is VFS-redirected inside MSIX and invisible to the shell.
 - **`LauncherItem.IconGlyph` must be a Unicode character**, not a text name. Use `""` (globe, `U+E774`) for websites and `""` (open, `U+E8E5`) for apps. Text strings like `"Globe24"` render as rectangle tofu in `FontIcon`.
 - **`LauncherItem.IconGlyph` can hold a complete emoji sequence**, for example `"🚀"`, `"👩‍💻"` or `"❤️"`. Use `IconGallery.IsFluentGlyph()` to distinguish Fluent PUA glyphs from emoji. Fluent previews use `FontIcon`; emoji previews use `TextBlock` with `FontFamily = "Segoe UI Emoji"` and `IsColorFontEnabled = true`. Bitmap exports must use `GlyphIconRenderer`, including composite and jump-list icons.
 - **Icon Gallery** (`Classes/IconGallery.cs`) has one shared core for item and launcher pickers. The item wrapper exposes App Icons, Glyphs, Emoji and selfh.st plus Reset; the launcher wrapper replaces App Icons with Launcher Presets (Composite, app colors and, for a web launcher, Use page icon). Both retain search, selection highlighting, Confirm/Cancel, attribution and the same pinned confirmation footer. Browse for image is an option inside the first App Icons/Launcher Presets tab only. `getCurrentSelection` is read on every opening, including after Confirm or Cancel; selecting a tile remains pending until Confirm. Custom images also remain valid pending selections when no gallery tile represents them. Empty paths and glyphs do not enable Confirm.
@@ -493,16 +493,16 @@ After any bulk icon change, call `FlyoutWindow.InvalidateItems()`. That compatib
 - **All icon Browse actions use `IconGallery.PickImageAsync(ownerHwnd)`**, accepting ICO, PNG, JPG, JPEG and BMP. In launcher settings, the gallery and custom-file row share the same browse/commit path. Files are copied into the physical AppData directory before the launcher switches to Custom; confirming the existing file skips a copy onto itself. The preview and filename refresh together, and file/picker failures are reported. Cancellation leaves the saved selection unchanged. selfh.st selections keep their existing cache and attribution behavior.
 - **A notification's icon comes from `toast-icon-{id}.png`, not the adopted page icon.** It used
   to read `web-favicon-{id}.png` directly, which is written *only* for a web launcher nobody
-  has chosen an icon for — so a launcher wearing a custom image or a glyph had no file at
+  has chosen an icon for, so a launcher wearing a custom image or a glyph had no file at
   that path, `SetAppLogoOverride` was skipped, and Windows fell back to Little Launcher's own
   logo. Every toast showed the app's icon rather than the site's, upscaled from the small
   manifest logo and blurry with it. Resolving through `ResolveBaseIconBitmap` fixes both at
   once: the right icon, at 256px.
-- The bundled `.ico` is the Blue rocket only — it's the exe identity icon and fallback.
+- The bundled `.ico` is the Blue rocket only: it's the exe identity icon and fallback.
 - Tray visibility state is now tied to each launcher's stable GUID identity via `NOTIFYICONDATA.guidItem`, not the runtime-assigned `uID`. Launcher reordering, name changes, and icon changes do not reset the user's tray preference; deleting/recreating a launcher still will.
 - `SaveResolvedIconToAppData()` always writes an `.ico` for all modes (including mode 0). There is no "delete and fall back to exe icon" path.
 - The companion exe (`LauncherShortcut/Program.cs`) loads `app-icon.ico` from `AppContext.BaseDirectory` for the pin dialog via `LoadImage` + `WM_SETICON`.
-- `BitmapToIcoBytes()` / `BitmapToIcon()` produce multi-resolution ICO (16, 24, 32, 48, 64, 256) so tray icons render correctly at all DPI scales. `BitmapToIcoBytes()` writes raw ICO bytes directly — do NOT use `System.Drawing.Icon.Save()` which loses multi-resolution data on .NET.
+- `BitmapToIcoBytes()` / `BitmapToIcon()` produce multi-resolution ICO (16, 24, 32, 48, 64, 256) so tray icons render correctly at all DPI scales. `BitmapToIcoBytes()` writes raw ICO bytes directly: do NOT use `System.Drawing.Icon.Save()` which loses multi-resolution data on .NET.
 - `MainWindow` listens for `UISettings.ColorValuesChanged` and refreshes the tray icon, `app-icon.ico`, and SettingsWindow icon when the OS theme changes. Uses `RefreshLauncherIcon()` (batch-friendly) for all launchers, then does a single `SaveSettingsIconToAppData` + `CleanUpStaleIconFiles` + `RefreshIcon` pass.
 - `MigrateStaleIconPaths()` runs before `SetupTrayIcons()`: item paths retain their existing cleanup, while custom launcher bytes are materialized locally and unavailable launcher paths/modes are retained.
 - When the user changes `TrayIconMode`, `UpdateTrayIcon()` also calls `SettingsWindow.RefreshIcon()` to update the settings window titlebar immediately.
@@ -519,7 +519,7 @@ Files written to this redirected path are **invisible** to external processes (t
 
 ### The Problem
 
-Icon files (`app-icon.ico`, `settings-icon.ico`) and the companion exe (`LittleLauncherFlyout.exe`) are written by the MSIX-packaged app. The shell reads `.lnk` shortcut `IconLocation` fields and the companion exe loads icon files — both operate outside the VFS.
+Icon files (`app-icon.ico`, `settings-icon.ico`) and the companion exe (`LittleLauncherFlyout.exe`) are written by the MSIX-packaged app. The shell reads `.lnk` shortcut `IconLocation` fields and the companion exe loads icon files: both operate outside the VFS.
 
 ### The Solution: `GetPhysicalAppDataDir()`
 
@@ -532,7 +532,7 @@ Icon files (`app-icon.ico`, `settings-icon.ico`) and the companion exe (`LittleL
 
 1. **Any path that will be referenced by the shell or external processes** (`.lnk` IconLocation, companion exe file reads, Start Menu shortcuts) → use `GetPhysicalAppDataDir()`.
 2. **Internal-only paths** (settings.xml read/written only by the main app, favicon cache) → `Environment.GetFolderPath(ApplicationData)` is fine because VFS redirects reads too within the same package context.
-3. **Companion exe** should use `AppContext.BaseDirectory` to find `app-icon.ico` — since the exe resides in the physical AppData dir, this resolves correctly for both MSIX and unpackaged.
+3. **Companion exe** should use `AppContext.BaseDirectory` to find `app-icon.ico`: since the exe resides in the physical AppData dir, this resolves correctly for both MSIX and unpackaged.
 4. **Never hardcode `%AppData%\LittleLauncher`** in any code path that writes files referenced externally. Always call `GetPhysicalAppDataDir()`.
 
 ## Virtualized symbol catalogs
@@ -643,7 +643,7 @@ A missing local path no longer clears a launcher's custom selection at Windows s
 
 `linux/browser/bookmark_icons.cjs` provides a bounded per-launcher/profile memory cache for same-site favicons. The session fetch omits credentials and redirects, limits responses to256KiB and five seconds, accepts raster icon MIME types and rejects oversized decoded dimensions before resizing to32px PNG. Two requests run concurrently;128 site entries cap cache/queue growth. Saved `IconPath` files from another OS are never opened or replaced. Loaded-page `page-favicon-updated` metadata refreshes the `/favicon.ico` fallback, including declared CDN HTTP(S) raster icons with no credentials or HTTPS downgrade. Repeated URLs revalidate rather than retaining a stale image. Unsupported Electron raster formats use bounded native Qt normalization through request tokens; late replies cannot overwrite newer icons. Trusted chrome accepts only data images and draws16px fixed slots with folder/globe vectors when missing. No third-party service, manifest discovery or disk cache is implemented.
 
-Caption visibility uses the Windows properties `WebBookmarkIconsOnly` and per-entry `IconsOnly`. Global mode takes precedence and disables the per-entry checkbox without changing its saved choice. Tooltips and accessible names retain captions and URLs, and icon arrival does not change button geometry. Browser icon presentation remains distinct from portable tray-icon bytes. See [the detailed parity audit](linux-parity-audit.md).
+Caption visibility uses the Windows properties `WebBookmarkIconsOnly` and per-entry `IconsOnly`. Global mode takes precedence and disables the per-entry checkbox without changing its saved choice. Tooltips and accessible names retain captions and URLs, and icon arrival does not change button geometry. Browser icon presentation remains distinct from portable tray-icon bytes. See [the detailed parity audit](notes/linux-parity-audit.md).
 
 
 ## Native Linux launcher window icons

@@ -7,18 +7,18 @@
 
 - All P/Invoke declarations go in `NativeMethods.cs`
 - Use `[LibraryImport]` (source-generated) for new declarations when possible
-- Existing legacy declarations use `[DllImport]` — match the surrounding style
+- Existing legacy declarations use `[DllImport]`: match the surrounding style
 - Group by DLL: user32.dll, shcore.dll, etc.
 
 ## Handles and pointer-sized parameters
 
 **Any parameter that is a handle (`HWND`, `HANDLE`, `LPARAM`, `WPARAM`) must be declared
 `IntPtr`, never `int`.** These are 64-bit on x64/ARM64, and an `int` parameter silently works
-for as long as every caller passes `0` — then fails the moment someone passes a real value or
+for as long as every caller passes `0`, then fails the moment someone passes a real value or
 a negative sentinel, because it cannot sign-extend into the 64-bit slot.
 
 This bit us once: `SetWindowPos`'s `hWndInsertAfter` was declared `int`. Every existing call
-passed `0`, so nothing broke until the first caller passed `HWND_TOPMOST` (`-1`) — Windows
+passed `0`, so nothing broke until the first caller passed `HWND_TOPMOST` (`-1`): Windows
 received a bogus handle, the call returned `false`, and the window silently never moved.
 
 Sentinel handle values must therefore also be pointer-sized:
@@ -37,12 +37,12 @@ before anything else, and log `Marshal.GetLastWin32Error()`.
 | Attribute | Use |
 |---|---|
 | `DWMWA_WINDOW_CORNER_PREFERENCE` | Windows 11 rounded corners on borderless windows |
-| `DWMWA_BORDER_COLOR` | Border tint (COLORREF `0x00BBGGRR` — reverse of RGB); `DWMWA_COLOR_DEFAULT` restores the system colour |
+| `DWMWA_BORDER_COLOR` | Border tint (COLORREF `0x00BBGGRR`: reverse of RGB); `DWMWA_COLOR_DEFAULT` restores the system colour |
 
 Prefer these over XAML borders when a window must not change layout: a `BorderThickness` insets
 content, whereas the DWM border costs nothing.
 
-**A window that fills the screen must turn its corners off** — `DWMWCP_DONOTROUND` while it does,
+**A window that fills the screen must turn its corners off**: `DWMWCP_DONOTROUND` while it does,
 `DWMWCP_ROUND` again afterwards. Rounded corners are a flyout affordance; on a screen-filling
 window they cut the corners off the content, which on a fullscreen video is very visible.
 `WebFlyoutWindow.ApplyFullScreen` does this alongside clearing its content inset, because both
@@ -53,13 +53,13 @@ otherwise read as a border around the page.
 `MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)` + `GetMonitorInfo` is how a window grows to
 the screen it is already on rather than the primary one. Take the bounds from the right field:
 `rcWork` excludes the taskbar and is what a flyout should be clamped into, while `rcMonitor` is
-the whole screen and is what fullscreen means — a fullscreen video covers the taskbar.
+the whole screen and is what fullscreen means: a fullscreen video covers the taskbar.
 
 ## Off-screen parking
 
 `GetSystemMetrics(SM_XVIRTUALSCREEN / SM_YVIRTUALSCREEN)` gives the top-left of the box around
 every monitor. Park a window at that origin *minus its own size* when it must be visible to
-Windows but not to the user — `FlyoutWindow.PreRenderOffScreen` uses it to compose a window's
+Windows but not to the user: `FlyoutWindow.PreRenderOffScreen` uses it to compose a window's
 first frame, and `FlyoutWindow.ParkOffScreen` uses it for every dismissal, so the flyout keeps
 its composition surfaces instead of re-rasterising on the next open. Never use a hard-coded
 negative coordinate for this: monitors can be arranged to the left of or above the primary, so
@@ -86,7 +86,7 @@ hide animation.
 
 Use this rather than XAML opacity whenever a window has a `SystemBackdrop`: the backdrop is
 composited *behind* the XAML tree, so `RootGrid.Opacity` fades the content but leaves the
-acrylic pane behind as a solid rectangle. Verified working alongside `DesktopAcrylicBackdrop` —
+acrylic pane behind as a solid rectangle. Verified working alongside `DesktopAcrylicBackdrop`: 
 the acrylic fades with the rest of the window.
 
 The alpha is window state and **survives being parked off screen**, so any path that puts the
@@ -101,18 +101,18 @@ confirm the user actually left: `GetForegroundWindow()` compared against the win
 `IsChild(hwnd, foreground)`. `WebFlyoutWindow` does this on the next dispatcher turn rather than
 inside the event, so the foreground switch has settled before it is read.
 
-**`IsChild` is not enough on its own — an owned window is not a child.** A file picker, the Windows
+**`IsChild` is not enough on its own: an owned window is not a child.** A file picker, the Windows
 Security passkey prompt and a print dialog are top-level windows *owned by* the window that raised
 them, and they belong to whoever raised them, which for anything a hosted browser opens is another
 process. Both tests miss them, and the panel dismisses itself in the middle of the operation the
-dialog exists for. Walk the owner chain with `GetWindow(hwnd, GW_OWNER)` — bounded, since a
-malformed chain must not spin — and, for dialogs the browser owns itself, compare the foreground
+dialog exists for. Walk the owner chain with `GetWindow(hwnd, GW_OWNER)`: bounded, since a
+malformed chain must not spin, and, for dialogs the browser owns itself, compare the foreground
 window's process (`GetWindowThreadProcessId`) against `CoreWebView2.BrowserProcessId`. Identify
 these by process, never by window class or title.
 
 **A window only deactivates once**, so declining to dismiss is not free: nothing will raise the
 event again when the dialog closes and the user moves to a different app. Whatever declines has to
-take responsibility for finishing the job — `WebFlyoutWindow` starts a short polling timer that
+take responsibility for finishing the job: `WebFlyoutWindow` starts a short polling timer that
 applies the deferred dismissal once the foreground is no longer its own.
 
 ## Constants & Enums
@@ -131,7 +131,7 @@ the cursor is only a fallback when the shell cannot provide an anchor.
 
 - `[StructLayout(LayoutKind.Sequential)]` or `[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]`
 - String fields use `[MarshalAs(UnmanagedType.ByValTStr, SizeConst = N)]`
-- `RECT`, `POINT`, `MONITORINFOEX` are already defined — reuse them
+- `RECT`, `POINT`, `MONITORINFOEX` are already defined: reuse them
 
 ## Consuming P/Invoke
 
@@ -150,13 +150,13 @@ The `#region IPropertyStore (COM)` section provides shell property access via `S
 | `PKEY_AppUserModel_ID` | 5 | AppUserModelID for taskbar grouping |
 
 Helpers:
-- `SetWindowAppUserModelId(hwnd, appId)` — sets AUMID on a window (used by SettingsWindow)
+- `SetWindowAppUserModelId(hwnd, appId)`: sets AUMID on a window (used by SettingsWindow)
 - `SetWindowRelaunchProperties(hwnd, icon, command, displayName)` sets all three relaunch PKEYs. Used by
   `WebFlyoutWindow.ApplyRelaunchProperties` in regular-window mode: an AUMID names a taskbar group but does
   not say how to start it again, so without these three the button offers no working **Pin to taskbar**. The
   icon must be a resource reference (`"path,0"`); a bare path is unparseable and the taskbar silently uses
   the generic document icon.
-- `SetPropertyStoreString(store, key, value)` — low-level VT_LPWSTR setter (private)
+- `SetPropertyStoreString(store, key, value)`: low-level VT_LPWSTR setter (private)
 
 ## ITaskbarList COM Section
 
@@ -168,18 +168,18 @@ regular-window mode to add and drop a web launcher's taskbar button.
 - It returns `S_OK` and does **nothing** for a `WS_EX_TOOLWINDOW` window, even with a matching
   `PKEY_AppUserModel_ID` stamped. It is not a way to give a tool window a taskbar button, however
   much it looks like one.
-- It *is* required for a window that has just had the tool bit cleared — without it the window is
+- It *is* required for a window that has just had the tool bit cleared: without it the window is
   correctly restyled and still has no button, because the shell has not re-evaluated. The
   documented alternative (hide, restyle, show) is unavailable in this app: `SW_HIDE` makes WinUI
   release the composition surfaces that off-screen parking exists to preserve.
 
 Pair it with `SetWindowPos(… SWP_FRAMECHANGED)` after the style change. A null return from
-`GetTaskbarList()` is a normal outcome to handle — a taskbar button must never stop a flyout
+`GetTaskbarList()` is a normal outcome to handle: a taskbar button must never stop a flyout
 opening.
 
 `IsIconic` + `SW_RESTORE` belong to the same feature: **restore before foregrounding**.
 `SetForegroundWindow` on a minimized window raises it still minimized, which is
-indistinguishable from the call having done nothing — and minimized is exactly where a
+indistinguishable from the call having done nothing, and minimized is exactly where a
 regular-window launcher lands after its taskbar button is clicked.
 
 ## Jump list COM section
