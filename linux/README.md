@@ -30,7 +30,7 @@ docker exec CONTAINER /work/in-session.sh python3 /source/linux/dev/verify_brows
 docker exec CONTAINER python3 /work/capture.py /work/desktop.png
 ```
 
-`npm run verify:linux` runs portable data and lifecycle checks on the host. It explicitly skips native Qt checks when PySide6 is absent; those skips do not establish native acceptance. The browser qualification uses disposable localhost pages and an explicit Chromium fake media device. It verifies actual remote isolation, permission denial, local cookie partitions, persistence, hidden-page sleep, and startup/lifecycle behavior. It never uses a real account or physical microphone.
+`npm run test:linux` runs portable data and lifecycle checks on the host. It explicitly skips native Qt checks when PySide6 is absent; those skips do not establish native acceptance. The browser qualification uses disposable localhost pages and an explicit Chromium fake media device. It verifies actual remote isolation, permission denial, local cookie partitions, persistence, hidden-page sleep, and startup/lifecycle behavior. It never uses a real account or physical microphone.
 
 A source launch needs distro PySide6 QtWidgets/QtNetwork/QtDBus, dbus-next, and the locked Electron distribution. Use `npm run start:linux` only when desktop interaction is authorized. Native launches create an app-owned autostart entry by default; the user can disable it in System. Development fixtures pass `--no-autostart` and store all data under their private `/work` directory.
 

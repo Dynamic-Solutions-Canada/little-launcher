@@ -28,7 +28,7 @@
     .\build-msix.ps1 -NoSign              # Store upload (unsigned)
     .\build-msix.ps1 -Platform ARM64 -NoSign
     .\build-msix.ps1 -TrustedPfxPath <pfx> -TrustedPfxPassword <password>   # signed sideload
-    Day to day, use npm run package:desktop (unsigned) or npm run build:desktop (signed with
+    Day to day, use npm run package:desktop (unsigned) or npm run package:desktop:dev (signed with
     the shared dev certificate) from WSL; the build tooling passes the certificate.
 #>
 param(

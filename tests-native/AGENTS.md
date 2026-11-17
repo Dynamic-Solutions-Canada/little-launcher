@@ -1,0 +1,9 @@
+# Native UI suites
+
+Read [drag-drop.md](../docs/drag-drop.md) before changing drag policy or these suites. Suites here move the pointer and replace settings on a dedicated test desktop; they are never part of `test`, `validate` or CI.
+
+`LittleLauncher.NativeDrag` owns actual installed-app pointer checks, synthetic fixtures, target geometry assertions and the consoleless Windows executor. Read its [README](LittleLauncher.NativeDrag/README.md) before running it. Keep the guards (TEST-10): the `LITTLE_LAUNCHER_NATIVE_TESTS=1` machine opt-in, the per-run desktop-interaction flag and the Windows-only check. Never add a host name. UIA can set up the editor, but tested moves must go through native pointer input. Preserve original settings before replacing fixtures and retain the backup on failed cleanup. Screenshots support visual review and do not imply automated pixel acceptance.
+
+`LittleLauncher.NativeDrag/interaction-cases.ps1` is dot-sourced only by that guarded suite. It owns actual group-pencil taps, changing drag destinations, pointer/hit witnesses and foreign-window/Done/dismissal checks. Its Notepad cases require no existing Notepad process and close only the isolated synthetic document's process. Preserve the original eight default cases; follow-up interactions are explicitly selected with `--cases`. A regular editor must close on Done, while a native flyout resumes click-away dismissal.
+
+Group-boundary cases must keep their exact receiver/last-child/following-group geometry assertions and prove saved items remain unchanged before Drop. Inside/after/inside screenshots support human review of the faded last child and internal marker versus an unchanged child and outside marker. Held-pointer checks compare geometry twice before release; group-end-leave tests cue cleanup before held-Escape cancellation. These checks do not claim automated pixel or opacity acceptance.

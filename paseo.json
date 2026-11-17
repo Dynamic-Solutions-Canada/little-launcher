@@ -10,8 +10,8 @@
     "verify-desktop": {
       "command": "npm run verify:desktop"
     },
-    "build-desktop": {
-      "command": "npm run build:desktop"
+    "package-desktop-dev": {
+      "command": "npm run package:desktop:dev"
     },
     "install-desktop": {
       "command": "npm run install:desktop"
@@ -19,8 +19,14 @@
     "package-desktop": {
       "command": "npm run package:desktop"
     },
-    "verify-linux": {
-      "command": "npm run verify:linux"
+    "validate": {
+      "command": "npm run validate"
+    },
+    "test": {
+      "command": "npm test"
+    },
+    "test-linux": {
+      "command": "npm run test:linux"
     }
   }
 }

@@ -36,8 +36,6 @@ def build_command(args: argparse.Namespace, suite: Path) -> str:
     command = [
         "&",
         powershell_literal(str(suite)),
-        "-ExpectedComputerName",
-        powershell_literal(args.expected_computer_name),
         "-AllowDesktopInteraction",
         "-SettingsPath",
         powershell_literal(str(args.settings_path)),
@@ -56,7 +54,6 @@ def build_command(args: argparse.Namespace, suite: Path) -> str:
 def main() -> int:
     """Validate the explicit desktop opt-in, then log the consoleless suite's exit status."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--expected-computer-name", required=True)
     parser.add_argument("--allow-desktop-interaction", action="store_true")
     parser.add_argument("--settings-path", required=True, type=Path)
     parser.add_argument("--output-directory", required=True, type=Path)
@@ -71,8 +68,9 @@ def main() -> int:
         parser.error("--allow-desktop-interaction is required for this dedicated-desktop test")
     if os.name != "nt":
         parser.error("the native suite must run in the signed-in Windows desktop session")
-    if os.environ.get("COMPUTERNAME", "").casefold() != args.expected_computer_name.casefold():
-        parser.error("the current computer does not match --expected-computer-name")
+    # The machine statement (TEST-10): only a dedicated test desktop sets this variable.
+    if os.environ.get("LITTLE_LAUNCHER_NATIVE_TESTS") != "1":
+        parser.error("set LITTLE_LAUNCHER_NATIVE_TESTS=1 on the dedicated test desktop to run this suite")
 
     powershell = str(args.powershell) if args.powershell else shutil.which("pwsh.exe")
     if not powershell:

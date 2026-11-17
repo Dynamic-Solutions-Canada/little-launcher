@@ -21,6 +21,17 @@ npm run verify:desktop
 
 The commands build for the build host's architecture by default. [windows-development.md](windows-development.md) lists them and what is specific to this repo; the shared Windows build tools document the rest.
 
+## Checks
+
+`npm run validate` is the Linux gate, run before finishing any change together with `npm run verify:desktop`. In order, it runs:
+
+- `npm run format:check`: every C# project outside `external/` matches the root `.editorconfig`, which is winui-app-kit's file copied unchanged; `npm run format` rewrites the files.
+- `npm run check:gitignore`: `.gitignore` ends with winui-app-kit's shared block, unchanged.
+- `npm run check:l10n`: the catalog checks in [localization.md](localization.md#checks).
+- `npm test`: every portable .NET harness under `tests/`, found by winui-app-kit's `scripts/run-tests` (each has a README saying what it covers and does not prove), then `npm run test:linux`.
+
+Formatting and the .NET harnesses run through winui-app-kit's `scripts/dotnet`, which uses the SDK pinned in `global.json` when installed and otherwise its Docker image, capped at 3 GB. The native suite in `tests-native/` moves the pointer on a dedicated test desktop and never runs from these commands; its [README](../tests-native/LittleLauncher.NativeDrag/README.md) explains how to run it deliberately.
+
 ## Windows run
 
 ```bash

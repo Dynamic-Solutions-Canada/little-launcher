@@ -12,6 +12,6 @@ Goal: a new page reachable from the Settings navigation, with its text in every 
 3. Add a `NavigationViewItem` in `LittleLauncher/SettingsWindow.xaml`: `TargetPageType` set to the new page, `Content` from `{l:Str Key=...}`, and a Segoe Fluent Icons glyph.
 4. Add every new key to the shared catalogs as described in [docs/localization.md](../../../docs/localization.md), in `en-US` and all six other catalogs.
 5. Update `docs/architecture.md` and `docs/components.md` for the new page.
-6. Run `npm run verify:linux` for the catalog checks, then build with the `desktop` skill.
+6. Run `npm run validate` (format, catalogs, tests), then build with the `desktop` skill.
 
 Report: the page, its navigation entry, the docs updated, and the build and check results.

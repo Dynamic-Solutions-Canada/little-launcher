@@ -69,7 +69,7 @@ and can conflict with packages already submitted to Partner Center.
 
 ## Local WSL build and install
 
-Use `npm run build:desktop`, `npm run verify:desktop`, `npm run install:desktop`,
+Use `npm run package:desktop:dev`, `npm run verify:desktop`, `npm run install:desktop`,
 and `npm run package:desktop` from WSL. See [the common desktop workflow](windows-development.md).
 Direct PowerShell packaging commands above describe release internals, not the
 local development entry point. Never uninstall to bypass a same-version error.

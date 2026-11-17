@@ -2,10 +2,11 @@
 <## Exercises actual WinUI drag gestures and checks the settings saved by the installed app.
 Run only on an explicitly designated disposable Windows desktop. It moves that desktop's
 pointer, closes Little Launcher between cases, and temporarily replaces its local settings.
+Guard (TEST-10): the machine opts in with LITTLE_LAUNCHER_NATIVE_TESTS=1, each run passes
+-AllowDesktopInteraction, and the suite refuses any OS other than Windows.
 ##>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][string]$ExpectedComputerName,
     [Parameter(Mandatory)][string]$SettingsPath,
     [Parameter(Mandatory)][string]$OutputDirectory,
     [switch]$AllowDesktopInteraction,
@@ -15,8 +16,9 @@ param(
     [ValidateSet('child-reorder','child-between-groups','child-to-column','item-to-empty-group','group-cross-column','group-over-child','group-same-column','cancel','group-pencil','focus-return-done','focus-body-done','preview-target-change','preview-target-cancel','toolbar-settings','item-into-group-end','item-after-group','child-after-own-group','item-before-group','item-into-group-header','group-boundary-cancel','group-end-leave')][string[]]$Cases = @('child-reorder','child-between-groups','child-to-column','item-to-empty-group','group-cross-column','group-over-child','group-same-column','cancel')
 )
 $ErrorActionPreference='Stop'
-if (-not $AllowDesktopInteraction -or $env:COMPUTERNAME -ne $ExpectedComputerName) {
-    throw 'An explicit dedicated-desktop opt-in and matching computer name are required.'
+if (-not $IsWindows) { throw 'This suite drives the Windows desktop and runs only on Windows.' }
+if ($env:LITTLE_LAUNCHER_NATIVE_TESTS -ne '1' -or -not $AllowDesktopInteraction) {
+    throw 'Set LITTLE_LAUNCHER_NATIVE_TESTS=1 on the dedicated test desktop and pass -AllowDesktopInteraction.'
 }
 if ((Get-Process -Id $PID).SessionId -eq 0) { throw 'Run in an interactive desktop session, not the SSH service session.' }
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,WindowsBase,System.Drawing

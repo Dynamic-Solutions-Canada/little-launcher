@@ -3,11 +3,17 @@
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
-    "build:desktop": "scripts/windows-build --dev",
-    "verify:desktop": "scripts/windows-build --build-only --configuration Debug",
-    "install:desktop": "scripts/windows-build --install",
-    "package:desktop": "scripts/windows-build --no-sign",
-    "verify:linux": "PYTHONPATH=linux python3 -m unittest discover -s linux/tests -v && node --test linux/tests/*.test.cjs",
+    "package:desktop:dev": "external/winui-app-kit/scripts/windows-build --dev",
+    "verify:desktop": "external/winui-app-kit/scripts/windows-build --build-only --configuration Debug",
+    "install:desktop": "external/winui-app-kit/scripts/windows-build --install",
+    "package:desktop": "external/winui-app-kit/scripts/windows-build --no-sign",
+    "test": "external/winui-app-kit/scripts/run-tests && npm run test:linux",
+    "test:linux": "PYTHONPATH=linux python3 -m unittest discover -s linux/tests -v && node --test linux/tests/*.test.cjs",
+    "check:l10n": "PYTHONPATH=linux python3 -m unittest -v linux.tests.test_localization",
+    "check:gitignore": "external/winui-app-kit/scripts/check-gitignore .",
+    "format": "scripts/format",
+    "format:check": "scripts/format --check",
+    "validate": "npm run format:check && npm run check:gitignore && npm run check:l10n && npm test",
     "start:linux": "linux/bin/little-launcher",
     "package:linux": "python3 linux/packaging/build.py"
   }

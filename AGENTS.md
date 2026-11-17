@@ -32,17 +32,21 @@ This repo follows the shared standards at https://github.com/Dynamic-Solutions-C
 
 ## Commands
 
-Source is authoritative in WSL, with submodules initialised (`git submodule update --init`). Windows builds go through the shared Windows build tools; [docs/windows-development.md](docs/windows-development.md) has this repo's specifics.
+Source is authoritative in WSL, with submodules initialised (`git submodule update --init`); the desktop commands, test runner and checks come from winui-app-kit at `external/winui-app-kit`. Windows builds go through the shared Windows build tools; [docs/windows-development.md](docs/windows-development.md) has this repo's specifics.
 
 | Command | Proves | Does not prove |
 | --- | --- | --- |
 | `npm run verify:desktop` | The Windows app and helper compile (Debug), XAML included | That it packages or runs; the `tests/` harnesses are not compiled |
-| `npm run build:desktop` | A signed dev package builds | That it installs or runs |
+| `npm run package:desktop:dev` | A signed dev package builds | That it installs or runs |
 | `npm run install:desktop` | The dev package updates the installed copy in place and launches | Behaviour; check it in the running app |
 | `npm run package:desktop` | An unsigned Store package builds | Signing; that it runs |
-| `npm run verify:linux` | The Linux portable checks and Node suites pass, including the catalog checks | Native Qt behaviour, which is skipped without PySide6 |
-| `npm run start:linux` | The Linux app starts from source | Run only when desktop interaction is authorised |
-| `npm run package:linux` | The AppImage builds | That it runs on a target desktop |
+| `npm test` | Every .NET harness under `tests/` (found by winui-app-kit's `run-tests`) and `test:linux` pass, on Linux | What needs a window, the installed package or the shell (see each harness README) |
+| `npm run test:linux` | The Linux portable checks and Node suites pass | Native Qt behaviour, which is skipped without PySide6 |
+| `npm run check:l10n` | Every catalog has the English keys and placeholders, and the language lists agree | Translation quality |
+| `npm run validate` | The Linux gate: `format:check`, `check:gitignore`, `check:l10n`, then `npm test` | A Windows compile; also run `verify:desktop` |
+| `npm run format` | Rewrites C# outside `external/` to the root `.editorconfig` | Behaviour |
+
+Before finishing a change, run `npm run validate` and `npm run verify:desktop`. The native suite under `tests-native/` drives a real desktop and never runs from these commands; see [tests-native/AGENTS.md](tests-native/AGENTS.md).
 
 Local verification uses the sideloaded Release MSIX through the `desktop` skill, updating the installed package in place so its settings and sign-ins survive. Use a debug or unpackaged build only when asked for one.
 
@@ -58,7 +62,7 @@ Local verification uses the sideloaded Release MSIX through the `desktop` skill,
 | [docs/development.md](docs/development.md) | Setting up, checking dependencies, or finding a file | Prerequisites, tech stack, project layout |
 | [docs/windows-development.md](docs/windows-development.md) | Building, verifying or installing on Windows from WSL | `windows-build.json`, `scripts/windows-build`, `global.json`, `Directory.Build.*` |
 | [docs/launcher-model.md](docs/launcher-model.md) | Adding a launcher kind or item type | `Models/Launcher.cs`, `Models/LauncherItem.cs`, `Controls/LauncherItemsView*` |
-| [docs/linux.md](docs/linux.md) and [linux/README.md](linux/README.md) | Native Linux UI, the browser boundary, desktop integration, packages and Linux dependencies | `linux/**` |
+| [docs/linux.md](docs/linux.md) and [linux/README.md](linux/README.md) | Native Linux UI, the browser boundary, desktop integration, packages, Linux dependencies, and `start:linux` / `package:linux` | `linux/**` |
 | [docs/pinvoke.md](docs/pinvoke.md) | P/Invoke, Win32 interop, native signatures | `Classes/NativeMethods.cs` |
 | [docs/user-settings.md](docs/user-settings.md) | Observable settings, the Launcher model, serialization | `ViewModels/UserSettings*.cs`, `Models/Launcher.cs` |
 | [docs/drag-drop.md](docs/drag-drop.md) | Shared launcher drag-and-drop, edit mode and hosts | `Controls/LauncherItemsView*`, `Controls/ILauncherItemsHost.cs`, `Windows/FlyoutWindow*.cs`, `Windows/LauncherItemsEditorWindow.cs`, `SettingsWindow.ItemEditing.cs` |
@@ -69,6 +73,7 @@ Local verification uses the sideloaded Release MSIX through the `desktop` skill,
 | [docs/icons.md](docs/icons.md) | App, tray, shortcut and window icons, the icon gallery, website icons | `MainWindow.xaml.cs`, `SettingsWindow.xaml.cs`, `LaunchersPage.xaml*`, `HomePage.xaml.cs`, `FlyoutConverters.cs`, `FlyoutWindow.xaml*`, `IconGallery.cs`, `FaviconService*.cs`, `LauncherShortcut/**` |
 | [docs/installer.md](docs/installer.md) | Packaging, install and upgrade, update flows, uninstall cleanup | `UpdateService.cs`, `build-msix.ps1`, `Package.appxmanifest`, `cleanup-uninstall.ps1` |
 | [docs/versioning.md](docs/versioning.md) | Version bumps and releases | `Directory.Build.props`, `Package.appxmanifest`, `build-msix.ps1`, `.github/workflows/build-msix.yml` |
+| [tests/AGENTS.md](tests/AGENTS.md), [tests-native/AGENTS.md](tests-native/AGENTS.md) | Changing a harness or the native suite | `tests/**`, `tests-native/**` |
 | `desktop` skill | Building, verifying, packaging or installing the Windows app locally | Local Windows builds |
 | `add-setting`, `add-settings-page`, `add-launcher-feature` skills | Adding a setting, a Settings page or a launcher item feature | The files each names |
 | `audit-docs` skill | Before a release, or after a batch of changes | Every guide, nested `AGENTS.md` and skill |

@@ -1,16 +1,16 @@
 > **Scope:** Use when building, verifying, packaging or installing the Windows app from WSL, or changing the .NET build floor.
-> **Governs:** `windows-build.json`, `scripts/windows-build`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`.
+> **Governs:** `windows-build.json`, `package.json`, `global.json`, `Directory.Build.props`, `Directory.Build.targets`.
 
 # Windows desktop workflow
 
-Windows builds run from WSL through the shared Windows build tools, which stage the working tree in a disposable Windows TEMP copy, build there and return logs and packages to `.artifacts/windows-build/`. Their commands, options, signing, local build VM and troubleshooting are documented once, in the [Windows build tools README](https://github.com/Dynamic-Solutions-Canada/windows-build-tools) (the link resolves once that repository is published). `scripts/windows-build` calls them, and `windows-build.json` configures them for this repo. This guide keeps only what is specific to Little Launcher.
+Windows builds run from WSL through the shared Windows build tools, which stage the working tree in a disposable Windows TEMP copy, build there and return logs and packages to `.artifacts/windows-build/`. Their commands, options, signing, local build VM and troubleshooting are documented once, in the [Windows build tools README](https://github.com/Dynamic-Solutions-Canada/windows-build-tools) (the link resolves once that repository is published). winui-app-kit's `scripts/windows-build` (in the `external/winui-app-kit` submodule) calls them, and `windows-build.json` configures them for this repo. This guide keeps only what is specific to Little Launcher.
 
 ## This repo's commands
 
 | Command | What it does |
 | --- | --- |
 | `npm run verify:desktop` | Debug compile of the app and the companion helper |
-| `npm run build:desktop` | Signed dev package, not installed |
+| `npm run package:desktop:dev` | Signed dev package, not installed |
 | `npm run install:desktop` | Signed dev package, updated in place over the installed copy and launched |
 | `npm run package:desktop` | Unsigned Store package |
 

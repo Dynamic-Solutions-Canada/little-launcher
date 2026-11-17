@@ -121,7 +121,7 @@ It assigns a higher dev revision only in disposable C: staging, updates in place
 checks the installed version, and launches the app. Never uninstall to bypass
 `0x80073CFB`: package settings, profiles and caches are removed on uninstall.
 
-`npm run build:desktop` creates the signed package without installation;
+`npm run package:desktop:dev` creates the signed package without installation;
 `npm run install:desktop -- --skip-build` reuses the last successful dev package.
 `npm run package:desktop` creates the unsigned Store package for the build host's
 architecture. Output packages include their version in the filename
@@ -330,7 +330,7 @@ Submission 42 will publish automatically if it passes certification.
 
 ## Local WSL build and install
 
-Use `npm run build:desktop`, `npm run verify:desktop`, `npm run install:desktop`,
+Use `npm run package:desktop:dev`, `npm run verify:desktop`, `npm run install:desktop`,
 and `npm run package:desktop` from WSL. See [the common desktop workflow](windows-development.md).
 Direct PowerShell packaging commands above describe release internals, not the
 local development entry point. Never uninstall to bypass a same-version error.

@@ -1,8 +1,16 @@
 # Native launcher editing checks
 
-These scripts exercise the real installed WinUI application on a dedicated disposable Windows desktop. They move its pointer, restart the matching Developer package between cases, and temporarily replace its settings with synthetic data. They require an explicit expected computer name and desktop-interaction opt-in. They must run in that computer's signed-in interactive session, with one monitor and English app text.
+These scripts exercise the real installed WinUI application on a dedicated disposable Windows desktop. They move its pointer, restart the matching Developer package between cases, and temporarily replace its settings with synthetic data. They must run in the test desktop's signed-in interactive session, with one monitor and English app text.
 
-Initial qualification on 2026-10-20 used the dedicated `WINDOWS-DEV` VM, Windows 10.0.26300, x64 Developer Release MSIX packages and the installed Windows App SDK 1.8 runtime. The loaded `Microsoft.UI.Xaml.dll` reported file version `3.1.8.2608`. Coverage is limited to the following checks; diagnostic-build results do not establish acceptance of the production build.
+## Guard (TEST-10)
+
+The suite lives in `tests-native/`, outside the `tests/` folder that `npm test` discovers, so it is never part of `test`, `validate` or CI. It refuses to start unless all three hold:
+
+- the machine has opted in by setting the user environment variable `LITTLE_LAUNCHER_NATIVE_TESTS=1`. Whoever next runs the suite on a test VM sets it there, once, with `[Environment]::SetEnvironmentVariable('LITTLE_LAUNCHER_NATIVE_TESTS', '1', 'User')`, and never on a desktop someone is using;
+- the run passes `--allow-desktop-interaction` (the executor) or `-AllowDesktopInteraction` (the suite);
+- it is running on Windows.
+
+Initial qualification on 2026-10-20 used the dedicated Windows test VM, Windows 10.0.26300, x64 Developer Release MSIX packages and the installed Windows App SDK 1.8 runtime. The loaded `Microsoft.UI.Xaml.dll` reported file version `3.1.8.2608`. Coverage is limited to the following checks; diagnostic-build results do not establish acceptance of the production build.
 
 | Check | Package | Result |
 |---|---|---|
@@ -48,7 +56,7 @@ Preview screenshots require human review of name/count legibility, the current d
 
 Select the seven group-boundary cases explicitly for each host and all three modes. They save DPI-scaled point/expected-cue receipts and capture inside/after/inside transitions during one gesture. At every waypoint and twice during a held final point, they require unchanged saved items and exactly unchanged receiver, final-child and following-group bounds. Cancellation and leave cases also compare restored bounds when the host remains open. The regular editor may close through its existing Escape accelerator; in that case a receipt records expected closure and no post-close geometry claim. Pre-Escape waypoint/held bounds and post-Escape saved-item assertions still apply. Review the inside group tint, clear upper portion of the final child, progressive fade toward the overlapping lower marker against the unchanged child and full-width marker outside the group. Empty groups have no child to fade. High contrast retains the explicit marker/outline/caption and omits the fade. Tint/fade pixels and marker geometry are not automatically asserted. External Explorer payload routing and theme/high-contrast rendering still need separate native checks.
 
-The suite captures during/after screenshots, per-case input and focus preconditions, the loaded WinUI binary version, app event logs when present, `results.json` and `summary.json`. Screenshots support human review of the group outline, grip/pencil contrast and named drag preview; there are no automated pixel assertions. No high-contrast setting is changed or tested. Read-only launchers, lifetime/rebuild invalidation, accessibility, arbitrary screen/DPI configurations and live sync require separate checks. The policy suite in [LauncherItemReorder.Tests](../LauncherItemReorder.Tests/README.md) covers stale collections, item identity, synthetic wrappers and serialization without user data or Windows input.
+The suite captures during/after screenshots, per-case input and focus preconditions, the loaded WinUI binary version, app event logs when present, `results.json` and `summary.json`. Screenshots support human review of the group outline, grip/pencil contrast and named drag preview; there are no automated pixel assertions. No high-contrast setting is changed or tested. Read-only launchers, lifetime/rebuild invalidation, accessibility, arbitrary screen/DPI configurations and live sync require separate checks. The policy suite in [LauncherItemReorder.Tests](../../tests/LauncherItemReorder.Tests/README.md) covers stale collections, item identity, synthetic wrappers and serialization without user data or Windows input.
 
 A real Snipping Tool capture was also exercised separately. On the VM, the app's native popup showed a rendering/input anomaly: the physical Done hit reached only its app-owned XAML pane, while UIA invocation of the same Done command ended editing. The capture notification confirmed the real operation, but that run does not establish physical-input acceptance after Snipping Tool or identify a product root cause. No speculative input/composition change was made. Drag-helper clipping at the extreme screen edge also remains a known limit of the current fixed anchor; the requested hint-above-body placement was verified within the visible helper.
 
@@ -56,15 +64,14 @@ Use the existing installed Python and PowerShell 7. The executor launches PowerS
 
 Cancellation holds Escape for 150 ms before releasing the mouse and retains it through that release. It records both keys' held state and a screenshot, then releases Escape in `finally`. An immediate Escape key-down/key-up followed by mouse-up raced the tray host's native cancellation during qualification; a saved move from that sequence did not establish a product cancellation defect.
 
-Copy this directory to the disposable VM, then register an interactive scheduled task from a setup session. The following example names the designated VM explicitly and runs one regular-editor case first. Adjust the two local paths, preserving the expected machine and opt-in. The task is local to that VM; registering or running it on another person's active desktop is not an acceptable substitute.
+Copy this directory to the disposable VM, set `LITTLE_LAUNCHER_NATIVE_TESTS=1` there as described under Guard, then register an interactive scheduled task from a setup session. The following example runs one regular-editor case first. Adjust the two local paths, preserving the opt-in. The task is local to that VM; registering or running it on another person's active desktop is not an acceptable substitute.
 
 ```powershell
-$testDirectory = "$env:USERPROFILE\Development\native-drag"
+$testDirectory = "$env:USERPROFILE\Development\LittleLauncher.NativeDrag"
 $outputDirectory = "$env:USERPROFILE\Development\drag-results\regular-dark-smoke"
 $pythonw = (Get-Command pythonw.exe).Source
 $arguments = @(
     ('"{0}\run-hidden.py"' -f $testDirectory),
-    '--expected-computer-name WINDOWS-DEV',
     '--allow-desktop-interaction',
     ('--settings-path "{0}\LittleLauncher\settings.json"' -f $env:APPDATA),
     ('--output-directory "{0}"' -f $outputDirectory),
