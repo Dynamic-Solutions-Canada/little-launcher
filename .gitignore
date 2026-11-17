@@ -412,3 +412,25 @@ local.secrets.props
 !/docs/releases/
 /docs/releases/*
 !/docs/releases/*.md
+
+# Shared block (HYG-6), from winui-app-kit build/shared.gitignore. Paste it unchanged as the last part
+# of every repo's .gitignore, so no earlier line can un-ignore what it covers. Change it in the kit.
+/.artifacts/
+/.windows-build/
+.secrets/
+.aws/
+.env
+.env.*
+!.env*.example
+tmp/
+.backups/
+*.pfx
+*.cer
+*.der
+*.keystore
+*.jks
+local.properties
+.vs/
+.idea/
+.DS_Store
+Thumbs.db

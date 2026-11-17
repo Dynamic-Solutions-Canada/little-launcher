@@ -448,7 +448,7 @@ Two paths fetch a site's icon, and both must aim higher than the browser favicon
 
 - **Launcher items and bookmarks** — `FaviconService` reads the page HTML, prefers the **web app
   manifest**'s largest icon, then `<link rel="icon|apple-touch-icon">` picking the largest declared
-  `sizes`, then the Google favicon service, then `/favicon.ico`. An `apple-touch-icon` with no
+  `sizes`, then `/favicon.ico`. Only the site itself is contacted (no third-party favicon service), with ordinary certificate validation, matching Linux. An `apple-touch-icon` with no
   `sizes` attribute is scored **180** rather than 0 — it is 180px by convention, and scoring it zero
   let a 16px shortcut icon that merely appeared first in the HTML win.
 - **Web launchers** — `CoreWebView2.GetFaviconAsync` returns what the page declared for a *browser
@@ -478,7 +478,7 @@ The add/edit dialog's unified app/PWA picker shows its own **transient list icon
 
 **Raster-only:** `FetchAndCacheCoreAsync` saves whatever it downloads to a `.png` file rendered by WinUI `BitmapImage`, which **cannot decode SVG**. A site whose favicon/manifest icon is an SVG would otherwise be cached as a `.png` that displays blank. `RasterOrNull`/`IsRasterImage` (magic-byte check for PNG/JPEG/GIF/BMP/ICO/WEBP) rejects SVG and other non-raster payloads at each fetch step, so websites continue down the favicon fallback chain and **PWAs fall back to the shell-extracted icon** (`GetPwaIconFromShell`) — which is why a PWA could show its list icon (shell) but a blank selection/preview icon (the rejected SVG web icon). `GetPwaIconFromShell` requests 64px and, like the 32px list path, must retry on `E_PENDING`.
 
-For Chromium PWAs, prefer the site's own icon/manifest asset when the AUMID encodes a domain (for example `example.com-HEX_hash!App`). The shell image factory often returns a softer rasterized bitmap than the original web icon. `GetBestPwaIconAsync()` handles this preference, but it must reject off-origin login redirects and skip generic Google favicon-service fallbacks for PWAs; when the site does not expose a real app icon, it should fall back to `GetPwaIconFromShell()`.
+For Chromium PWAs, prefer the site's own icon/manifest asset when the AUMID encodes a domain (for example `example.com-HEX_hash!App`). The shell image factory often returns a softer rasterized bitmap than the original web icon. `GetBestPwaIconAsync()` handles this preference, but it must reject off-origin login redirects; when the site does not expose a real app icon, it should fall back to `GetPwaIconFromShell()`.
 
 After any bulk icon change, call `FlyoutWindow.InvalidateItems()`. That compatibility entry point refreshes every registered `LauncherItemsView`, including open regular editors, and composite tray icons. Forced invalidation rebuilds containers even when an in-place cache rewrite keeps the same path. Closed regular editors unregister their view; native popup views remain for warm reopening.
 

@@ -9,7 +9,9 @@
     4. Assembles the MSIX layout (app files + stamped manifest + image assets)
     5. Generates resources.pri via makepri (merges app resources with image assets)
     6. Packages with makeappx.exe
-    7. Signs with signtool.exe using a self-signed certificate
+    7. Signs with signtool.exe using the certificate passed in -TrustedPfxPath
+       (the build tooling passes the shared dev certificate), or leaves the
+       package unsigned with -NoSign. The script never creates a certificate.
 
     The MSIX publishes with WindowsPackageType=MSIX to suppress the unpackaged-only
     auto-bootstrapper, and declares a PackageDependency on Microsoft.WindowsAppRuntime.1.8
@@ -23,10 +25,11 @@
     Build configuration: Release (default) or Debug
 
 .EXAMPLE
-    .\build-msix.ps1
-    .\build-msix.ps1 -Platform ARM64
-    .\build-msix.ps1 -Platform x64 -Configuration Debug
     .\build-msix.ps1 -NoSign              # Store upload (unsigned)
+    .\build-msix.ps1 -Platform ARM64 -NoSign
+    .\build-msix.ps1 -TrustedPfxPath <pfx> -TrustedPfxPassword <password>   # signed sideload
+    Day to day, use npm run package:desktop (unsigned) or npm run build:desktop (signed with
+    the shared dev certificate) from WSL; the build tooling passes the certificate.
 #>
 param(
     [ValidateSet("x64", "ARM64")]
@@ -35,9 +38,8 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release",
 
-    # Optional: path to a CA-trusted PFX certificate for Authenticode signing.
-    # When provided, the embedded exe files and the final MSIX are signed with this
-    # cert instead of the dev self-signed cert. Required to satisfy Smart App Control.
+    # Path to the PFX that signs the embedded executables and the MSIX. Required unless
+    # -NoSign is given. Signing material is always passed in; the script holds none (SEC-11).
     [string]$TrustedPfxPath = "",
 
     [string]$TrustedPfxPassword = "",
@@ -57,7 +59,6 @@ $mainProj      = Join-Path $repoRoot "LittleLauncher\LittleLauncher.csproj"
 $flyoutProj    = Join-Path $repoRoot "LauncherShortcut\LauncherShortcut.csproj"
 $manifestSrc   = Join-Path $msixDir  "Package.appxmanifest"
 $imagesDir     = Join-Path $msixDir  "Images"
-$pfxFile       = Join-Path $msixDir  "LittleLauncher.pfx"
 
 $rid           = if ($Platform -eq "ARM64") { "win-arm64" } else { "win-x64" }
 $publishDir    = Join-Path $repoRoot "LittleLauncher\bin\$Platform\$Configuration\net10.0-windows10.0.22000.0\$rid\publish"
@@ -142,22 +143,16 @@ function Remove-OldMsixArtifacts {
     }
 }
 
-# ── Signing certificate (auto-generate if missing) ─────────────────────────────
+# ── Signing certificate (passed in, never generated) ──────────────────────────
+# Check before the slow publish steps so a missing certificate fails immediately.
 if ($NoSign) {
     Write-Host "Skipping signing (Store upload mode)" -ForegroundColor Yellow
-} elseif ([string]::IsNullOrEmpty($TrustedPfxPath) -and -not (Test-Path $pfxFile)) {
-    Write-Host "Signing certificate not found — generating self-signed cert..." -ForegroundColor Yellow
-    $cert = New-SelfSignedCertificate -Type Custom -Subject "CN=RyanEwen" `
-        -KeyUsage DigitalSignature -FriendlyName "Little Launcher Dev" `
-        -CertStoreLocation "Cert:\CurrentUser\My" `
-        -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3")
-    $pwd = ConvertTo-SecureString -String "LittleLauncher" -Force -AsPlainText
-    Export-PfxCertificate -Cert $cert -FilePath $pfxFile -Password $pwd | Out-Null
-    $cerFile = Join-Path $msixDir "LittleLauncher.cer"
-    Export-Certificate -Cert $cert -FilePath $cerFile | Out-Null
-    Write-Host "  Created $pfxFile"
-    Write-Host "  To trust the MSIX, import $cerFile into Trusted People:" -ForegroundColor Cyan
-    Write-Host "    Import-Certificate -FilePath `"$cerFile`" -CertStoreLocation Cert:\LocalMachine\TrustedPeople" -ForegroundColor DarkCyan
+} elseif ([string]::IsNullOrEmpty($TrustedPfxPath)) {
+    Write-Error "No signing certificate. Pass -TrustedPfxPath and -TrustedPfxPassword (the build tooling does), or use -NoSign for an unsigned Store package."
+    exit 1
+} elseif (-not (Test-Path $TrustedPfxPath)) {
+    Write-Error "TrustedPfxPath not found: $TrustedPfxPath"
+    exit 1
 }
 
 # ── Step 1: Publish main app (self-contained) ─────────────────────────────────
@@ -225,18 +220,9 @@ $manifestContent = (Get-Content $manifestSrc -Raw)
 $manifestContent = $manifestContent -replace 'ARCH_PLACEHOLDER', $msixArch
 $manifestContent = $manifestContent -replace 'VERSION_PLACEHOLDER', $msixVersion
 
-# For local (non-Store) builds, replace the Store publisher with the dev cert subject
-# so signtool can sign the package. The Store re-signs with its own cert during ingestion.
-if (-not $NoSign -and [string]::IsNullOrEmpty($TrustedPfxPath)) {
-    $devCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfxFile, "LittleLauncher")
-    $devPublisher = $devCert.Subject
-    Write-Host "  Stamping Publisher=$devPublisher (dev cert)"
-    # Read the current Identity Publisher from the manifest so we know what to replace
-    if ($manifestContent -match '<Identity[^>]+Publisher="([^"]+)"') {
-        $storePublisher = $Matches[1]
-        $manifestContent = $manifestContent.Replace("Publisher=`"$storePublisher`"", "Publisher=`"$devPublisher`"")
-    }
-} elseif (-not $NoSign -and -not [string]::IsNullOrEmpty($TrustedPfxPath)) {
+# For signed (non-Store) builds, replace the Store publisher with the signing certificate's
+# subject so signtool can sign the package. The Store re-signs with its own cert during ingestion.
+if (-not $NoSign) {
     $trustedCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($TrustedPfxPath, $TrustedPfxPassword)
     $trustedPublisher = $trustedCert.Subject
     Write-Host "  Stamping Publisher=$trustedPublisher (trusted cert)"
@@ -276,24 +262,15 @@ Remove-Item $priconfigFile -Force -ErrorAction SilentlyContinue
 # ── Step 5b: Sign embedded executables (before packaging) ────────────────────
 # Smart App Control requires Authenticode signatures on all PE files from a
 # CA-trusted OV or EV code signing certificate.  Self-signed certs do NOT work.
-# Pass -TrustedPfxPath and -TrustedPfxPassword to enable this step.
+# The certificate passed in -TrustedPfxPath signs them; the dev certificate signs dev builds.
 if (-not $NoSign) {
-    if (-not [string]::IsNullOrEmpty($TrustedPfxPath)) {
-        if (-not (Test-Path $TrustedPfxPath)) {
-            Write-Error "TrustedPfxPath not found: $TrustedPfxPath"
-            exit 1
-        }
-        Write-Host "`n=== Signing embedded executables (Authenticode) ===" -ForegroundColor Cyan
-        $exesToSign = Get-ChildItem $layoutDir -Filter "*.exe" -Recurse
-        foreach ($exe in $exesToSign) {
-            Write-Host "  Signing $($exe.Name) ..."
-            & $signtool sign /fd SHA256 /f $TrustedPfxPath /p $TrustedPfxPassword `
-                /tr http://timestamp.digicert.com /td SHA256 $exe.FullName
-            if ($LASTEXITCODE -ne 0) { Write-Error "signtool failed for $($exe.FullName)"; exit 1 }
-        }
-    } else {
-        Write-Warning "TrustedPfxPath not specified — executables will not be Authenticode-signed."
-        Write-Warning "Smart App Control may block the app. Use -TrustedPfxPath to sign with a CA-trusted cert."
+    Write-Host "`n=== Signing embedded executables (Authenticode) ===" -ForegroundColor Cyan
+    $exesToSign = Get-ChildItem $layoutDir -Filter "*.exe" -Recurse
+    foreach ($exe in $exesToSign) {
+        Write-Host "  Signing $($exe.Name) ..."
+        & $signtool sign /fd SHA256 /f $TrustedPfxPath /p $TrustedPfxPassword `
+            /tr http://timestamp.digicert.com /td SHA256 $exe.FullName
+        if ($LASTEXITCODE -ne 0) { Write-Error "signtool failed for $($exe.FullName)"; exit 1 }
     }
 }
 
@@ -312,14 +289,8 @@ if ($NoSign) {
 } else {
     Write-Host "`n=== Signing MSIX ===" -ForegroundColor Cyan
 
-    if (-not [string]::IsNullOrEmpty($TrustedPfxPath)) {
-        # Sign with the CA-trusted cert (satisfies Smart App Control)
-        & $signtool sign /fd SHA256 /f $TrustedPfxPath /p $TrustedPfxPassword `
-            /tr http://timestamp.digicert.com /td SHA256 $msixFile
-    } else {
-        # Fall back to the dev self-signed cert (suitable for local testing only)
-        & $signtool sign /fd SHA256 /a /f $pfxFile /p "LittleLauncher" $msixFile
-    }
+    & $signtool sign /fd SHA256 /f $TrustedPfxPath /p $TrustedPfxPassword `
+        /tr http://timestamp.digicert.com /td SHA256 $msixFile
     if ($LASTEXITCODE -ne 0) { Write-Error "signtool sign failed"; exit 1 }
 }
 
@@ -338,10 +309,8 @@ Write-Host "  Platform: $Platform"
 if ($NoSign) {
     Write-Host "  Unsigned package for Store ingestion; it is not a sideloadable test package."
 } else {
-    $signerPath = if ($TrustedPfxPath) { $TrustedPfxPath } else { $pfxFile }
-    $signerPassword = if ($TrustedPfxPath) { $TrustedPfxPassword } else { "LittleLauncher" }
     $publicCert = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
-        $signerPath, $signerPassword,
+        $TrustedPfxPath, $TrustedPfxPassword,
         [Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet)
     $publicCertPath = Join-Path $outputDir "signing.cer"
     try {

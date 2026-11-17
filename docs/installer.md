@@ -81,6 +81,7 @@ script:
 | What | Where |
 |---|---|
 | App data folder | `%AppData%\LittleLauncher\` (settings, companion exe, icons, web profiles) |
+| Local data folder | `%LocalAppData%\LittleLauncher\` (browser profiles, with their sign-ins, for websites opened in app-window mode, and their saved window positions) |
 | Start Menu shortcuts | `Programs\Little Launcher.lnk`, the legacy `Little Launcher Flyout*.lnk`, and the `Programs\Little Launcher\` folder of per-web-launcher shortcuts |
 | Startup registry entry | `HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\Little Launcher` |
 | Pinned taskbar shortcuts | Any `.lnk` in `User Pinned\TaskBar\` targeting `LittleLauncherFlyout.exe` |
@@ -88,17 +89,29 @@ script:
 Run it *before* deleting the folder — it lives in that folder, and it does not remove the folder
 itself.
 
+**Linux:** the AppImage has no uninstaller either. With the app quit, delete the AppImage file and what it wrote under the home folder. The OneDrive sign-in is kept in the desktop wallet, not in a file.
+
+| What | Where |
+|---|---|
+| Settings, icons and browser profiles (with their sign-ins) | `~/.config/little-launcher/` |
+| Login startup entry | `~/.config/autostart/little-launcher.desktop` |
+| Application menu entries and icon | `~/.local/share/applications/io.github.RyanEwen.LittleLauncher.desktop`, `~/.local/share/applications/io.github.RyanEwen.LittleLauncher.Web.desktop`, `~/.local/share/icons/hicolor/256x256/apps/io.github.RyanEwen.LittleLauncher.png` |
+| KDE window-placement helper, if installed from System | `~/.local/share/kwin/scripts/little-launcher/` |
+| OneDrive sign-in | The wallet entry labelled "Little Launcher OneDrive"; remove it in the wallet manager or with `secret-tool clear application io.github.RyanEwen.LittleLauncher` |
+
+These are the default locations; `XDG_CONFIG_HOME` and `XDG_DATA_HOME` move them when set.
+
 **MSIX limitation:** MSIX has no custom uninstall actions. When an MSIX package is removed, Windows deletes the package files, its own Start Menu entry, **and all VFS-redirected data** (settings, cached icons, companion exe) because the entire `%LocalAppData%\Packages\{PFN}\` tree is removed. Pinned taskbar shortcuts survive as dead `.lnk` files — Windows 11 eventually detects and offers to remove stale pins. Settings **do** survive MSIX upgrades — Windows preserves package data during version updates, including updates initiated in the Store.
 
 ## Building the MSIX (`build-msix.ps1`)
 
-`LittleLauncherMSIX/build-msix.ps1 -Platform {x64|ARM64}` publishes the app (self-contained) + the AOT companion, assembles the layout, runs `makepri`/`makeappx`, and signs. Toolchain requirements (see also the local-build memory):
+`LittleLauncherMSIX/build-msix.ps1 -Platform {x64|ARM64}` publishes the app (self-contained) + the AOT companion, assembles the layout, runs `makepri`/`makeappx`, and signs with the certificate passed to it (or not at all with `-NoSign`). Toolchain requirements (see also the local-build memory):
 
 - **.NET SDK 10.0.403 or a later 10.0.4xx patch**, selected by root `global.json`. The shared build policy requires runtime 10.0.14 or later for CVE-2026-111497. Rebuild both the self-contained app and NativeAOT helper; an updated host runtime does not repair existing embedded code. See [the build security floor](windows-development.md#net-build-security-floor).
 - **Windows SDK** packaging tools (`makeappx`/`makepri`/`signtool`). The script auto-detects the newest installed `C:\Program Files (x86)\Windows Kits\10\bin\10.*` that has them — don't hardcode a version.
 - **VS C++ build tools** (incl. `VC.Tools.ARM64`) for the Native AOT companion. The script prepends the **VS Installer dir to `PATH`** when `vswhere.exe` isn't resolvable, because the ILCompiler targets shell out to `vswhere`; without it the native link fails with **exit code 123**.
-- **`-NoSign`** is Store mode: skips signing and leaves the Store `Identity`/`Publisher` intact for the Store to re-sign on ingestion. Without it, the manifest publisher is rewritten to the dev cert subject so `signtool` can sign locally.
-- An explicit TrustedPfxPath uses only that signer; absence of the legacy default PFX must not generate an unrelated self-signed certificate. Signed output exports that selected signer as public-only signing.cer and directs trust to Local Computer / Trusted People. The suggested Add-AppxPackage command never forces a downgrade; unsigned Store output is explicitly identified as unsuitable for sideloading.
+- **`-NoSign`** is Store mode: skips signing and leaves the Store `Identity`/`Publisher` intact for the Store to re-sign on ingestion. Without it, the manifest publisher is rewritten to the signing certificate's subject so `signtool` can sign locally.
+- Signing material is always passed in (`-TrustedPfxPath` and `-TrustedPfxPassword`; the build tooling passes the shared dev certificate). With neither a certificate nor `-NoSign`, the script fails before building; it never generates a certificate or holds a password (SEC-11, DIST-2). Signed output exports that selected signer as public-only signing.cer and directs trust to Local Computer / Trusted People. The suggested Add-AppxPackage command never forces a downgrade; unsigned Store output is explicitly identified as unsuitable for sideloading.
 
 ### Sideloading over the installed package from WSL
 

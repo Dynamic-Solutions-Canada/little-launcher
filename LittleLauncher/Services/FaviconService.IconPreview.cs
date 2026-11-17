@@ -12,8 +12,7 @@ internal static partial class FaviconService
 
     /// <summary>
     /// Fetches a site's declared raster, then its root favicon, without reading/writing icon caches.
-    /// Uses existing HTML/manifest selection and self-hosted certificate policy. Google fallback is
-    /// deliberately absent. The total direct attempt is bounded to 15 seconds and can be cancelled.
+    /// Uses the existing HTML/manifest selection with ordinary certificate validation. The total direct attempt is bounded to 15 seconds and can be cancelled.
     /// Null means the page exposes no usable raster without its signed-in browser context.
     /// </summary>
     internal static async Task<byte[]?> FetchSiteIconPreviewAsync(string url, CancellationToken cancellationToken)
@@ -34,7 +33,7 @@ internal static partial class FaviconService
             if (bytes is not { Length: >= 100 })
             {
                 string faviconUrl = new Uri(uri, "/favicon.ico").AbsoluteUri;
-                bytes = RasterOrNull(await TryDownloadAsync(TolerantHttp, faviconUrl, options));
+                bytes = RasterOrNull(await TryDownloadAsync(Http, faviconUrl, options));
             }
             timeout.Token.ThrowIfCancellationRequested();
             return bytes is { Length: >= 100 } ? bytes : null;

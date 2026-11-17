@@ -18,15 +18,10 @@ namespace LittleLauncher.Services;
 internal static partial class FaviconService
 {
     private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
-    // Separate client that accepts any certificate — used only for title/icon
-    // fetching from self-hosted services that often use self-signed certs.
-    private static readonly HttpClient TolerantHttp = new(new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = (_, _, _, _) => true
-    })
-    { Timeout = TimeSpan.FromSeconds(10) };
+    // Ordinary certificate validation applies to every icon and title fetch. A self-hosted site
+    // with a certificate Windows does not trust gets no automatic icon; the user can pick one.
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
     private static string CacheDir => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -38,10 +33,14 @@ internal static partial class FaviconService
     /// Downloads the favicon for <paramref name="url"/> and returns the local file path.
     /// Returns null if the download fails.
     /// </summary>
+    /// <remarks>
+    /// Only the site itself is contacted. No third-party favicon service is used, so a
+    /// shortcut's hostname never leaves the machine except in requests to that host.
+    /// </remarks>
     public static async Task<string?> FetchAndCacheAsync(string url)
-        => await FetchAndCacheCoreAsync(url, allowGoogleFaviconFallback: true, preferCachedResult: true);
+        => await FetchAndCacheCoreAsync(url, preferCachedResult: true);
 
-    private static async Task<string?> FetchAndCacheCoreAsync(string url, bool allowGoogleFaviconFallback, bool preferCachedResult)
+    private static async Task<string?> FetchAndCacheCoreAsync(string url, bool preferCachedResult)
     {
         try
         {
@@ -61,14 +60,9 @@ internal static partial class FaviconService
             // 1. Try PWA manifest icons / HTML link icons from the page (preferred)
             byte[]? bytes = RasterOrNull(await TryFetchIconFromSiteAsync(url));
 
-            // 2. Try Google's favicon service (works well for public sites)
-            if (allowGoogleFaviconFallback && (bytes == null || bytes.Length < 100))
-                bytes = RasterOrNull(await TryDownloadAsync(Http,
-                    $"https://www.google.com/s2/favicons?domain={Uri.EscapeDataString(host)}&sz=64"));
-
-            // 3. Fall back to /favicon.ico directly
+            // 2. Fall back to /favicon.ico directly
             if (bytes == null || bytes.Length < 100)
-                bytes = RasterOrNull(await TryDownloadAsync(TolerantHttp, $"{baseUrl}/favicon.ico"));
+                bytes = RasterOrNull(await TryDownloadAsync(Http, $"{baseUrl}/favicon.ico"));
 
             if (bytes == null || bytes.Length < 100)
                 return null;
@@ -124,7 +118,7 @@ internal static partial class FaviconService
             request.Headers.Add("User-Agent", "Mozilla/5.0");
             ApplyIconFetchOptions(request, options);
 
-            using var response = await TolerantHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
                 options?.CancellationToken ?? CancellationToken.None);
             if (!response.IsSuccessStatusCode)
                 return null;
@@ -203,7 +197,7 @@ internal static partial class FaviconService
                 var iconUrl = ResolveUrl(baseUrl, bestHref);
                 if (iconUrl != null)
                 {
-                    var bytes = await TryDownloadAsync(TolerantHttp, iconUrl, options);
+                    var bytes = await TryDownloadAsync(Http, iconUrl, options);
                     if (bytes is { Length: >= 100 })
                         return bytes;
                 }
@@ -229,8 +223,8 @@ internal static partial class FaviconService
         try
         {
             using var response = options == null
-                ? await TolerantHttp.GetAsync(manifestUrl)
-                : await SendIconPreviewRequestAsync(TolerantHttp, manifestUrl, options);
+                ? await Http.GetAsync(manifestUrl)
+                : await SendIconPreviewRequestAsync(Http, manifestUrl, options);
             if (!response.IsSuccessStatusCode)
                 return null;
 
@@ -287,7 +281,7 @@ internal static partial class FaviconService
             var baseForManifest = lastSlash >= 0 ? manifestUrl.Substring(0, lastSlash + 1) : manifestUrl;
             var iconUrl = ResolveUrl(baseForManifest, bestSrc);
 
-            return iconUrl != null ? await TryDownloadAsync(TolerantHttp, iconUrl, options) : null;
+            return iconUrl != null ? await TryDownloadAsync(Http, iconUrl, options) : null;
         }
         catch (OperationCanceledException) when (options?.CancellationToken.IsCancellationRequested == true)
         {
@@ -346,7 +340,7 @@ internal static partial class FaviconService
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("User-Agent", "Mozilla/5.0");
 
-            using var response = await TolerantHttp.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             if (!response.IsSuccessStatusCode)
                 return null;
 
@@ -405,7 +399,7 @@ internal static partial class FaviconService
     {
         try
         {
-            using var response = await TolerantHttp.GetAsync(manifestUrl);
+            using var response = await Http.GetAsync(manifestUrl);
             if (!response.IsSuccessStatusCode) return null;
 
             var json = await response.Content.ReadAsStringAsync();
@@ -684,7 +678,7 @@ internal static partial class FaviconService
         {
             try
             {
-                string? webIcon = await FetchAndCacheCoreAsync(pwaUrl, allowGoogleFaviconFallback: false, preferCachedResult: false);
+                string? webIcon = await FetchAndCacheCoreAsync(pwaUrl, preferCachedResult: false);
                 if (!string.IsNullOrEmpty(webIcon))
                     return webIcon;
             }
@@ -829,8 +823,7 @@ internal static partial class FaviconService
                 string? newPath;
                 if (item.IsWebsite)
                 {
-                    newPath = await FetchAndCacheCoreAsync(item.Path,
-                        allowGoogleFaviconFallback: true, preferCachedResult: false);
+                    newPath = await FetchAndCacheCoreAsync(item.Path, preferCachedResult: false);
                 }
                 else if (item.IsPwa)
                 {

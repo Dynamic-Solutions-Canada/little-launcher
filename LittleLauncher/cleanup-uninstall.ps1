@@ -1,8 +1,10 @@
 # Leftover cleanup for the portable build, run by hand.
 #
 # Deleting the portable folder removes the app but not the traces it leaves outside it:
-# %AppData%\LittleLauncher (settings, companion exe, cached icons, web profiles), the startup
-# registry entry, Start Menu shortcuts and pinned taskbar shortcuts. This removes those.
+# %AppData%\LittleLauncher (settings, companion exe, cached icons, web profiles),
+# %LocalAppData%\LittleLauncher (browser profiles for websites opened in app-window mode, which
+# hold their sign-ins, and the saved window positions), the startup registry entry, Start Menu
+# shortcuts and pinned taskbar shortcuts. This removes those.
 #
 # Quit Little Launcher before running it — a running app rewrites %AppData%\LittleLauncher
 # as soon as it is deleted. The Microsoft Store build does not need this: uninstalling the
@@ -11,6 +13,7 @@
 $startMenu = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs"
 
 Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$env:APPDATA\LittleLauncher"
+Remove-Item -Recurse -Force -ErrorAction SilentlyContinue "$env:LOCALAPPDATA\LittleLauncher"
 
 # The main shortcut the app writes on first launch, plus every legacy and per-launcher one.
 # "Little Launcher.lnk" used to be the MSI's to remove; nothing else takes it off now.

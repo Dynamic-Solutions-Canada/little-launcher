@@ -120,7 +120,7 @@ Web launchers and their selected icons can sync between Windows and Linux. Short
 
 **Microsoft Store (recommended):** [Get Little Launcher from the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf) — installs and updates automatically through the Store.
 
-**Portable:** Grab the portable ZIP for your architecture (x64 or ARM64) from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest) and unzip it wherever you like — nothing is installed and no admin rights are needed. It tells you when a new version is out and links you to it; you replace the folder yourself. To remove it, run `cleanup-uninstall.ps1` from the folder with the app closed (it clears settings, the startup entry and any shortcuts), then delete the folder.
+**Portable:** Grab the portable ZIP for your architecture (x64 or ARM64) from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest) and unzip it wherever you like — nothing is installed and no admin rights are needed. It tells you when a new version is out and links you to it; you replace the folder yourself. To remove it, run `cleanup-uninstall.ps1` from the folder with the app closed (it clears settings, browser profiles and sign-ins, the startup entry and any shortcuts), then delete the folder.
 
 Little Launcher used to ship an MSI installer as well. It has been retired in favour of these two: the Store handles installing, updating and uninstalling properly, and the portable build is for anyone who would rather not use the Store. Older releases keep their `.msi` files, and an existing MSI install keeps working — it will simply point you here when a new version appears.
 
@@ -135,7 +135,7 @@ chmod +x LittleLauncher-VERSION-linux-x64.AppImage
 ./LittleLauncher-VERSION-linux-x64.AppImage
 ```
 
-Replace `VERSION` with the downloaded release number. Keep the AppImage in a writable location where you want it to stay. First launch adds application-menu entries and enables login startup; Settings can turn startup off. About offers update checks and download, install and restart controls. KDE is the primary desktop target; GNOME needs tray support. See [Linux delivery and desktop integration](linux/README.md#linux-appimage-delivery) for requirements and troubleshooting.
+Replace `VERSION` with the downloaded release number. Keep the AppImage in a writable location where you want it to stay. First launch adds application-menu entries and enables login startup; Settings can turn startup off. About offers update checks and download, install and restart controls. KDE is the primary desktop target; GNOME needs tray support. See [Linux delivery and desktop integration](linux/README.md#linux-appimage-delivery) for requirements and troubleshooting. To remove it, quit the app, delete the AppImage and the files it wrote under your home folder; [the uninstall guide](docs/installer.md#uninstall-cleanup) lists them.
 
 ## Building from source
 
