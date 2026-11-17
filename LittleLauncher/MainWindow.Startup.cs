@@ -90,15 +90,23 @@ public sealed partial class MainWindow
     /// <summary>Set once an orderly exit has started, so the host window may close.</summary>
     private bool _exiting;
 
+    /// <summary>The longest an orderly exit may take before the backstop ends the process.</summary>
+    private static readonly TimeSpan ExitBackstop = TimeSpan.FromSeconds(5);
+
     /// <summary>
-    /// Exit the app in order: save settings, unregister notifications, remove the tray icons, flush
-    /// the log, then let WinUI close every window and end the process through
-    /// <see cref="Application.Exit"/>. A second call while exiting does nothing.
+    /// Exit the app in order: save settings, unregister notifications, remove the tray icons, close
+    /// every window the app keeps (Settings, each launcher's flyout, then this host), flush the log,
+    /// then end through <see cref="Application.Exit"/>. A second call while exiting does nothing.
     /// </summary>
     /// <remarks>
-    /// Not <see cref="Environment.Exit(int)"/>: ending the process with windows still alive crashes
-    /// Windows App SDK 2 on Windows 10, and an orderly exit lets each window run its own close
-    /// handling. A failing step is logged and the rest still run.
+    /// <para>Not <see cref="Environment.Exit(int)"/> on the UI thread: ending the process with
+    /// windows alive crashes Windows App SDK 2 on Windows 10.</para>
+    /// <para>The windows are closed first because <see cref="Application.Exit"/> alone stalls while
+    /// any window is alive, and this app keeps hidden ones (the host, parked flyouts): the process
+    /// stayed running after Exit on the test VM. A background backstop ends the process if the
+    /// exit still has not finished after <see cref="ExitBackstop"/>, from a background thread, where
+    /// <see cref="Environment.Exit(int)"/> is clean (winui-app-kit's HostWindow does the same).</para>
+    /// <para>A failing step is logged and the rest still run.</para>
     /// </remarks>
     internal void ExitApp()
     {
@@ -112,8 +120,29 @@ public sealed partial class MainWindow
         RunExitStep("save settings", SettingsManager.SaveSettings);
         RunExitStep("unregister notifications", () => Microsoft.Windows.AppNotifications.AppNotificationManager.Default.Unregister());
         RunExitStep("remove tray icons", CleanupTrayIcons);
+        RunExitStep("close settings", () => SettingsWindow.GetCurrent()?.Close());
+        RunExitStep("close flyouts", CloseLauncherPanels);
         NLog.LogManager.Flush();
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(ExitBackstop);
+            Logger.Warn("Exit did not finish within {Seconds} s; ending the process", ExitBackstop.TotalSeconds);
+            NLog.LogManager.Flush();
+            Environment.Exit(0);
+        });
+
+        RunExitStep("close host", Close);
         Application.Current.Exit();
+    }
+
+    /// <summary>Closes every launcher's flyout or web panel, including the parked, hidden ones.</summary>
+    private static void CloseLauncherPanels()
+    {
+        foreach (var launcher in SettingsManager.Current.Launchers.ToList())
+        {
+            Windows.LauncherPanels.Dispose(launcher.Id);
+        }
     }
 
     /// <summary>Runs one exit step, logging a failure instead of stopping the exit.</summary>
