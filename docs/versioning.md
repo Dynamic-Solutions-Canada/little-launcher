@@ -1,5 +1,5 @@
 > **Scope:** Use when bumping version numbers, creating releases, or modifying version-related files. Documents every file that contains a version string and the release workflow.
-> **Governs:** `**/Directory.Build.props`, `**/MainWindow.xaml.cs`, `**/Package.appxmanifest`, `**/AppxManifest.xml`, `**/build-msix.ps1`, `**/.github/workflows/build-msix.yml`, `**/.github/workflows/store-publish.yml`, `**/.github/workflows/linux-appimage.yml`, `release-notes/**`.
+> **Governs:** `**/Directory.Build.props`, `**/MainWindow*.cs`, `**/Package.appxmanifest`, `**/AppxManifest.xml`, `**/build-msix.ps1`, `**/.github/workflows/build-msix.yml`, `**/.github/workflows/store-publish.yml`, `**/.github/workflows/linux-appimage.yml`, `release-notes/**`.
 
 # Versioning & Releases
 

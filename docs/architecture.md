@@ -32,6 +32,12 @@ App.xaml  →  MainWindow (invisible, owns tray icon)
                       └── the kit's AboutPage (AboutContent.Create)
 ```
 
+## The host window and exiting
+
+`MainWindow` is the invisible host. It is split by responsibility into partial files: `MainWindow.xaml.cs` (fields, constructor, start-up order), `.Tray.cs` (one notification-area icon per launcher and its menu), `.IconRendering.cs` and `.IconFiles.cs` (drawing launcher icons and keeping their files current), `.Anchors.cs` (where a flyout opens from), `.WndProc.cs` (messages from the companion, a second launch and the tray), `.Shortcuts.cs` (Start menu and pin shortcuts, the companion), `.Notifications.cs` (toasts and the startup update notice) and `.Startup.cs` (Start with Windows, silent launches and exiting).
+
+The host cancels its own close, so closing other windows never ends the app. The tray's Exit runs `ExitApp`: save settings, unregister notifications, remove the tray icons, flush the log, then `Application.Current.Exit()`, which closes every window in order. It never calls `Environment.Exit` with windows alive, which crashes Windows App SDK 2 on Windows 10. A second launch still exits with `Environment.Exit` in `App.OnLaunched`, before any window exists.
+
 ## Item-name tooltips
 
 `Controls/ConditionalNameToolTip.cs` provides full-name tooltips for all three launcher item templates. Small icons always offer the hidden name; list and large-icon labels offer it only when WinUI reports actual trimming. Item templates target the containing list/grid item; real group-header and column captions use the same behavior directly on the TextBlock, targeting only the trimmed label. The behavior follows bound name changes, detaches label events and closes tooltips on unload without measuring or changing item geometry, click handling, dragging or keyboard focus.

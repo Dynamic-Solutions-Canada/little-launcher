@@ -1,5 +1,5 @@
 > **Scope:** Use when working with app icons, tray icons, shortcut icons, or window icons. Covers which icon files exist, where each icon surface pulls from, and how to update them correctly.
-> **Governs:** `Shared/PinSnapshot.cs`, `**/LauncherSettingsWindow*.cs`, `**/MainWindow.xaml.cs`, `**/SettingsWindow.xaml.cs`, `**/LaunchersPage.xaml*`, `**/LauncherShortcut/**`, `**/HomePage.xaml.cs`, `**/FlyoutConverters.cs`, `**/FlyoutWindow.xaml*`, `Controls/LauncherItemsView*`, `Windows/LauncherItemsEditorWindow.cs`, `**/IconGallery.cs`, `**/IconCatalogView.cs`, `**/SelectionReveal.cs`, `**/AutomaticPageIconChoice.cs`, `**/WebFlyoutWindow.IconPreview.cs`, `Services/PortableLauncherIcon.cs`, `Services/FaviconService*.cs`, `Services/TaskbarPinStatusService.cs`, `**/GlyphIconRenderer.cs`.
+> **Governs:** `Shared/PinSnapshot.cs`, `**/LauncherSettingsWindow*.cs`, `**/MainWindow*.cs`, `**/SettingsWindow.xaml.cs`, `**/LaunchersPage.xaml*`, `**/LauncherShortcut/**`, `**/HomePage.xaml.cs`, `**/FlyoutConverters.cs`, `**/FlyoutWindow.xaml*`, `Controls/LauncherItemsView*`, `Windows/LauncherItemsEditorWindow.cs`, `**/IconGallery.cs`, `**/IconCatalogView.cs`, `**/SelectionReveal.cs`, `**/AutomaticPageIconChoice.cs`, `**/WebFlyoutWindow.IconPreview.cs`, `Services/PortableLauncherIcon.cs`, `Services/FaviconService*.cs`, `Services/TaskbarPinStatusService.cs`, `**/GlyphIconRenderer.cs`.
 
 > **Note on glyph code points:** Segoe Fluent Icons glyphs below are written in `U+XXXX` code-point notation. In C# they are string escapes: e.g. `U+E840` is written `""`.
 
@@ -382,7 +382,7 @@ only the old root-level flyout shortcuts, never the current pin snapshots.
 ## Adding a New Preset Icon
 
 1. Add the PNG file to `Resources/AppIcons/` (transparent background, square)
-2. Add entry to `PresetIcons` dictionary in `MainWindow.xaml.cs` with the next mode number
+2. Add entry to `PresetIcons` dictionary in `MainWindow.IconRendering.cs` with the next mode number
 3. Add a `ComboBoxItem` with colored `Ellipse` + `TextBlock` in `LaunchersPage.xaml.cs` (`BuildIconModeCombo`)
 4. Bump the Custom mode number in: `ResolveBaseIconBitmap()` and `BuildCustomIconRow` in `LaunchersPage.xaml.cs`
 5. Add `<Content Include="Resources/AppIcons/NewColor.png">` to `.csproj` (or use the existing `*.png` glob)
@@ -425,7 +425,7 @@ To regenerate, create a multi-resolution ICO (16, 24, 32, 48, 64, 256px) from `B
 
 ## Start Menu Shortcut
 
-Nothing creates a Start Menu shortcut before the app runs: the portable build has no installer, and MSIX registers its own entry from the manifest. On first launch, `EnsureStartMenuShortcuts()` in `MainWindow.xaml.cs` writes `Programs\Little Launcher.lnk` with the exe's embedded icon, and `UpdateShortcutIcons()` re-stamps it when the user changes the icon. The shortcut must sit directly in `ProgramMenuFolder` (not a subfolder) so the app's runtime management can find and update it: `RemoveLegacyMsiSubfolderShortcut()` clears the subfolder copy the retired MSI used to create.
+Nothing creates a Start Menu shortcut before the app runs: the portable build has no installer, and MSIX registers its own entry from the manifest. On first launch, `EnsureStartMenuShortcuts()` in `MainWindow.Shortcuts.cs` writes `Programs\Little Launcher.lnk` with the exe's embedded icon, and `UpdateShortcutIcons()` re-stamps it when the user changes the icon. The shortcut must sit directly in `ProgramMenuFolder` (not a subfolder) so the app's runtime management can find and update it: `RemoveLegacyMsiSubfolderShortcut()` clears the subfolder copy the retired MSI used to create.
 
 ## Launcher item names on hover
 

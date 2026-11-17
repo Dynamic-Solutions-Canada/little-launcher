@@ -32,7 +32,7 @@ through `MainWindow.GetPhysicalAppDataDir()` rather than raw `%AppData%`, which 
 
 ## Start Menu shortcut lifecycle
 
-1. **On first launch** `EnsureStartMenuShortcuts()` in `MainWindow.xaml.cs` writes
+1. **On first launch** `EnsureStartMenuShortcuts()` in `MainWindow.Shortcuts.cs` writes
    `Programs\Little Launcher.lnk` pointing at the running exe. Nothing creates it beforehand: a
    portable build has no installer to do it, and a packaged one already has its own entry, so
    `EnsureStartMenuShortcuts()` stops early when `IsPackaged`.
