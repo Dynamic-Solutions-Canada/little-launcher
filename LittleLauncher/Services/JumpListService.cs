@@ -95,7 +95,7 @@ internal static class JumpListService
     private static DispatcherQueue? _queue;
     private static DispatcherQueueTimer? _debounce;
     /// <summary>The signature last published per launcher, so an unchanged list costs nothing.</summary>
-    private static readonly Dictionary<string, string> _published = [];
+    private static readonly Dictionary<string, string> PublishedSignatures = [];
 
     // ── Entry points ────────────────────────────────────────────────
 
@@ -148,7 +148,7 @@ internal static class JumpListService
         string aumid = ResolvePinAumid(launcher);
         if (string.IsNullOrEmpty(aumid)) return;
 
-        _published.Remove(launcher.Id);
+        PublishedSignatures.Remove(launcher.Id);
         RunOnStaThread(() => DeleteList(aumid));
     }
 
@@ -231,7 +231,7 @@ internal static class JumpListService
                 foreach (var task in plan.Entries.Concat(plan.Actions))
                     live.Add(CacheFileName(task.IconSource));
 
-                if (!_published.TryGetValue(launcher.Id, out var previous) || previous != plan.Signature)
+                if (!PublishedSignatures.TryGetValue(launcher.Id, out var previous) || previous != plan.Signature)
                     stale.Add(launcher.Id);
 
                 plans.Add(plan);
@@ -263,7 +263,7 @@ internal static class JumpListService
         var queue = _queue;
         if (queue == null) return;
 
-        queue.TryEnqueue(() => _published[plan.LauncherId] = plan.Signature);
+        queue.TryEnqueue(() => PublishedSignatures[plan.LauncherId] = plan.Signature);
     }
 
     private static JumpListPlan BuildPlan(Launcher launcher, string aumid, string companion, bool dark)

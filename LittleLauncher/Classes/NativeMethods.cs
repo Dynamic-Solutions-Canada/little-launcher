@@ -145,7 +145,10 @@ public static partial class NativeMethods
 
     // Monitor Flags
     internal const int MONITOR_DEFAULTTONEAREST = 2;
+    // Win32 names are kept as the Windows headers spell them, so the naming rule does not apply.
+#pragma warning disable IDE1006
     internal const int S_OK = 0;
+#pragma warning restore IDE1006
 
     #endregion
 

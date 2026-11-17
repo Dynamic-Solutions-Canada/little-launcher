@@ -32,7 +32,7 @@ public partial class FlyoutWindow
         // A dismissed or still-warming flyout is visible off screen, not on it , Toggle brings
         // it in. `_isOpen` is what distinguishes the two; see FlyoutWindow.ParkOffScreen.
         bool alreadyVisible =
-            _instances.TryGetValue(launcherId, out var existing) &&
+            Instances.TryGetValue(launcherId, out var existing) &&
             existing._hwnd != IntPtr.Zero &&
             IsWindow(existing._hwnd) &&
             existing._isOpen;
@@ -51,7 +51,7 @@ public partial class FlyoutWindow
             Toggle(owner, x, y, launcherId, setupBounds);
         }
 
-        if (!_instances.TryGetValue(launcherId, out var flyout)) return;
+        if (!Instances.TryGetValue(launcherId, out var flyout)) return;
 
         if (alreadyVisible)
         {
@@ -261,20 +261,20 @@ public partial class FlyoutWindow
     }
 
     /// <summary>Edit mode pins the flyout open; so does any modal it owns.</summary>
-    private bool SuppressDismiss => _isEditMode || _isModalOpen || _setupEditBounds.HasValue;
+    private bool SuppressDismiss => IsEditModeActive || _isModalOpen || _setupEditBounds.HasValue;
 
     /// <summary>
     /// True when any launcher is being edited in its flyout. Used by the sync service, which must
     /// not download over a user mid-edit.
     /// </summary>
-    internal static bool IsAnyInEditMode() => _instances.Values.Any(f => f.SuppressDismiss) || LauncherItemsEditorWindow.IsAnyOpen;
+    internal static bool IsAnyInEditMode() => Instances.Values.Any(f => f.SuppressDismiss) || LauncherItemsEditorWindow.IsAnyOpen;
 
     /// <summary>Enters the shared editing behavior while retaining native popup chrome.</summary>
     internal void EnterEditMode() => _itemsView.EnterEditMode();
 
     private void ShowEditToolbarBar()
     {
-        if (_itemsView.Toolbar == null || !_isEditMode || _isModalOpen || !_isOpen || _isHiding) return;
+        if (_itemsView.Toolbar == null || !IsEditModeActive || _isModalOpen || !_isOpen || _isHiding) return;
 
         _editToolbarBar ??= new EditToolbarWindow(_itemsView.Toolbar!);
 
@@ -295,13 +295,13 @@ public partial class FlyoutWindow
     /// </remarks>
     private void RepositionEditToolbarBar()
     {
-        if (!_isEditMode) return;
+        if (!IsEditModeActive) return;
         DispatcherQueue.TryEnqueue(ShowEditToolbarBar);
     }
 
     internal void ExitEditMode()
     {
-        if (!_isEditMode) return;
+        if (!IsEditModeActive) return;
         _setupEditBounds = null;
         _itemsView.SetEditing(false, notifyHost: false);
         CloseOpenModal();

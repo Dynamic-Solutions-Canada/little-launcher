@@ -559,7 +559,7 @@ public sealed partial class LauncherItemsView
     {
         int version = _sessionVersion;
         var target = GetAddTarget();
-        var result = await RunModalAsync(track => ItemEditorWindow.ShowAsync(null, target, _hwnd, track));
+        var result = await RunModalAsync(track => ItemEditorWindow.ShowAsync(null, target, OwnerHwnd, track));
         if (!IsCurrentSession(version)) return;
         if (result == ItemEditorResult.Saved)
             PersistStructuralChange();
@@ -569,7 +569,7 @@ public sealed partial class LauncherItemsView
     {
         int version = _sessionVersion;
         var parent = FindParentCollection(item) ?? GetAddTarget();
-        var result = await RunModalAsync(track => ItemEditorWindow.ShowAsync(item, parent, _hwnd, track));
+        var result = await RunModalAsync(track => ItemEditorWindow.ShowAsync(item, parent, OwnerHwnd, track));
 
         if (!IsCurrentSession(version)) return;
         switch (result)
@@ -618,7 +618,7 @@ public sealed partial class LauncherItemsView
             placeholder: UiText.Get("items.groupPrompt.namePlaceholder"),
             initialText: existingName,
             acceptText: UiText.Get(isEdit ? "common.save" : "common.add"),
-            ownerHwnd: _hwnd,
+            ownerHwnd: OwnerHwnd,
             onCreated: track));
 
         return !IsCurrentSession(version) || string.IsNullOrWhiteSpace(name) ? null : name;
@@ -1086,7 +1086,7 @@ public sealed partial class LauncherItemsView
     private async Task OpenLauncherSettingsAsync()
     {
         int version = _sessionVersion;
-        await RunModalAsync(track => LauncherSettingsWindow.ShowAsync(_launcher, _hwnd, track));
+        await RunModalAsync(track => LauncherSettingsWindow.ShowAsync(_launcher, OwnerHwnd, track));
 
         if (!IsCurrentSession(version)) return;
         // View mode, density and title all affect layout, so rebuild rather than assume.

@@ -62,14 +62,14 @@ public sealed partial class WebFlyoutWindow
     /// Launchers already offered the keep-running switch this session, so declining it once is not
     /// re-asked on every notification the page raises.
     /// </summary>
-    private static readonly HashSet<string> _keepRunningOffered = [];
+    private static readonly HashSet<string> KeepRunningOffered = [];
 
     /// <summary>
     /// Launchers whose stored site permissions are to be reset the next time a browser is created
     /// for them. <see cref="CoreWebView2Profile"/> is only reachable through a live browser, so a
     /// reset asked for while the launcher is unloaded has to wait for one.
     /// </summary>
-    private static readonly HashSet<string> _pendingPermissionResets = [];
+    private static readonly HashSet<string> PendingPermissionResets = [];
 
     /// <summary>How close to a toast a page's own sound has to start to count as that toast's.</summary>
     /// <remarks>
@@ -432,7 +432,7 @@ public sealed partial class WebFlyoutWindow
     {
         if (kind != CoreWebView2PermissionKind.Notifications) return;
         if (WebHiddenPolicies.Normalize(_launcher.WebHiddenPolicy) == WebHiddenPolicies.KeepRunning) return;
-        if (!_keepRunningOffered.Add(_launcher.Id)) return;
+        if (!KeepRunningOffered.Add(_launcher.Id)) return;
 
         EnqueuePrompt(new PromptRequest(
             UiText.Format("webNotifications.keepRunningPrompt", ("launcher", _launcher.Name)),
@@ -505,7 +505,7 @@ public sealed partial class WebFlyoutWindow
         var core = Instances.TryGetValue(launcherId, out var flyout) ? flyout._webView?.CoreWebView2 : null;
         if (core == null)
         {
-            _pendingPermissionResets.Add(launcherId);
+            PendingPermissionResets.Add(launcherId);
             return false;
         }
 
@@ -533,7 +533,7 @@ public sealed partial class WebFlyoutWindow
     /// <summary>Applies a reset that was asked for while this launcher had no browser.</summary>
     private void ApplyPendingPermissionReset(CoreWebView2 core)
     {
-        if (!_pendingPermissionResets.Remove(_launcher.Id)) return;
+        if (!PendingPermissionResets.Remove(_launcher.Id)) return;
         _ = ClearPermissionsAsync(core);
     }
 

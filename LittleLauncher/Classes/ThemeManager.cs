@@ -47,11 +47,11 @@ internal static class ThemeManager
             ffe.RequestedTheme = requestedTheme;
     }
 
-    private static readonly global::Windows.UI.ViewManagement.UISettings s_uiSettings = new();
+    private static readonly global::Windows.UI.ViewManagement.UISettings UiSettings = new();
 
     public static bool IsDarkTheme()
     {
-        var fg = s_uiSettings.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.Foreground);
+        var fg = UiSettings.GetColorValue(global::Windows.UI.ViewManagement.UIColorType.Foreground);
         // Bright foreground = dark theme
         return fg.R > 128;
     }

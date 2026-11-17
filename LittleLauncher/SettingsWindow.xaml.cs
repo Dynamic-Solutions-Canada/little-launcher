@@ -22,7 +22,7 @@ public sealed partial class SettingsWindow : Window
 {
     private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
-    private static SettingsWindow? instance;
+    private static SettingsWindow? _instance;
     private readonly MainWindow? _owner;
     private IntPtr _hIconSmall;
     private IntPtr _hIconBig;
@@ -30,21 +30,21 @@ public sealed partial class SettingsWindow : Window
 
     public SettingsWindow(MainWindow owner)
     {
-        if (instance != null)
+        if (_instance != null)
         {
-            SetForegroundWindow(WindowNative.GetWindowHandle(instance));
+            SetForegroundWindow(WindowNative.GetWindowHandle(_instance));
             Close();
             return;
         }
 
         _owner = owner;
         InitializeComponent();
-        instance = this;
+        _instance = this;
         // Only clear our own registration: after a language change the replacement registers
         // itself before this window's Closed event necessarily arrives.
         Closed += (s, e) =>
         {
-            if (instance == this) instance = null;
+            if (_instance == this) _instance = null;
         };
 
         RootNavigation.Loaded += (_, _) =>
@@ -143,13 +143,13 @@ public sealed partial class SettingsWindow : Window
     /// </summary>
     public static void ShowInstance(MainWindow owner)
     {
-        if (instance == null)
+        if (_instance == null)
         {
             new SettingsWindow(owner).Activate();
         }
         else
         {
-            SetForegroundWindow(WindowNative.GetWindowHandle(instance));
+            SetForegroundWindow(WindowNative.GetWindowHandle(_instance));
         }
     }
 
@@ -164,10 +164,10 @@ public sealed partial class SettingsWindow : Window
     /// </remarks>
     internal static void ReopenAfterLanguageChange(Type pageType)
     {
-        if (instance?._owner is not MainWindow owner) return;
+        if (_instance?._owner is not MainWindow owner) return;
 
-        var current = instance;
-        instance = null;
+        var current = _instance;
+        _instance = null;
         current.Close();
 
         var replacement = new SettingsWindow(owner);
@@ -265,7 +265,7 @@ public sealed partial class SettingsWindow : Window
 
     internal MainWindow? GetOwner() => _owner;
 
-    internal static SettingsWindow? GetCurrent() => instance;
+    internal static SettingsWindow? GetCurrent() => _instance;
 
     /// <summary>The currently displayed page, if any.</summary>
     internal object? CurrentPage => ContentFrame?.Content;

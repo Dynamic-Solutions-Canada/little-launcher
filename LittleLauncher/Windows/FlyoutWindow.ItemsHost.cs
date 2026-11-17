@@ -26,7 +26,7 @@ public partial class FlyoutWindow
 
     void ILauncherItemsHost.EditModeChanged()
     {
-        SetEditModeBorder(_isEditMode);
+        SetEditModeBorder(IsEditModeActive);
         if (_isOpen) ResizeForEditChrome();
     }
 
@@ -90,7 +90,7 @@ public partial class FlyoutWindow
     /// <summary>Ends native editing before the same launcher opens in a regular editor window.</summary>
     internal static void ParkForItemEditor(string launcherId)
     {
-        if (!_instances.TryGetValue(launcherId, out var flyout)) return;
+        if (!Instances.TryGetValue(launcherId, out var flyout)) return;
         flyout.HideFlyout();
         flyout.EndPreRender();
         flyout._animationVersion++;

@@ -123,7 +123,7 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
     }
     private void ResizeForEditChrome() => ResizeIfVisible();
     private Task<T> RunModalAsync<T>(Func<Action<Window>, Task<T>> show) => _host.RunModalAsync(show);
-    private IntPtr _hwnd => _host.DialogOwnerHwnd;
+    private IntPtr OwnerHwnd => _host.DialogOwnerHwnd;
     private int CurrentViewMode => LauncherViewModes.Normalize(_launcher.ViewMode);
     private bool IsListMode => CurrentViewMode == LauncherViewModes.List;
     private bool IsSmallIconMode => CurrentViewMode == LauncherViewModes.SmallIcon;

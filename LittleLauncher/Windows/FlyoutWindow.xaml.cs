@@ -56,7 +56,7 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private static readonly ConcurrentDictionary<string, WindowBounds> CachedBounds = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Per-launcher flyout window instances (key = Launcher.Id).</summary>
-    private static readonly Dictionary<string, FlyoutWindow> _instances = new();
+    private static readonly Dictionary<string, FlyoutWindow> Instances = new();
 
     private readonly LauncherItemsView _itemsView;
     private readonly Launcher _launcher;
@@ -73,8 +73,8 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     private bool _isHiding;
     private int _animationVersion;
     private FlyoutEntranceEdge _lastEntranceEdge = FlyoutEntranceEdge.Bottom;
-    private bool _isEditMode => _itemsView.IsEditMode;
-    private bool _isResizingIconWidth => _itemsView.IsResizing;
+    private bool IsEditModeActive => _itemsView.IsEditMode;
+    private bool IsResizingIconWidth => _itemsView.IsResizing;
     private readonly record struct FlyoutPlacement(
         int Left,
         int Top,
@@ -131,7 +131,7 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     {
         // Edit mode (and any modal it owns) pins the flyout open , otherwise opening the
         // item editor or a file picker would dismiss the very window being edited.
-        if (_isShowing || _isResizingIconWidth || SuppressDismiss) return;
+        if (_isShowing || IsResizingIconWidth || SuppressDismiss) return;
         if (args.WindowActivationState == WindowActivationState.Deactivated)
             HideFlyout();
     }
@@ -141,7 +141,7 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         if (msg == 0x0100 && wParam == (IntPtr)0x1B) // WM_KEYDOWN + VK_ESCAPE
         {
             // Two-stage: the first Escape leaves edit mode, the second dismisses.
-            if (_isEditMode)
+            if (IsEditModeActive)
             {
                 ExitEditMode();
                 return IntPtr.Zero;
@@ -158,8 +158,8 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     internal static FlyoutWindow? GetCurrent(string? launcherId = null)
     {
         if (launcherId != null)
-            return _instances.TryGetValue(launcherId, out var fw) ? fw : null;
-        return _instances.Values.FirstOrDefault();
+            return Instances.TryGetValue(launcherId, out var fw) ? fw : null;
+        return Instances.Values.FirstOrDefault();
     }
 
     public static void Toggle(MainWindow owner, int screenX, int screenY, string launcherId) =>
@@ -174,13 +174,13 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         global::Windows.Graphics.RectInt32? setupBounds)
     {
         if (LauncherItemsEditorWindow.TryFocus(launcherId)) return;
-        if (!_instances.TryGetValue(launcherId, out var instance) || instance == null)
+        if (!Instances.TryGetValue(launcherId, out var instance) || instance == null)
         {
             // Find the launcher
             var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
             if (launcher == null) return;
             instance = new FlyoutWindow(owner, launcher);
-            _instances[launcherId] = instance;
+            Instances[launcherId] = instance;
         }
 
         // Ends the warm-up render, if one is still running, so the window is free to be placed.
@@ -226,7 +226,7 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
 
     public static void DismissIfOpen()
     {
-        foreach (var fw in _instances.Values)
+        foreach (var fw in Instances.Values)
             fw.HideFlyout();
     }
 
@@ -234,7 +234,7 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     {
         foreach (var launcher in launchers)
         {
-            if (!_instances.ContainsKey(launcher.Id))
+            if (!Instances.ContainsKey(launcher.Id))
             {
                 var fw = new FlyoutWindow(owner, launcher);
                 fw._itemsView.Refresh();
@@ -242,7 +242,7 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
                 SetWindowLong(fw._hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
                 fw._toolWindowStyleApplied = true;
                 fw.PreRenderOffScreen();
-                _instances[launcher.Id] = fw;
+                Instances[launcher.Id] = fw;
             }
         }
     }
@@ -342,13 +342,13 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
     public static void DisposeLauncher(string launcherId)
     {
         LauncherItemsEditorWindow.CloseForLauncher(launcherId);
-        if (_instances.TryGetValue(launcherId, out var fw))
+        if (Instances.TryGetValue(launcherId, out var fw))
         {
             // The edit chrome lives in its own top-level windows, which closing the flyout
             // does not touch , without this they outlive the launcher they belong to.
             fw.CloseEditChrome();
             fw.Close();
-            _instances.Remove(launcherId);
+            Instances.Remove(launcherId);
         }
     }
 
@@ -367,7 +367,7 @@ public partial class FlyoutWindow : Window, ILauncherItemsHost
         _setupEditBounds = null;
         // Closing ends editing, so the flyout never reopens mid-edit and the off-screen
         // measure path never has to account for edit chrome.
-        if (_isEditMode)
+        if (IsEditModeActive)
         {
             _itemsView.SetEditing(false, notifyHost: false);
             CloseOpenModal();
