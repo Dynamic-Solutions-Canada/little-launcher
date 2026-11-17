@@ -4,5 +4,5 @@
   "tray.menu.openLogsFolder": "Protokollordner öffnen",
   "tray.menu.exit": "Beenden",
   "tray.whatsNew.message": "Ein Launcher kann jetzt direkt über sein Tray-Symbol eine Webseite öffnen (ein Dashboard, Webmail oder jede andere Website).",
-  "tray.update.message": "Little Launcher {latest} ist verfügbar. Installiert ist {current}."
+  "tray.update.message": "Little Launcher {{latest}} ist verfügbar. Installiert ist {{current}}."
 }

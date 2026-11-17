@@ -13,5 +13,5 @@
   "taskbarPin.statusCheckFailed": "The taskbar status check could not finish. Close these settings and try again.",
   "taskbarPin.unconfirmed": "Windows did not confirm whether this launcher was pinned. A pin may still appear.",
   "taskbarPin.helperFailed": "The pin helper could not complete the request. See taskbar-pin.log for details.",
-  "taskbarPin.failed": "Could not pin this launcher. {reason}"
+  "taskbarPin.failed": "Could not pin this launcher. {{reason}}"
 }

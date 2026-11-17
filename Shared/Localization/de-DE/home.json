@@ -3,14 +3,14 @@
   "home.buildType.debug": "(Debug)",
   "home.buildType.msix": "(MSIX)",
   "home.buildType.portable": "(Portabel)",
-  "home.update.message": "Eine neue Version ({latest}) ist verfügbar. Installiert ist {current}.",
+  "home.update.message": "Eine neue Version ({{latest}}) ist verfügbar. Installiert ist {{current}}.",
   "home.whatsNew.title": "Neu: Web-Launcher",
   "home.whatsNew.message": "Ein Launcher kann jetzt statt einer Liste von Verknüpfungen eine Webseite öffnen: ein Home-Assistant-Dashboard, Webmail oder jede andere Website, direkt über sein Tray-Symbol. Er bleibt angemeldet und verbraucht nichts, solange er geschlossen ist.",
   "home.whatsNew.action": "Jetzt einrichten",
   "home.launchersCard.description": "Launcher und Verknüpfungen verwalten",
   "home.syncCard.description": "OneDrive, Google Drive, Netzwerkfreigabe oder SFTP",
-  "home.summary.launchers.one": "{count} Launcher.",
-  "home.summary.launchers.other": "{count} Launcher.",
-  "home.summary.hiddenOnLinux.one": "{count} unter Linux deaktiviert, da er zu einem anderen Betriebssystem gehört.",
-  "home.summary.hiddenOnLinux.other": "{count} unter Linux deaktiviert, da sie zu einem anderen Betriebssystem gehören."
+  "home.summary.launchers.one": "{{count}} Launcher.",
+  "home.summary.launchers.other": "{{count}} Launcher.",
+  "home.summary.hiddenOnLinux.one": "{{count}} unter Linux deaktiviert, da er zu einem anderen Betriebssystem gehört.",
+  "home.summary.hiddenOnLinux.other": "{{count}} unter Linux deaktiviert, da sie zu einem anderen Betriebssystem gehören."
 }

@@ -86,11 +86,11 @@ internal static partial class UiText
     }
 
     /// <summary>
-    /// The text for <paramref name="key"/> with each <c>{name}</c> placeholder replaced once.
+    /// The text for <paramref name="key"/> with each <c>{{name}}</c> placeholder replaced once.
     /// </summary>
     /// <remarks>
     /// Replacement is a single pass over the template, so a value that itself contains
-    /// <c>{something}</c> (a launcher called "{name}", say) is inserted literally and never
+    /// <c>{{something}}</c> (a launcher called "{{name}}", say) is inserted literally and never
     /// expanded. An unknown placeholder is left as written.
     /// </remarks>
     internal static string Format(string key, params (string Name, object? Value)[] values)
@@ -100,7 +100,7 @@ internal static partial class UiText
 
     /// <summary>
     /// Count-dependent text: reads <c>key.one</c> or <c>key.other</c> by the current language's
-    /// plural rule and supplies <c>{count}</c> along with any other values.
+    /// plural rule and supplies <c>{{count}}</c> along with any other values.
     /// </summary>
     /// <remarks>
     /// The two-form rule covers every supported language: English, Spanish and German use "one"
@@ -154,7 +154,7 @@ internal static partial class UiText
         });
     }
 
-    [GeneratedRegex(@"\{([A-Za-z][A-Za-z0-9]*)\}")]
+    [GeneratedRegex(@"\{\{([A-Za-z][A-Za-z0-9]*)\}\}")]
     private static partial Regex PlaceholderPattern();
 
     private static string ResolveDevice()

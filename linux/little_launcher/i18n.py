@@ -30,7 +30,7 @@ NATIVE_NAMES = {
 }
 
 _LATIN_DEFAULT = ('en', 'es', 'fr', 'de', 'pt')
-_PLACEHOLDER = re.compile(r'\{([A-Za-z][A-Za-z0-9]*)\}')
+_PLACEHOLDER = re.compile(r'\{\{([A-Za-z][A-Za-z0-9]*)\}\}')
 
 _catalogs: dict[str, dict[str, str]] = {}
 _override: Callable[[], str | None] = lambda: None
@@ -159,7 +159,7 @@ def read_catalog(catalog: str) -> dict[str, str]:
 
 
 def _fill(template: str, values: dict) -> str:
-    """Replace each known ``{name}`` once; inserted values are never expanded again."""
+    """Replace each known ``{{name}}`` once; inserted values are never expanded again."""
     if not values:
         return template
     return _PLACEHOLDER.sub(lambda match: str(values[match.group(1)]) if match.group(1) in values else match.group(0), template)
@@ -183,6 +183,6 @@ def _uses_one(identity: str, count: int) -> bool:
 
 
 def plural(key: str, count: int, /, **values) -> str:
-    """Count-dependent text from ``key.one`` / ``key.other``, with ``{count}`` supplied."""
+    """Count-dependent text from ``key.one`` / ``key.other``, with ``{{count}}`` supplied."""
     form = '.one' if _uses_one(locale(), count) else '.other'
     return t(key + form, count=count, **values)

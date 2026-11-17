@@ -1,6 +1,6 @@
 {
-  "linuxBrowser.detached.removed": "{launcher} · Launcher entfernt: Aktivität hier abschließen",
-  "linuxBrowser.detached.disconnected": "{launcher} · App-Verbindung verloren: Aktivität hier abschließen",
+  "linuxBrowser.detached.removed": "{{launcher}} · Launcher entfernt: Aktivität hier abschließen",
+  "linuxBrowser.detached.disconnected": "{{launcher}} · App-Verbindung verloren: Aktivität hier abschließen",
   "linuxBrowser.closePageBusy": "Das Schließen dieser Seite kann Medien oder Übertragungen unterbrechen.",
   "linuxBrowser.closePage": "Seite schließen",
   "linuxBrowser.disconnected": "Little Launcher ist getrennt. Beenden kann Medien oder Downloads unterbrechen.",

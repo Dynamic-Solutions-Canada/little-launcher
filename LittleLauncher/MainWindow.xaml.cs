@@ -1612,6 +1612,12 @@ public sealed partial class MainWindow : Window
     /// Checks GitHub releases on startup for portable builds and shows a toast when newer.
     /// The result is cached for the Home page to consume.
     /// </summary>
+    /// <remarks>
+    /// A documented exception to DIST-6, which otherwise forbids background update checks: it runs
+    /// only in unpackaged (retired portable) copies, and is how their users learn that updates
+    /// moved to the Microsoft Store, since the newest Release points there. Packaged installs
+    /// return at once and leave updates to the Store.
+    /// </remarks>
     private async Task CheckForUpdateOnStartupAsync()
     {
         if (IsPackaged)

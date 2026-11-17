@@ -1,6 +1,6 @@
 {
-  "linuxBrowser.detached.removed": "{launcher} · 削除されたランチャー: ここで作業を終えてください",
-  "linuxBrowser.detached.disconnected": "{launcher} · アプリとの接続が切れました: ここで作業を終えてください",
+  "linuxBrowser.detached.removed": "{{launcher}} · 削除されたランチャー: ここで作業を終えてください",
+  "linuxBrowser.detached.disconnected": "{{launcher}} · アプリとの接続が切れました: ここで作業を終えてください",
   "linuxBrowser.closePageBusy": "このページを閉じると、メディアや転送が中断される場合があります。",
   "linuxBrowser.closePage": "ページを閉じる",
   "linuxBrowser.disconnected": "Little Launcher との接続が切れました。終了すると、メディアやダウンロードが中断される場合があります。",

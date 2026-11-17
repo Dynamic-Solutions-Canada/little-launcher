@@ -1,5 +1,5 @@
 {
-  "webNotifications.keepRunningPrompt": "Notifications only arrive while this page is running, and {launcher} currently stops when its flyout is dismissed.",
+  "webNotifications.keepRunningPrompt": "Notifications only arrive while this page is running, and {{launcher}} currently stops when its flyout is dismissed.",
   "webNotifications.keepRunning": "Keep running",
   "webNotifications.notNow": "Not now"
 }

@@ -20,7 +20,7 @@
   "webShortcuts.group.launcher": "启动器",
   "webShortcuts.showList": "显示此列表",
   "webShortcuts.closeFlyout": "关闭浮出窗口",
-  "webShortcuts.keysEither": "{first}  或  {second}",
+  "webShortcuts.keysEither": "{{first}}  或  {{second}}",
   "webShortcuts.wheelUp": "滚轮向上",
   "webShortcuts.wheelDown": "滚轮向下"
 }

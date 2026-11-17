@@ -44,6 +44,6 @@
   "itemEditor.icon.extractFailed": "无法提取图标",
   "itemEditor.icon.choose": "选择",
   "itemEditor.delete.title": "要删除项目吗？",
-  "itemEditor.delete.message": "将从此启动器中移除“{name}”。",
+  "itemEditor.delete.message": "将从此启动器中移除“{{name}}”。",
   "itemEditor.delete.messageUnnamed": "将从此启动器中移除“此项目”。"
 }

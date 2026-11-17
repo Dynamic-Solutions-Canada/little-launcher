@@ -44,6 +44,6 @@
   "itemEditor.icon.extractFailed": "Could not extract icon",
   "itemEditor.icon.choose": "Choose",
   "itemEditor.delete.title": "Delete item?",
-  "itemEditor.delete.message": "“{name}” will be removed from this launcher.",
+  "itemEditor.delete.message": "“{{name}}” will be removed from this launcher.",
   "itemEditor.delete.messageUnnamed": "“This item” will be removed from this launcher."
 }

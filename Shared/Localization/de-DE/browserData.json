@@ -1,15 +1,15 @@
 {
-  "browserData.bookmarkAccessibleName": "{name}, {url}",
+  "browserData.bookmarkAccessibleName": "{{name}}, {{url}}",
   "browserData.bookmarks.bar": "Lesezeichenleiste",
   "browserData.bookmarks.otherFolder": "Weitere Lesezeichen",
   "browserData.bookmarks.synced": "Synchronisierte Lesezeichen",
   "browserData.bookmarks.menu": "Lesezeichen-Menü",
   "browserData.bookmarks.toolbar": "Lesezeichen-Symbolleiste",
   "browserData.profileCleanup.deletedLauncher": "ein Launcher, der nicht mehr existiert",
-  "browserData.profileCleanup.nowShared": "{launcher}, der jetzt das gemeinsame Profil verwendet",
-  "browserData.size.gigabytes": "{size} GB",
-  "browserData.size.megabytes": "{size} MB",
-  "browserData.size.kilobytes": "{size} KB",
-  "browserData.size.bytes.one": "{count} Byte",
-  "browserData.size.bytes.other": "{count} Bytes"
+  "browserData.profileCleanup.nowShared": "{{launcher}}, der jetzt das gemeinsame Profil verwendet",
+  "browserData.size.gigabytes": "{{size}} GB",
+  "browserData.size.megabytes": "{{size}} MB",
+  "browserData.size.kilobytes": "{{size}} KB",
+  "browserData.size.bytes.one": "{{count}} Byte",
+  "browserData.size.bytes.other": "{{count}} Bytes"
 }

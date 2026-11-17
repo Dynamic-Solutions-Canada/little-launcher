@@ -3,14 +3,14 @@
   "home.buildType.debug": "(Depuración)",
   "home.buildType.msix": "(MSIX)",
   "home.buildType.portable": "(Portátil)",
-  "home.update.message": "Hay una nueva versión ({latest}) disponible. Estás usando la {current}.",
+  "home.update.message": "Hay una nueva versión ({{latest}}) disponible. Estás usando la {{current}}.",
   "home.whatsNew.title": "Novedad: lanzadores web",
   "home.whatsNew.message": "Ahora un lanzador puede abrir una página web en lugar de una lista de accesos directos: un panel de Home Assistant, tu correo web o cualquier sitio, directamente desde su icono de la bandeja. Mantiene la sesión iniciada y no consume nada mientras está cerrado.",
   "home.whatsNew.action": "Configurar uno",
   "home.launchersCard.description": "Gestionar lanzadores y accesos directos",
   "home.syncCard.description": "OneDrive, Google Drive, recurso compartido de red o SFTP",
-  "home.summary.launchers.one": "{count} lanzador.",
-  "home.summary.launchers.other": "{count} lanzadores.",
-  "home.summary.hiddenOnLinux.one": "{count} deshabilitado en Linux porque pertenece a otro sistema operativo.",
-  "home.summary.hiddenOnLinux.other": "{count} deshabilitados en Linux porque pertenecen a otro sistema operativo."
+  "home.summary.launchers.one": "{{count}} lanzador.",
+  "home.summary.launchers.other": "{{count}} lanzadores.",
+  "home.summary.hiddenOnLinux.one": "{{count}} deshabilitado en Linux porque pertenece a otro sistema operativo.",
+  "home.summary.hiddenOnLinux.other": "{{count}} deshabilitados en Linux porque pertenecen a otro sistema operativo."
 }

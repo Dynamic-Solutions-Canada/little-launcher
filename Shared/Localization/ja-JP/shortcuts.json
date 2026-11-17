@@ -1,5 +1,5 @@
 {
   "shortcuts.title": "キーボードショートカット",
-  "shortcuts.whileFocused": "{launcher} にフォーカスがあるとき",
+  "shortcuts.whileFocused": "{{launcher}} にフォーカスがあるとき",
   "shortcuts.or": "または"
 }

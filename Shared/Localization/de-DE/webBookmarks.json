@@ -48,5 +48,5 @@
   "webBookmarks.error.renameFolder": "Verwende „Umbenennen“ für einen Ordner.",
   "webBookmarks.error.iconOnlyValue": "„Nur Symbol“ erfordert einen ausdrücklichen Ein/Aus-Wert.",
   "webBookmarks.error.unavailableAction": "Diese Lesezeichenaktion ist nicht verfügbar.",
-  "webBookmarks.moveIntoFolder": "Nach {folder} verschieben"
+  "webBookmarks.moveIntoFolder": "Nach {{folder}} verschieben"
 }

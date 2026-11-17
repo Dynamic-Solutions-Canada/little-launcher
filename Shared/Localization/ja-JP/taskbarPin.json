@@ -13,5 +13,5 @@
   "taskbarPin.statusCheckFailed": "タスクバーの状態確認を完了できませんでした。この設定を閉じて再試行してください。",
   "taskbarPin.unconfirmed": "このランチャーがピン留めされたかどうか、Windows で確認できませんでした。後でピン留めが表示される場合があります。",
   "taskbarPin.helperFailed": "ピン留めヘルパーで要求を完了できませんでした。詳細は taskbar-pin.log を参照してください。",
-  "taskbarPin.failed": "このランチャーをピン留めできませんでした。{reason}"
+  "taskbarPin.failed": "このランチャーをピン留めできませんでした。{{reason}}"
 }

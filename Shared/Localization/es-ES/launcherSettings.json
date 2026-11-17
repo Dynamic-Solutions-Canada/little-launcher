@@ -44,7 +44,7 @@
   "launcherSettings.flyoutSize.description": "Ancho × alto de la ventana emergente web, en píxeles",
   "launcherSettings.zoom.title": "Zoom",
   "launcherSettings.zoom.description": "Zoom de la página dentro de la ventana emergente; también en el menú “…” de la ventana emergente",
-  "launcherSettings.zoom.percent": "{percent} %",
+  "launcherSettings.zoom.percent": "{{percent}} %",
   "launcherSettings.opensAt.title": "Se abre en",
   "launcherSettings.opensAt.anchoredDescription": "Dónde se abre en la pantalla que contiene su icono de la bandeja. Si la mueves, se mantiene ahí hasta que la cierres",
   "launcherSettings.opensAt.lastPositionDescription": "Arrastra la ventana emergente a cualquier lugar y se abrirá ahí la próxima vez",

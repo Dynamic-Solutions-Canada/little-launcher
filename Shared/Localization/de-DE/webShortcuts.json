@@ -20,7 +20,7 @@
   "webShortcuts.group.launcher": "Launcher",
   "webShortcuts.showList": "Diese Liste anzeigen",
   "webShortcuts.closeFlyout": "Flyout schließen",
-  "webShortcuts.keysEither": "{first}  oder  {second}",
+  "webShortcuts.keysEither": "{{first}}  oder  {{second}}",
   "webShortcuts.wheelUp": "Mausrad nach oben",
   "webShortcuts.wheelDown": "Mausrad nach unten"
 }

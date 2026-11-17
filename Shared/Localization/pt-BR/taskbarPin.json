@@ -13,5 +13,5 @@
   "taskbarPin.statusCheckFailed": "Não foi possível concluir a verificação de status da barra de tarefas. Feche estas configurações e tente novamente.",
   "taskbarPin.unconfirmed": "O Windows não confirmou se este inicializador foi fixado. A fixação ainda pode aparecer.",
   "taskbarPin.helperFailed": "O auxiliar de fixação não conseguiu concluir a solicitação. Consulte taskbar-pin.log para ver os detalhes.",
-  "taskbarPin.failed": "Não foi possível fixar este inicializador. {reason}"
+  "taskbarPin.failed": "Não foi possível fixar este inicializador. {{reason}}"
 }

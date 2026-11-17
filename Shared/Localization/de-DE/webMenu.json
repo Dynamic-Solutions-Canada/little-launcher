@@ -1,11 +1,11 @@
 {
-  "webMenu.sectionSettingsLink": "Einstellungen für {section} öffnen…",
+  "webMenu.sectionSettingsLink": "Einstellungen für {{section}} öffnen…",
   "webMenu.tabBar": "Tableiste",
   "webMenu.addressBar": "Adressleiste",
   "webMenu.bookmarksBar": "Lesezeichenleiste",
-  "webMenu.zoom": "Zoom ({percent} %)",
+  "webMenu.zoom": "Zoom ({{percent}} %)",
   "webMenu.zoomReset": "Auf 100 % zurücksetzen",
-  "webMenu.zoomLevel": "{percent} %",
+  "webMenu.zoomLevel": "{{percent}} %",
   "webMenu.opensAt": "Öffnungsposition",
   "webMenu.chooseOpeningPosition": "Öffnungsposition wählen…",
   "webMenu.notificationRequestFailed": "Diese Website konnte keine Berechtigung für Benachrichtigungen anfordern.",
@@ -22,7 +22,7 @@
   "webMenu.turnOnNotifications": "Benachrichtigungen aktivieren",
   "webMenu.rebuildNotificationBridge": "Benachrichtigungsbrücke neu aufbauen",
   "webMenu.rebuildAllBridges": "Brücken aller Launcher neu aufbauen",
-  "webMenu.notificationPermissionKept": "Die Benachrichtigungsberechtigung von {launcher} wurde unverändert gelassen, da die Abfrage unbeantwortet blieb.",
+  "webMenu.notificationPermissionKept": "Die Benachrichtigungsberechtigung von {{launcher}} wurde unverändert gelassen, da die Abfrage unbeantwortet blieb.",
   "webMenu.keyboardShortcuts": "Tastenkürzel",
   "webMenu.launcherSettings": "Launcher-Einstellungen…",
   "webMenu.appSettings": "App-Einstellungen…"

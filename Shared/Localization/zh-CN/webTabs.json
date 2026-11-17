@@ -3,7 +3,7 @@
   "webTabs.addressBar": "地址栏",
   "webTabs.blankTabCaption": "新标签页",
   "webTabs.closeTab": "关闭标签页",
-  "webTabs.closeNamedTab": "关闭 {title}",
+  "webTabs.closeNamedTab": "关闭 {{title}}",
   "webTabs.closeBusyTab": "关闭此标签页可能会中断媒体播放或传输。",
   "webTabs.keepOpen": "保持打开",
   "webTabs.actionFailed": "无法完成标签页操作。",

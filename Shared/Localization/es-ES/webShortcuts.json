@@ -20,7 +20,7 @@
   "webShortcuts.group.launcher": "Lanzador",
   "webShortcuts.showList": "Mostrar esta lista",
   "webShortcuts.closeFlyout": "Cerrar la ventana emergente",
-  "webShortcuts.keysEither": "{first}  o  {second}",
+  "webShortcuts.keysEither": "{{first}}  o  {{second}}",
   "webShortcuts.wheelUp": "Rueda arriba",
   "webShortcuts.wheelDown": "Rueda abajo"
 }

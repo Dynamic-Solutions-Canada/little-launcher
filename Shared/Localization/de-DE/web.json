@@ -21,11 +21,11 @@
   "web.sleepFailed": "Diese Seite konnte nicht in den Ruhezustand versetzt werden.",
   "web.saveDownload": "Download speichern",
   "web.noAddress": "Für diesen Launcher ist keine Webadresse festgelegt. Füge in seinen Launcher-Einstellungen eine hinzu.",
-  "web.webView2Unavailable": "Dieses Fenster benötigt die Microsoft Edge WebView2 Runtime, die nicht gestartet werden konnte. Installiere sie von {url} und versuche es erneut.",
+  "web.webView2Unavailable": "Dieses Fenster benötigt die Microsoft Edge WebView2 Runtime, die nicht gestartet werden konnte. Installiere sie von {{url}} und versuche es erneut.",
   "web.emptyTabHint": "Gib oben eine Adresse ein, um eine Seite zu öffnen.",
-  "web.loadFailed": "{address} konnte nicht geladen werden ({error}).",
+  "web.loadFailed": "{{address}} konnte nicht geladen werden ({{error}}).",
   "web.pageUnresponsive": "Die Seite reagiert nicht mehr.",
-  "web.invalidAddress": "{address} ist keine gültige Webadresse.",
+  "web.invalidAddress": "{{address}} ist keine gültige Webadresse.",
   "web.noticeTitle": "Browsereinstellungen",
   "web.errorTitle": "Web-Launcher"
 }

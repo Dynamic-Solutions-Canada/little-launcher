@@ -1,6 +1,6 @@
 {
-  "linuxBrowser.detached.removed": "{launcher} · 启动器已移除：请在此完成当前活动",
-  "linuxBrowser.detached.disconnected": "{launcher} · 与应用的连接已断开：请在此完成当前活动",
+  "linuxBrowser.detached.removed": "{{launcher}} · 启动器已移除：请在此完成当前活动",
+  "linuxBrowser.detached.disconnected": "{{launcher}} · 与应用的连接已断开：请在此完成当前活动",
   "linuxBrowser.closePageBusy": "关闭此页面可能会中断媒体播放或传输。",
   "linuxBrowser.closePage": "关闭页面",
   "linuxBrowser.disconnected": "Little Launcher 已断开连接。退出可能会中断媒体播放或下载。",

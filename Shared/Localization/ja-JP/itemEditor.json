@@ -44,6 +44,6 @@
   "itemEditor.icon.extractFailed": "アイコンを抽出できませんでした",
   "itemEditor.icon.choose": "選択",
   "itemEditor.delete.title": "項目を削除しますか？",
-  "itemEditor.delete.message": "「{name}」をこのランチャーから削除します。",
+  "itemEditor.delete.message": "「{{name}}」をこのランチャーから削除します。",
   "itemEditor.delete.messageUnnamed": "この項目をこのランチャーから削除します。"
 }

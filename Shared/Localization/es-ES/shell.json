@@ -1,9 +1,9 @@
 {
   "shell.jumpList.launcherSettings": "Ajustes del lanzador",
-  "shell.jumpList.launcherSettingsTooltip": "Ajustes de {launcher}",
+  "shell.jumpList.launcherSettingsTooltip": "Ajustes de {{launcher}}",
   "shell.jumpList.openInBrowser": "Abrir en el navegador",
   "shell.jumpList.editItems": "Editar elementos",
-  "shell.jumpList.editItemsTooltip": "Editar los elementos de {launcher}",
+  "shell.jumpList.editItemsTooltip": "Editar los elementos de {{launcher}}",
   "shell.jumpList.appSettingsTooltip": "Ajustes del propio Little Launcher",
   "shell.startMenu.unnamedWebLauncher": "Lanzador web",
   "shell.pinStatusCheckDidNotStop": "La comprobación del estado de la barra de tareas no se detuvo. No se ha iniciado ningún anclaje nuevo."

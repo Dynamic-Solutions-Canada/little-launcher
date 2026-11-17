@@ -3,7 +3,7 @@
   "webTabs.addressBar": "アドレスバー",
   "webTabs.blankTabCaption": "新しいタブ",
   "webTabs.closeTab": "タブを閉じる",
-  "webTabs.closeNamedTab": "{title} を閉じる",
+  "webTabs.closeNamedTab": "{{title}} を閉じる",
   "webTabs.closeBusyTab": "このタブを閉じると、メディアや転送が中断される場合があります。",
   "webTabs.keepOpen": "開いたままにする",
   "webTabs.actionFailed": "タブの操作を完了できませんでした。",

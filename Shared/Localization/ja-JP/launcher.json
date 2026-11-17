@@ -1,4 +1,4 @@
 {
-  "launcher.groupAccessibleName": "{name}（グループ）",
+  "launcher.groupAccessibleName": "{{name}}（グループ）",
   "launcher.columnBreak": "列区切り"
 }

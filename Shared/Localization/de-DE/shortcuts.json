@@ -1,5 +1,5 @@
 {
   "shortcuts.title": "Tastenkürzel",
-  "shortcuts.whileFocused": "Während {launcher} den Fokus hat",
+  "shortcuts.whileFocused": "Während {{launcher}} den Fokus hat",
   "shortcuts.or": "oder"
 }

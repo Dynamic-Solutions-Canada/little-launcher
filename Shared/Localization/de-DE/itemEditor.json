@@ -44,6 +44,6 @@
   "itemEditor.icon.extractFailed": "Symbol konnte nicht extrahiert werden",
   "itemEditor.icon.choose": "Auswählen",
   "itemEditor.delete.title": "Eintrag löschen?",
-  "itemEditor.delete.message": "„{name}“ wird aus diesem Launcher entfernt.",
+  "itemEditor.delete.message": "„{{name}}“ wird aus diesem Launcher entfernt.",
   "itemEditor.delete.messageUnnamed": "„Dieser Eintrag“ wird aus diesem Launcher entfernt."
 }

@@ -44,7 +44,7 @@
   "launcherSettings.flyoutSize.description": "网页浮出窗口的宽 × 高（像素）",
   "launcherSettings.zoom.title": "缩放",
   "launcherSettings.zoom.description": "浮出窗口内的页面缩放，也可在浮出窗口的“…”菜单中调整",
-  "launcherSettings.zoom.percent": "{percent}%",
+  "launcherSettings.zoom.percent": "{{percent}}%",
   "launcherSettings.opensAt.title": "打开位置",
   "launcherSettings.opensAt.anchoredDescription": "在其托盘图标所在屏幕上的打开位置。移动后的位置在关闭前一直有效",
   "launcherSettings.opensAt.lastPositionDescription": "将浮出窗口拖动到任意位置，下次会在该位置打开",

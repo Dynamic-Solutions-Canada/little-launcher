@@ -1,5 +1,5 @@
 {
   "shortcuts.title": "键盘快捷键",
-  "shortcuts.whileFocused": "当 {launcher} 获得焦点时",
+  "shortcuts.whileFocused": "当 {{launcher}} 获得焦点时",
   "shortcuts.or": "或"
 }

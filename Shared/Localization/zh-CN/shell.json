@@ -1,9 +1,9 @@
 {
   "shell.jumpList.launcherSettings": "启动器设置",
-  "shell.jumpList.launcherSettingsTooltip": "{launcher} 的设置",
+  "shell.jumpList.launcherSettingsTooltip": "{{launcher}} 的设置",
   "shell.jumpList.openInBrowser": "在浏览器中打开",
   "shell.jumpList.editItems": "编辑项目",
-  "shell.jumpList.editItemsTooltip": "编辑 {launcher} 中的项目",
+  "shell.jumpList.editItemsTooltip": "编辑 {{launcher}} 中的项目",
   "shell.jumpList.appSettingsTooltip": "Little Launcher 本身的设置",
   "shell.startMenu.unnamedWebLauncher": "网页启动器",
   "shell.pinStatusCheckDidNotStop": "任务栏状态检查未停止。尚未开始新的固定操作。"

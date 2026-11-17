@@ -16,7 +16,7 @@
   "linuxUpdates.status.waitingToRestart": "Waiting for sync and webpages to close safely…",
   "linuxUpdates.status.restartCanceled": "Restart canceled. The verified download is ready when you are.",
   "linuxUpdates.installFailed.title": "AppImage update could not be installed",
-  "linuxUpdates.installFailed.message": "{error}\nYour launcher settings and browser profiles were not changed.",
+  "linuxUpdates.installFailed.message": "{{error}}\nYour launcher settings and browser profiles were not changed.",
   "linuxUpdates.error.requestFailed": "The update request could not be completed. Your existing AppImage is unchanged.",
   "linuxUpdates.error.unsupportedVersion": "The release version is not a supported stable version.",
   "linuxUpdates.error.invalidVersion": "The release version is invalid.",

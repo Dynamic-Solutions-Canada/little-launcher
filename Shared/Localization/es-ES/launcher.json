@@ -1,4 +1,4 @@
 {
-  "launcher.groupAccessibleName": "{name} (grupo)",
+  "launcher.groupAccessibleName": "{{name}} (grupo)",
   "launcher.columnBreak": "Salto de columna"
 }

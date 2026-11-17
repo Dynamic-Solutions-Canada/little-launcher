@@ -3,7 +3,7 @@
   "webTabs.addressBar": "Adressleiste",
   "webTabs.blankTabCaption": "Neuer Tab",
   "webTabs.closeTab": "Tab schließen",
-  "webTabs.closeNamedTab": "{title} schließen",
+  "webTabs.closeNamedTab": "{{title}} schließen",
   "webTabs.closeBusyTab": "Das Schließen dieses Tabs kann Medien oder Übertragungen unterbrechen.",
   "webTabs.keepOpen": "Geöffnet lassen",
   "webTabs.actionFailed": "Die Tab-Aktion konnte nicht abgeschlossen werden.",

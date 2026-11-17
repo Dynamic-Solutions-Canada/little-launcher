@@ -48,5 +48,5 @@
   "webBookmarks.error.renameFolder": "对文件夹请使用“重命名”。",
   "webBookmarks.error.iconOnlyValue": "“仅图标”需要明确的开/关值。",
   "webBookmarks.error.unavailableAction": "此书签操作不可用。",
-  "webBookmarks.moveIntoFolder": "移入 {folder}"
+  "webBookmarks.moveIntoFolder": "移入 {{folder}}"
 }

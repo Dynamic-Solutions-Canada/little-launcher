@@ -20,7 +20,7 @@
   "webShortcuts.group.launcher": "ランチャー",
   "webShortcuts.showList": "この一覧を表示",
   "webShortcuts.closeFlyout": "フライアウトを閉じる",
-  "webShortcuts.keysEither": "{first}  または  {second}",
+  "webShortcuts.keysEither": "{{first}}  または  {{second}}",
   "webShortcuts.wheelUp": "ホイールを上へ",
   "webShortcuts.wheelDown": "ホイールを下へ"
 }

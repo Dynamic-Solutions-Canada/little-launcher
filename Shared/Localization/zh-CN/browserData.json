@@ -1,15 +1,15 @@
 {
-  "browserData.bookmarkAccessibleName": "{name}，{url}",
+  "browserData.bookmarkAccessibleName": "{{name}}，{{url}}",
   "browserData.bookmarks.bar": "书签栏",
   "browserData.bookmarks.otherFolder": "其他书签",
   "browserData.bookmarks.synced": "已同步的书签",
   "browserData.bookmarks.menu": "书签菜单",
   "browserData.bookmarks.toolbar": "书签工具栏",
   "browserData.profileCleanup.deletedLauncher": "已不存在的启动器",
-  "browserData.profileCleanup.nowShared": "{launcher}（现在使用共享配置文件）",
-  "browserData.size.gigabytes": "{size} GB",
-  "browserData.size.megabytes": "{size} MB",
-  "browserData.size.kilobytes": "{size} KB",
-  "browserData.size.bytes.one": "{count} 字节",
-  "browserData.size.bytes.other": "{count} 字节"
+  "browserData.profileCleanup.nowShared": "{{launcher}}（现在使用共享配置文件）",
+  "browserData.size.gigabytes": "{{size}} GB",
+  "browserData.size.megabytes": "{{size}} MB",
+  "browserData.size.kilobytes": "{{size}} KB",
+  "browserData.size.bytes.one": "{{count}} 字节",
+  "browserData.size.bytes.other": "{{count}} 字节"
 }

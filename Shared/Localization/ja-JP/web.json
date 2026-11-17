@@ -21,11 +21,11 @@
   "web.sleepFailed": "このページをスリープできませんでした。",
   "web.saveDownload": "ダウンロードを保存",
   "web.noAddress": "このランチャーには Web アドレスが設定されていません。ランチャーの設定で追加してください。",
-  "web.webView2Unavailable": "このパネルには Microsoft Edge WebView2 ランタイムが必要ですが、起動できませんでした。{url} からインストールして再試行してください。",
+  "web.webView2Unavailable": "このパネルには Microsoft Edge WebView2 ランタイムが必要ですが、起動できませんでした。{{url}} からインストールして再試行してください。",
   "web.emptyTabHint": "ページを開くには、上にアドレスを入力してください。",
-  "web.loadFailed": "{address} を読み込めませんでした（{error}）。",
+  "web.loadFailed": "{{address}} を読み込めませんでした（{{error}}）。",
   "web.pageUnresponsive": "ページが応答しなくなりました。",
-  "web.invalidAddress": "{address} は有効な Web アドレスではありません。",
+  "web.invalidAddress": "{{address}} は有効な Web アドレスではありません。",
   "web.noticeTitle": "ブラウザーの設定",
   "web.errorTitle": "Web ランチャー"
 }

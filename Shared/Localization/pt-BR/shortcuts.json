@@ -1,5 +1,5 @@
 {
   "shortcuts.title": "Atalhos de teclado",
-  "shortcuts.whileFocused": "Enquanto {launcher} estiver em foco",
+  "shortcuts.whileFocused": "Enquanto {{launcher}} estiver em foco",
   "shortcuts.or": "ou"
 }

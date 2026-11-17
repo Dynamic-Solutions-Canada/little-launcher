@@ -48,5 +48,5 @@
   "webBookmarks.error.renameFolder": "Use Rename for a folder.",
   "webBookmarks.error.iconOnlyValue": "Icon only requires an explicit on/off value.",
   "webBookmarks.error.unavailableAction": "This bookmark action is unavailable.",
-  "webBookmarks.moveIntoFolder": "Move into {folder}"
+  "webBookmarks.moveIntoFolder": "Move into {{folder}}"
 }

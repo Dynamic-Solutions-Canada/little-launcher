@@ -1,11 +1,11 @@
 {
-  "webMenu.sectionSettingsLink": "打开“{section}”设置…",
+  "webMenu.sectionSettingsLink": "打开“{{section}}”设置…",
   "webMenu.tabBar": "标签栏",
   "webMenu.addressBar": "地址栏",
   "webMenu.bookmarksBar": "书签栏",
-  "webMenu.zoom": "缩放（{percent}%）",
+  "webMenu.zoom": "缩放（{{percent}}%）",
   "webMenu.zoomReset": "重置为 100%",
-  "webMenu.zoomLevel": "{percent}%",
+  "webMenu.zoomLevel": "{{percent}}%",
   "webMenu.opensAt": "打开位置",
   "webMenu.chooseOpeningPosition": "选择打开位置…",
   "webMenu.notificationRequestFailed": "此网站无法请求通知权限。",
@@ -22,7 +22,7 @@
   "webMenu.turnOnNotifications": "开启通知",
   "webMenu.rebuildNotificationBridge": "重建通知桥接",
   "webMenu.rebuildAllBridges": "重建所有启动器的桥接",
-  "webMenu.notificationPermissionKept": "由于提示未得到回应，{launcher} 的通知权限保持不变。",
+  "webMenu.notificationPermissionKept": "由于提示未得到回应，{{launcher}} 的通知权限保持不变。",
   "webMenu.keyboardShortcuts": "键盘快捷键",
   "webMenu.launcherSettings": "启动器设置…",
   "webMenu.appSettings": "应用设置…"

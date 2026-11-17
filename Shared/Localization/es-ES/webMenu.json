@@ -1,11 +1,11 @@
 {
-  "webMenu.sectionSettingsLink": "Abrir ajustes de {section}…",
+  "webMenu.sectionSettingsLink": "Abrir ajustes de {{section}}…",
   "webMenu.tabBar": "Barra de pestañas",
   "webMenu.addressBar": "Barra de direcciones",
   "webMenu.bookmarksBar": "Barra de marcadores",
-  "webMenu.zoom": "Zoom ({percent} %)",
+  "webMenu.zoom": "Zoom ({{percent}} %)",
   "webMenu.zoomReset": "Restablecer al 100 %",
-  "webMenu.zoomLevel": "{percent} %",
+  "webMenu.zoomLevel": "{{percent}} %",
   "webMenu.opensAt": "Se abre en",
   "webMenu.chooseOpeningPosition": "Elegir posición de apertura…",
   "webMenu.notificationRequestFailed": "Este sitio no pudo solicitar permiso para mostrar notificaciones.",
@@ -22,7 +22,7 @@
   "webMenu.turnOnNotifications": "Activar notificaciones",
   "webMenu.rebuildNotificationBridge": "Reconstruir el puente de notificaciones",
   "webMenu.rebuildAllBridges": "Reconstruir el puente de todos los lanzadores",
-  "webMenu.notificationPermissionKept": "El permiso de notificaciones de {launcher} se dejó como estaba porque no se respondió a la solicitud.",
+  "webMenu.notificationPermissionKept": "El permiso de notificaciones de {{launcher}} se dejó como estaba porque no se respondió a la solicitud.",
   "webMenu.keyboardShortcuts": "Atajos de teclado",
   "webMenu.launcherSettings": "Ajustes del lanzador…",
   "webMenu.appSettings": "Ajustes de la aplicación…"

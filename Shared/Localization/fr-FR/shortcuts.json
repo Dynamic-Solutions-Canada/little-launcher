@@ -1,5 +1,5 @@
 {
   "shortcuts.title": "Raccourcis clavier",
-  "shortcuts.whileFocused": "Lorsque {launcher} a le focus",
+  "shortcuts.whileFocused": "Lorsque {{launcher}} a le focus",
   "shortcuts.or": "ou"
 }

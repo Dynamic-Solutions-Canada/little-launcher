@@ -1,6 +1,6 @@
 {
   "pinning.promptReminder": "Achte auf die Anheften-Abfrage von Windows.",
-  "pinning.manualInstructions": "{reason}\n\nKlicke mit der rechten Maustaste auf das Taskleistensymbol dieses Launchers und wähle „An Taskleiste anheften“.\n\nKlicke erst nach dem Anheften auf OK, oder auf Abbrechen, um die gespeicherte Anheftung unverändert zu lassen.",
+  "pinning.manualInstructions": "{{reason}}\n\nKlicke mit der rechten Maustaste auf das Taskleistensymbol dieses Launchers und wähle „An Taskleiste anheften“.\n\nKlicke erst nach dem Anheften auf OK, oder auf Abbrechen, um die gespeicherte Anheftung unverändert zu lassen.",
   "pinning.reason.unavailable": "Natives Anheften ist nicht verfügbar.",
   "pinning.reason.manualRequested": "Hefte diesen Launcher manuell an.",
   "pinning.reason.prepareFailed": "Windows konnte das native Anheften nicht vorbereiten. Du kannst diesen Launcher manuell anheften.",
@@ -16,5 +16,5 @@
   "pinning.replace.title": "Taskleisten-Anheftung ersetzen",
   "pinning.replace.detailsChanged": "Dieser Launcher ist noch angeheftet. Sein Name, Symbol oder seine Startdetails haben sich geändert.",
   "pinning.replace.detailsUnknown": "Dieser Launcher ist noch angeheftet. Seine vorherigen Details konnten nicht verglichen werden. Klicke auf Abbrechen, um die bestehende Anheftung zu behalten.",
-  "pinning.replace.message": "{explanation}\n\nLöse die Anheftung, indem du mit der rechten Maustaste darauf klickst und „Von Taskleiste lösen“ wählst. Klicke auf OK, wenn keine mehr vorhanden ist, um neu anzuheften, oder auf Abbrechen, um aufzuhören."
+  "pinning.replace.message": "{{explanation}}\n\nLöse die Anheftung, indem du mit der rechten Maustaste darauf klickst und „Von Taskleiste lösen“ wählst. Klicke auf OK, wenn keine mehr vorhanden ist, um neu anzuheften, oder auf Abbrechen, um aufzuhören."
 }

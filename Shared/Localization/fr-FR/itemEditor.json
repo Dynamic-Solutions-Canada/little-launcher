@@ -44,6 +44,6 @@
   "itemEditor.icon.extractFailed": "Impossible d’extraire l’icône",
   "itemEditor.icon.choose": "Choisir",
   "itemEditor.delete.title": "Supprimer l’élément ?",
-  "itemEditor.delete.message": "« {name} » sera supprimé de ce lanceur.",
+  "itemEditor.delete.message": "« {{name}} » sera supprimé de ce lanceur.",
   "itemEditor.delete.messageUnnamed": "Cet élément sera supprimé de ce lanceur."
 }

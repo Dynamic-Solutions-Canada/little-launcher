@@ -1,5 +1,5 @@
 {
-  "webNotifications.keepRunningPrompt": "Les notifications n’arrivent que pendant l’exécution de cette page, et {launcher} s’arrête actuellement à la fermeture de son panneau.",
+  "webNotifications.keepRunningPrompt": "Les notifications n’arrivent que pendant l’exécution de cette page, et {{launcher}} s’arrête actuellement à la fermeture de son panneau.",
   "webNotifications.keepRunning": "Continuer à s’exécuter",
   "webNotifications.notNow": "Pas maintenant"
 }

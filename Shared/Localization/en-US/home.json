@@ -3,14 +3,14 @@
   "home.buildType.debug": "(Debug)",
   "home.buildType.msix": "(MSIX)",
   "home.buildType.portable": "(Portable)",
-  "home.update.message": "A new version ({latest}) is available. You are running {current}.",
+  "home.update.message": "A new version ({{latest}}) is available. You are running {{current}}.",
   "home.whatsNew.title": "New: web launchers",
   "home.whatsNew.message": "A launcher can now open a web page instead of a list of shortcuts: a Home Assistant dashboard, webmail, or any site, straight from its tray icon. It stays signed in, and uses nothing while it's closed.",
   "home.whatsNew.action": "Set one up",
   "home.launchersCard.description": "Manage launchers & shortcuts",
   "home.syncCard.description": "OneDrive, Google Drive, network share or SFTP",
-  "home.summary.launchers.one": "{count} launcher.",
-  "home.summary.launchers.other": "{count} launchers.",
-  "home.summary.hiddenOnLinux.one": "{count} disabled on Linux because it belongs to another operating system.",
-  "home.summary.hiddenOnLinux.other": "{count} disabled on Linux because they belong to another operating system."
+  "home.summary.launchers.one": "{{count}} launcher.",
+  "home.summary.launchers.other": "{{count}} launchers.",
+  "home.summary.hiddenOnLinux.one": "{{count}} disabled on Linux because it belongs to another operating system.",
+  "home.summary.hiddenOnLinux.other": "{{count}} disabled on Linux because they belong to another operating system."
 }

@@ -1,9 +1,9 @@
 {
   "shell.jumpList.launcherSettings": "Paramètres du lanceur",
-  "shell.jumpList.launcherSettingsTooltip": "Paramètres de {launcher}",
+  "shell.jumpList.launcherSettingsTooltip": "Paramètres de {{launcher}}",
   "shell.jumpList.openInBrowser": "Ouvrir dans le navigateur",
   "shell.jumpList.editItems": "Modifier les éléments",
-  "shell.jumpList.editItemsTooltip": "Modifier les éléments de {launcher}",
+  "shell.jumpList.editItemsTooltip": "Modifier les éléments de {{launcher}}",
   "shell.jumpList.appSettingsTooltip": "Paramètres de Little Launcher",
   "shell.startMenu.unnamedWebLauncher": "Lanceur web",
   "shell.pinStatusCheckDidNotStop": "La vérification de l’état de la barre des tâches ne s’est pas arrêtée. Aucun nouvel épinglage n’a été lancé."

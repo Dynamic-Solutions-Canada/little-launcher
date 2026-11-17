@@ -4,5 +4,5 @@
   "tray.menu.openLogsFolder": "Abrir carpeta de registros",
   "tray.menu.exit": "Salir",
   "tray.whatsNew.message": "Ahora un lanzador puede abrir una página web (un panel, tu correo web o cualquier sitio) directamente desde su icono de la bandeja.",
-  "tray.update.message": "Little Launcher {latest} está disponible. Estás usando la {current}."
+  "tray.update.message": "Little Launcher {{latest}} está disponible. Estás usando la {{current}}."
 }

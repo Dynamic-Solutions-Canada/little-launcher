@@ -8,7 +8,7 @@ from little_launcher import i18n
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOGS = ROOT / 'Shared' / 'Localization'
-PLACEHOLDER = re.compile(r'\{([A-Za-z][A-Za-z0-9]*)\}')
+PLACEHOLDER = re.compile(r'\{\{([A-Za-z][A-Za-z0-9]*)\}\}')
 
 
 def area_files(catalog):
@@ -145,8 +145,8 @@ class LookupTests(unittest.TestCase):
         i18n.configure(lambda: 'en-US', lambda: [])
         self.assertEqual(i18n.t('common.ok'), 'OK')
         self.assertEqual(i18n.t('no.such.key'), 'no.such.key')
-        text = i18n.t('system.language.matchDevice', language='{language}')
-        self.assertEqual(text, 'Match device ({language})')
+        text = i18n.t('system.language.matchDevice', language='{{language}}')
+        self.assertEqual(text, 'Match device ({{language}})')
 
     def test_plural_rules(self):
         self.assertTrue(i18n._uses_one('en-US', 1))

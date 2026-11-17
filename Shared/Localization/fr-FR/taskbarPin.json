@@ -13,5 +13,5 @@
   "taskbarPin.statusCheckFailed": "La vérification de l’état de la barre des tâches n’a pas pu se terminer. Fermez ces paramètres et réessayez.",
   "taskbarPin.unconfirmed": "Windows n’a pas confirmé l’épinglage de ce lanceur. Un épinglage peut encore apparaître.",
   "taskbarPin.helperFailed": "L’assistant d’épinglage n’a pas pu traiter la demande. Consultez taskbar-pin.log pour plus de détails.",
-  "taskbarPin.failed": "Impossible d’épingler ce lanceur. {reason}"
+  "taskbarPin.failed": "Impossible d’épingler ce lanceur. {{reason}}"
 }

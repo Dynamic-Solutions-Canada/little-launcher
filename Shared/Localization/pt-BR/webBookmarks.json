@@ -48,5 +48,5 @@
   "webBookmarks.error.renameFolder": "Use Renomear para uma pasta.",
   "webBookmarks.error.iconOnlyValue": "Somente ícone exige um valor explícito de ativado/desativado.",
   "webBookmarks.error.unavailableAction": "Esta ação de favorito está indisponível.",
-  "webBookmarks.moveIntoFolder": "Mover para {folder}"
+  "webBookmarks.moveIntoFolder": "Mover para {{folder}}"
 }

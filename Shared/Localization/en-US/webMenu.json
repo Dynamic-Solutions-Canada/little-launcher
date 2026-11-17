@@ -1,11 +1,11 @@
 {
-  "webMenu.sectionSettingsLink": "Open {section} settings…",
+  "webMenu.sectionSettingsLink": "Open {{section}} settings…",
   "webMenu.tabBar": "Tab bar",
   "webMenu.addressBar": "Address bar",
   "webMenu.bookmarksBar": "Bookmarks bar",
-  "webMenu.zoom": "Zoom ({percent}%)",
+  "webMenu.zoom": "Zoom ({{percent}}%)",
   "webMenu.zoomReset": "Reset to 100%",
-  "webMenu.zoomLevel": "{percent}%",
+  "webMenu.zoomLevel": "{{percent}}%",
   "webMenu.opensAt": "Opens at",
   "webMenu.chooseOpeningPosition": "Choose opening position…",
   "webMenu.notificationRequestFailed": "This site could not request notification permission.",
@@ -22,7 +22,7 @@
   "webMenu.turnOnNotifications": "Turn on notifications",
   "webMenu.rebuildNotificationBridge": "Rebuild notification bridge",
   "webMenu.rebuildAllBridges": "Rebuild every launcher's bridge",
-  "webMenu.notificationPermissionKept": "{launcher}'s notification permission was left as it was, because the prompt went unanswered.",
+  "webMenu.notificationPermissionKept": "{{launcher}}'s notification permission was left as it was, because the prompt went unanswered.",
   "webMenu.keyboardShortcuts": "Keyboard shortcuts",
   "webMenu.launcherSettings": "Launcher settings…",
   "webMenu.appSettings": "App settings…"

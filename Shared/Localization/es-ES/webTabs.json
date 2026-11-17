@@ -3,7 +3,7 @@
   "webTabs.addressBar": "Barra de direcciones",
   "webTabs.blankTabCaption": "Nueva pestaña",
   "webTabs.closeTab": "Cerrar pestaña",
-  "webTabs.closeNamedTab": "Cerrar {title}",
+  "webTabs.closeNamedTab": "Cerrar {{title}}",
   "webTabs.closeBusyTab": "Cerrar esta pestaña puede interrumpir reproducciones o transferencias.",
   "webTabs.keepOpen": "Mantener abierta",
   "webTabs.actionFailed": "No se pudo completar la acción de la pestaña.",

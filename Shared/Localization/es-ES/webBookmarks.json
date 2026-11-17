@@ -48,5 +48,5 @@
   "webBookmarks.error.renameFolder": "Usa Cambiar nombre para una carpeta.",
   "webBookmarks.error.iconOnlyValue": "Solo icono requiere un valor explícito de activado o desactivado.",
   "webBookmarks.error.unavailableAction": "Esta acción de marcador no está disponible.",
-  "webBookmarks.moveIntoFolder": "Mover a {folder}"
+  "webBookmarks.moveIntoFolder": "Mover a {{folder}}"
 }

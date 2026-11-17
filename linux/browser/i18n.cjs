@@ -18,7 +18,7 @@ const CATALOGS = new Set(['en-US', 'es-ES', 'fr-FR', 'de-DE', 'zh-CN', 'pt-BR', 
 // An area file is a few kilobytes; refuse anything that is clearly not one.
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_FILES = 128;
-const PLACEHOLDER = /\{([A-Za-z][A-Za-z0-9]*)\}/g;
+const PLACEHOLDER = /\{\{([A-Za-z][A-Za-z0-9]*)\}\}/g;
 
 let catalog = DEFAULT;
 let directory = defaultDirectory();
@@ -91,7 +91,7 @@ function read(name) {
   return merged;
 }
 
-/** Replace each known `{name}` once; inserted values are never expanded again. */
+/** Replace each known `{{name}}` once; inserted values are never expanded again. */
 function fill(template, values) {
   if (!values) return template;
   return template.replace(PLACEHOLDER, (match, name) =>
@@ -118,7 +118,7 @@ function usesOne(identity, count) {
   return count === 1;
 }
 
-/** Count-dependent text from `key.one` / `key.other`, with `{count}` supplied. */
+/** Count-dependent text from `key.one` / `key.other`, with `{{count}}` supplied. */
 function plural(key, count, values = {}) {
   const form = usesOne(catalog, count) ? '.one' : '.other';
   return t(key + form, {...values, count});

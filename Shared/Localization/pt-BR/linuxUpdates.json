@@ -16,7 +16,7 @@
   "linuxUpdates.status.waitingToRestart": "Aguardando a sincronização e as páginas web fecharem com segurança…",
   "linuxUpdates.status.restartCanceled": "Reinicialização cancelada. O download verificado estará pronto quando você quiser.",
   "linuxUpdates.installFailed.title": "Não foi possível instalar a atualização do AppImage",
-  "linuxUpdates.installFailed.message": "{error}\nAs configurações dos inicializadores e os perfis do navegador não foram alterados.",
+  "linuxUpdates.installFailed.message": "{{error}}\nAs configurações dos inicializadores e os perfis do navegador não foram alterados.",
   "linuxUpdates.error.requestFailed": "Não foi possível concluir a solicitação de atualização. Seu AppImage atual não foi alterado.",
   "linuxUpdates.error.unsupportedVersion": "A versão lançada não é uma versão estável compatível.",
   "linuxUpdates.error.invalidVersion": "A versão lançada é inválida.",

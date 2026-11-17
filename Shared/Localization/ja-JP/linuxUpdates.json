@@ -16,7 +16,7 @@
   "linuxUpdates.status.waitingToRestart": "同期と Web ページが安全に終了するのを待っています…",
   "linuxUpdates.status.restartCanceled": "再起動をキャンセルしました。検証済みのダウンロードはいつでもインストールできます。",
   "linuxUpdates.installFailed.title": "AppImage の更新をインストールできませんでした",
-  "linuxUpdates.installFailed.message": "{error}\nランチャーの設定とブラウザーのプロファイルは変更されていません。",
+  "linuxUpdates.installFailed.message": "{{error}}\nランチャーの設定とブラウザーのプロファイルは変更されていません。",
   "linuxUpdates.error.requestFailed": "更新の要求を完了できませんでした。既存の AppImage は変更されていません。",
   "linuxUpdates.error.unsupportedVersion": "リリースのバージョンが、サポートされている安定版ではありません。",
   "linuxUpdates.error.invalidVersion": "リリースのバージョンが無効です。",

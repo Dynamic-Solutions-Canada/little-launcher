@@ -21,11 +21,11 @@
   "web.sleepFailed": "This page could not be put to sleep.",
   "web.saveDownload": "Save download",
   "web.noAddress": "No web address is set for this launcher. Add one in its launcher settings.",
-  "web.webView2Unavailable": "This panel needs the Microsoft Edge WebView2 Runtime, which could not be started. Install it from {url} and try again.",
+  "web.webView2Unavailable": "This panel needs the Microsoft Edge WebView2 Runtime, which could not be started. Install it from {{url}} and try again.",
   "web.emptyTabHint": "Type an address above to open a page.",
-  "web.loadFailed": "Could not load {address} ({error}).",
+  "web.loadFailed": "Could not load {{address}} ({{error}}).",
   "web.pageUnresponsive": "The page stopped responding.",
-  "web.invalidAddress": "{address} is not a valid web address.",
+  "web.invalidAddress": "{{address}} is not a valid web address.",
   "web.noticeTitle": "Browser settings",
   "web.errorTitle": "Web launcher"
 }

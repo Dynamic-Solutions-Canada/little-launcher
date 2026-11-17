@@ -13,5 +13,5 @@
   "taskbarPin.statusCheckFailed": "Die Statusprüfung der Taskleiste konnte nicht abgeschlossen werden. Schließe diese Einstellungen und versuche es erneut.",
   "taskbarPin.unconfirmed": "Windows hat nicht bestätigt, ob dieser Launcher angeheftet wurde. Eine Anheftung kann noch erscheinen.",
   "taskbarPin.helperFailed": "Das Anheft-Hilfsprogramm konnte die Anfrage nicht abschließen. Details findest du in taskbar-pin.log.",
-  "taskbarPin.failed": "Dieser Launcher konnte nicht angeheftet werden. {reason}"
+  "taskbarPin.failed": "Dieser Launcher konnte nicht angeheftet werden. {{reason}}"
 }

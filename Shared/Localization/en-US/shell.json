@@ -1,9 +1,9 @@
 {
   "shell.jumpList.launcherSettings": "Launcher settings",
-  "shell.jumpList.launcherSettingsTooltip": "Settings for {launcher}",
+  "shell.jumpList.launcherSettingsTooltip": "Settings for {{launcher}}",
   "shell.jumpList.openInBrowser": "Open in browser",
   "shell.jumpList.editItems": "Edit items",
-  "shell.jumpList.editItemsTooltip": "Edit the items in {launcher}",
+  "shell.jumpList.editItemsTooltip": "Edit the items in {{launcher}}",
   "shell.jumpList.appSettingsTooltip": "Settings for Little Launcher itself",
   "shell.startMenu.unnamedWebLauncher": "Web Launcher",
   "shell.pinStatusCheckDidNotStop": "The taskbar status check did not stop. No new pin has been started."

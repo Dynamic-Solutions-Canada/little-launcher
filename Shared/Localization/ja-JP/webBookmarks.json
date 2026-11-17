@@ -48,5 +48,5 @@
   "webBookmarks.error.renameFolder": "フォルダーには「名前の変更」を使ってください。",
   "webBookmarks.error.iconOnlyValue": "「アイコンのみ」には、オンかオフの値を明示的に指定する必要があります。",
   "webBookmarks.error.unavailableAction": "このブックマークの操作は利用できません。",
-  "webBookmarks.moveIntoFolder": "{folder} に移動"
+  "webBookmarks.moveIntoFolder": "{{folder}} に移動"
 }

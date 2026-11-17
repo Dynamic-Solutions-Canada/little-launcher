@@ -47,11 +47,15 @@ that is the only thing tidying up after a machine that once had the MSI.
 
 ## Portable update flow
 
-`CheckForGitHubUpdateAsync()` reads the latest release tag and compares it against the running
-assembly version. **That is all it does: nothing is downloaded and nothing is installed.** Home
+winui-app-kit's `UpdateService.CheckGitHubAsync()` (built in `AboutContent`) reads the latest
+release tag and compares it against the running assembly version. **That is all it does: nothing is downloaded and nothing is installed.** Home
 and About show the new version behind a **View Release** button that opens the release page, and
 unpackaged builds additionally raise the startup toast (packaged ones do not: Store updates
 arrive on their own, so there is nothing to interrupt anyone about).
+
+The startup check is a documented exception to DIST-6, which otherwise rules out background
+update checks. It runs only in unpackaged copies, which are the retired portable build, and it is
+how their users learn that updates moved to the Microsoft Store: the newest Release points there.
 
 Deliberate: a portable copy is a directory the user chose, may have put somewhere unwritable, and
 is executing out of at that moment. Self-replacing it means surviving locked WebView2 and

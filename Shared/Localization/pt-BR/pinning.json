@@ -1,6 +1,6 @@
 {
   "pinning.promptReminder": "Procure a solicitação de fixação do Windows.",
-  "pinning.manualInstructions": "{reason}\n\nClique com o botão direito no ícone deste inicializador na barra de tarefas e escolha \"Fixar na barra de tarefas\".\n\nClique em OK somente depois de fixá-lo, ou em Cancelar para manter a fixação salva inalterada.",
+  "pinning.manualInstructions": "{{reason}}\n\nClique com o botão direito no ícone deste inicializador na barra de tarefas e escolha \"Fixar na barra de tarefas\".\n\nClique em OK somente depois de fixá-lo, ou em Cancelar para manter a fixação salva inalterada.",
   "pinning.reason.unavailable": "A fixação nativa não está disponível.",
   "pinning.reason.manualRequested": "Fixe este inicializador manualmente.",
   "pinning.reason.prepareFailed": "O Windows não conseguiu preparar a fixação nativa. Você pode fixar este inicializador manualmente.",
@@ -16,5 +16,5 @@
   "pinning.replace.title": "Substituir fixação na barra de tarefas",
   "pinning.replace.detailsChanged": "Este inicializador ainda está fixado. O nome, o ícone ou os detalhes de inicialização foram alterados.",
   "pinning.replace.detailsUnknown": "Este inicializador ainda está fixado. Não foi possível comparar os detalhes anteriores. Cancele para manter a fixação existente.",
-  "pinning.replace.message": "{explanation}\n\nRemova a fixação da barra de tarefas clicando com o botão direito nele e escolhendo \"Desafixar da barra de tarefas\". Clique em OK quando não houver mais nenhuma para criar uma nova fixação, ou em Cancelar para parar."
+  "pinning.replace.message": "{{explanation}}\n\nRemova a fixação da barra de tarefas clicando com o botão direito nele e escolhendo \"Desafixar da barra de tarefas\". Clique em OK quando não houver mais nenhuma para criar uma nova fixação, ou em Cancelar para parar."
 }

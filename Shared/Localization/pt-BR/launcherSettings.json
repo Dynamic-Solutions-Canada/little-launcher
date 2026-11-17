@@ -44,7 +44,7 @@
   "launcherSettings.flyoutSize.description": "Largura × altura do painel suspenso web, em pixels",
   "launcherSettings.zoom.title": "Zoom",
   "launcherSettings.zoom.description": "Zoom da página dentro do painel suspenso, também disponível no menu “…” do painel",
-  "launcherSettings.zoom.percent": "{percent}%",
+  "launcherSettings.zoom.percent": "{{percent}}%",
   "launcherSettings.opensAt.title": "Abre em",
   "launcherSettings.opensAt.anchoredDescription": "Onde ele abre na tela que contém o ícone da bandeja. Uma movimentação vale até você fechá-lo",
   "launcherSettings.opensAt.lastPositionDescription": "Arraste o painel suspenso para qualquer lugar e ele abrirá ali da próxima vez",

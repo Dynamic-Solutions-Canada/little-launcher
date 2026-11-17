@@ -24,9 +24,9 @@ Area files prefixed `linux` (for example `linuxUpdates.json`) hold Linux-only co
 
 **Keys** are `area.camelCaseName`, optionally with one more dotted level for grouping (`sync.sftp.hostLabel`). The first segment matches the file name. Keys describe meaning, not English wording, so a later wording change does not rename the key. `common.json` holds the generic words (OK, Cancel, Remove, Browse…); reuse those rather than adding a near-duplicate.
 
-**Placeholders** are `{name}`, replaced once from named values; a value is never itself expanded, so user content containing braces is shown literally. Use a placeholder rather than concatenating fragments, because word order differs between languages. Never split one sentence across keys.
+**Placeholders** are `{{name}}` (double braces, the winui-app-kit form), replaced once from named values; a value is never itself expanded, so user content containing braces is shown literally. Use a placeholder rather than concatenating fragments, because word order differs between languages. Never split one sentence across keys.
 
-**Plurals** use `key.one` and `key.other`, with `{count}` supplied automatically. French and Portuguese use "one" for 0 and 1; Chinese and Japanese give both forms the same text.
+**Plurals** use `key.one` and `key.other`, with `{{count}}` supplied automatically. French and Portuguese use "one" for 0 and 1; Chinese and Japanese give both forms the same text.
 
 **Not translated:** product and service names (Little Launcher, OneDrive, Google Drive, WebDAV, SFTP, SSH, Nextcloud, Windows, KDE, Microsoft Store, GitHub), launcher and item names, URLs, file paths, anything the user typed, text returned by a server or the OS, log messages, exception messages that only reach the log, settings and JSON property names, automation IDs and keyboard accelerator keys. Pass user and provider content as placeholder values, never as keys.
 

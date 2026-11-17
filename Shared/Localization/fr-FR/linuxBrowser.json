@@ -1,6 +1,6 @@
 {
-  "linuxBrowser.detached.removed": "{launcher} · Lanceur supprimé : terminez l’activité ici",
-  "linuxBrowser.detached.disconnected": "{launcher} · Connexion à l’application perdue : terminez l’activité ici",
+  "linuxBrowser.detached.removed": "{{launcher}} · Lanceur supprimé : terminez l’activité ici",
+  "linuxBrowser.detached.disconnected": "{{launcher}} · Connexion à l’application perdue : terminez l’activité ici",
   "linuxBrowser.closePageBusy": "La fermeture de cette page peut interrompre des médias ou des transferts.",
   "linuxBrowser.closePage": "Fermer la page",
   "linuxBrowser.disconnected": "Little Launcher s’est déconnecté. Quitter peut interrompre des médias ou des téléchargements.",

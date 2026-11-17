@@ -44,7 +44,7 @@
   "launcherSettings.flyoutSize.description": "Web フライアウトの幅 × 高さ（ピクセル）",
   "launcherSettings.zoom.title": "ズーム",
   "launcherSettings.zoom.description": "フライアウト内のページのズーム。フライアウトの「…」メニューからも変更できます",
-  "launcherSettings.zoom.percent": "{percent}%",
+  "launcherSettings.zoom.percent": "{{percent}}%",
   "launcherSettings.opensAt.title": "開く位置",
   "launcherSettings.opensAt.anchoredDescription": "トレイアイコンがある画面のどこに開くか。移動した位置は閉じるまで保持されます",
   "launcherSettings.opensAt.lastPositionDescription": "フライアウトを好きな場所にドラッグすると、次回はその位置に開きます",

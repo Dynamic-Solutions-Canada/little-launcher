@@ -1,6 +1,6 @@
 {
-  "linuxBrowser.detached.removed": "{launcher} · Inicializador removido: conclua a atividade aqui",
-  "linuxBrowser.detached.disconnected": "{launcher} · Conexão com o aplicativo perdida: conclua a atividade aqui",
+  "linuxBrowser.detached.removed": "{{launcher}} · Inicializador removido: conclua a atividade aqui",
+  "linuxBrowser.detached.disconnected": "{{launcher}} · Conexão com o aplicativo perdida: conclua a atividade aqui",
   "linuxBrowser.closePageBusy": "Fechar esta página pode interromper mídias ou transferências.",
   "linuxBrowser.closePage": "Fechar página",
   "linuxBrowser.disconnected": "O Little Launcher foi desconectado. Sair pode interromper mídias ou downloads.",

@@ -17,11 +17,11 @@ function fixture() {
     fs.mkdirSync(path.join(root,catalog),{recursive:true});
     fs.writeFileSync(path.join(root,catalog,name),typeof content==='string'?content:JSON.stringify(content));
   };
-  write('en-US','sample.json',{'sample.greeting':'Hello {name}','sample.only':'English only',
-    'sample.items.one':'{count} item','sample.items.other':'{count} items','sample.pair':'{first} and {second}'});
-  write('fr-FR','sample.json',{'sample.greeting':'Bonjour {name}','sample.items.one':'{count} élément','sample.items.other':'{count} éléments'});
+  write('en-US','sample.json',{'sample.greeting':'Hello {{name}}','sample.only':'English only',
+    'sample.items.one':'{{count}} item','sample.items.other':'{{count}} items','sample.pair':'{{first}} and {{second}}'});
+  write('fr-FR','sample.json',{'sample.greeting':'Bonjour {{name}}','sample.items.one':'{{count}} élément','sample.items.other':'{{count}} éléments'});
   write('fr-FR','broken.json','{"sample.only": ');
-  write('ja-JP','sample.json',{'sample.items.one':'{count} 件','sample.items.other':'{count} 件'});
+  write('ja-JP','sample.json',{'sample.items.one':'{{count}} 件','sample.items.other':'{{count}} 件'});
   write('de-DE','sample.json',['not','an','object']);
   return root;
 }
@@ -57,12 +57,12 @@ test('unknown or unsafe catalog names mean English and never leave the catalog d
 
 test('placeholders are filled once and inserted values are never expanded',()=>{
   i18n.configure({catalog:'en-US',directory:fixture()});
-  assert.equal(i18n.t('sample.pair',{first:'{second}',second:'x'}),'{second} and x');
-  assert.equal(i18n.t('sample.greeting'),'Hello {name}','No values leaves the template intact');
-  assert.equal(i18n.t('sample.greeting',{other:1}),'Hello {name}','Unknown placeholders stay literal');
-  assert.equal(i18n.t('sample.greeting',{}),'Hello {name}');
-  assert.equal(i18n.t('sample.pair',{first:'a'}),'a and {second}');
-  assert.equal(i18n.t('sample.greeting',Object.create({name:'inherited'})),'Hello {name}','Only own values are used');
+  assert.equal(i18n.t('sample.pair',{first:'{{second}}',second:'x'}),'{{second}} and x');
+  assert.equal(i18n.t('sample.greeting'),'Hello {{name}}','No values leaves the template intact');
+  assert.equal(i18n.t('sample.greeting',{other:1}),'Hello {{name}}','Unknown placeholders stay literal');
+  assert.equal(i18n.t('sample.greeting',{}),'Hello {{name}}');
+  assert.equal(i18n.t('sample.pair',{first:'a'}),'a and {{second}}');
+  assert.equal(i18n.t('sample.greeting',Object.create({name:'inherited'})),'Hello {{name}}','Only own values are used');
   assert.equal(i18n.t('sample.greeting',{name:0}),'Hello 0');
 });
 
@@ -84,7 +84,7 @@ test('plural forms follow the shared i18n.py rule',()=>{
 
 test('page strings are resolved, frozen and limited to the requested names',()=>{
   i18n.configure({catalog:'fr-FR',directory:fixture()});
-  const strings=i18n.strings({greeting:['sample.greeting',{name:'{x}'}],only:'sample.only'});
-  assert.deepEqual({...strings},{greeting:'Bonjour {x}',only:'English only'});
+  const strings=i18n.strings({greeting:['sample.greeting',{name:'{{x}}'}],only:'sample.only'});
+  assert.deepEqual({...strings},{greeting:'Bonjour {{x}}',only:'English only'});
   assert.ok(Object.isFrozen(strings));
 });

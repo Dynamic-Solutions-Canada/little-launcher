@@ -44,6 +44,6 @@
   "itemEditor.icon.extractFailed": "Não foi possível extrair o ícone",
   "itemEditor.icon.choose": "Escolher",
   "itemEditor.delete.title": "Excluir item?",
-  "itemEditor.delete.message": "“{name}” será removido deste inicializador.",
+  "itemEditor.delete.message": "“{{name}}” será removido deste inicializador.",
   "itemEditor.delete.messageUnnamed": "“Este item” será removido deste inicializador."
 }

@@ -13,5 +13,5 @@
   "taskbarPin.statusCheckFailed": "No se pudo terminar la comprobación del estado de la barra de tareas. Cierra estos ajustes e inténtalo de nuevo.",
   "taskbarPin.unconfirmed": "Windows no confirmó si este lanzador se ancló. Es posible que el anclaje aparezca igualmente.",
   "taskbarPin.helperFailed": "El asistente de anclaje no pudo completar la solicitud. Consulta taskbar-pin.log para ver los detalles.",
-  "taskbarPin.failed": "No se pudo anclar este lanzador. {reason}"
+  "taskbarPin.failed": "No se pudo anclar este lanzador. {{reason}}"
 }

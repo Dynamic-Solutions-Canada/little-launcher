@@ -44,7 +44,7 @@
   "launcherSettings.flyoutSize.description": "Width × height of the web flyout, in pixels",
   "launcherSettings.zoom.title": "Zoom",
   "launcherSettings.zoom.description": "Page zoom inside the flyout, also on the flyout's “…” menu",
-  "launcherSettings.zoom.percent": "{percent}%",
+  "launcherSettings.zoom.percent": "{{percent}}%",
   "launcherSettings.opensAt.title": "Opens At",
   "launcherSettings.opensAt.anchoredDescription": "Where it opens on the screen holding its tray icon. A move lasts until you close it",
   "launcherSettings.opensAt.lastPositionDescription": "Drag the flyout anywhere and it opens there next time",

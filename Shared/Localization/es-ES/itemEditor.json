@@ -44,6 +44,6 @@
   "itemEditor.icon.extractFailed": "No se pudo extraer el icono",
   "itemEditor.icon.choose": "Elegir",
   "itemEditor.delete.title": "¿Eliminar elemento?",
-  "itemEditor.delete.message": "“{name}” se quitará de este lanzador.",
+  "itemEditor.delete.message": "“{{name}}” se quitará de este lanzador.",
   "itemEditor.delete.messageUnnamed": "“Este elemento” se quitará de este lanzador."
 }

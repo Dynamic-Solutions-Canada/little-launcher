@@ -13,5 +13,5 @@
   "taskbarPin.statusCheckFailed": "无法完成任务栏状态检查。请关闭这些设置后重试。",
   "taskbarPin.unconfirmed": "Windows 未确认此启动器是否已固定。固定项可能仍会出现。",
   "taskbarPin.helperFailed": "固定帮助程序无法完成请求。有关详细信息，请参阅 taskbar-pin.log。",
-  "taskbarPin.failed": "无法固定此启动器。{reason}"
+  "taskbarPin.failed": "无法固定此启动器。{{reason}}"
 }

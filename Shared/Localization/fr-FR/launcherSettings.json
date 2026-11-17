@@ -44,7 +44,7 @@
   "launcherSettings.flyoutSize.description": "Largeur × hauteur du panneau web, en pixels",
   "launcherSettings.zoom.title": "Zoom",
   "launcherSettings.zoom.description": "Zoom de la page dans le panneau, également accessible depuis le menu « … » du panneau",
-  "launcherSettings.zoom.percent": "{percent} %",
+  "launcherSettings.zoom.percent": "{{percent}} %",
   "launcherSettings.opensAt.title": "Position d’ouverture",
   "launcherSettings.opensAt.anchoredDescription": "Emplacement d’ouverture sur l’écran qui contient son icône de notification. Un déplacement dure jusqu’à sa fermeture",
   "launcherSettings.opensAt.lastPositionDescription": "Faites glisser le panneau où vous voulez : il s’y ouvrira la prochaine fois",

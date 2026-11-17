@@ -44,7 +44,7 @@
   "launcherSettings.flyoutSize.description": "Breite × Höhe des Web-Flyouts in Pixeln",
   "launcherSettings.zoom.title": "Zoom",
   "launcherSettings.zoom.description": "Seitenzoom im Flyout, auch im „…“-Menü des Flyouts",
-  "launcherSettings.zoom.percent": "{percent} %",
+  "launcherSettings.zoom.percent": "{{percent}} %",
   "launcherSettings.opensAt.title": "Öffnungsposition",
   "launcherSettings.opensAt.anchoredDescription": "Wo es sich auf dem Bildschirm mit seinem Tray-Symbol öffnet. Eine Verschiebung gilt, bis du es schließt",
   "launcherSettings.opensAt.lastPositionDescription": "Ziehe das Flyout an eine beliebige Stelle, und es öffnet sich beim nächsten Mal dort",

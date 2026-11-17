@@ -20,7 +20,7 @@
   "webShortcuts.group.launcher": "Inicializador",
   "webShortcuts.showList": "Mostrar esta lista",
   "webShortcuts.closeFlyout": "Fechar o painel suspenso",
-  "webShortcuts.keysEither": "{first}  ou  {second}",
+  "webShortcuts.keysEither": "{{first}}  ou  {{second}}",
   "webShortcuts.wheelUp": "Roda para cima",
   "webShortcuts.wheelDown": "Roda para baixo"
 }

@@ -1,5 +1,5 @@
 {
-  "webNotifications.keepRunningPrompt": "通知はこのページの実行中にしか届きません。現在、{launcher} はフライアウトを閉じると停止します。",
+  "webNotifications.keepRunningPrompt": "通知はこのページの実行中にしか届きません。現在、{{launcher}} はフライアウトを閉じると停止します。",
   "webNotifications.keepRunning": "実行し続ける",
   "webNotifications.notNow": "後で"
 }

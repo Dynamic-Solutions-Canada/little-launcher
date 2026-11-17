@@ -16,7 +16,7 @@
   "linuxUpdates.status.waitingToRestart": "正在等待同步和网页安全关闭…",
   "linuxUpdates.status.restartCanceled": "重启已取消。经过验证的下载内容已就绪，可随时安装。",
   "linuxUpdates.installFailed.title": "无法安装 AppImage 更新",
-  "linuxUpdates.installFailed.message": "{error}\n你的启动器设置和浏览器配置文件未更改。",
+  "linuxUpdates.installFailed.message": "{{error}}\n你的启动器设置和浏览器配置文件未更改。",
   "linuxUpdates.error.requestFailed": "无法完成更新请求。现有 AppImage 未更改。",
   "linuxUpdates.error.unsupportedVersion": "该发行版本不是受支持的稳定版本。",
   "linuxUpdates.error.invalidVersion": "发行版本号无效。",

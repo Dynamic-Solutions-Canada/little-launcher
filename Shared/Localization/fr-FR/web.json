@@ -21,11 +21,11 @@
   "web.sleepFailed": "Impossible de mettre cette page en veille.",
   "web.saveDownload": "Enregistrer le téléchargement",
   "web.noAddress": "Aucune adresse web n’est définie pour ce lanceur. Ajoutez-en une dans ses paramètres.",
-  "web.webView2Unavailable": "Ce panneau nécessite le runtime Microsoft Edge WebView2, qui n’a pas pu démarrer. Installez-le depuis {url} et réessayez.",
+  "web.webView2Unavailable": "Ce panneau nécessite le runtime Microsoft Edge WebView2, qui n’a pas pu démarrer. Installez-le depuis {{url}} et réessayez.",
   "web.emptyTabHint": "Saisissez une adresse ci-dessus pour ouvrir une page.",
-  "web.loadFailed": "Impossible de charger {address} ({error}).",
+  "web.loadFailed": "Impossible de charger {{address}} ({{error}}).",
   "web.pageUnresponsive": "La page ne répond plus.",
-  "web.invalidAddress": "{address} n’est pas une adresse web valide.",
+  "web.invalidAddress": "{{address}} n’est pas une adresse web valide.",
   "web.noticeTitle": "Paramètres du navigateur",
   "web.errorTitle": "Lanceur web"
 }

@@ -3,14 +3,14 @@
   "home.buildType.debug": "(Débogage)",
   "home.buildType.msix": "(MSIX)",
   "home.buildType.portable": "(Portable)",
-  "home.update.message": "Une nouvelle version ({latest}) est disponible. Vous utilisez la {current}.",
+  "home.update.message": "Une nouvelle version ({{latest}}) est disponible. Vous utilisez la {{current}}.",
   "home.whatsNew.title": "Nouveau : lanceurs web",
   "home.whatsNew.message": "Un lanceur peut désormais ouvrir une page web au lieu d’une liste de raccourcis : un tableau de bord Home Assistant, une messagerie web ou n’importe quel site, directement depuis son icône dans la zone de notification. Il reste connecté et ne consomme rien lorsqu’il est fermé.",
   "home.whatsNew.action": "En configurer un",
   "home.launchersCard.description": "Gérer les lanceurs et les raccourcis",
   "home.syncCard.description": "OneDrive, Google Drive, partage réseau ou SFTP",
-  "home.summary.launchers.one": "{count} lanceur.",
-  "home.summary.launchers.other": "{count} lanceurs.",
-  "home.summary.hiddenOnLinux.one": "{count} désactivé sous Linux, car il appartient à un autre système d’exploitation.",
-  "home.summary.hiddenOnLinux.other": "{count} désactivés sous Linux, car ils appartiennent à un autre système d’exploitation."
+  "home.summary.launchers.one": "{{count}} lanceur.",
+  "home.summary.launchers.other": "{{count}} lanceurs.",
+  "home.summary.hiddenOnLinux.one": "{{count}} désactivé sous Linux, car il appartient à un autre système d’exploitation.",
+  "home.summary.hiddenOnLinux.other": "{{count}} désactivés sous Linux, car ils appartiennent à un autre système d’exploitation."
 }

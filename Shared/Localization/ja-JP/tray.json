@@ -4,5 +4,5 @@
   "tray.menu.openLogsFolder": "ログ フォルダーを開く",
   "tray.menu.exit": "終了",
   "tray.whatsNew.message": "ランチャーで、ダッシュボードや Web メールなどの Web ページをトレイアイコンから直接開けるようになりました。",
-  "tray.update.message": "Little Launcher {latest} を利用できます。現在のバージョンは {current} です。"
+  "tray.update.message": "Little Launcher {{latest}} を利用できます。現在のバージョンは {{current}} です。"
 }

@@ -16,7 +16,7 @@
   "linuxUpdates.status.waitingToRestart": "En attente de la fermeture sécurisée de la synchronisation et des pages web…",
   "linuxUpdates.status.restartCanceled": "Redémarrage annulé. Le téléchargement vérifié est prêt quand vous l’êtes.",
   "linuxUpdates.installFailed.title": "Impossible d’installer la mise à jour AppImage",
-  "linuxUpdates.installFailed.message": "{error}\nVos paramètres de lanceur et vos profils de navigateur n’ont pas été modifiés.",
+  "linuxUpdates.installFailed.message": "{{error}}\nVos paramètres de lanceur et vos profils de navigateur n’ont pas été modifiés.",
   "linuxUpdates.error.requestFailed": "Impossible de terminer la demande de mise à jour. Votre AppImage existante n’a pas été modifiée.",
   "linuxUpdates.error.unsupportedVersion": "La version publiée n’est pas une version stable prise en charge.",
   "linuxUpdates.error.invalidVersion": "La version publiée n’est pas valide.",

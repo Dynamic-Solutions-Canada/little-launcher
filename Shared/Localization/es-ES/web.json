@@ -21,11 +21,11 @@
   "web.sleepFailed": "No se pudo suspender esta página.",
   "web.saveDownload": "Guardar descarga",
   "web.noAddress": "Este lanzador no tiene ninguna dirección web. Añade una en los ajustes del lanzador.",
-  "web.webView2Unavailable": "Este panel necesita Microsoft Edge WebView2 Runtime, que no se pudo iniciar. Instálalo desde {url} e inténtalo de nuevo.",
+  "web.webView2Unavailable": "Este panel necesita Microsoft Edge WebView2 Runtime, que no se pudo iniciar. Instálalo desde {{url}} e inténtalo de nuevo.",
   "web.emptyTabHint": "Escribe una dirección arriba para abrir una página.",
-  "web.loadFailed": "No se pudo cargar {address} ({error}).",
+  "web.loadFailed": "No se pudo cargar {{address}} ({{error}}).",
   "web.pageUnresponsive": "La página dejó de responder.",
-  "web.invalidAddress": "{address} no es una dirección web válida.",
+  "web.invalidAddress": "{{address}} no es una dirección web válida.",
   "web.noticeTitle": "Ajustes del navegador",
   "web.errorTitle": "Lanzador web"
 }

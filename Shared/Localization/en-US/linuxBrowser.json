@@ -1,6 +1,6 @@
 {
-  "linuxBrowser.detached.removed": "{launcher} · Removed launcher: finish activity here",
-  "linuxBrowser.detached.disconnected": "{launcher} · App connection lost: finish activity here",
+  "linuxBrowser.detached.removed": "{{launcher}} · Removed launcher: finish activity here",
+  "linuxBrowser.detached.disconnected": "{{launcher}} · App connection lost: finish activity here",
   "linuxBrowser.closePageBusy": "Closing this page may interrupt media or transfers.",
   "linuxBrowser.closePage": "Close page",
   "linuxBrowser.disconnected": "Little Launcher disconnected. Quitting may interrupt media or downloads.",

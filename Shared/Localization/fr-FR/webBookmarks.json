@@ -48,5 +48,5 @@
   "webBookmarks.error.renameFolder": "Utilisez Renommer pour un dossier.",
   "webBookmarks.error.iconOnlyValue": "L’option Icône seule exige une valeur explicite (activée ou désactivée).",
   "webBookmarks.error.unavailableAction": "Cette action sur les favoris n’est pas disponible.",
-  "webBookmarks.moveIntoFolder": "Déplacer dans {folder}"
+  "webBookmarks.moveIntoFolder": "Déplacer dans {{folder}}"
 }

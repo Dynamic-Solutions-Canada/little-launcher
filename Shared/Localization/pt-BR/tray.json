@@ -4,5 +4,5 @@
   "tray.menu.openLogsFolder": "Abrir pasta de logs",
   "tray.menu.exit": "Sair",
   "tray.whatsNew.message": "Um inicializador agora pode abrir uma página web (um painel de controle, webmail ou qualquer site) diretamente pelo ícone da bandeja.",
-  "tray.update.message": "O Little Launcher {latest} está disponível. Você está usando a versão {current}."
+  "tray.update.message": "O Little Launcher {{latest}} está disponível. Você está usando a versão {{current}}."
 }

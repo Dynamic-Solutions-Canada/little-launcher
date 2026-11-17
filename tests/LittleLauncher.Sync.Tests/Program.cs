@@ -54,7 +54,7 @@ try
         LittleLauncher.Localization.UiText.Configure(() => "en-US");
         Check(LittleLauncher.Localization.UiText.Get("common.ok") == "OK");
         Check(LittleLauncher.Localization.UiText.Get("no.such.key") == "no.such.key");
-        Check(LittleLauncher.Localization.UiText.Format("system.language.matchDevice", ("language", "{language}")) == "Match device ({language})");
+        Check(LittleLauncher.Localization.UiText.Format("system.language.matchDevice", ("language", "{{language}}")) == "Match device ({{language}})");
 
         // Every other catalog has exactly the English keys once translations exist.
         var english = LittleLauncher.Localization.UiText.Catalog("en-US");
