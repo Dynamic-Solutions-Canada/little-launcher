@@ -4,9 +4,12 @@
   "package_output": "LittleLauncherMSIX/bin/msix-output",
   "certificate": ".windows-build/signing.pfx",
   "version_file": "Directory.Build.props",
-  "dev_identity": "27766TechnicallyReal.LittleLauncher",
+  "dev_identity": "LittleLauncher",
   "trusted_certificate": true,
   "signing": "shared-dev",
+  "store_identity": "27766TechnicallyReal.LittleLauncher",
+  "store_publisher": "CN=C21E6CEF-D0D1-4497-93F9-3718D054DA0E",
+  "store_identity_switch": "-StoreIdentity",
   "listing": {
     "product_name": "Little Launcher",
     "catalog_dir": "Shared/Localization",

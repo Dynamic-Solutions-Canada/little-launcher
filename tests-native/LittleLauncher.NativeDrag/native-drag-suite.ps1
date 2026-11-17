@@ -53,7 +53,8 @@ foreach ($existing in @('settings-before.json','results.json','summary.json')) {
     }
 }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-$package=Get-AppxPackage -Name '27766TechnicallyReal.LittleLauncher' | Where-Object SignatureKind -eq Developer | Select-Object -First 1
+# The dev identity from windows-build.json (DIST-3); Store-identity test installs are not used here.
+$package=Get-AppxPackage -Name 'LittleLauncher' | Where-Object SignatureKind -eq Developer | Select-Object -First 1
 if (-not $package) { throw 'A sideloaded Developer Little Launcher package is required.' }
 $executable=Join-Path $package.InstallLocation 'LittleLauncher.exe'
 $fixtureId='19d9b164-aef5-5cb1-bab2-f78a35907d20'

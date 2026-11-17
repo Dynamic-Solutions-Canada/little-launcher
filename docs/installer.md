@@ -115,9 +115,10 @@ These are the default locations; `XDG_CONFIG_HOME` and `XDG_DATA_HOME` move them
 
 ### Sideloading over the installed package from WSL
 
-Run `npm run install:desktop`. The shared bridge signs with the preserved
-Store-identity development certificate, matching the existing package family.
-It assigns a higher dev revision only in disposable C: staging, updates in place,
+Run `npm run install:desktop`. The shared bridge signs with the shared development
+certificate and installs under the dev identity (`LittleLauncher`), beside any Store copy;
+`-- --store-identity` instead builds a Store-identity bundle to update over a Store install
+(see [windows-development.md](windows-development.md)). It assigns a higher dev revision only in disposable C: staging, updates in place,
 checks the installed version, and launches the app. Never uninstall to bypass
 `0x80073CFB`: package settings, profiles and caches are removed on uninstall.
 

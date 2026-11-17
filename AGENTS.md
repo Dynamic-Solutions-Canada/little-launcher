@@ -48,7 +48,7 @@ Source is authoritative in WSL, with submodules initialised (`git submodule upda
 
 Before finishing a change, run `npm run validate` and `npm run verify:desktop`. `tests-native/` drives a real desktop and never runs from these commands.
 
-Local verification uses the sideloaded Release MSIX through the `desktop` skill, updating the installed package in place so its settings and sign-ins survive. Use a debug or unpackaged build only when asked for one.
+Local verification uses the sideloaded Release MSIX through the `desktop` skill; dev builds have their own identity and install beside a Store copy (DIST-3). Use a debug or unpackaged build only when asked for one.
 
 ## Release
 

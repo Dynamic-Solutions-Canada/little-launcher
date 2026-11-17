@@ -46,7 +46,12 @@ param(
 
     # Skip signing entirely. Use for Microsoft Store uploads — the Store re-signs
     # the package with its own certificate during ingestion.
-    [switch]$NoSign
+    [switch]$NoSign,
+
+    # Sign a test package with the Store identity from windows-build.json instead of the dev
+    # identity, to test an update over a Store install (DIST-3). The signing certificate's
+    # subject must be the Store publisher. The build tooling passes this for --store-identity.
+    [switch]$StoreIdentity
 )
 
 $ErrorActionPreference = "Stop"
@@ -220,17 +225,46 @@ $manifestContent = (Get-Content $manifestSrc -Raw)
 $manifestContent = $manifestContent -replace 'ARCH_PLACEHOLDER', $msixArch
 $manifestContent = $manifestContent -replace 'VERSION_PLACEHOLDER', $msixVersion
 
-# For signed (non-Store) builds, replace the Store publisher with the signing certificate's
-# subject so signtool can sign the package. The Store re-signs with its own cert during ingestion.
+# Identity (DIST-3), edited through the XML DOM because a string replace can hit other Name=
+# attributes. -NoSign keeps the manifest's Store identity for the Store upload. A signed build takes
+# the dev identity from windows-build.json, so it installs beside a Store copy instead of replacing
+# it; -StoreIdentity keeps the Store identity to test an update over one. Signed builds carry the
+# signing certificate's subject as the publisher so signtool can sign them.
+$buildConfig = Get-Content (Join-Path $repoRoot "windows-build.json") -Raw | ConvertFrom-Json
+$manifestXml = New-Object System.Xml.XmlDocument
+$manifestXml.PreserveWhitespace = $true
+$manifestXml.LoadXml($manifestContent)
+$identity = $manifestXml.DocumentElement.SelectSingleNode("*[local-name()='Identity']")
+if (-not $identity) { Write-Error "Package.appxmanifest has no Identity element"; exit 1 }
+
+if ($StoreIdentity -and $NoSign) {
+    Write-Error "-StoreIdentity signs a test package; it cannot be combined with -NoSign."
+    exit 1
+}
 if (-not $NoSign) {
-    $trustedCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($TrustedPfxPath, $TrustedPfxPassword)
-    $trustedPublisher = $trustedCert.Subject
-    Write-Host "  Stamping Publisher=$trustedPublisher (trusted cert)"
-    if ($manifestContent -match '<Identity[^>]+Publisher="([^"]+)"') {
-        $storePublisher = $Matches[1]
-        $manifestContent = $manifestContent.Replace("Publisher=`"$storePublisher`"", "Publisher=`"$trustedPublisher`"")
+    $signingCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($TrustedPfxPath, $TrustedPfxPassword)
+    $signingSubject = $signingCert.Subject
+    $signingCert.Dispose()
+    if ($StoreIdentity) {
+        $storeName = $buildConfig.store_identity
+        $storePublisher = $buildConfig.store_publisher
+        if (-not $storeName -or -not $storePublisher) {
+            Write-Error "-StoreIdentity needs store_identity and store_publisher in windows-build.json"
+            exit 1
+        }
+        if ($signingSubject -ne $storePublisher) {
+            Write-Error "Store-identity packages must be signed by a certificate whose subject is the Store publisher ($storePublisher), not $signingSubject."
+            exit 1
+        }
+        $identity.SetAttribute("Name", $storeName)
+        $identity.SetAttribute("Publisher", $storePublisher)
+    } else {
+        if ($buildConfig.dev_identity) { $identity.SetAttribute("Name", $buildConfig.dev_identity) }
+        $identity.SetAttribute("Publisher", $signingSubject)
     }
 }
+$manifestContent = $manifestXml.OuterXml
+Write-Host "  Identity: $($identity.GetAttribute('Name')) / $($identity.GetAttribute('Publisher'))"
 
 Set-Content -Path (Join-Path $layoutDir "AppxManifest.xml") -Value $manifestContent -NoNewline
 
@@ -295,6 +329,21 @@ if (Test-Path $msixFile) { Remove-Item $msixFile -Force }
 
 & $makeappx pack /d $layoutDir /p $msixFile /o
 if ($LASTEXITCODE -ne 0) { Write-Error "makeappx pack failed"; exit 1 }
+
+# A Store install is a bundle, and Windows updates it in place only from a bundle, so a
+# Store-identity test package is wrapped in one, versioned like the app (/bv), so MakeAppx's
+# date-based default cannot outrank the next release. Same approach as winui-app-kit's script.
+if ($StoreIdentity) {
+    $bundleInput = Join-Path $msixDir "bin\bundle-input\$Platform"
+    if (Test-Path $bundleInput) { Remove-Item $bundleInput -Recurse -Force }
+    New-Item $bundleInput -ItemType Directory -Force | Out-Null
+    Move-Item $msixFile (Join-Path $bundleInput (Split-Path $msixFile -Leaf))
+    $bundleFile = [IO.Path]::ChangeExtension($msixFile, ".msixbundle")
+    if (Test-Path $bundleFile) { Remove-Item $bundleFile -Force }
+    & $makeappx bundle /d $bundleInput /p $bundleFile /bv $msixVersion /o
+    if ($LASTEXITCODE -ne 0) { Write-Error "makeappx bundle failed"; exit 1 }
+    $msixFile = $bundleFile
+}
 
 # ── Step 6: Sign ──────────────────────────────────────────────────────────────
 if ($NoSign) {
