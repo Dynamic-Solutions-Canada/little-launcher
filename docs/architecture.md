@@ -572,7 +572,7 @@ The Windows app ships through the **Microsoft Store MSIX**. A portable zip was a
 winui-app-kit's `build/build-msix.ps1` (KIT-9, DIST-1) produces the MSIX package for Microsoft Store distribution or sideloading, driven by `windows-build.json`: `msix_dir` is `LittleLauncherMSIX`, the AOT companion is a `companions` entry, and `sign_embedded_executables` signs it. Key details:
 
 - **Publishes with `-p:WindowsPackageType=MSIX`** to suppress the unpackaged-only auto-bootstrapper (`MICROSOFT_WINDOWSAPPSDK_BOOTSTRAP_AUTO_INITIALIZE`), which fails in a packaged context.
-- **Declares `<PackageDependency>`** on `Microsoft.WindowsAppRuntime.1.8` so the framework package provides WinRT activation factories.
+- **Declares `<PackageDependency>`** on `Microsoft.WindowsAppRuntime.2` (MinVersion 2.6.5.0) so the framework package provides WinRT activation factories.
 - **Copies compiled XAML (.xbf)** files manually from the RID build directory to the layout: `dotnet publish` omits them.
 - **Version and architecture** are stamped from `Directory.Build.props` into the manifest at build time (`VERSION_PLACEHOLDER`, `ARCH_PLACEHOLDER`).
 - **Image assets** in `LittleLauncherMSIX/Images/` use standard MRT naming qualifiers (e.g. `.scale-200.`, `.targetsize-48.`) and are indexed into `resources.pri` by `makepri`. The script builds one `resources.pri` with every scale and language candidate (it strips the default config's split rules, which only apply to bundles) and fails if makepri writes `resources.<qualifier>.pri` files. The manifest declares the nine interface languages in the standard order with `en-US` first; Windows and the Store read that list, not the catalogs the app ships.
