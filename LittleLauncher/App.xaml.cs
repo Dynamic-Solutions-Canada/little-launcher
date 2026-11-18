@@ -63,7 +63,9 @@ public partial class App : Application
                 WinUIAppKit.SingleInstance.SignalRunningInstance(HostWindowTitle, "LittleLauncher_ShowSettings");
             }
 
-            Environment.Exit(0);
+            // From a background thread, which Windows App SDK 2 on Windows 10 does not answer with the
+            // fail-fast a UI-thread Environment.Exit gets; never returns.
+            WinUIAppKit.SingleInstance.ExitThisLaunch();
         }
 
         MainDispatcherQueue = DispatcherQueue.GetForCurrentThread();
