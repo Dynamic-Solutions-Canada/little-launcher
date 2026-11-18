@@ -22,7 +22,7 @@ Translated wording uses the same terms as the in-app catalogs (`Shared/Localizat
 | Short description | 270 characters | 146 (fr-FR) |
 | Features | Up to 20, each up to 200 characters | 20 per locale, longest 197 (en-US) |
 | Keywords | Up to 7, each up to 40 characters, 21 words combined | 7 per locale, at most 19 words (es-ES) |
-| Screenshot captions | One per screenshot, up to 200 characters | 6 per locale, longest 32 (es-ES) |
+| Screenshot captions | One per screenshot, up to 200 characters | 8 per locale, longest 63 (de-DE, fr-FR) |
 | Release notes (`release-notes/`) | 1,500 characters | 582 (1.43.0, de-DE) |
 
 ## Claims to keep true
@@ -49,4 +49,4 @@ Translated wording uses the same terms as the in-app catalogs (`Shared/Localizat
 
 ## Screenshots
 
-The live listing has nine screenshots; three of them have no caption, so `screenshotCaptions` holds the six that do. The Store set is recaptured from the installed app on the Windows test VM with the restyle (package 13), with synthetic data, LIST-8 names and a `store-assets/manifest.json`, and the captions are updated to match. The README's screenshots in `store-assets/web/screenshots/` are a separate set and are never uploaded to the Store (LIST-8's synthetic-data rule applies to listings).
+The Store set is the eight screenshots in `store-assets/manifest.json`, captured from the installed app on the Windows test VM with synthetic launchers (LIST-8), in dark mode; [the store-assets README](../README.md) has how they are made. `screenshotCaptions` holds one caption per screenshot, in the same order. They replace the live listing's nine with the next release's submission. The README's screenshots in `store-assets/web/screenshots/` are a separate set and are never uploaded to the Store (LIST-8's synthetic-data rule applies to listings).

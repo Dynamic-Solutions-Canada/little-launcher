@@ -1,0 +1,27 @@
+{
+    "screen":  {
+                   "height":  1080,
+                   "width":  1920
+               },
+    "scale":  100,
+    "window":  {
+                   "x":  687,
+                   "y":  186,
+                   "width":  546,
+                   "height":  659
+               },
+    "workArea":  {
+                     "x":  0,
+                     "y":  0,
+                     "width":  1920,
+                     "height":  1032
+                 },
+    "theme":  {
+                  "apps":  "dark",
+                  "system":  "dark"
+              },
+    "wallpaper":  "img19.jpg",
+    "effects":  true,
+    "os":  "10.0.26200",
+    "capturedUtc":  "2026-11-18T09:25:11Z"
+}

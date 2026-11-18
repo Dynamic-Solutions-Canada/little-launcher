@@ -44,8 +44,10 @@ Source is authoritative in WSL, with submodules initialised (`git submodule upda
 | `npm run test:linux` | The Linux portable checks and Node suites pass | Native Qt behaviour, which is skipped without PySide6 |
 | `npm run check:l10n` | Catalogs have the English keys and placeholders | Translation quality |
 | `npm run check:listing` | Listing source and current notes fit Store limits | That the listing is live |
+| `npm run shots:render` | The Store screenshots are rendered from the raw captures in `store-assets/manifest.json` | That they match the current UI |
+| `npm run check:screenshots` | Captures and screenshots follow the Store rules and match the en-US captions | That the screenshots are approved or uploaded |
 | `npm run check:notices` | `LittleLauncher/THIRD-PARTY-NOTICES.txt` matches the restore graph and the About link | That the licences are reviewed; run `generate:notices` after a package change |
-| `npm run validate` | The Linux gate: `format:check`, `check:notices`, `check:gitignore`, `check:l10n`, `check:listing`, then `npm test` | A Windows compile; also run `verify:desktop` |
+| `npm run validate` | The Linux gate: `format:check`, `check:notices`, `check:gitignore`, `check:l10n`, `check:listing`, `check:screenshots`, then `npm test` | A Windows compile; also run `verify:desktop` |
 
 Before finishing a change, run `npm run validate` and `npm run verify:desktop`. `tests-native/` drives a real desktop and never runs from these commands.
 
@@ -75,7 +77,7 @@ Local verification uses the sideloaded Release MSIX through the `desktop` skill;
 | [docs/installer.md](docs/installer.md) | Packaging, install and upgrade, update flows, uninstall cleanup | `UpdateService.cs`, `build-msix.ps1`, `Package.appxmanifest`, `cleanup-uninstall.ps1` |
 | [docs/versioning.md](docs/versioning.md) | Version bumps and releases | `Directory.Build.props`, `release-notes/**`, `Package.appxmanifest`, `build-msix.ps1`, `.github/workflows/**` |
 | [tests/AGENTS.md](tests/AGENTS.md), [tests-native/AGENTS.md](tests-native/AGENTS.md) | Changing a harness or the native suite | `tests/**`, `tests-native/**` |
-| [store-assets/microsoft/listings.md](store-assets/microsoft/listings.md) | Changing Store listing text, or anything a listing claim depends on | `store-assets/microsoft/**` |
+| [store-assets/microsoft/listings.md](store-assets/microsoft/listings.md), [store-assets/README.md](store-assets/README.md) | Changing Store listing text or screenshots, or anything a listing claim depends on | `store-assets/microsoft/**` |
 | `desktop` skill | Building, verifying, packaging or installing the Windows app locally | Local Windows builds |
 | `add-setting`, `add-settings-page`, `add-launcher-feature` skills | Adding a setting, a Settings page or a launcher item feature | The files each names |
 | `audit-docs` skill | Before a release, or after a batch of changes | Every guide, nested `AGENTS.md` and skill |

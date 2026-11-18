@@ -14,9 +14,11 @@
     "check:listing": "python3 external/winui-app-kit/scripts/check-listing.py",
     "generate:notices": "python3 external/winui-app-kit/scripts/generate-notices.py",
     "check:notices": "python3 external/winui-app-kit/scripts/generate-notices.py --check",
+    "shots:render": "python3 external/winui-app-kit/scripts/store/render-screenshots.py",
+    "check:screenshots": "python3 external/winui-app-kit/scripts/store/render-screenshots.py --check",
     "format": "external/winui-app-kit/scripts/format",
     "format:check": "external/winui-app-kit/scripts/format --check",
-    "validate": "npm run format:check && npm run check:notices && npm run check:gitignore && npm run check:l10n && npm run check:listing && npm test",
+    "validate": "npm run format:check && npm run check:notices && npm run check:gitignore && npm run check:l10n && npm run check:listing && npm run check:screenshots && npm test",
     "start:linux": "linux/bin/little-launcher",
     "package:linux": "python3 linux/packaging/build.py"
   }
