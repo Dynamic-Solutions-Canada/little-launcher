@@ -816,12 +816,15 @@ public sealed partial class LauncherSettingsWindow : Window
     /// width sidesteps the competition rather than trying to balance it.
     /// </remarks>
     /// <summary>
-    /// Gives a row's control its title as the accessible name, unless the caller named it already. A
-    /// switch or box beside a TextBlock is otherwise announced with no label (UI-14).
+    /// Gives a row's control its title as the accessible name, unless the caller named it already or
+    /// it shows its own text. A switch or box beside a TextBlock is otherwise announced with no label
+    /// (UI-14); a button that reads "Pin to taskbar" is already named by that text, which is what a
+    /// screen reader should say, not the row's title.
     /// </summary>
     private static void NameFromTitle(FrameworkElement control, string title)
     {
-        if (string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(control)))
+        bool showsOwnText = control is ContentControl { Content: string text } && !string.IsNullOrWhiteSpace(text);
+        if (!showsOwnText && string.IsNullOrEmpty(Microsoft.UI.Xaml.Automation.AutomationProperties.GetName(control)))
         {
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(control, title);
         }
