@@ -363,7 +363,7 @@ FodyWeavers.xsd
 # Jetbrains IDE
 .idea/
 
-# Windows tail: packaging output from LittleLauncherMSIX/build-msix.ps1.
+# Windows tail: packaging output from the kit's build-msix.ps1 (msix_dir in windows-build.json).
 /LittleLauncherMSIX/bin/
 
 # Part 2: project rules, each with a one-line reason.

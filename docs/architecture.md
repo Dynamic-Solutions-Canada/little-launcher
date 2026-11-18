@@ -569,7 +569,7 @@ The Windows app ships through the **Microsoft Store MSIX**. A portable zip was a
 
 ## MSIX packaging
 
-`LittleLauncherMSIX/build-msix.ps1` produces an MSIX package for Microsoft Store distribution or sideloading. Key details:
+winui-app-kit's `build/build-msix.ps1` (KIT-9, DIST-1) produces the MSIX package for Microsoft Store distribution or sideloading, driven by `windows-build.json`: `msix_dir` is `LittleLauncherMSIX`, the AOT companion is a `companions` entry, and `sign_embedded_executables` signs it. Key details:
 
 - **Publishes with `-p:WindowsPackageType=MSIX`** to suppress the unpackaged-only auto-bootstrapper (`MICROSOFT_WINDOWSAPPSDK_BOOTSTRAP_AUTO_INITIALIZE`), which fails in a packaged context.
 - **Declares `<PackageDependency>`** on `Microsoft.WindowsAppRuntime.1.8` so the framework package provides WinRT activation factories.
@@ -577,7 +577,7 @@ The Windows app ships through the **Microsoft Store MSIX**. A portable zip was a
 - **Version and architecture** are stamped from `Directory.Build.props` into the manifest at build time (`VERSION_PLACEHOLDER`, `ARCH_PLACEHOLDER`).
 - **Image assets** in `LittleLauncherMSIX/Images/` use standard MRT naming qualifiers (e.g. `.scale-200.`, `.targetsize-48.`) and are indexed into `resources.pri` by `makepri`. The script builds one `resources.pri` with every scale and language candidate (it strips the default config's split rules, which only apply to bundles) and fails if makepri writes `resources.<qualifier>.pri` files. The manifest declares the nine interface languages in the standard order with `en-US` first; Windows and the Store read that list, not the catalogs the app ships.
 - **Companion exe** is deployed at startup to the external helper directory, and packaged builds also mirror it into the shared raw `%AppData%\\LittleLauncher\\` path for backward compatibility with old launcher pins. See "Companion exe" section above.
-- **`-NoSign` flag** skips all signing for Store uploads (Microsoft re-signs during ingestion). Without `-NoSign`, the script signs with the PFX passed in `-TrustedPfxPath` (the build tooling passes the shared dev certificate) and fails if none is given; it never creates a certificate or holds a password.
+- **`-NoSign` flag** skips all signing for Store uploads (Microsoft re-signs during ingestion). Without `-NoSign`, the script signs the embedded executables and the package with the PFX passed in `-TrustedPfxPath` (the build tooling passes the shared dev certificate) and fails if none is given; it never creates a certificate or holds a password.
 - **Update checks run in MSIX builds too**, against the Store rather than GitHub Releases, and this is the only build that can update *itself*: Home/About offer **Download & Install** and apply a Store update in place, where a portable copy gets **View Release** and a link. About also offers a restart when no update is pending, since a staged one cannot apply while the tray process is alive. The **startup update toast** stays unpackaged-only: Store updates otherwise install silently, so there is nothing to interrupt anyone about. The manifest declares a `windows.toastNotificationActivation` COM activator regardless, so `AppNotificationManager` registers for both install types and packaged builds can still raise one-time upgrade notices. See [docs/installer.md](installer.md) for the Store update flow and the version-reporting trap it works around.
 
 ## Native Linux host

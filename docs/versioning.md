@@ -18,7 +18,7 @@ All other consumers derive from this automatically:
 | Consumer | How it gets the version |
 |---|---|
 | **App (in-code display)** | `MainWindow.xaml.cs` reads `Assembly.GetName().Version` at startup: set by MSBuild from `<Version>` |
-| **MSIX manifest** | `LittleLauncherMSIX/build-msix.ps1` replaces `VERSION_PLACEHOLDER` in `Package.appxmanifest` with the version from `Directory.Build.props` at build time |
+| **MSIX manifest** | winui-app-kit's `build/build-msix.ps1` replaces `VERSION_PLACEHOLDER` in `Package.appxmanifest` with the version from `Directory.Build.props` at build time |
 | **Linux AppImage** | `linux/packaging/build.py` reads `<Version>` and stages VERSION; asset name is `LittleLauncher-{version}-linux-x64.AppImage` |
 | **Git tag** | Created manually to match: `git tag -a v1.1.0 ...` |
 

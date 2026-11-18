@@ -1,7 +1,16 @@
 {
   "project": "LittleLauncher/LittleLauncher.csproj",
-  "package_script": "LittleLauncherMSIX/build-msix.ps1",
+  "package_script": "external/winui-app-kit/build/build-msix.ps1",
+  "msix_dir": "LittleLauncherMSIX",
   "package_output": "LittleLauncherMSIX/bin/msix-output",
+  "companions": [
+    {
+      "project": "LauncherShortcut/LauncherShortcut.csproj",
+      "files": ["LittleLauncherFlyout.exe"],
+      "remove": ["LittleLauncherFlyout.dll", "LittleLauncherFlyout.deps.json", "LittleLauncherFlyout.runtimeconfig.json"]
+    }
+  ],
+  "sign_embedded_executables": true,
   "certificate": ".windows-build/signing.pfx",
   "version_file": "Directory.Build.props",
   "dev_identity": "LittleLauncher",

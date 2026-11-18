@@ -1,6 +1,6 @@
 # LittleLauncherMSIX (MSIX / Store package)
 
-`build-msix.ps1` stamps `Package.appxmanifest` (replacing `VERSION_PLACEHOLDER`) and builds the packaged app. The Store MSIX and the portable ZIP are the two Windows delivery channels. The separate Linux application uses only AppImage; see [Linux delivery](../linux/README.md#linux-appimage-delivery). MSIX has VFS redirection and no custom uninstall actions; see the packaging guide for the implications:
+This folder holds `Package.appxmanifest` and `Images/`. winui-app-kit's `build/build-msix.ps1`, configured by `windows-build.json` at the repo root, stamps the manifest (replacing `VERSION_PLACEHOLDER`) and builds the packaged app; the kit's script is never edited from this repo (KIT-8). The Store MSIX is the only Windows delivery channel. The separate Linux application uses only AppImage; see [Linux delivery](../linux/README.md#linux-appimage-delivery). MSIX has VFS redirection and no custom uninstall actions; see the packaging guide for the implications:
 
 Read and follow [installer.md](../docs/installer.md) before changing the code described above.
 

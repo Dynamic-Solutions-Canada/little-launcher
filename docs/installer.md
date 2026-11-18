@@ -109,13 +109,13 @@ These are the default locations; `XDG_CONFIG_HOME` and `XDG_DATA_HOME` move them
 
 ## Building the MSIX (`build-msix.ps1`)
 
-`LittleLauncherMSIX/build-msix.ps1 -Platform {x64|ARM64}` publishes the app (self-contained) + the AOT companion, assembles the layout, runs `makepri`/`makeappx`, and signs with the certificate passed to it (or not at all with `-NoSign`). Toolchain requirements:
+The packaging script is winui-app-kit's `build/build-msix.ps1`, the one script every kit app uses; everything specific to Little Launcher is a key in `windows-build.json` (`msix_dir`, the `LauncherShortcut` entry in `companions` with the managed copy it replaces, and `sign_embedded_executables`). Its README has every key. `pwsh -File external/winui-app-kit/build/build-msix.ps1 -Platform {x64|ARM64}` from the repo root publishes the app (self-contained) and the AOT companion, assembles the layout, runs `makepri`/`makeappx`, and signs with the certificate passed to it (or not at all with `-NoSign`). It needs PowerShell 7. Toolchain requirements:
 
 - **.NET SDK 10.0.403 or a later .NET 10 SDK**, selected by root `global.json`. The shared build policy requires runtime 10.0.14 or later for CVE-2026-111497. Rebuild both the self-contained app and NativeAOT helper; an updated host runtime does not repair existing embedded code. See [the build security floor](windows-development.md#net-build-security-floor).
-- **Windows SDK** packaging tools (`makeappx`/`makepri`/`signtool`). The script auto-detects the newest installed `C:\Program Files (x86)\Windows Kits\10\bin\10.*` that has them: don't hardcode a version.
-- **VS C++ build tools** (incl. `VC.Tools.ARM64`) for the Native AOT companion. The script prepends the **VS Installer dir to `PATH`** when `vswhere.exe` isn't resolvable, because the ILCompiler targets shell out to `vswhere`; without it the native link fails with **exit code 123**.
+- **Windows SDK** packaging tools (`makeappx`/`makepri`/`signtool`). The script uses the newest installed `C:\Program Files (x86)\Windows Kits\10\bin\10.*` that has them, else restores the `Microsoft.Windows.SDK.BuildTools` package: don't hardcode a version.
+- **VS C++ build tools** (incl. `VC.Tools.ARM64`) for the Native AOT companion. The script prepends the **VS Installer dir to `PATH`**, because the ILCompiler targets shell out to `vswhere`; without it the native link fails with **exit code 123**.
 - **`-NoSign`** is Store mode: skips signing and leaves the Store `Identity`/`Publisher` intact for the Store to re-sign on ingestion. Without it, the manifest publisher is rewritten to the signing certificate's subject so `signtool` can sign locally.
-- Signing material is always passed in (`-TrustedPfxPath` and `-TrustedPfxPassword`; the build tooling passes the shared dev certificate). With neither a certificate nor `-NoSign`, the script fails before building; it never generates a certificate or holds a password (SEC-11, DIST-2). Signed output exports that selected signer as public-only signing.cer and directs trust to Local Computer / Trusted People. The suggested Add-AppxPackage command never forces a downgrade; unsigned Store output is explicitly identified as unsuitable for sideloading.
+- Signing material is always passed in (`-TrustedPfxPath` and `-TrustedPfxPassword`; the build tooling passes the shared dev certificate). With neither a certificate nor `-NoSign`, the script fails before building; it never generates a certificate or holds a password (SEC-11, DIST-2). The shared build tooling exports the signer as a public-only `signing.cer` beside a signed package, for trusting in Local Computer / Trusted People. Unsigned Store output is not a sideloadable test package.
 
 ### Sideloading over the installed package from WSL
 
@@ -212,7 +212,7 @@ All four required repository secrets were present when checked on September 22, 
 `AZURE_AD_TENANT_ID`, `AZURE_AD_APPLICATION_CLIENT_ID`, `AZURE_AD_APPLICATION_SECRET`,
 and `SELLER_ID`. Presence does not verify expiry or the app registration's Manager role.
 
-For manual fallback, build both architectures with `build-msix.ps1 -Platform x64 -NoSign`
+For manual fallback, build both architectures with the kit's `build-msix.ps1 -Platform x64 -NoSign`
 and `-Platform ARM64 -NoSign`, then upload the individual `.msix` files in Partner Center.
 The workflow-generated `.msixupload` is also valid because it contains a real MSIX bundle.
 

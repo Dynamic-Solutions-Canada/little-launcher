@@ -104,7 +104,7 @@ jobs:
           Export-PfxCertificate -Cert $cert -FilePath $pfx `
             -Password (ConvertTo-SecureString -String $password -Force -AsPlainText) | Out-Null
           Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -DeleteKey
-          & "LittleLauncherMSIX/build-msix.ps1" -Platform $env:PLATFORM -TrustedPfxPath $pfx -TrustedPfxPassword $password
+          & "external/winui-app-kit/build/build-msix.ps1" -Platform $env:PLATFORM -TrustedPfxPath $pfx -TrustedPfxPassword $password
           $buildExit = $LASTEXITCODE
           Remove-Item $pfx -Force
           if ($buildExit -ne 0) { Write-Error "build-msix failed"; exit 1 }

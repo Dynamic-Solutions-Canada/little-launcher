@@ -143,21 +143,21 @@
 		{
 			"label": "build-msix-store-x64",
 			"type": "shell",
-			"command": ".\\LittleLauncherMSIX\\build-msix.ps1 -Platform x64 -NoSign",
+			"command": "pwsh -File .\\external\\winui-app-kit\\build\\build-msix.ps1 -Platform x64 -NoSign",
 			"dependsOn": "stop-app",
 			"problemMatcher": "$msCompile"
 		},
 		{
 			"label": "build-msix-store-arm64",
 			"type": "shell",
-			"command": ".\\LittleLauncherMSIX\\build-msix.ps1 -Platform ARM64 -NoSign",
+			"command": "pwsh -File .\\external\\winui-app-kit\\build\\build-msix.ps1 -Platform ARM64 -NoSign",
 			"dependsOn": "stop-app",
 			"problemMatcher": "$msCompile"
 		},
 		{
 			"label": "build-msix-store-all",
 			"type": "shell",
-			"command": "Stop-Process -Name LittleLauncher -Force -ErrorAction SilentlyContinue; .\\LittleLauncherMSIX\\build-msix.ps1 -Platform x64 -NoSign; .\\LittleLauncherMSIX\\build-msix.ps1 -Platform ARM64 -NoSign",
+			"command": "Stop-Process -Name LittleLauncher -Force -ErrorAction SilentlyContinue; pwsh -File .\\external\\winui-app-kit\\build\\build-msix.ps1 -Platform x64 -NoSign; pwsh -File .\\external\\winui-app-kit\\build\\build-msix.ps1 -Platform ARM64 -NoSign",
 			"problemMatcher": [
 				"$msCompile"
 			]
