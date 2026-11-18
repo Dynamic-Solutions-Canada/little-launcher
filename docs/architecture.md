@@ -15,8 +15,10 @@ Contained fullscreen can use the existing temporary maximize state without exiti
 the explicit click requests browser fullscreen with user activation, and normal fullscreen events
 apply the launcher's contained/display policy.
 
-Tray and notification activation share `MainWindow.TryResolveTrayAnchorPoint`, using the registered
-icon's shell rectangle. Notifications fall back to a taskbar button before the cursor when needed.
+Tray icons are the kit's `TrayIconHost`, one icon per launcher; a click anchors at the icon's centre
+from the kit's `TrayIcon.GetAnchor`. Notification activation uses the icon's rectangle through
+`MainWindow.TryResolveTrayAnchorPoint` (the kit's `TrayIcon.TryGetAnchor`), and when the shell has
+none falls back to the launcher's taskbar button, then the cursor.
 
 ```
 App.xaml  →  MainWindow (invisible, owns tray icon)

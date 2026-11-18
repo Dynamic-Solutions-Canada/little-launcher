@@ -23,37 +23,21 @@ namespace LittleLauncher;
 public sealed partial class MainWindow
 {
     /// <summary>
-    /// Resolves the center of this launcher's registered tray icon for tray and notification
-    /// activation. Returns false and preserves the supplied fallback if the shell has no bounds.
+    /// The centre of this launcher's tray icon, for activation with no pointer position (a toast).
+    /// Returns false when the shell has no rectangle for the icon (it is hidden, or not in the tray),
+    /// so the caller can try the launcher's taskbar button and then the cursor.
     /// </summary>
-    private bool TryResolveTrayAnchorPoint(string launcherId, int fallbackX, int fallbackY,
-        out int anchorX, out int anchorY)
+    private bool TryResolveTrayAnchorPoint(string launcherId, out int anchorX, out int anchorY)
     {
-        anchorX = fallbackX;
-        anchorY = fallbackY;
-        if (!_trayIcons.TryGetValue(launcherId, out var entry) || !entry.IsAdded)
+        anchorX = 0;
+        anchorY = 0;
+        if (!_trayIcons.TryGetValue(launcherId, out var entry) || !entry.Icon.TryGetAnchor(out var anchor))
         {
             return false;
         }
 
-        var identifier = new NOTIFYICONIDENTIFIER
-        {
-            cbSize = (uint)Marshal.SizeOf<NOTIFYICONIDENTIFIER>(),
-            hWnd = _hwnd,
-            uID = entry.Uid,
-
-            // Empty unless Windows knows the icon by GUID; then it finds it by window and number.
-            guidItem = entry.UsesGuid ? entry.Guid : Guid.Empty,
-        };
-        int result = Shell_NotifyIconGetRect(ref identifier, out var iconRect);
-        if (result != 0 || iconRect.Right <= iconRect.Left || iconRect.Bottom <= iconRect.Top)
-        {
-            Logger.Debug("Tray anchor unavailable for launcher {Id}: HRESULT {Result}", launcherId, result);
-            return false;
-        }
-
-        anchorX = iconRect.Left + (iconRect.Right - iconRect.Left) / 2;
-        anchorY = iconRect.Top + (iconRect.Bottom - iconRect.Top) / 2;
+        anchorX = anchor.X;
+        anchorY = anchor.Y;
         return true;
     }
 

@@ -22,9 +22,6 @@
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
 
-    <!-- System tray icon for WinUI 3 -->
-    <PackageReference Include="H.NotifyIcon.WinUI" />
-
     <!-- MVVM source generators (ObservableProperty, RelayCommand) -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
 

@@ -225,14 +225,7 @@ public sealed partial class MainWindow
         }
 
         UpdateTrayIconVisibility(launcher);
-        entry.Icon?.Dispose();
-        entry.Icon = ResolveTrayIcon(launcher);
-        if (entry.IsAdded)
-        {
-            var data = IconData(entry, NIF_ICON);
-            data.hIcon = entry.Icon?.Handle ?? IntPtr.Zero;
-            Shell_NotifyIcon(NIM_MODIFY, ref data);
-        }
+        RenderTrayImage(launcher, entry);
         SaveResolvedIconToAppData(launcher);
 
         // A web launcher presenting as a regular window draws that same .ico on its taskbar button

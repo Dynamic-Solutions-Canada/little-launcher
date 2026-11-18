@@ -45,7 +45,7 @@ Or open `LittleLauncher.slnx` in Visual Studio / Rider and press F5.
 
 | Layer | Description |
 |---|---|
-| `MainWindow` | Invisible host window. Owns the system-tray icon (`H.NotifyIcon`). Enforces single-instance via Mutex. Cross-process IPC via registered window messages. |
+| `MainWindow` | Invisible host window. Owns one tray icon per launcher on the kit's `TrayIconHost`. Enforces single-instance via Mutex. Cross-process IPC via registered window messages. |
 | `FlyoutWindow` | A popup window that displays launcher items in list view, icon grid view, or a compact tray-sized small-icon grid, positioned above the taskbar. Dismissed on focus loss or Escape. Supports direct drag-and-drop reordering, item right-click move/edit/remove actions, and icon-grid edge resizing. |
 | `SettingsWindow` | winui-app-kit's `SettingsShell` (Mica, title bar, navigation with a fixed footer): pages for Home, Launchers, Cloud Sync, Settings, Our other apps and the kit's About page. |
 | `SftpSyncService` | Static async methods for upload/download/test-connection using SSH.NET (`Renci.SshNet`). Also handles per-launcher shared sync (file or SFTP). Supports private-key and password auth. |
@@ -60,7 +60,6 @@ See [docs/architecture.md](architecture.md) for detailed flows: launch modes, se
 | Package | Version | Purpose |
 |---|---|---|
 | [Windows App SDK](https://github.com/microsoft/WindowsAppSDK) | 1.8.260921001 (1.8.12, from winui-app-kit; the manifest requires runtime 8000.994.2142.0 or later) | WinUI 3 controls, Mica, NavigationView |
-| [H.NotifyIcon.WinUI](https://github.com/HavenDV/H.NotifyIcon) | 2.4.1 | System tray icon |
 | [WinUI App Kit](https://github.com/Dynamic-Solutions-Canada/winui-app-kit) | submodule `external/winui-app-kit` | Shared build configuration, package versions and logging config |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | 8.4.0 | Source-gen `[ObservableProperty]`, `RelayCommand` |
 | [SSH.NET](https://github.com/sshnet/SSH.NET) | 2026.0.0 | SFTP sync |

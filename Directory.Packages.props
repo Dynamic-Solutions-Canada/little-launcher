@@ -10,7 +10,6 @@
   <!-- This app's own packages. -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.15" />
-    <PackageVersion Include="H.NotifyIcon.WinUI" Version="2.4.1" />
     <PackageVersion Include="SSH.NET" Version="2026.0.1" />
   </ItemGroup>
 </Project>

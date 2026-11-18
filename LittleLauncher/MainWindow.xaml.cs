@@ -128,13 +128,9 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private readonly Dictionary<string, int> _wmLauncherActionPerLauncher = new();
     private static int _wmShowSettings;
-    private int _wmTrayCallback;
     private IntPtr _hwnd;
     private SUBCLASSPROC? _wndProcDelegate;
 
-    /// <summary>Per-launcher native tray icons (key = Launcher.Id).</summary>
-    private readonly Dictionary<string, TrayIconEntry> _trayIcons = new();
-    private uint _nextIconId = 1;
     private readonly global::Windows.UI.ViewManagement.UISettings _uiSettings = new();
     private bool _lastDarkTheme;
 
@@ -242,7 +238,7 @@ public sealed partial class MainWindow : Window
     internal void OpenLauncherPanel(string launcherId)
     {
         GetCursorPos(out var pt);
-        if (!TryResolveTrayAnchorPoint(launcherId, pt.X, pt.Y, out int anchorX, out int anchorY))
+        if (!TryResolveTrayAnchorPoint(launcherId, out int anchorX, out int anchorY))
         {
             TryResolveLauncherAnchorPoint(launcherId, pt.X, pt.Y, out anchorX, out anchorY);
         }

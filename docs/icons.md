@@ -15,7 +15,7 @@ chooser, automatic page-icon adoption, and pin snapshot/lifetime behavior are un
 
 | Surface | Source | User-configurable? |
 |---|---|---|
-| **System tray (per launcher)** | `ResolveTrayIcon(Launcher)` → preset PNG, glyph, composite, or custom image | Yes (`Launcher.TrayIconMode`) |
+| **System tray (per launcher)** | `RenderTrayIconPng(Launcher, size)` → preset PNG, glyph, composite, or custom image, at the tray's pixel size | Yes (`Launcher.TrayIconMode`) |
 | **Pinned taskbar shortcut** | Immutable `app-icon-{id}-pin{stamp}.ico` in physical AppData via snapshot shortcut or legacy relaunch metadata | Yes (per launcher `TrayIconMode`) |
 | **Settings window titlebar** | `Resources/LittleLauncher.png`, the 256 px app icon, in the kit shell's title bar | No; always Blue rocket |
 | **Settings window taskbar entry** | `settings-icon.ico` via winui-app-kit's `WindowIcon.Apply` (`WM_SETICON` + `AppWindow.SetIcon`, at the window's DPI) | No; always Blue rocket |
@@ -102,10 +102,10 @@ All icon surfaces derive from a single source of truth: `ResolveBaseIconBitmap(L
 
 1. User changes `TrayIconMode` in LaunchersPage → `Launcher.PropertyChanged` fires
 2. `CreateTrayIconForLauncher` subscription → `MainWindow.UpdateTrayIcon(Launcher)`
-3. `UpdateTrayIcon(Launcher)` calls `ResolveTrayIcon(Launcher)` → `ResolveBaseIconBitmap(Launcher)` → `BitmapToIcon()` → updates that launcher's native tray icon
+3. `UpdateTrayIcon(Launcher)` calls `RenderTrayIconPng(Launcher, TrayIcon.IconPixelSize)` → `ResolveBaseIconBitmap(Launcher)` → `ResizeToPng()` → the kit's `TrayIcon.Update` for that launcher's icon
 4. `UpdateTrayIcon(Launcher)` calls `SaveResolvedIconToAppData(Launcher)` → writes `app-icon-{id}.ico` (and `app-icon.ico` for first launcher)
 5. `UpdateTrayIcon(Launcher)` calls `CleanUpStaleIconFiles()` to remove legacy versioned copies while preserving every pin icon snapshot
-6. `UpdateTrayIcon(Launcher)` calls `SaveSettingsIconToAppData()` → first launcher's bitmap + gear overlay → `BitmapToIcon()` → writes `settings-icon.ico`
+6. `UpdateTrayIcon(Launcher)` calls `SaveSettingsIconToAppData()` → first launcher's bitmap + gear overlay → `BitmapToIcoBytes()` → writes `settings-icon.ico`
 7. `SettingsWindow.RefreshIcon()` reapplies `settings-icon.ico` to the window (taskbar and Alt-Tab) through the kit's `WindowIcon.Apply`
 
 **`RefreshLauncherIcon` is where a *window* icon is re-read too**, alongside the tray HICON and the
@@ -130,7 +130,7 @@ no icon at all. Windows re-reads a window's icon every time it draws one, so its
 Alt-Tab and Task View never showed that gap: a third-party switcher that samples once, as the
 window appears, did.
 
-Tray icons are registered with Shell_NotifyIcon using a stable `guidItem` derived from `Launcher.Id`. This keeps Windows' per-icon tray visibility/pin preference stable across app restarts, Store updates, and icon/name changes. Only changing a launcher's `Id` causes Windows to treat it as a new tray icon identity.
+Tray icons live on the kit's `TrayIconHost`, one `TrayIcon` per launcher, each with a stable GUID from `MainWindow.GetTrayIconGuid`: the launcher's id when it is a GUID, otherwise the kit's `TrayIconHost.GuidFromName("LittleLauncher.Tray." + id)`, which is the same MD5 derivation the app used before the kit. The host re-adds every icon after an Explorer restart, and its `RenderNeeded` (scaling, taskbar theme or display change) redraws only the tray images, never the icon files. This keeps Windows' per-icon tray visibility/pin preference stable across app restarts, Store updates, and icon/name changes. Only changing a launcher's `Id` causes Windows to treat it as a new tray icon identity.
 
 **Pinned taskbar icons are NOT updated at runtime.** Windows 11's taskbar caches the icon bitmap per AUMID at pin time and does not re-read it. Changing a launcher's icon requires unpinning and re-pinning. Launcher settings warns beside the pin button only when Windows confirms that the launcher is pinned and its effective details changed.
 
@@ -146,13 +146,13 @@ Tray icons are registered with Shell_NotifyIcon using a stable `guidItem` derive
 | `RoundedRectPath()` | Creates a `GraphicsPath` for a rounded rectangle (used by composite background) |
 | `TrimAndResizeTo256()` | Trims transparent padding, centers on 256×256 canvas (called for presets + custom images) |
 | `BitmapToIcoBytes(Bitmap)` | Converts bitmap to raw multi-resolution ICO byte array (16–256px). Bypasses `System.Drawing.Icon.Save()` which loses multi-resolution data on .NET |
-| `BitmapToIcon(Bitmap)` | Calls `BitmapToIcoBytes()` then wraps in `System.Drawing.Icon` |
-| `ResolveTrayIcon(Launcher)` | `ResolveBaseIconBitmap(Launcher)` → `BitmapToIcon()` |
+| `ResizeToPng(Bitmap, size)` | High-quality bicubic resize onto a transparent square, as PNG bytes; every `.ico` entry and the tray image use it |
+| `RenderTrayIconPng(Launcher, size)` | `ResolveBaseIconBitmap(Launcher)` → `ResizeToPng()` at the tray's size, falling back to the app icon |
 | `SaveToastIconToAppData(Launcher)` | `ResolveBaseIconBitmap(Launcher)` → 256px PNG → write `toast-icon-{id}.png` for Windows notifications |
 | `EnsureToastIconSaved(Launcher)` | Static. Returns that path, writing it first if absent: the notification path calls this |
 | `SaveResolvedIconToAppData(Launcher)` | `ResolveBaseIconBitmap(Launcher)` → `BitmapToIcoBytes()` → write `app-icon-{id}.ico`; copies to `app-icon.ico` for first launcher |
-| `SaveSettingsIconToAppData()` | First launcher's `ResolveBaseIconBitmap()` → gear overlay → `BitmapToIcon()` → write file |
-| `RefreshLauncherIcon(Launcher)` | Batch-friendly: updates tray HICON, writes .ico to disk, re-reads it onto any regular-window web flyout (no settings save, no cleanup, no settings window refresh) |
+| `SaveSettingsIconToAppData()` | First launcher's `ResolveBaseIconBitmap()` → gear overlay → `BitmapToIcoBytes()` → write file |
+| `RefreshLauncherIcon(Launcher)` | Batch-friendly: re-renders the tray image, writes .ico to disk, re-reads it onto any regular-window web flyout (no settings save, no cleanup, no settings window refresh) |
 | `UpdateTrayIcon(Launcher)` | Single-launcher convenience: calls `RefreshLauncherIcon` + `SaveSettingsIconToAppData` + `CleanUpStaleIconFiles` + `SettingsWindow.RefreshIcon()` |
 | `EnsureLauncherIconSaved(Launcher)` | Static. Ensures `app-icon-{id}.ico` exists; called by pin flow before creating timestamped copy |
 | `MigrateStaleIconPaths()` | Clears dead item IconPath values and restores portable launcher image bytes without clearing a missing custom launcher choice |
@@ -499,10 +499,10 @@ After any bulk icon change, call `FlyoutWindow.InvalidateItems()`. That compatib
   manifest logo and blurry with it. Resolving through `ResolveBaseIconBitmap` fixes both at
   once: the right icon, at 256px.
 - The bundled `.ico` is the Blue rocket only: it's the exe identity icon and fallback.
-- Tray visibility state is now tied to each launcher's stable GUID identity via `NOTIFYICONDATA.guidItem`, not the runtime-assigned `uID`. Launcher reordering, name changes, and icon changes do not reset the user's tray preference; deleting/recreating a launcher still will.
+- Tray visibility state is tied to each launcher's stable GUID, not the host's runtime icon number. Launcher reordering, name changes, and icon changes do not reset the user's tray preference; deleting/recreating a launcher still will.
 - `SaveResolvedIconToAppData()` always writes an `.ico` for all modes (including mode 0). There is no "delete and fall back to exe icon" path.
 - The companion exe (`LauncherShortcut/Program.cs`) loads `app-icon.ico` from `AppContext.BaseDirectory` for the pin dialog via `LoadImage` + `WM_SETICON`.
-- `BitmapToIcoBytes()` / `BitmapToIcon()` produce multi-resolution ICO (16, 24, 32, 48, 64, 256) so tray icons render correctly at all DPI scales. `BitmapToIcoBytes()` writes raw ICO bytes directly: do NOT use `System.Drawing.Icon.Save()` which loses multi-resolution data on .NET.
+- The tray image is a single PNG rendered at `TrayIcon.IconPixelSize`, so it is drawn for the exact size the tray uses. `BitmapToIcoBytes()` produces multi-resolution ICO (16, 24, 32, 48, 64, 256) for the files on disk, and writes raw ICO bytes directly: do NOT use `System.Drawing.Icon.Save()` which loses multi-resolution data on .NET.
 - `MainWindow` listens for `UISettings.ColorValuesChanged` and refreshes the tray icon, `app-icon.ico`, and SettingsWindow icon when the OS theme changes. Uses `RefreshLauncherIcon()` (batch-friendly) for all launchers, then does a single `SaveSettingsIconToAppData` + `CleanUpStaleIconFiles` + `RefreshIcon` pass.
 - `MigrateStaleIconPaths()` runs before `SetupTrayIcons()`: item paths retain their existing cleanup, while custom launcher bytes are materialized locally and unavailable launcher paths/modes are retained.
 - When the user changes `TrayIconMode`, `UpdateTrayIcon()` also calls `SettingsWindow.RefreshIcon()` to update the settings window titlebar immediately.

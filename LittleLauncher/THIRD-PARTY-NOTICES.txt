@@ -17,18 +17,6 @@ CommunityToolkit.Mvvm 8.4.0
   (c) .NET Foundation and Contributors. All rights reserved.
   https://github.com/CommunityToolkit/dotnet
 
-H.GeneratedIcons.System.Drawing 2.4.1
-  Licence: MIT (text 1 below)
-  https://github.com/HavenDV/H.NotifyIcon
-
-H.NotifyIcon 2.4.1
-  Licence: MIT (text 1 below)
-  https://github.com/HavenDV/H.NotifyIcon
-
-H.NotifyIcon.WinUI 2.4.1
-  Licence: MIT (text 1 below)
-  https://github.com/HavenDV/H.NotifyIcon
-
 Microsoft.Data.Sqlite 10.0.15
   Licence: MIT (text 1 below)
   © Microsoft Corporation. All rights reserved.
@@ -53,11 +41,6 @@ Microsoft.Web.WebView2 1.0.3179.45
   Licence: see licence text (text 2 below)
   © Microsoft Corporation. All rights reserved.
   https://aka.ms/webview
-
-Microsoft.Win32.SystemEvents 10.0.0
-  Licence: MIT (text 1 below)
-  © Microsoft Corporation. All rights reserved.
-  https://dot.net/
 
 Microsoft.WindowsAppSDK 1.8.260921001
   Licence: see licence text (text 3 below)
@@ -134,11 +117,6 @@ SQLitePCLRaw.provider.e_sqlite3 2.1.13
 SSH.NET 2026.0.1
   Licence: MIT (text 1 below)
   Copyright © Renci 2010-2026
-
-System.Drawing.Common 10.0.0
-  Licence: MIT (text 1 below)
-  © Microsoft Corporation. All rights reserved.
-  https://github.com/dotnet/winforms
 
 System.Numerics.Tensors 9.0.0
   Licence: MIT (text 1 below)

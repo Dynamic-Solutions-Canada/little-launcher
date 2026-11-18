@@ -427,58 +427,7 @@ public static partial class NativeMethods
 
     #endregion
 
-    #region shell32.dll — system tray (Shell_NotifyIcon)
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct NOTIFYICONDATA
-    {
-        public uint cbSize;
-        public IntPtr hWnd;
-        public uint uID;
-        public uint uFlags;
-        public uint uCallbackMessage;
-        public IntPtr hIcon;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-        public string szTip;
-        public uint dwState;
-        public uint dwStateMask;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
-        public string szInfo;
-        public uint uVersion;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
-        public string szInfoTitle;
-        public uint dwInfoFlags;
-        public Guid guidItem;
-        public IntPtr hBalloonIcon;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NOTIFYICONIDENTIFIER
-    {
-        public uint cbSize;
-        public IntPtr hWnd;
-        public uint uID;
-        public Guid guidItem;
-    }
-
-    [LibraryImport("shell32.dll")]
-    internal static partial int Shell_NotifyIconGetRect(ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
-
-    internal const uint NIF_MESSAGE = 0x00000001;
-    internal const uint NIF_ICON = 0x00000002;
-    internal const uint NIF_TIP = 0x00000004;
-    internal const uint NIF_GUID = 0x00000020;
-    internal const uint NIM_ADD = 0x00000000;
-    internal const uint NIM_MODIFY = 0x00000001;
-    internal const uint NIM_DELETE = 0x00000002;
-
-    // Tray callback notification events (lParam values sent to uCallbackMessage handler)
-    internal const int WM_LBUTTONUP = 0x0202;
-    internal const int WM_RBUTTONUP = 0x0205;
-    internal const int WM_CONTEXTMENU = 0x007B;
-
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
-    internal static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
+    #region shell32.dll
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
     internal static extern int SHCreateItemFromParsingName(

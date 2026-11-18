@@ -117,10 +117,8 @@ applies the deferred dismissal once the foreground is no longer its own.
 
 ## Constants & Enums
 
-`Shell_NotifyIconGetRect` returns the bounds of a specific native tray icon from its
-`NOTIFYICONIDENTIFIER` (owner HWND, icon ID, and GUID). Use its center for a tray-click
-flyout anchor. Notification activation shares that lookup before trying the taskbar button;
-the cursor is only a fallback when the shell cannot provide an anchor.
+Tray icons and their `Shell_NotifyIcon` calls belong to the kit's `TrayIconHost` and `TrayIcon`;
+the app declares no tray P/Invokes. Use `TrayIcon.GetAnchor` for an icon's position.
 
 - Win32 constants as `internal const int` or `internal const uint`
 - Related constants grouped in comment-delimited sections

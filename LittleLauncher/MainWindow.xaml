@@ -8,7 +8,7 @@
         =========================
         This is the invisible host window. It:
           1. Creates the singleton mutex (prevents multiple instances).
-          2. Manages the system tray icon (H.NotifyIcon).
+          2. Hosts one tray icon per launcher (the kit's TrayIconHost).
 
         The window itself is never shown — it sits outside the visible screen area.
         All visual interaction is through the tray icon flyout and the settings window.

@@ -1,65 +1,48 @@
-using LittleLauncher.Classes;
 using LittleLauncher.Classes.Settings;
 using WinUIAppKit.Localization;
-using LittleLauncher.Models;
+using WinUIAppKit.Tray;
 using LittleLauncher.Windows;
-using LittleLauncher.Services;
 using System.Linq;
-using System.Runtime.InteropServices;
-using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Windowing;
-using System.Drawing.Imaging;
-using System.IO;
-using System.Security.Cryptography;
-using System.Windows.Automation;
-using WinRT.Interop;
 using static LittleLauncher.Classes.NativeMethods;
 using Launcher = LittleLauncher.Models.Launcher;
 
 namespace LittleLauncher;
 
-/// <summary>One notification-area icon per launcher: creation, removal, menu, visibility and tooltip.</summary>
+/// <summary>
+/// One notification-area icon per launcher, on the kit's <see cref="TrayIconHost"/> (TRAY-1, TRAY-3):
+/// creation, removal, menu, visibility, tooltip and re-rendering. The host re-adds every icon when
+/// Explorer restarts and falls back from a refused GUID; this file owns only the launcher policy.
+/// </summary>
 public sealed partial class MainWindow
 {
-    /// <summary>Holds the Win32 HICON state for one launcher's tray icon.</summary>
-    private sealed class TrayIconEntry
+    /// <summary>One launcher's tray icon and the image it shows.</summary>
+    private sealed class TrayIconEntry(TrayIcon icon)
     {
-        public uint Uid;
-        public Guid Guid;
-        public System.Drawing.Icon? Icon;
-        public bool IsAdded; // false when NIconHide=true (NIM_DELETE called)
+        public TrayIcon Icon { get; } = icon;
 
         /// <summary>
-        /// Whether Windows knows this icon by its GUID. False after Windows refused the GUID, as
-        /// Windows 10 was seen to after an in-place package update (the GUID is tied to the exe path,
-        /// and every update installs to a new folder); the icon is then known by window and number
-        /// for the rest of the session. Kept as insurance on Windows 11, which this app requires.
+        /// The PNG last given to <see cref="TrayIcon.Update"/>, kept because the kit has no
+        /// tooltip-only update: a rename sends the same image with the new name.
         /// </summary>
-        public bool UsesGuid = true;
+        public byte[]? Png { get; set; }
     }
 
-    /// <summary>
-    /// Tray data that identifies <paramref name="entry"/> the way Windows knows it: by GUID, or by
-    /// window and number once the GUID was refused. Every Shell_NotifyIcon call builds on this.
-    /// </summary>
-    /// <param name="entry">The launcher's tray icon.</param>
-    /// <param name="flags">The NIF_ flags for the fields the caller sets; NIF_GUID is added here.</param>
-    private NOTIFYICONDATA IconData(TrayIconEntry entry, uint flags) => new()
-    {
-        cbSize = (uint)Marshal.SizeOf<NOTIFYICONDATA>(),
-        hWnd = _hwnd,
-        uID = entry.Uid,
-        uFlags = entry.UsesGuid ? flags | NIF_GUID : flags,
-        guidItem = entry.UsesGuid ? entry.Guid : Guid.Empty,
-        szTip = "",
-        szInfo = "",
-        szInfoTitle = "",
-    };
+    /// <summary>The host every launcher's icon lives on; created once the host window exists.</summary>
+    private TrayIconHost? _trayHost;
+
+    /// <summary>Per-launcher tray icons (key = Launcher.Id).</summary>
+    private readonly Dictionary<string, TrayIconEntry> _trayIcons = new();
 
     private void SetupTrayIcons()
     {
-        _wmTrayCallback = RegisterWindowMessage("LittleLauncher_TrayCallback");
+        // The callback message name is the one the app has always registered, so nothing about the
+        // icons' identity changes with the move to the kit.
+        _trayHost = new TrayIconHost(_hwnd, "LittleLauncher_TrayCallback");
+
+        // Scaling, taskbar theme or display layout changed: redraw the tray images only. This fires
+        // on every WM_SETTINGCHANGE, so it must not write icon files (the theme listener does that).
+        _trayHost.RenderNeeded += RenderAllTrayImages;
+
         foreach (var launcher in SettingsManager.Current.Launchers)
         {
             CreateTrayIconForLauncher(launcher);
@@ -68,8 +51,17 @@ public sealed partial class MainWindow
         SaveSettingsIconToAppData();
     }
 
+    /// <summary>
+    /// Registers a launcher's window messages and adds its tray icon. Does nothing for a launcher
+    /// that already has one, since the host refuses a second icon with the same GUID.
+    /// </summary>
     private void CreateTrayIconForLauncher(Launcher launcher)
     {
+        if (_trayHost is null || _trayIcons.ContainsKey(launcher.Id))
+        {
+            return;
+        }
+
         // Register per-launcher window message for flyout signaling (from companion exe)
         int wmFlyout = RegisterWindowMessage($"LittleLauncher_ShowFlyout_{launcher.Id}");
         _wmShowFlyoutPerLauncher[launcher.Id] = wmFlyout;
@@ -81,18 +73,14 @@ public sealed partial class MainWindow
         int wmLauncherAction = RegisterWindowMessage($"LittleLauncher_LauncherAction_{launcher.Id}");
         _wmLauncherActionPerLauncher[launcher.Id] = wmLauncherAction;
 
-        uint uid = _nextIconId++;
-        Guid trayGuid = GetTrayIconGuid(launcher.Id);
-        var icon = ResolveTrayIcon(launcher);
-        SaveResolvedIconToAppData(launcher);
-
-        var entry = new TrayIconEntry { Uid = uid, Guid = trayGuid, Icon = icon };
+        var entry = new TrayIconEntry(_trayHost.Add(GetTrayIconGuid(launcher.Id)));
         _trayIcons[launcher.Id] = entry;
+        WireTrayIconEvents(entry.Icon, launcher.Id);
 
-        if (SettingsManager.Current.IsLauncherEnabled(launcher.Id) && !launcher.NIconHide && !IsHiddenOnThisOperatingSystem(launcher))
-        {
-            AddNativeIcon(entry, launcher.Name);
-        }
+        // Visibility first: a new icon appears on its first Update unless it is hidden.
+        entry.Icon.IsVisible = IsTrayIconShown(launcher);
+        RenderTrayImage(launcher, entry);
+        SaveResolvedIconToAppData(launcher);
 
         // Subscribe to launcher property changes to live-update the icon
         launcher.PropertyChanged += (s, e) =>
@@ -128,92 +116,94 @@ public sealed partial class MainWindow
         };
     }
 
-    private void AddNativeIcon(TrayIconEntry entry, string? tooltip)
+    /// <summary>
+    /// Routes an icon's clicks to its launcher. Handlers capture the id, not the launcher object,
+    /// because sync can replace launcher objects while the icon lives on.
+    /// </summary>
+    private void WireTrayIconEvents(TrayIcon icon, string launcherId)
     {
-        var tip = (tooltip ?? "");
-        if (tip.Length > 127)
+        // A double-click toggles a second time, as each click did before the kit: the kit reports
+        // the first click as Clicked and the second as DoubleClicked, so two quick clicks still
+        // open and then close the panel.
+        icon.Clicked += anchor => LauncherPanels.Toggle(this, anchor.X, anchor.Y, launcherId);
+        icon.DoubleClicked += anchor => LauncherPanels.Toggle(this, anchor.X, anchor.Y, launcherId);
+        icon.ContextMenuRequested += (x, y) => ShowContextMenu(x, y, launcherId);
+    }
+
+    /// <summary>Whether a launcher's icon belongs in the tray: enabled, not hidden, and for this OS.</summary>
+    private static bool IsTrayIconShown(Launcher launcher) =>
+        SettingsManager.Current.IsLauncherEnabled(launcher.Id) && !launcher.NIconHide && !IsHiddenOnThisOperatingSystem(launcher);
+
+    /// <summary>
+    /// Draws a launcher's icon at the tray's current pixel size and gives it to the shell with the
+    /// launcher's name. Works while the icon is hidden too, so it shows current content when shown.
+    /// </summary>
+    private static void RenderTrayImage(Launcher launcher, TrayIconEntry entry)
+    {
+        var png = RenderTrayIconPng(launcher, TrayIcon.IconPixelSize);
+        if (png is null)
         {
-            tip = tip[..127];
+            return;
         }
 
-        var data = IconData(entry, NIF_MESSAGE | NIF_ICON | NIF_TIP);
-        data.uCallbackMessage = (uint)_wmTrayCallback;
-        data.hIcon = entry.Icon?.Handle ?? IntPtr.Zero;
-        data.szTip = tip;
-        if (!Shell_NotifyIcon(NIM_ADD, ref data) && entry.UsesGuid)
+        entry.Png = png;
+        entry.Icon.Update(png, launcher.Name ?? "");
+    }
+
+    /// <summary>Redraws every launcher's tray image, for a scaling, taskbar or display change.</summary>
+    private void RenderAllTrayImages()
+    {
+        foreach (var launcher in SettingsManager.Current.Launchers)
         {
-            // Windows can refuse a GUID it recorded for the previous install's exe path (seen on
-            // Windows 10). Add the icon by window and number instead, so the launcher keeps its tray
-            // icon after an update.
-            Logger.Warn("Tray icon GUID refused for {Tip}; using window and number this session", tip);
-            entry.UsesGuid = false;
-            data = IconData(entry, NIF_MESSAGE | NIF_ICON | NIF_TIP);
-            data.uCallbackMessage = (uint)_wmTrayCallback;
-            data.hIcon = entry.Icon?.Handle ?? IntPtr.Zero;
-            data.szTip = tip;
-            if (!Shell_NotifyIcon(NIM_ADD, ref data))
+            if (_trayIcons.TryGetValue(launcher.Id, out var entry))
             {
-                Logger.Warn("Tray icon could not be added for {Tip}", tip);
+                RenderTrayImage(launcher, entry);
             }
         }
-
-        entry.IsAdded = true;
     }
 
-    private void RemoveNativeIcon(TrayIconEntry entry)
+    /// <summary>Removes one launcher's icon from the tray and forgets it.</summary>
+    private void RemoveTrayIcon(string launcherId)
     {
-        var data = IconData(entry, 0);
-        Shell_NotifyIcon(NIM_DELETE, ref data);
-        entry.IsAdded = false;
+        if (_trayIcons.Remove(launcherId, out var entry))
+        {
+            entry.Icon.Dispose();
+        }
     }
 
+    /// <summary>Removes every tray icon and stops listening for tray messages (an exit step).</summary>
     private void CleanupTrayIcons()
     {
-        foreach (var entry in _trayIcons.Values)
-        {
-            if (entry.IsAdded)
-            {
-                RemoveNativeIcon(entry);
-            }
-
-            entry.Icon?.Dispose();
-        }
+        _trayHost?.Dispose();
+        _trayHost = null;
         _trayIcons.Clear();
     }
 
+    /// <summary>
+    /// Shows the tray menu at a screen point. Called from the icon's dispatched event, so the
+    /// blocking native menu never runs inside the window procedure.
+    /// </summary>
+    /// <param name="launcherId">The launcher whose icon was right-clicked, or null for app actions only.</param>
     private void ShowContextMenu(int x, int y, string? launcherId = null)
     {
-        var popup = new H.NotifyIcon.Core.PopupMenu();
+        var menu = new TrayMenu();
 
-        if (launcherId != null)
+        var launcher = launcherId is null
+            ? null
+            : SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
+        if (launcher != null)
         {
-            var launcher = SettingsManager.Current.Launchers.FirstOrDefault(l => l.Id == launcherId);
-            if (launcher != null)
-            {
-                var editSettings = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.editLauncherSettings") };
-                editSettings.Click += (s, e) =>
-                {
-                    // Opens directly rather than routing through the settings window.
-                    DispatcherQueue.TryEnqueue(() => _ = Windows.LauncherSettingsWindow.ShowAsync(launcher));
-                };
-                popup.Items.Add(editSettings);
-
-                popup.Items.Add(new H.NotifyIcon.Core.PopupMenuSeparator());
-            }
+            // Opens directly rather than routing through the settings window.
+            menu.Add(UiText.Get("tray.menu.editLauncherSettings"), () => _ = Windows.LauncherSettingsWindow.ShowAsync(launcher));
+            menu.AddSeparator();
         }
 
         // TRAY-5 order: app actions, Settings, Open logs folder, separator, Exit.
-        var settingsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.settings") };
-        settingsItem.Click += (s, e) => SettingsWindow.ShowInstance(this);
-        popup.Items.Add(settingsItem);
-        var logsItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.openLogsFolder") };
-        logsItem.Click += (s, e) => WinUIAppKit.Logging.AppLogging.OpenLogsFolder();
-        popup.Items.Add(logsItem);
-        popup.Items.Add(new H.NotifyIcon.Core.PopupMenuSeparator());
-        var exitItem = new H.NotifyIcon.Core.PopupMenuItem { Text = UiText.Get("tray.menu.exit") };
-        exitItem.Click += (s, e) => ExitApp();
-        popup.Items.Add(exitItem);
-        popup.Show(_hwnd, x, y);
+        menu.Add(UiText.Get("tray.menu.settings"), () => SettingsWindow.ShowInstance(this));
+        menu.Add(UiText.Get("tray.menu.openLogsFolder"), WinUIAppKit.Logging.AppLogging.OpenLogsFolder);
+        menu.AddSeparator();
+        menu.Add(UiText.Get("tray.menu.exit"), ExitApp);
+        menu.Show(_hwnd, x, y);
     }
 
     /// <summary>
@@ -230,14 +220,7 @@ public sealed partial class MainWindow
         {
             if (!currentIds.Contains(id))
             {
-                var entry = _trayIcons[id];
-                if (entry.IsAdded)
-                {
-                    RemoveNativeIcon(entry);
-                }
-
-                entry.Icon?.Dispose();
-                _trayIcons.Remove(id);
+                RemoveTrayIcon(id);
                 _wmShowFlyoutPerLauncher.Remove(id);
                 _wmLaunchItemPerLauncher.Remove(id);
                 _wmLauncherActionPerLauncher.Remove(id);
@@ -246,7 +229,7 @@ public sealed partial class MainWindow
 
         // Create icons for new launchers, update existing ones.
         // Use RefreshLauncherIcon (not UpdateTrayIcon) to avoid per-launcher
-        // SaveSettingsIconToAppData/CleanUpStaleIconFiles — we do those once below.
+        // SaveSettingsIconToAppData/CleanUpStaleIconFiles; we do those once below.
         foreach (var launcher in SettingsManager.Current.Launchers)
         {
             if (!_trayIcons.ContainsKey(launcher.Id))
@@ -283,50 +266,36 @@ public sealed partial class MainWindow
 
     internal void UpdateTrayIconVisibility(Launcher launcher)
     {
-        if (!_trayIcons.TryGetValue(launcher.Id, out var entry))
+        if (_trayIcons.TryGetValue(launcher.Id, out var entry))
         {
-            return;
-        }
-
-        bool hidden = !SettingsManager.Current.IsLauncherEnabled(launcher.Id) || launcher.NIconHide || IsHiddenOnThisOperatingSystem(launcher);
-        if (hidden && entry.IsAdded)
-        {
-            RemoveNativeIcon(entry);
-        }
-        else if (!hidden && !entry.IsAdded)
-        {
-            AddNativeIcon(entry, launcher.Name);
+            entry.Icon.IsVisible = IsTrayIconShown(launcher);
         }
     }
 
+    /// <summary>
+    /// Gives the icon the launcher's new name. The kit sets image and tooltip together, so the
+    /// last image is sent again; a hidden icon keeps the name for when it is shown.
+    /// </summary>
     private void UpdateTrayIconTooltip(Launcher launcher)
     {
-        if (!_trayIcons.TryGetValue(launcher.Id, out var entry) || !entry.IsAdded)
+        if (_trayIcons.TryGetValue(launcher.Id, out var entry) && entry.Png is not null)
         {
-            return;
+            entry.Icon.Update(entry.Png, launcher.Name ?? "");
         }
-
-        var tip = (launcher.Name ?? "");
-        if (tip.Length > 127)
-        {
-            tip = tip[..127];
-        }
-
-        var data = IconData(entry, NIF_TIP);
-        data.szTip = tip;
-        Shell_NotifyIcon(NIM_MODIFY, ref data);
     }
 
-    private static Guid GetTrayIconGuid(string launcherId)
+    /// <summary>
+    /// The launcher's permanent tray GUID: its id when that is a GUID, otherwise a name hash.
+    /// Windows remembers the user's show-or-hide choice by it, so this must never change.
+    /// </summary>
+    internal static Guid GetTrayIconGuid(string launcherId)
     {
         if (Guid.TryParse(launcherId, out var parsedGuid))
         {
             return parsedGuid;
         }
 
-        byte[] hash = MD5.HashData(System.Text.Encoding.UTF8.GetBytes("LittleLauncher.Tray." + launcherId));
-        hash[6] = (byte)((hash[6] & 0x0F) | 0x30);
-        hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
-        return new Guid(hash);
+        // The kit's name hash is the same MD5 version-3 derivation the app used before the move.
+        return TrayIconHost.GuidFromName("LittleLauncher.Tray." + launcherId);
     }
 }

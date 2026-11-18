@@ -23,26 +23,35 @@ namespace LittleLauncher;
 public sealed partial class MainWindow
 {
     /// <summary>
-    /// Resolves the tray icon for a specific launcher based on its TrayIconMode setting.
+    /// Renders a launcher's tray image as a PNG at exactly <paramref name="size"/> pixels square
+    /// (the tray's current size), falling back to the app icon if the launcher's own fails.
+    /// Returns null only when even the app icon cannot be read.
     /// </summary>
-    private static System.Drawing.Icon? ResolveTrayIcon(Launcher launcher)
+    private static byte[]? RenderTrayIconPng(Launcher launcher, int size)
     {
         try
         {
             using var bitmap = ResolveBaseIconBitmap(launcher);
             if (bitmap != null)
             {
-                return BitmapToIcon(bitmap);
+                return ResizeToPng(bitmap, size);
             }
         }
         catch (Exception ex)
         {
-            Logger.Warn(ex, "Failed to resolve tray icon for launcher {Name}, falling back to Blue", launcher.Name);
+            Logger.Warn(ex, "Failed to resolve tray icon for launcher {Name}, falling back to the app icon", launcher.Name);
         }
 
-        // Last-resort fallback: load the embedded exe icon
+        // Last-resort fallback: the app's own icon
         string fallbackIco = Path.Combine(AppContext.BaseDirectory, "Resources", "LittleLauncher.ico");
-        return File.Exists(fallbackIco) ? new System.Drawing.Icon(fallbackIco, 64, 64) : null;
+        if (!File.Exists(fallbackIco))
+        {
+            return null;
+        }
+
+        using var ico = new System.Drawing.Icon(fallbackIco, 256, 256);
+        using var fallback = ico.ToBitmap();
+        return ResizeToPng(fallback, size);
     }
 
     /// <summary>
@@ -463,18 +472,6 @@ public sealed partial class MainWindow
     }
 
     /// <summary>
-    /// Converts a Bitmap to an Icon via an in-memory multi-resolution ICO stream.
-    /// Produces entries at 16, 24, 32, 48, 64, and 256 pixels so the system tray
-    /// can pick the correct size for the current DPI.
-    /// </summary>
-    private static System.Drawing.Icon BitmapToIcon(System.Drawing.Bitmap bitmap)
-    {
-        var icoBytes = BitmapToIcoBytes(bitmap);
-        using var ms = new MemoryStream(icoBytes);
-        return new System.Drawing.Icon(ms);
-    }
-
-    /// <summary>
     /// Renders a Bitmap as a multi-resolution ICO byte array (16–256 px, PNG-compressed).
     /// Used for both in-memory Icon creation and direct file writes.
     /// Writing these bytes directly to disk avoids System.Drawing.Icon.Save() which
@@ -487,18 +484,7 @@ public sealed partial class MainWindow
 
         for (int i = 0; i < sizes.Length; i++)
         {
-            int s = sizes[i];
-            using var resized = new System.Drawing.Bitmap(s, s, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            using (var g = System.Drawing.Graphics.FromImage(resized))
-            {
-                g.Clear(System.Drawing.Color.Transparent);
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                g.DrawImage(bitmap, 0, 0, s, s);
-            }
-            using var pngStream = new MemoryStream();
-            resized.Save(pngStream, ImageFormat.Png);
-            pngEntries[i] = pngStream.ToArray();
+            pngEntries[i] = ResizeToPng(bitmap, sizes[i]);
         }
 
         using var ms = new MemoryStream();
@@ -533,5 +519,26 @@ public sealed partial class MainWindow
         }
 
         return ms.ToArray();
+    }
+
+    /// <summary>
+    /// Scales a bitmap to <paramref name="size"/> pixels square with high-quality bicubic
+    /// filtering on a transparent canvas, and returns it as PNG bytes. Shared by the tray image
+    /// and every entry of a written .ico, so both surfaces scale the same way.
+    /// </summary>
+    private static byte[] ResizeToPng(System.Drawing.Bitmap bitmap, int size)
+    {
+        using var resized = new System.Drawing.Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        using (var g = System.Drawing.Graphics.FromImage(resized))
+        {
+            g.Clear(System.Drawing.Color.Transparent);
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+            g.DrawImage(bitmap, 0, 0, size, size);
+        }
+
+        using var pngStream = new MemoryStream();
+        resized.Save(pngStream, ImageFormat.Png);
+        return pngStream.ToArray();
     }
 }

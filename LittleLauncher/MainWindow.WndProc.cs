@@ -19,44 +19,14 @@ using Launcher = LittleLauncher.Models.Launcher;
 
 namespace LittleLauncher;
 
-/// <summary>Cross-process window messages from the companion, a second launch and the tray.</summary>
+/// <summary>
+/// Cross-process window messages from the companion and a second launch. Tray clicks arrive through
+/// the kit's <see cref="WinUIAppKit.Tray.TrayIconHost"/>, which subclasses the same window.
+/// </summary>
 public sealed partial class MainWindow
 {
     private IntPtr WndProc(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, nuint dwRefData)
     {
-        // Handle tray icon left/right click callbacks from Shell_NotifyIcon
-        if ((int)msg == _wmTrayCallback && _wmTrayCallback != 0)
-        {
-            uint uid = (uint)(wParam.ToInt64() & 0xFFFFFFFF);
-            int notification = (int)(lParam.ToInt64() & 0xFFFF);
-
-            string? targetLauncherId = null;
-            foreach (var (lid, entry) in _trayIcons)
-            {
-                if (entry.Uid == uid) { targetLauncherId = lid; break; }
-            }
-
-            if (targetLauncherId != null)
-            {
-                if (notification == WM_LBUTTONUP)
-                {
-                    GetCursorPos(out var pt);
-                    string lid = targetLauncherId;
-                    TryResolveTrayAnchorPoint(lid, pt.X, pt.Y, out int anchorX, out int anchorY);
-
-                    DispatcherQueue.TryEnqueue(() => LauncherPanels.Toggle(this, anchorX, anchorY, lid));
-                }
-                else if (notification == WM_RBUTTONUP || notification == WM_CONTEXTMENU)
-                {
-                    GetCursorPos(out var pt);
-                    int cx = pt.X, cy = pt.Y;
-                    string lid = targetLauncherId;
-                    DispatcherQueue.TryEnqueue(() => ShowContextMenu(cx, cy, lid));
-                }
-            }
-            return IntPtr.Zero;
-        }
-
         // Iterate per-launcher window messages (from companion exe / LauncherShortcut)
         foreach (var (launcherId, wmShowFlyout) in _wmShowFlyoutPerLauncher)
         {
