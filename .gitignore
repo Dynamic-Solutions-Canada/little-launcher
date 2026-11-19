@@ -402,6 +402,7 @@ build_out.txt
 # of every repo's .gitignore, so no earlier line can un-ignore what it covers. Change it in the kit.
 /.artifacts/
 /.windows-build/
+/.worktrees/
 .secrets/
 .aws/
 .env
