@@ -5,7 +5,7 @@
   "desktopName": "io.github.RyanEwen.LittleLauncher.Web.desktop",
   "description": "Isolated web engine for the native Linux Little Launcher host",
   "devDependencies": {
-    "electron": "45.3.2",
+    "electron": "45.3.3",
     "typescript": "5.9.3"
   },
   "dependencies": {
