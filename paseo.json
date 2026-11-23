@@ -31,6 +31,9 @@
     },
     "icons": {
       "command": "npm run icons"
+    },
+    "hero": {
+      "command": "npm run hero"
     }
   }
 }
