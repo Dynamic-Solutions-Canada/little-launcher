@@ -22,7 +22,7 @@
 
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26100.0" />
-    <PackageDependency Name="Microsoft.WindowsAppRuntime.2" MinVersion="2.6.5.0" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
+    <PackageDependency Name="Microsoft.WindowsAppRuntime.2" MinVersion="2.7.0.0" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
   </Dependencies>
 
   <!-- The nine interface languages, in the standard order with en-US first (LOC-1, LOC-10). -->
