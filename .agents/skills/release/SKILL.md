@@ -22,11 +22,6 @@ Steps:
 5. Tag and push together: `git tag -a v<version> -m "Little Launcher <version>"`, then `git push --atomic origin main v<version>`.
 6. Watch the "Build and Package" run for the tag (`gh run list --workflow build-msix.yml`, then `gh run watch <id> --exit-status`). Check that the Release is titled `Little Launcher <version>`, its body is the `en-US` notes, then "Get it", then the AI disclosure line, that it is marked Latest, and that it carries exactly `LittleLauncher-<version>-linux-x64.AppImage` and `SHA256SUMS` (no Windows build).
 7. Watch the "Publish to Microsoft Store" run for the same tag (`gh run list --workflow store-publish.yml`). It uploads a draft with the notes and stops (REL-7); take the draft ID from its summary.
-8. Do not submit the draft: that is the maintainer's step. Tell them the draft ID and that submitting is a manual run of "Publish to Microsoft Store" on the tag with `submit_draft` set to it and `no_commit` unchecked. Post-release steps outside this repo go to the maintainer as well (REL-9): the website page, the apps-promo catalog entry, and the website privacy page when the release changes what the app sends (see Pending below).
+8. Do not submit the draft: that is the maintainer's step. Tell them the draft ID and that submitting is a manual run of "Publish to Microsoft Store" on the tag with `submit_draft` set to it and `no_commit` unchecked. Post-release steps outside this repo go to the maintainer as well (REL-9): the website page, the apps-promo catalog entry, and the website privacy page when the release changes what the app sends.
 
 Report: the version, the commit and tag, who approved the notes, each CI run's result with its link, the Release link, the Store draft ID, and what is left for the maintainer (submitting the draft, post-release steps).
-
-## Pending for the next release
-
-- The first release after v1.43.0 stops sending website hostnames to Google's favicon service (FIX-061). It also makes new 1-way OneDrive share links view-only instead of editable. When it ships, tell the maintainer so the website privacy page is updated to match both. Remove this line once that is done.
-- It is also the first release with no Windows portable ZIP (D-020) and with notes in `release-notes/` and their six translations. Check the Release carries only the AppImage and `SHA256SUMS`.
