@@ -66,7 +66,7 @@ jobs:
       store_product_id: 9P3ZZBDQ6PJF
       # Paid, US $0.99: the tier verified with Partner Center (see docs/installer.md).
       price_tier: Tier1012
-      # No steps of its own: the MSIX images are committed.
+      # No steps of its own: the MSIX images are committed (npm run icons output).
       pre_build: ''
       # The gate run first, on Linux (CI-4). The Node tests load the Linux browser's packages,
       # which the kit's gate job does not install, so install them from the lockfile first.

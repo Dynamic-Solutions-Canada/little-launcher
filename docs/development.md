@@ -27,6 +27,7 @@ The commands build for the build host's architecture by default. [windows-develo
 
 - `npm run format:check`: every C# project outside `external/` matches the root `.editorconfig`, which is winui-app-kit's file copied unchanged; `npm run format` (winui-app-kit's `scripts/format`) rewrites the files, repeating until they settle.
 - `npm run check:gitignore`: `.gitignore` ends with winui-app-kit's shared block, unchanged.
+- `npm run check:icons`: the committed app icons (`LittleLauncherMSIX/Images/`, `LittleLauncher/Resources/LittleLauncher.ico` and `.png`, and `assets/generated/`) are exactly what devkit makes from the masters in `assets/brand/`. After changing a master, run `npm run icons` and commit the output. It needs Node 22.12 or later, below 25. See [icons.md](icons.md#key-files).
 - `npm run check:l10n`: the catalog checks in [localization.md](localization.md#checks).
 - `npm run check:listing`: winui-app-kit's Store listing check: `store-assets/microsoft/listings.json` and the current version's `release-notes/` files fit the Store's limits, and the README tagline is the first sentence of the `en-US` short description.
 - `npm test`: every portable .NET harness under `tests/`, found by winui-app-kit's `scripts/run-tests` (each has a README saying what it covers and does not prove), then `npm run test:linux`.
