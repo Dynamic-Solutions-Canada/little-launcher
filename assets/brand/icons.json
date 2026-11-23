@@ -1,0 +1,9 @@
+{
+  "targets": {
+    "windows": {
+      "images": "LittleLauncherMSIX/Images",
+      "ico": "LittleLauncher/Resources/LittleLauncher.ico",
+      "tiles": true
+    }
+  }
+}

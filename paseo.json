@@ -28,6 +28,9 @@
     },
     "test-linux": {
       "command": "npm run test:linux"
+    },
+    "icons": {
+      "command": "npm run icons"
     }
   }
 }

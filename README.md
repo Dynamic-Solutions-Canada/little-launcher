@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="LittleLauncher/Resources/AppIcons/Blue.png" alt="Little Launcher" width="128">
+  <img src="assets/generated/icon-256.png" alt="Little Launcher" width="128">
 </p>
 
 <h1 align="center">Little Launcher</h1>

@@ -47,7 +47,8 @@ jobs:
       - name: Install the Linux browser packages
         run: npm ci --prefix linux/browser --no-audit --no-fund
 
-      # format:check, check:gitignore, check:l10n, then the .NET harnesses and the Linux tests.
+      # format:check, check:notices, check:gitignore, check:icons, check:l10n, check:listing,
+      # check:screenshots, then the .NET harnesses and the Linux tests.
       - name: Validate
         run: npm run validate
 
