@@ -37,6 +37,7 @@
         "Bookmarks"
       ],
       "screenshotCaptions": [
+        "As many launchers as you like, each with its own tray icon.",
         "Icon mode",
         "Web launchers: a website one click from the tray",
         "Pin a launcher to the taskbar",
@@ -45,7 +46,9 @@
         "Multiple columns (list mode)",
         "Launcher management",
         "Launcher settings"
-      ]
+      ],
+      "heroHeadline": "Your apps and websites, one click from the tray.",
+      "heroSubline": "As many launchers as you like, each with its own tray icon."
     },
     "en-CA": {
       "copyFrom": "en-US"
@@ -86,6 +89,7 @@
         "Marcadores"
       ],
       "screenshotCaptions": [
+        "Tantos lanzadores como quieras, cada uno con su propio icono en la bandeja.",
         "Modo de iconos",
         "Lanzadores web: un sitio web a un clic desde la bandeja",
         "Ancla un lanzador a la barra de tareas",
@@ -94,7 +98,9 @@
         "Varias columnas (modo de lista)",
         "Gestión de lanzadores",
         "Configuración del lanzador"
-      ]
+      ],
+      "heroHeadline": "Tus aplicaciones y sitios web, a un clic desde la bandeja.",
+      "heroSubline": "Tantos lanzadores como quieras, cada uno con su propio icono en la bandeja."
     },
     "fr-FR": {
       "title": "Little Launcher",
@@ -132,6 +138,7 @@
         "Favoris"
       ],
       "screenshotCaptions": [
+        "Autant de lanceurs que vous voulez, chacun avec sa propre icône dans la zone de notification.",
         "Mode icônes",
         "Lanceurs web : un site web à un clic de la zone de notification",
         "Épinglez un lanceur à la barre des tâches",
@@ -140,7 +147,9 @@
         "Plusieurs colonnes (mode liste)",
         "Gestion des lanceurs",
         "Paramètres du lanceur"
-      ]
+      ],
+      "heroHeadline": "Vos applications et sites web, à un clic depuis la zone de notification.",
+      "heroSubline": "Autant de lanceurs que vous voulez, chacun avec sa propre icône dans la zone de notification."
     },
     "fr-CA": {
       "copyFrom": "fr-FR"
@@ -181,6 +190,7 @@
         "Lesezeichen"
       ],
       "screenshotCaptions": [
+        "Beliebig viele Launcher, jeder mit eigenem Symbol im Infobereich.",
         "Symbolmodus",
         "Web-Launcher: eine Website einen Klick vom Infobereich entfernt",
         "Hefte einen Launcher an die Taskleiste",
@@ -189,7 +199,9 @@
         "Mehrere Spalten (Listenmodus)",
         "Launcher-Verwaltung",
         "Launcher-Einstellungen"
-      ]
+      ],
+      "heroHeadline": "Deine Apps und Websites, einen Klick entfernt im Infobereich.",
+      "heroSubline": "Beliebig viele Launcher, jeder mit eigenem Symbol im Infobereich."
     },
     "zh-CN": {
       "title": "Little Launcher",
@@ -227,6 +239,7 @@
         "书签"
       ],
       "screenshotCaptions": [
+        "启动器数量不限，每个都有自己的托盘图标。",
         "图标模式",
         "Web 启动器：从托盘一键打开网站",
         "将启动器固定到任务栏",
@@ -235,7 +248,9 @@
         "多栏（列表模式）",
         "启动器管理",
         "启动器设置"
-      ]
+      ],
+      "heroHeadline": "你的应用和网站，\n在托盘中\n一键打开。",
+      "heroSubline": "启动器数量不限，每个都有自己的托盘图标。"
     },
     "pt-BR": {
       "title": "Little Launcher",
@@ -273,6 +288,7 @@
         "Favoritos"
       ],
       "screenshotCaptions": [
+        "Quantos inicializadores quiser, cada um com seu próprio ícone na bandeja.",
         "Modo de ícones",
         "Inicializadores web: um site a um clique da bandeja",
         "Fixe um inicializador na barra de tarefas",
@@ -281,7 +297,9 @@
         "Várias colunas (modo de lista)",
         "Gerenciamento de inicializadores",
         "Configurações do inicializador"
-      ]
+      ],
+      "heroHeadline": "Seus aplicativos e sites, a um clique na bandeja.",
+      "heroSubline": "Quantos inicializadores quiser, cada um com seu próprio ícone na bandeja."
     },
     "ja-JP": {
       "title": "Little Launcher",
@@ -319,6 +337,7 @@
         "ブックマーク"
       ],
       "screenshotCaptions": [
+        "ランチャーはいくつでも。それぞれに専用のトレイ アイコン。",
         "アイコン モード",
         "Web ランチャー: トレイからワンクリックで Web サイトを開く",
         "ランチャーをタスク バーにピン留め",
@@ -327,7 +346,9 @@
         "複数列 (一覧モード)",
         "ランチャーの管理",
         "ランチャーの設定"
-      ]
+      ],
+      "heroHeadline": "アプリも\nWeb サイトも、\nトレイから\nワンクリックで。",
+      "heroSubline": "ランチャーはいくつでも。それぞれに専用のトレイ アイコン。"
     }
   }
 }

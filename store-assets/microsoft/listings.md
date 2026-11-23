@@ -22,7 +22,7 @@ Translated wording uses the same terms as the in-app catalogs (`Shared/Localizat
 | Short description | 270 characters | 146 (fr-FR) |
 | Features | Up to 20, each up to 200 characters | 20 per locale, longest 197 (en-US) |
 | Keywords | Up to 7, each up to 40 characters, 21 words combined | 7 per locale, at most 19 words (es-ES) |
-| Screenshot captions | One per screenshot, up to 200 characters | 8 per locale, longest 63 (de-DE, fr-FR) |
+| Screenshot captions | One per screenshot, up to 200 characters | 9 per locale, longest 93 (fr-FR) |
 | Release notes (`release-notes/`) | 1,500 characters | 582 (1.43.0, de-DE) |
 
 ## Claims to keep true
@@ -49,4 +49,4 @@ Translated wording uses the same terms as the in-app catalogs (`Shared/Localizat
 
 ## Screenshots
 
-The Store set is the eight screenshots in `store-assets/manifest.json`, captured from the installed app on the Windows test VM with synthetic launchers (LIST-8), in dark mode; [the store-assets README](../README.md) has how they are made. `screenshotCaptions` holds one caption per screenshot, in the same order. They replace the live listing's nine with the next release's submission. The README's screenshots in `store-assets/web/screenshots/` are a separate set and are never uploaded to the Store (LIST-8's synthetic-data rule applies to listings).
+The Store set is the nine screenshots in `store-assets/manifest.json`. The first is a generated hero in each locale (D-123): the headline and subline from `heroHeadline` and `heroSubline`, beside the real icon-view flyout, enlarged; its caption is the subline, and it claims only what the listing says (apps and websites from the tray, multiple launchers each with its own icon). The other eight are captured from the installed app on the Windows test VM with synthetic launchers (LIST-8), in dark mode; [the store-assets README](../README.md) has how they are made. `screenshotCaptions` holds one caption per screenshot, in the same order. They replace the live listing's nine with the next release's submission. The README's screenshots in `store-assets/web/screenshots/` are a separate set and are never uploaded to the Store (LIST-8's synthetic-data rule applies to listings).
