@@ -47,8 +47,9 @@ Source is authoritative in WSL, with submodules initialised (`git submodule upda
 | `npm run shots:render` | The Store screenshots are rendered from the raw captures in `store-assets/manifest.json` | That they match the current UI |
 | `npm run check:screenshots` | Captures and screenshots follow the Store rules and match the en-US captions | That the screenshots are approved or uploaded |
 | `npm run check:notices` | `LittleLauncher/THIRD-PARTY-NOTICES.txt` matches the restore graph and the About link | That the licences are reviewed; run `generate:notices` after a package change |
-| `npm run validate` | The Linux gate: `format:check`, `check:notices`, `check:gitignore`, `check:icons`, `check:l10n`, `check:listing`, `check:screenshots`, then `npm test` | A Windows compile; also run `verify:desktop` |
+| `npm run validate` | The Linux gate: `format:check`, `check:notices`, `check:gitignore`, `check:icons`, `check:l10n`, `check:listing`, `check:screenshots`, `check:hero`, then `npm test` | A Windows compile; also run `verify:desktop` |
 | `npm run icons` | Writes every Windows app icon from `assets/brand/` (devkit; `check:icons` in `validate` fails when a committed icon differs from what the masters make) | How the icon looks; check it on a light and a dark taskbar |
+| `npm run hero` | Draws the first Store screenshot in every listing locale (devkit; `check:hero` in `validate` compares the pixels) | That the text reads well; the maintainer approves new heroes |
 
 Before finishing a change, run `npm run validate` and `npm run verify:desktop`. `tests-native/` drives a real desktop and never runs from these commands.
 
