@@ -15,6 +15,6 @@
   <!-- Single source of truth for the app version; the packaging script, the build tooling and the
        release workflows read the one <Version> element in this file. -->
   <PropertyGroup>
-    <Version>1.44.0</Version>
+    <Version>1.44.1</Version>
   </PropertyGroup>
 </Project>
