@@ -30,7 +30,7 @@
   <img src="store-assets/web/screenshots/11-web-launcher-video-dark.png" alt="Web launcher: a video site in the flyout" width="250">
 </p>
 
-Little Launcher puts named launchers in your system tray. Click one and a flyout opens with your app and website shortcuts, or with a web page of its own, such as a dashboard, webmail or a chat app, one click away and signed in. It is for anyone who keeps reaching for the same handful of apps and sites and wants them a click from the taskbar on every PC they use. It is available for Windows and Linux.
+Little Launcher puts named launchers in your system tray. Click one and a flyout opens with your app and website shortcuts. A launcher can also open a web page of its own, such as a dashboard, webmail or a chat app, already signed in. It is for anyone who reaches for the same handful of apps and sites every day and wants them one click away on every PC. For Windows and Linux.
 
 ## Features
 
@@ -49,15 +49,15 @@ The [full feature list](docs/features.md) covers every option.
 
 ### Windows
 
-**Microsoft Store (recommended):** [Get Little Launcher from the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf). It installs and updates through the Store.
+**Microsoft Store (recommended):** [Get Little Launcher from the Microsoft Store](https://apps.microsoft.com/detail/9p3zzbdq6pjf). It installs and updates through the Store. US$0.99, with a free trial.
 
-**Portable copies:** versions up to 1.43.0 also came as a portable ZIP; newer versions are available only from the Store. An existing portable copy keeps working. To remove one, run `cleanup-uninstall.ps1` from its folder with the app closed (it clears settings, browser profiles and sign-ins, the startup entry and any shortcuts), then delete the folder.
+**Have a portable copy?** Versions up to 1.43.0 also came as a portable ZIP, and yours keeps working. To remove it, close the app, run `cleanup-uninstall.ps1` from its folder, then delete the folder.
 
-**Requirements:** Windows 11 (build 22000 or later).
+**Requirements:** Windows 11.
 
 ### Linux
 
-Download the **x64 AppImage** from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest), make it executable, and run it. It targets **Debian 12 / Ubuntu 24.04 LTS or newer**, with KDE as the primary desktop; GNOME needs tray support.
+Download the **x64 AppImage** from the [Releases page](https://github.com/Dynamic-Solutions-Canada/little-launcher/releases/latest), make it executable, and run it. It targets **Debian 12 / Ubuntu 24.04 LTS or newer**. It is built for KDE Plasma, and works on GNOME with a tray extension.
 
 ```bash
 chmod +x LittleLauncher-VERSION-linux-x64.AppImage
@@ -70,21 +70,20 @@ Little Launcher collects no telemetry or crash reports.
 
 ## Languages
 
-Little Launcher is available in English (United States and Canada), Spanish, French (France and Canada), German, Simplified Chinese, Brazilian Portuguese and Japanese, on both Windows and Linux. It follows the system language unless you pick one in Settings. Translations are machine-generated.
+Available in English, Spanish, French, German, Simplified Chinese, Brazilian Portuguese and Japanese. On both Windows and Linux, Little Launcher follows the system language unless you pick one in Settings. Translations are machine-generated.
 
 ## Linux desktop support
 
-The Linux app has native shortcut flyouts and editing, web launchers with tabs and bookmarks, profile-scoped browser extensions, selfh.st and custom icons, OneDrive personal-account sync, device-local launcher enablement and login startup. AppImage updates keep settings and browser profiles.
-
-Shortcut launchers belong to the system that created them and show as disabled on the other; web launchers are shared. Other sync destinations and shared launchers are not available on Linux yet. Google sign-in and some passkey flows have known compatibility limits, and notification behaviour varies by site. The [Linux guide](linux/README.md) and the [UI parity review](docs/linux-ui-parity.md) describe the differences.
+The Linux app has the same launchers, flyouts and in-place editing, plus web launchers with tabs, bookmarks and browser extensions. Sync on Linux uses OneDrive: web launchers are shared between Windows and Linux, and shortcut launchers stay with the system that created them. To share a launcher with someone else, use the Windows app. AppImage updates keep your settings and sign-ins. The [Linux guide](linux/README.md) has the details.
 
 ## Developers
 
 - [Development guide](docs/development.md): prerequisites, the Windows build, the tech stack and the project layout.
 - [Linux guide](linux/README.md): Linux development, isolated verification and AppImage builds.
+- [UI parity review](docs/linux-ui-parity.md): how the Linux interface differs from Windows.
 - [Documentation index](docs/README.md): architecture, implementation guides and design decisions.
 - [Agent instructions](AGENTS.md): conventions and the guidance map.
 
 ## License
 
-Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for any **personal and other noncommercial use**, including modifying and redistributing it. **Commercial use is not permitted.** Copyright (c) 2024-2026 Dynamic Solutions.
+Copyright (c) 2024-2026 Dynamic Solutions. Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE), free for personal and other noncommercial use.

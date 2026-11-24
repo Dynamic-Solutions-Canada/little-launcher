@@ -18,8 +18,8 @@
       "source": "raw/microsoft/00-icons-dark.png",
       "theme": "dark",
       "crop": "tray",
-      "caption": "Icon mode",
-      "alt": "A launcher's flyout open above the taskbar's notification area in the dark theme, showing nine everyday Windows apps as large icons in three rows: Notepad, Paint, Calculator, File Explorer, Snipping Tool, Photos, Clock, Terminal and Settings. Each launcher in the notification area has its own coloured icon."
+      "caption": "Icons view",
+      "alt": "A launcher's flyout open above the taskbar's notification area in the dark theme, showing nine everyday Windows apps as large icons in three rows: Notepad, Paint, Calculator, File Explorer, Snipping Tool, Photos, Clock, Terminal and Settings. Each launcher in the notification area has its own colored icon."
     },
     {
       "file": "screenshots/02-web-dark.png",
@@ -42,37 +42,37 @@
       "source": "raw/microsoft/03-list-dark.png",
       "theme": "dark",
       "crop": "tray",
-      "caption": "List mode",
-      "alt": "A launcher's flyout in list mode above the notification area in the dark theme: seven Windows admin tools, each with its icon and name, from Task Manager to Control Panel."
+      "caption": "List view",
+      "alt": "A launcher's flyout in List view above the notification area in the dark theme: seven Windows admin tools, each with its icon and name, from Task Manager to Control Panel."
     },
     {
       "file": "screenshots/05-columns-icons-dark.png",
       "source": "raw/microsoft/04-columns-icons-dark.png",
       "theme": "dark",
       "crop": "tray",
-      "caption": "Multiple columns (icon mode)",
-      "alt": "A flyout in icon mode with two named columns in the dark theme: Make, with Paint, Photos, Snipping Tool and Clipchamp, and Share, with Mail, Cloud drive and Gallery."
+      "caption": "Icons view, in columns",
+      "alt": "A flyout in Icons view with two named columns in the dark theme: Make, with Paint, Photos, Snipping Tool and Clipchamp, and Share, with Mail, Cloud drive and Gallery."
     },
     {
       "file": "screenshots/06-columns-list-dark.png",
       "source": "raw/microsoft/05-columns-list-dark.png",
       "theme": "dark",
       "crop": "tray",
-      "caption": "Multiple columns (list mode)",
-      "alt": "A flyout in list mode with two named columns in the dark theme: Daily, with Mail, Calendar, News and Weather, and Reference, with Maps, Translate, Docs and Wiki."
+      "caption": "List view, in columns",
+      "alt": "A flyout in List view with two named columns in the dark theme: Daily, with Mail, Calendar, News and Weather, and Reference, with Maps, Translate, Docs and Wiki."
     },
     {
       "file": "screenshots/07-launchers-dark.png",
       "source": "raw/microsoft/06-launchers-dark.png",
       "theme": "dark",
-      "caption": "Launcher management",
+      "caption": "All your launchers in one place",
       "alt": "Little Launcher's Launchers page in the dark theme: an Add launcher button above cards for the Everyday, Admin tools and Creative launchers, each with an on switch, sharing, reorder and delete buttons, and Settings and Items rows."
     },
     {
       "file": "screenshots/08-launcher-settings-dark.png",
       "source": "raw/microsoft/07-launcher-settings-dark.png",
       "theme": "dark",
-      "caption": "Launcher settings",
+      "caption": "Give each launcher its own name, icon and view",
       "alt": "The Launcher settings window for the Everyday launcher in the dark theme: its name and type, then appearance settings for its icon, showing it in the tray, pinning it to the taskbar, the view mode, icons per row and the title."
     }
   ]

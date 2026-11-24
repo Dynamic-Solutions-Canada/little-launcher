@@ -2,11 +2,12 @@
 
 `listings.json` is the listing source in the shared `schemaVersion: 1` / `locales` shape (LIST-3), for the app's nine locale identities: `en-US`, `en-CA`, `es-ES`, `fr-FR`, `fr-CA`, `de-DE`, `zh-CN`, `pt-BR` and `ja-JP` (the same set the package manifest declares). Seven records hold wording; `en-CA` is `{ "copyFrom": "en-US" }` and `fr-CA` is `{ "copyFrom": "fr-FR" }`, matching the app's own catalogs. Fields are semantic names, not Partner Center CSV field IDs: when importing, merge into a real Partner Center export and keep its opaque `Field`/`ID` cells. The Store workflow reads only the screenshot captions from it, when it uploads the screenshots; the rest of Partner Center is updated from it by hand at the next submission (LIST-1, LIST-9).
 
-The `en-US` record is the live listing as published with 1.43.0 (submission 1152921505702429888), with these changes, approved for the next submission:
+The `en-US` record started from the live listing as published with 1.43.0 (submission 1152921505702429888), with these changes, approved for the next submission:
 
 - The short description, empty live, is now the README tagline plus "Available for Windows and Linux." (LIST-12).
 - The eleventh feature lost its last two characters, a stray "C" left by an earlier truncation.
 - Three features were out of date and are corrected as facts, not reworded: feature 3 (view modes) adds the compact small-icon grid; feature 6 (taskbar icons) describes pinning by what it does instead of naming the internal helper; feature 7 (shared launchers) lists every transport (file or folder, SFTP, OneDrive, WebDAV) and read-only or two-way sharing. The live listing was English only; the six translated records are new and go live with the next submission.
+- The copy review of 2026-11-24 rewrote the full description (with the languages and "no account, ads or telemetry" lines added), cut the features from 20 to 14, replaced the keywords "Start Menu" and "PWA" with "Website shortcuts" and "Web app launcher", and recaptioned screenshots 2 and 5 to 9 to use the app's view names (List, Icons). Every locale was redrafted the same way, by AI.
 
 Release notes are not in this file. Each version's "What's new" text is `release-notes/<version>.md` (`en-US`) plus one `release-notes/<version>.<identity>.md` per other wording catalog, the same text the GitHub Release uses (REL-6, LIST-10).
 
@@ -18,18 +19,18 @@ Translated wording uses the same terms as the in-app catalogs (`Shared/Localizat
 
 | Text | Limit | Longest now |
 | --- | --- | --- |
-| Full description | 4,000 characters | 3,058 (fr-FR) |
+| Full description | 4,000 characters | 2,650 (fr-FR) |
 | Short description | 270 characters | 146 (fr-FR) |
-| Features | Up to 20, each up to 200 characters | 20 per locale, longest 197 (en-US) |
-| Keywords | Up to 7, each up to 40 characters, 21 words combined | 7 per locale, at most 19 words (es-ES) |
+| Features | Up to 20, each up to 200 characters | 14 per locale, longest 195 (fr-FR) |
+| Keywords | Up to 7, each up to 40 characters, 21 words combined | 7 per locale, at most 20 words (es-ES) |
 | Screenshot captions | One per screenshot, up to 200 characters | 9 per locale, longest 93 (fr-FR) |
 | Release notes (`release-notes/`) | 1,500 characters | 582 (1.43.0, de-DE) |
 
 ## Claims to keep true
 
-- Website shortcut icons are fetched only from the site itself; no third-party favicon service is contacted (from the release after 1.43.0).
+- Website shortcut icons are fetched only from the site itself; no third-party favicon service is contacted (from 1.44.0).
 - Cloud sync destinations (OneDrive, Google Drive) get a private app folder only; Little Launcher never sees the rest of the drive. WebDAV, shared folders and SSH/SFTP are also supported, several at once, with the newest copy winning.
-- Sharing: a OneDrive link, a WebDAV server, SFTP or a shared folder. The owner chooses whether others can edit or only receive, and the choice travels with the share. From the release after 1.43.0, new one-way OneDrive links are view-only.
+- Sharing: a OneDrive link, a WebDAV server, SFTP or a shared folder. The owner chooses whether others can edit or only receive, and the choice travels with the share. From 1.44.0, new one-way OneDrive links are view-only.
 - A closed web launcher is suspended and then unloaded, so a hidden page uses no CPU, network or memory. Launchers set to keep running are the exception.
 - Each web launcher keeps its own browser profile, so sign-ins survive restarts.
 - No account, ads, analytics, telemetry or crash reporting.
