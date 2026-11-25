@@ -1,3 +1,6 @@
+> **Scope:** Which module, namespace and class owns each responsibility in the Windows app, the companion helper and the shared catalogs. Behaviour and boundaries are in ARCHITECTURE.md.
+> **Governs:** `LittleLauncher/**`, `LauncherShortcut/**`, `Shared/**`
+
 # Component and namespace map
 
 Paths in this reference are relative to the LittleLauncher project unless stated otherwise.

@@ -1,3 +1,6 @@
+> **Scope:** The interface languages, the shared translation catalogs both apps read, and how to add or change UI text.
+> **Governs:** `Shared/**`, `LittleLauncher/Localization/**`, `linux/little_launcher/i18n.py`
+
 # Localization
 
 Little Launcher's Windows and Linux apps share one set of translation catalogs and the same language rules as Persistent.

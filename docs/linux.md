@@ -1,3 +1,6 @@
+> **Scope:** How the Linux app is built: the Qt host, the isolated Electron browser, desktop integration, sync, extensions and qualification.
+> **Governs:** `linux/**`
+
 # Linux architecture
 
 The `linux/` application is separate from the WinUI host. The portable JSON document retains launcher IDs, recursive items, and Windows settings. Unknown properties survive Linux edits. Shortcut launchers have whole-launcher Platform ownership: foreign launchers remain listed but disabled, with no item-level classification or filtering. Untagged legacy shortcut launchers belong to Windows; web launchers remain shared. Concurrent file changes reject stale saves rather than overwrite another writer.

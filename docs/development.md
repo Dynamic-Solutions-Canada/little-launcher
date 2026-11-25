@@ -1,3 +1,6 @@
+> **Scope:** Setting up a Windows development environment: prerequisites, the tech stack, the project layout and where releases start. Linux setup is in `linux/README.md`.
+> **Governs:** `Directory.Build.*`, `Directory.Packages.props`, `global.json`, `package.json`, `LittleLauncher.slnx`
+
 # Developing Little Launcher
 
 Little Launcher has separate native Windows and Linux hosts. The Windows workflow is documented below; Linux uses Qt/PySide6 with a sandboxed Electron web engine. Start with [the Linux development guide](../linux/README.md) for source runs, verification and x64 AppImage packaging.
