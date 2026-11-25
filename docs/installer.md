@@ -208,72 +208,11 @@ everything without calling the Store; `repair_draft`, `replace_canceled_draft` a
 each input. Certification and the submission's publishing settings determine when a submitted
 version becomes available.
 
-All four required repository secrets were present when checked on September 22, 2026:
-`AZURE_AD_TENANT_ID`, `AZURE_AD_APPLICATION_CLIENT_ID`, `AZURE_AD_APPLICATION_SECRET`,
-and `SELLER_ID`. Presence does not verify expiry or the app registration's Manager role.
+The four Store credentials (`AZURE_AD_TENANT_ID`, `AZURE_AD_APPLICATION_CLIENT_ID`, `AZURE_AD_APPLICATION_SECRET`, `SELLER_ID`) and the `STORE_SECRET_EXPIRES` variable are Dynamic-Solutions-Canada organisation secrets and an organisation variable, shared by every Store app through one Entra app registration ([CI-11](https://github.com/Dynamic-Solutions-Canada/app-standards/blob/main/standards/ci.md)). This repo holds no copies: a repository secret with the same name would override the organisation one, so never set them here. Creating and rotating that registration's secret is covered by CI-11. `GOOGLE_CLIENT_SECRET` is this repo's own secret.
 
 For manual fallback, build both architectures with the kit's `build-msix.ps1 -Platform x64 -NoSign`
 and `-Platform ARM64 -NoSign`, then upload the individual `.msix` files in Partner Center.
 The workflow-generated `.msixupload` is also valid because it contains a real MSIX bundle.
-
-## Runbook: creating the Store publishing credentials
-
-The secrets come from a Microsoft Entra **app registration** that Partner Center has been told to
-trust. CI uses these credentials; renew the client secret before its configured expiry.
-
-**Step 0: do you have a tenant?** Partner Center → gear icon → **Account settings** →
-**Tenants**. Store dev accounts opened with a personal Microsoft account often have **none**,
-and nothing else works without one.
-
-- No tenant → **Create a new Microsoft Entra ID tenant** right there (free, and the button is on
-  that same page). This becomes the tenant that owns the app registration.
-- Tenant already listed → note its domain and continue.
-
-**Step 1: register the app.** [entra.microsoft.com](https://entra.microsoft.com) →
-**Entra ID** → **App registrations** → **New registration**.
-
-- Name: anything (e.g. `LittleLauncher Store Publisher`).
-- Supported account types: **Single tenant**.
-- **Redirect URI: leave blank.** This is a daemon/service credential: there is no interactive
-  sign-in, so a redirect URI is not used.
-- **Do not add any API permissions.** This is the step people over-do: publishing rights do *not*
-  come from Graph scopes, they come from the Partner Center role in step 3. An app with Graph
-  permissions and no Partner Center role still gets denied.
-
-From the app's **Overview**, copy **Application (client) ID** → `AZURE_AD_APPLICATION_CLIENT_ID`,
-and **Directory (tenant) ID** → `AZURE_AD_TENANT_ID`.
-
-**Step 2: client secret.** In that app → **Certificates & secrets** → **New client secret**.
-Copy the **Value** column (not "Secret ID") **immediately**: it is never shown again. Set a
-calendar reminder for the expiry date; an expired secret fails the publish step with an auth
-error and nothing else explains why. → `AZURE_AD_APPLICATION_SECRET`.
-
-**Step 3: authorize it in Partner Center.** This is the step that actually grants publishing
-rights, and the one most often missed. Partner Center → **Account settings** →
-**User management** → **Microsoft Entra applications** → add the app registration from step 1 and
-assign it the **Manager** role. Without this, authentication succeeds and submission is refused.
-
-Note there are three distinct "roles" here and they are easy to conflate: the one that matters
-is the middle row:
-
-| Role | Where | Governs |
-|---|---|---|
-| Your user's Partner Center role | Account settings → User management → **Users** | your own dashboard access |
-| **The app registration's role** | Account settings → User management → **Microsoft Entra applications** | **API publishing rights: must be Manager** |
-| Your directory role | entra.microsoft.com | whether you can create app registrations at all |
-
-**Step 4: seller ID.** Partner Center → **Account settings** → **Identifiers** (or Developer
-settings). Copy **Seller ID** / **Publisher ID** → `SELLER_ID`.
-
-**Step 5: load the secrets** (values go over stdin, never into shell history):
-
-```powershell
-.\LittleLauncherMSIX\set-store-secrets.ps1
-```
-
-**Step 6: validate a draft.** Manually dispatch `store-publish.yml` with `no_commit` enabled,
-then inspect the draft's packages and pricing in Partner Center before committing it.
-The workflow supplies Tier1012 by default; review the resulting regional prices.
 
 ### Repairing a draft, holding publication, inspecting
 
