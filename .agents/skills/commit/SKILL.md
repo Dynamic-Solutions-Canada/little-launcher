@@ -5,11 +5,7 @@ description: Review and commit requested Little Launcher changes with their affe
 
 # Commit changes
 
-Review the working tree and staged diff. Include the changes within the user's requested scope,
-preserving unrelated edits and excluding generated files, signing certificates, and secrets.
-Check the "Keeping docs current" table in [AGENTS.md](../../../AGENTS.md), and update the
-affected guides before staging explicit paths. Use a concise imperative subject and a body when
-the reason for the change needs explanation. Choose the message from the diff unless supplied.
+This replaces the shared user-level `commit` skill and adds one step to it: bring the affected docs up to date in the same commit.
 
-Commit when requested. Push only when included in the user's authorization; a commit request
-alone is not a push request. Do not introduce a second approval step for an already authorized push.
+1. Follow the shared commit workflow (review the diff, keep to the requested scope, validate, stage explicit paths).
+2. Before staging, check the "Keeping docs current" table in [AGENTS.md](../../../AGENTS.md) against the diff. Read each guide it names and update what the change made stale, for Windows and Linux alike, then stage those docs with the change.
