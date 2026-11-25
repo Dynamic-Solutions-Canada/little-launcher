@@ -5,12 +5,23 @@
 
   <!--
     Local build secrets, untracked. Holds the OAuth client secret that cannot live in a public
-    repository but is compiled into shipped builds. Fresh clones and CI have no private file;
-    shipping CI supplies the GoogleClientSecret build environment variable instead. Availability
-    checks only the client ID, not the presence of a secret. See docs/sync.md.
+    repository but is compiled into shipped builds. The file lives in the user's credential folder,
+    ~/.secrets/little-launcher/google-oauth/local.secrets.props, outside the repository; on Windows,
+    where the build bridge runs MSBuild, that is %USERPROFILE%\.secrets\... The old repo-root
+    local.secrets.props is read only while the home copy is missing, so builds keep working until it
+    moves. Fresh clones and CI have neither file; shipping CI supplies the GoogleClientSecret build
+    environment variable instead. Availability checks only the client ID, not the presence of a
+    secret. See docs/sync.md.
   -->
+  <PropertyGroup>
+    <_LittleLauncherHome>$(USERPROFILE)</_LittleLauncherHome>
+    <_LittleLauncherHome Condition="'$(_LittleLauncherHome)' == ''">$(HOME)</_LittleLauncherHome>
+    <_LittleLauncherSecretsProps>$(_LittleLauncherHome)/.secrets/little-launcher/google-oauth/local.secrets.props</_LittleLauncherSecretsProps>
+  </PropertyGroup>
+  <Import Project="$(_LittleLauncherSecretsProps)"
+          Condition="'$(_LittleLauncherHome)' != '' and Exists('$(_LittleLauncherSecretsProps)')" />
   <Import Project="$(MSBuildThisFileDirectory)local.secrets.props"
-          Condition="Exists('$(MSBuildThisFileDirectory)local.secrets.props')" />
+          Condition="!Exists('$(_LittleLauncherSecretsProps)') and Exists('$(MSBuildThisFileDirectory)local.secrets.props')" />
 
   <!-- Single source of truth for the app version; the packaging script, the build tooling and the
        release workflows read the one <Version> element in this file. -->

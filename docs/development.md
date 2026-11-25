@@ -123,7 +123,7 @@ The app keeps settings, icons and browser profiles under `%AppData%\LittleLaunch
 
 ## Build secret
 
-The Google Drive desktop OAuth client secret is a build input: `local.secrets.props` (git-ignored) supplies the `GoogleClientSecret` property locally, and the Store workflow passes the `GOOGLE_CLIENT_SECRET` repository secret. A desktop client secret compiled into a shipped app is not confidential, because Google's installed-app model assumes it can be extracted; keeping it out of the repo only keeps it out of the public source. Without it, builds compile and Google Drive sign-in may fail. See [sync.md](sync.md).
+The Google Drive desktop OAuth client secret is a build input: `local.secrets.props` in `~/.secrets/little-launcher/google-oauth/` (`%USERPROFILE%\.secrets\...` on Windows) supplies the `GoogleClientSecret` property locally, and the Store workflow passes the `GOOGLE_CLIENT_SECRET` repository secret. A desktop client secret compiled into a shipped app is not confidential, because Google's installed-app model assumes it can be extracted; keeping it out of the repo only keeps it out of the public source. Without it, builds compile and Google Drive sign-in may fail. See [sync.md](sync.md).
 
 ## Releasing
 

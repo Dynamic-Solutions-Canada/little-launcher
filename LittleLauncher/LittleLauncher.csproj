@@ -105,7 +105,7 @@
   <Import Project="..\external\promo\PromotedApps.projitems" Label="Shared" />
   <!--
     Bake the GoogleClientSecret MSBuild property into assembly metadata for BuildValue. The
-    property can come from local.secrets.props or the build environment. The runtime override
+    property can come from local.secrets.props (see Directory.Build.props) or the build environment. The runtime override
     LITTLELAUNCHER_GOOGLE_CLIENT_SECRET alone does not populate metadata for shipped builds.
   -->
   <ItemGroup Condition="'$(GoogleClientSecret)' != ''">

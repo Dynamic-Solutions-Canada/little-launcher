@@ -492,7 +492,7 @@ PKCE and callback correlation protect the authorization flow. `tests/LittleLaunc
 Client **IDs** are in `CloudSyncCredentials.cs` and committed. They appear in every auth request
 URL and are not secrets.
 
-The Google **client secret is not in the repository**, because this repo is public and git history cannot be unpublished. Local builds can supply it through an untracked `local.secrets.props` at the repo root:
+The Google **client secret is not in the repository**, because this repo is public and git history cannot be unpublished. Local builds read it from `local.secrets.props` in the user's credential folder, `~/.secrets/little-launcher/google-oauth/` (on Windows, where the build bridge runs MSBuild, `%USERPROFILE%\.secrets\little-launcher\google-oauth\`), outside the repository. An untracked `local.secrets.props` at the repo root is still read while the home copy is missing, so older checkouts keep building; once the file has moved, delete the root copy. The file holds:
 
 ```xml
 <Project>
@@ -502,7 +502,7 @@ The Google **client secret is not in the repository**, because this repo is publ
 </Project>
 ```
 
-`Directory.Build.props` imports the file when present. Shipping workflows instead expose the existing GitHub Actions secret `GOOGLE_CLIENT_SECRET` as the build process's `GoogleClientSecret` environment variable on the portable build and Store package build steps. Each step checks that the value is present before building. MSBuild imports that variable as a property; `LittleLauncher.csproj` writes it to the `GoogleClientSecret` assembly metadata entry, which `CloudSyncCredentials.BuildValue` reads at runtime. This applies to both x64 and ARM64. An explicit property in a private props file can override an environment-derived property, so keep that file absent in hosted CI.
+`Directory.Build.props` imports the home copy when present, otherwise the root one. Shipping workflows instead expose the existing GitHub Actions secret `GOOGLE_CLIENT_SECRET` as the build process's `GoogleClientSecret` environment variable on the portable build and Store package build steps. Each step checks that the value is present before building. MSBuild imports that variable as a property; `LittleLauncher.csproj` writes it to the `GoogleClientSecret` assembly metadata entry, which `CloudSyncCredentials.BuildValue` reads at runtime. This applies to both x64 and ARM64. An explicit property in a private props file can override an environment-derived property, so keep that file absent in hosted CI.
 
 **Build-time and runtime environment variables have different roles.** `GoogleClientSecret` is consumed by MSBuild and embedded for end users. `LITTLELAUNCHER_GOOGLE_CLIENT_SECRET` is a runtime override for a developer's machine; setting only that variable on a CI runner does not embed a credential. See Microsoft's [environment-property rules](https://learn.microsoft.com/en-us/visualstudio/msbuild/how-to-use-environment-variables-in-a-build) and [assembly-attribute generation](https://learn.microsoft.com/en-us/dotnet/standard/assembly/set-attributes-project-file).
 
