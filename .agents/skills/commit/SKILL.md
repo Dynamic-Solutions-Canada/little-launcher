@@ -1,11 +1,15 @@
 ---
 name: commit
-description: Review and commit requested Little Launcher changes with their affected documentation. Use when the user asks to commit.
+description: Review, document and commit Little Launcher changes the user asked to commit. Use when asked to create a commit in this repo. Adds this repo's documentation check to the usual commit steps.
 ---
 
 # Commit changes
 
-This replaces the shared user-level `commit` skill and adds one step to it: bring the affected docs up to date in the same commit.
+Adds to a generic commit workflow: the docs this repo keeps in step with the code, for Windows and Linux alike, are updated in the same commit.
 
-1. Follow the shared commit workflow (review the diff, keep to the requested scope, validate, stage explicit paths).
-2. Before staging, check the "Keeping docs current" table in [AGENTS.md](../../../AGENTS.md) against the diff. Read each guide it names and update what the change made stale, for Windows and Linux alike, then stage those docs with the change.
+1. Run `git status` and `git diff` to review what changed, and confirm every path belongs in this commit.
+2. Check the "Keeping docs current" table in [AGENTS.md](../../../AGENTS.md). If the change touches an area a doc or guide covers, read it and update it in the same commit.
+3. Run the checks that match the change (see "Commands" in `AGENTS.md`).
+4. Stage the intended paths explicitly, then commit with an imperative subject and a body that explains why when the reason is not obvious.
+
+Report: the commit hash and subject, the docs updated, and the checks run with their results.
