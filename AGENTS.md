@@ -22,13 +22,10 @@ This repo follows the shared standards at https://github.com/Dynamic-Solutions-C
 
 ## Conventions and gotchas
 
-- Use `[ObservableProperty]` from CommunityToolkit.Mvvm for every bindable setting. Partial `On<Property>Changed` methods in `UserSettings` handle side effects; the `_initializing` flag suppresses them during deserialization.
-- P/Invoke declarations live in `NativeMethods.cs`, imported with `using static LittleLauncher.Classes.NativeMethods;`. New declarations use `[LibraryImport]`; existing ones use `[DllImport]`.
-- Pages are WinUI 3 `Page` objects in winui-app-kit's `SettingsShell`, which `SettingsWindow` maps from menu tags to page types; About is the kit's shared page. There is no MVVM routing framework. Commands use `CommunityToolkit.Mvvm.Input.RelayCommand`.
-- All UI text lives in the shared catalogs under `Shared/Localization/`, for both Windows and Linux: XAML uses `{l:Str Key=area.name}`, C# uses `UiText`, Python uses `i18n.t`. Every new key goes into all seven catalogs; see [docs/localization.md](docs/localization.md).
-- **MSIX VFS rule:** any path read by another process (shell `.lnk` files, the companion helper) uses `MainWindow.GetPhysicalAppDataDir()`, never `Environment.GetFolderPath(ApplicationData)`, which is redirected inside the package. See [docs/icons.md](docs/icons.md).
-- A new launcher item feature extends `LauncherItem` and the shared `LauncherItemsView` renderer, so the tray flyout and the regular editor both get it; use the `add-launcher-feature` skill.
-- Do not apply Windows MSIX install or launch commands to the Linux app.
+Read [.agents/guides/code-conventions.md](.agents/guides/code-conventions.md) before changing Windows C# or XAML: settings bindings, P/Invoke, pages, UI text and launcher item features each have one way of doing it. The two that break silently:
+
+- **MSIX VFS rule:** any path another process reads uses `MainWindow.GetPhysicalAppDataDir()`, never the redirected `ApplicationData` folder.
+- Every new UI string goes into all seven catalogs under `Shared/Localization/`, for Windows and Linux alike.
 
 ## Commands
 
@@ -42,14 +39,9 @@ Source is authoritative in WSL, with submodules initialised (`git submodule upda
 | `npm run package:desktop` | An unsigned Store package builds | Signing; that it runs |
 | `npm test` | Every .NET harness under `tests/` and `test:linux` pass, on Linux | Anything needing a window or the installed package (see each harness README) |
 | `npm run test:linux` | The Linux portable checks and Node suites pass | Native Qt behaviour, which is skipped without PySide6 |
-| `npm run check:l10n` | Catalogs have the English keys and placeholders | Translation quality |
-| `npm run check:listing` | Listing source and current notes fit Store limits | That the listing is live |
-| `npm run shots:render` | The Store screenshots are rendered from the raw captures in `store-assets/manifest.json` | That they match the current UI |
-| `npm run check:screenshots` | Captures and screenshots follow the Store rules and match the en-US captions | That the screenshots are approved or uploaded |
-| `npm run check:notices` | `LittleLauncher/THIRD-PARTY-NOTICES.txt` matches the restore graph and the About link | That the licences are reviewed; run `generate:notices` after a package change |
-| `npm run validate` | The Linux gate: `format:check`, `check:notices`, `check:gitignore`, `check:icons`, `check:l10n`, `check:listing`, `check:screenshots`, `check:hero`, then `npm test` | A Windows compile; also run `verify:desktop` |
-| `npm run icons` | Writes every Windows app icon from `assets/brand/` (devkit; `check:icons` in `validate` fails when a committed icon differs from what the masters make) | How the icon looks; check it on a light and a dark taskbar |
-| `npm run hero` | Draws the first Store screenshot in every listing locale (devkit; `check:hero` in `validate` compares the pixels) | That the text reads well; the maintainer approves new heroes |
+| `npm run validate` | The Linux gate: format, notices, ignore block, icons, l10n, listing, screenshots and hero checks, then `npm test` (screenshot commands are in `store-assets/README.md`; run `generate:notices` after a package change) | A Windows compile; also run `verify:desktop` |
+| `npm run icons` | Writes every Windows app icon from `assets/brand/` (devkit; checked by `check:icons`) | How the icon looks on light and dark taskbars |
+| `npm run hero` | Draws the first Store screenshot in every listing locale (devkit; checked by `check:hero`) | That the text reads well; the maintainer approves new heroes |
 
 Before finishing a change, run `npm run validate` and `npm run verify:desktop`. `tests-native/` drives a real desktop and never runs from these commands.
 
@@ -65,9 +57,10 @@ Local verification uses the sideloaded Release MSIX through the `desktop` skill;
 | --- | --- | --- |
 | [docs/README.md](docs/README.md) | Looking for any project document | `docs/**` |
 | [docs/development.md](docs/development.md) | Setting up, checking dependencies, or finding a file | Prerequisites, tech stack, project layout |
-| [docs/windows-development.md](docs/windows-development.md) | Building, verifying or installing on Windows from WSL | `windows-build.json`, `scripts/windows-build`, `global.json`, `Directory.Build.*` |
+| [docs/windows-development.md](docs/windows-development.md) | Building, verifying or installing on Windows from WSL | `windows-build.json`, `global.json`, `Directory.Build.*` |
 | [docs/launcher-model.md](docs/launcher-model.md) | Adding a launcher kind or item type | `Models/Launcher.cs`, `Models/LauncherItem.cs`, `Controls/LauncherItemsView*` |
 | [docs/linux.md](docs/linux.md) and [linux/README.md](linux/README.md) | Native Linux UI, the browser boundary, desktop integration, packages, Linux dependencies, and `start:linux` / `package:linux` | `linux/**` |
+| [.agents/guides/code-conventions.md](.agents/guides/code-conventions.md) | Writing or changing Windows C# or XAML | `LittleLauncher/**`, `LauncherShortcut/**` |
 | [docs/pinvoke.md](docs/pinvoke.md) | P/Invoke, Win32 interop, native signatures | `Classes/NativeMethods.cs` |
 | [docs/user-settings.md](docs/user-settings.md) | Observable settings, the Launcher model, serialization | `ViewModels/UserSettings*.cs`, `Models/Launcher.cs` |
 | [docs/drag-drop.md](docs/drag-drop.md) | Shared launcher drag-and-drop, edit mode and hosts | `Controls/LauncherItemsView*`, `Windows/FlyoutWindow*.cs` and the item editors |

@@ -27,6 +27,7 @@ Project documentation lives in this directory. [The root README](../README.md) i
 | [Sync](sync.md) | Portable payloads, sync providers, revision guards and conflicts |
 | [XAML](xaml.md) | WinUI controls, localization and native backdrops |
 | [Localization](localization.md) | Supported languages, shared translation catalogs and adding UI text |
+| [Code conventions](../.agents/guides/code-conventions.md) | Windows C# and XAML rules and gotchas (agent guide) |
 | [Native interop](pinvoke.md) | Win32 signatures, shell integration and native API conventions |
 | [Packaging and updates](installer.md) | Windows Store/portable and Linux AppImage delivery |
 | [Versioning](versioning.md) | Version source, release artifacts and publication workflow |
