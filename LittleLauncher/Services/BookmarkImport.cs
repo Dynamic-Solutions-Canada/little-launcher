@@ -36,7 +36,7 @@ public sealed record FlatBookmark(string Name, string Url, string FolderPath)
     /// <remarks>
     /// Term-wise rather than substring: bookmark titles and URLs put the useful words in a
     /// different order from the one the user remembers, so "cameras hass" has to find
-    /// "Cameras" at hass.ryan-ewen.com.
+    /// "Cameras" at hass.example.com.
     /// </remarks>
     public bool Matches(string[] terms)
     {
