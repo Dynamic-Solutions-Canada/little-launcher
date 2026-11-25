@@ -8,7 +8,7 @@ This repo follows the shared standards at https://github.com/Dynamic-Solutions-C
 
 ## Architecture
 
-- **Behaviour and boundaries** are in [docs/architecture.md](docs/architecture.md); **module ownership** is in [docs/components.md](docs/components.md). Read the relevant sections before changing an area.
+- **Behaviour and boundaries** are in [ARCHITECTURE.md](ARCHITECTURE.md); **module ownership** is in [docs/components.md](docs/components.md). Read the relevant sections before changing an area.
 - **Windows app** (`LittleLauncher/`): `MainWindow` is the invisible host that owns the tray icons and single instance; `SettingsWindow` hosts the Settings pages; `FlyoutWindow` (shortcuts) and `WebFlyoutWindow` (web pages) are the tray flyouts. `LauncherShortcut/` is the Native AOT companion helper used for taskbar pins.
 - **Linux app** (`linux/`): a separate Qt host with an isolated Electron browser process. It shares the launcher document format and the translation catalogs with Windows, not code.
 - **Shared** (`Shared/`): the translation catalogs and the language table, read through winui-app-kit's localization classes by both Windows projects, and read by Linux.
@@ -86,7 +86,7 @@ A task is not done until its docs are updated. Read a guide before deciding it n
 | What changed | Update |
 | --- | --- |
 | A service, class or module added, moved or removed | `docs/components.md` |
-| Behaviour, boundaries or a new page or navigation | `docs/architecture.md` and `docs/components.md` |
+| Behaviour, boundaries or a new page or navigation | `ARCHITECTURE.md` and `docs/components.md` |
 | A settings or Launcher model property | `docs/user-settings.md` |
 | A launcher kind or item type | `docs/launcher-model.md` |
 | A P/Invoke declaration | `docs/pinvoke.md` |
@@ -99,4 +99,4 @@ A task is not done until its docs are updated. Read a guide before deciding it n
 | An npm command | The Commands table above, `docs/windows-development.md`, the `desktop` skill, `paseo.json` |
 | A guide or skill added, moved or removed | The guidance map above, `docs/README.md`, the nested `AGENTS.md` that should link it, and every skill that names it |
 | A feature, requirement, language or privacy behaviour users can see | `README.md`, `store-assets/microsoft/listings.json` and the claims in `listings.md` |
-| Any structural change | `docs/architecture.md`, and `README.md` if users would notice |
+| Any structural change | `ARCHITECTURE.md`, and `README.md` if users would notice |

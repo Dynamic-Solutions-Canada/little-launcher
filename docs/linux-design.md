@@ -92,7 +92,7 @@ The capability PoC uses deliberately contrasting borders to measure visible wind
 
 ## References
 
-- [Product vocabulary](glossary.md)
+- [Product vocabulary](../GLOSSARY.md)
 - [Native controls and isolated web engine](adr/0003-native-linux-controls-and-isolated-web-engine.md)
 - [Linux implementation and current gates](../linux/README.md)
 - [Linux and Windows development boundary](adr/0001-linux-and-windows-boundary.md)

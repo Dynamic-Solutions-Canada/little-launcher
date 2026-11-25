@@ -1,4 +1,4 @@
-# Little Launcher
+# Glossary
 
 Little Launcher provides named launchers for shortcuts and websites. These terms distinguish the launcher, its contents, and the ways users open or exchange it.
 

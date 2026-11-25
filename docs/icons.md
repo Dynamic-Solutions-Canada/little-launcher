@@ -379,7 +379,7 @@ prefer a Release build when validating anything about pinning.
 separate from live web-launcher discovery shortcuts under `Little Launcher`. Startup cleanup removes
 only the old root-level flyout shortcuts, never the current pin snapshots.
 
-> **WARNING:** Windows caches pin display names per AUMID in CloudStore. Changing the display name format requires changing the AUMID format to bust the cache. See `docs/architecture.md`.
+> **WARNING:** Windows caches pin display names per AUMID in CloudStore. Changing the display name format requires changing the AUMID format to bust the cache. See `ARCHITECTURE.md`.
 
 ## Adding a New Preset Icon
 

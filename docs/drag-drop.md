@@ -77,7 +77,7 @@ The native popup still supports an optional transient setup anchor through `Flyo
 `LauncherItemsView.MeasureContentHeight` / `MeasureIconModeHeight` compute intrinsic height **arithmetically**. The regular editor sets that exact extent inside its viewport; only the native host clamps height to the monitor. This separation must not change item geometry. Arithmetic is also required because forcing a layout pass on a window hidden via `ShowWindow(SW_HIDE)` while another WinUI 3 window is active causes a fatal `ExecutionEngineException`. Do not "fix" this by calling `UpdateLayout()`.
 
 > The flyout is no longer hidden at all: dismissing it now parks it off the virtual screen
-> (`ParkOffScreen`, see `docs/architecture.md`) so its composition surfaces survive. That removes the
+> (`ParkOffScreen`, see `ARCHITECTURE.md`) so its composition surfaces survive. That removes the
 > crash *hazard*, but the arithmetic stays: the reasons below are about correctness, not the
 > crash, and a dismissed window is still the wrong thing to measure.
 

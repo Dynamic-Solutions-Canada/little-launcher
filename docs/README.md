@@ -9,9 +9,9 @@ Project documentation lives in this directory. [The root README](../README.md) i
 | [Features](features.md) | Everything the app can do, in more detail than the README |
 | [Development](development.md) | Windows build prerequisites, project layout and release entry points |
 | [Linux development and use](../linux/README.md) | Linux installation, source runs, isolated verification and AppImage builds |
-| [Architecture](architecture.md) | Application behavior, lifecycle and cross-platform boundaries |
+| [Architecture](../ARCHITECTURE.md) | Application behavior, lifecycle and cross-platform boundaries |
 | [Component map](components.md) | Owning modules, namespaces and responsibility boundaries |
-| [Glossary](glossary.md) | Shared product terminology |
+| [Glossary](../GLOSSARY.md) | Shared product terminology |
 | [Launcher model](launcher-model.md) | Launcher kinds, item types, groups and column breaks |
 
 ## Implementation guides

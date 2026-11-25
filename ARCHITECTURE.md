@@ -1,6 +1,6 @@
 # Architecture: Little Launcher
 
-Little Launcher has native Windows and Linux hosts with compatible portable launcher data. Windows uses WinUI 3 and WebView2; Linux uses Qt/PySide6 and a separate sandboxed Electron browser. The Windows flow is described first; see [the Linux architecture guide](linux.md) for the native Linux host and [Linux development](../linux/README.md) for its AppImage-only packaging. KDE is the primary Linux desktop target.
+Little Launcher has native Windows and Linux hosts with compatible portable launcher data. Windows uses WinUI 3 and WebView2; Linux uses Qt/PySide6 and a separate sandboxed Electron browser. The Windows flow is described first; see [the Linux architecture guide](docs/linux.md) for the native Linux host and [Linux development](linux/README.md) for its AppImage-only packaging. KDE is the primary Linux desktop target.
 
 ## Windows high-level flow
 
@@ -67,7 +67,7 @@ and flushes back via `PersistFlyoutReorder()`.
 Drag-and-drop supports cross-column and cross-group moves. All ListViews use
 `CanDragItems="True"` with custom `DragOver`/`Drop` handlers: WinUI 3''s `CanReorderItems` is
 intentionally avoided because it takes full internal control of drag events and cannot support
-cross-collection moves. See [docs/drag-drop.md](drag-drop.md).
+cross-collection moves. See [docs/drag-drop.md](docs/drag-drop.md).
 
 The same handlers also accept drags from **outside** the app (`LauncherItemsView.ExternalDrop.cs`): a drag arriving with no `_dragItem` set came from File Explorer, the desktop, the Start Menu or a browser, and `DroppedItemFactory` maps its payload to launcher items. This is edit-mode-only out of necessity rather than symmetry; the flyout dismisses on `Deactivated`, so only a pinned flyout survives the user switching to Explorer to pick something up. The Windows 11 Start Menu is *not* a usable drag source: its data package exposes only the app name as text, with the shell item hidden in a clipboard format WinUI 3''s `DataPackageView` does not surface. Dragging the same apps from their `.lnk` files under `Start Menu\Programs` in Explorer works.
 
@@ -102,7 +102,7 @@ after that rebuilds from nothing and lands at the same anchored position.
 
 A web launcher holds a list of bookmarks; the first is the page it opens and the rest show as a
 browser-style bar along the bottom: several web launchers in one tray icon. See
-[docs/web-launchers.md](web-launchers.md) for the single-source rule that keeps
+[docs/web-launchers.md](docs/web-launchers.md) for the single-source rule that keeps
 "which URL is showing" answerable in one place.
 
 The flyout is resized by dragging its edges: invisible XAML grips, since a window with no
@@ -172,7 +172,7 @@ else, copies or opens its address, makes it the one that opens by default, moves
 and dragging one along the bar reorders it, with an accent caret marking where it will land. Neither
 editing nor deleting a bookmark disturbs the page on screen. Launcher settings still holds the full
 list, which is the right shape for a launcher being set up rather than one being used. See
-[docs/web-launchers.md](web-launchers.md).
+[docs/web-launchers.md](docs/web-launchers.md).
 
 **Every browser a web launcher owns is a tab** (`Windows/WebFlyoutWindow.Tabs.cs`), and a link
 asking for a new window becomes one instead of leaving for the real browser: using the browser's
@@ -181,7 +181,7 @@ A strip between the header and the address bar switches between them, appearing 
 there are two. The load-bearing distinction is **who chose the address**: tabs the launcher owns
 (its own page) may write its icon and be re-navigated when its settings change; a tab opened from a
 link, or from a middle-clicked bookmark, is the user's own place and nothing configured may move
-it. See [docs/web-launchers.md](web-launchers.md).
+it. See [docs/web-launchers.md](docs/web-launchers.md).
 
 Web launchers also get a **Start Menu shortcut each**, in a `Programs\Little Launcher\` group kept
 in sync by `Services/StartMenuShortcutService`, so they can be opened from Start search, PowerToys
@@ -193,7 +193,7 @@ A web launcher can also stop being a flyout altogether: `Launcher.WebRegularWind
 always-on-top and dismiss-on-focus-loss and puts it in the taskbar and the task switcher, so its
 pinned button shows the running indicator and closes it when clicked. **The switcher entry cannot be
 declined**: taskbar eligibility is `WS_EX_TOOLWINDOW`, which governs both, and four ways round it
-were measured and failed; see [docs/web-launchers.md](web-launchers.md). That
+were measured and failed; see [docs/web-launchers.md](docs/web-launchers.md). That
 is why the setting names a window kind rather than offering a taskbar-only toggle. In that mode the
 header also carries a **minimize** button, and the window stamps the three
 `PKEY_AppUserModel_Relaunch*` properties alongside its AUMID so its taskbar button can be **pinned**
@@ -245,7 +245,7 @@ finishes with the notification before it builds the toast: `AppNotificationManag
 the message loop, and the idle unload can run inside it, and tracked notifications are dropped when
 the browser unloads.
 
-See [docs/web-launchers.md](web-launchers.md) for the WinUI WebView2 limits
+See [docs/web-launchers.md](docs/web-launchers.md) for the WinUI WebView2 limits
 worked around (no controller access, so zoom is CSS; focus-loss must be re-verified against
 `GetForegroundWindow` because the browser's HWNDs are children of the window).
 
@@ -322,7 +322,7 @@ strings instead go through `Classes/GlyphIconRenderer.cs`, which shapes with Dir
 Direct2D color glyphs on a software device. It fits visible ink bounds before drawing and preserves
 premultiplied alpha through bitmap readback. Tray, pin, composite-item and jump-list exports share
 that path, including sequences with surrogate pairs, variation selectors and ZWJ ligatures.
-Native declarations remain in `Classes/NativeMethods.cs`. See [docs/icons.md](icons.md).
+Native declarations remain in `Classes/NativeMethods.cs`. See [docs/icons.md](docs/icons.md).
 
 ## Launcher item icons
 
@@ -399,7 +399,7 @@ by the shared-launcher dialog, since global sync reaches those two through their
 newer local work, and the in-place merge into the live launcher collection. Only an explicit
 user-initiated download passes `force: true`.
 
-Full conventions, including how to add a transport: [docs/sync.md](sync.md).
+Full conventions, including how to add a transport: [docs/sync.md](docs/sync.md).
 
 ### Shared launcher sync
 
@@ -482,7 +482,7 @@ Re-pinning requires manual old-pin removal only when a live query confirms it is
 Unknown old state proceeds without that warning or acknowledgement; users may remove duplicates. Windows has no supported normal-app unpin API. A completed false result or explicit dialog Cancel restores
 the old shortcut bytes and leaves saved `PinAumid` unchanged. Only native success or explicit
 manual-pin confirmation saves the new identity. All immutable pin icons remain available for older
-pins. See [docs/icons.md](icons.md) for exit codes and diagnostics.
+pins. See [docs/icons.md](docs/icons.md) for exit codes and diagnostics.
 
 An unresponsive native request is bounded by 45 seconds plus five seconds for advisory cancellation.
 An unknown outcome retains its shortcut/icon and a local `pin-pending-{id}.txt` marker; it does not
@@ -559,13 +559,13 @@ flattened as the flyout flattens them, or its bookmarks for a web launcher.
   attempts it, falls back to user tasks, and remembers the refusal. The same constraint is why no
   entry offers "Remove from this list".
 - Web launchers add two rules of their own - a single-address launcher publishes nothing, and a
-  bookmark opens in a new foreground tab. See [docs/web-launchers.md](web-launchers.md).
+  bookmark opens in a new foreground tab. See [docs/web-launchers.md](docs/web-launchers.md).
 
 ## Distribution
 
-Root `global.json`, `Directory.Build.props`, and `Directory.Build.targets` (importing winui-app-kit's shared build files) share the .NET SDK/runtime security floor across the main app, the NativeAOT companion, both release workflows, and disposable Windows build staging. See [the build security floor](windows-development.md#net-build-security-floor) for versions and artifact verification requirements.
+Root `global.json`, `Directory.Build.props`, and `Directory.Build.targets` (importing winui-app-kit's shared build files) share the .NET SDK/runtime security floor across the main app, the NativeAOT companion, both release workflows, and disposable Windows build staging. See [the build security floor](docs/windows-development.md#net-build-security-floor) for versions and artifact verification requirements.
 
-The Windows app ships through the **Microsoft Store MSIX**. A portable zip was attached to GitHub releases up to 1.43.0; later releases attach no Windows build, because a free download from the public repo would undercut the paid listing (DIST-5, D-020). Existing portable copies keep working, and their update check opens the release page, which points to the Store. A per-user WiX MSI was retired at v1.35.1. On Windows, only the Store build installs its own updates. The Linux app uses only AppImage, with explicit in-app download, install and restart controls. See [docs/installer.md](installer.md).
+The Windows app ships through the **Microsoft Store MSIX**. A portable zip was attached to GitHub releases up to 1.43.0; later releases attach no Windows build, because a free download from the public repo would undercut the paid listing (DIST-5, D-020). Existing portable copies keep working, and their update check opens the release page, which points to the Store. A per-user WiX MSI was retired at v1.35.1. On Windows, only the Store build installs its own updates. The Linux app uses only AppImage, with explicit in-app download, install and restart controls. See [docs/installer.md](docs/installer.md).
 
 ## MSIX packaging
 
@@ -578,11 +578,11 @@ winui-app-kit's `build/build-msix.ps1` (KIT-9, DIST-1) produces the MSIX package
 - **Image assets** in `LittleLauncherMSIX/Images/` use standard MRT naming qualifiers (e.g. `.scale-200.`, `.targetsize-48.`) and are indexed into `resources.pri` by `makepri`. The script builds one `resources.pri` with every scale and language candidate (it strips the default config's split rules, which only apply to bundles) and fails if makepri writes `resources.<qualifier>.pri` files. The manifest declares the nine interface languages in the standard order with `en-US` first; Windows and the Store read that list, not the catalogs the app ships.
 - **Companion exe** is deployed at startup to the external helper directory, and packaged builds also mirror it into the shared raw `%AppData%\\LittleLauncher\\` path for backward compatibility with old launcher pins. See "Companion exe" section above.
 - **`-NoSign` flag** skips all signing for Store uploads (Microsoft re-signs during ingestion). Without `-NoSign`, the script signs the embedded executables and the package with the PFX passed in `-TrustedPfxPath` (the build tooling passes the shared dev certificate) and fails if none is given; it never creates a certificate or holds a password.
-- **Update checks run in MSIX builds too**, against the Store rather than GitHub Releases, and this is the only build that can update *itself*: Home/About offer **Download & Install** and apply a Store update in place, where a portable copy gets **View Release** and a link. About also offers a restart when no update is pending, since a staged one cannot apply while the tray process is alive. The **startup update toast** stays unpackaged-only: Store updates otherwise install silently, so there is nothing to interrupt anyone about. The manifest declares a `windows.toastNotificationActivation` COM activator regardless, so `AppNotificationManager` registers for both install types and packaged builds can still raise one-time upgrade notices. See [docs/installer.md](installer.md) for the Store update flow and the version-reporting trap it works around.
+- **Update checks run in MSIX builds too**, against the Store rather than GitHub Releases, and this is the only build that can update *itself*: Home/About offer **Download & Install** and apply a Store update in place, where a portable copy gets **View Release** and a link. About also offers a restart when no update is pending, since a staged one cannot apply while the tray process is alive. The **startup update toast** stays unpackaged-only: Store updates otherwise install silently, so there is nothing to interrupt anyone about. The manifest declares a `windows.toastNotificationActivation` COM activator regardless, so `AppNotificationManager` registers for both install types and packaged builds can still raise one-time upgrade notices. See [docs/installer.md](docs/installer.md) for the Store update flow and the version-reporting trap it works around.
 
 ## Native Linux host
 
-`linux/` develops the Linux application alongside the WinUI host. Native Qt Widgets own Settings, shortcut flyouts, editing, and dialogs; a separate Electron process owns sandboxed web content. The inherited pipe boundary exposes no remote-page control bridge. Desktop theme values come from Qt, while native window decoration remains desktop-owned. One StatusNotifierItem connection per launcher retains the host's activation coordinates, passed to an optional app-scoped KWin helper before mapping. GNOME currently uses a labelled regular window. Read [the Linux architecture guide](linux.md) and [current verification/gates](../linux/README.md).
+`linux/` develops the Linux application alongside the WinUI host. Native Qt Widgets own Settings, shortcut flyouts, editing, and dialogs; a separate Electron process owns sandboxed web content. The inherited pipe boundary exposes no remote-page control bridge. Desktop theme values come from Qt, while native window decoration remains desktop-owned. One StatusNotifierItem connection per launcher retains the host's activation coordinates, passed to an optional app-scoped KWin helper before mapping. GNOME currently uses a labelled regular window. Read [the Linux architecture guide](docs/linux.md) and [current verification/gates](linux/README.md).
 
 `Launcher.Platform` and Linux launcher_supported implement whole shortcut-launcher OS ownership. Foreign launchers stay in Settings as disabled; supported launchers render all of their items without per-item OS handling. Web launchers remain shared. The native selfh.st catalog picker uses bounded cached PNGs; selected custom bytes and matching glyph previews travel through sync. Windows UI qualification and live cross-platform sync remain gates.
 
@@ -590,7 +590,7 @@ Linux bookmark editing is owned by `little_launcher/bookmark_tree.py` (Qt-indepe
 
 Linux shortcut hosts now share `LauncherGeometry`, `LauncherItemsView` and `ItemEditingSession`. The regular editor wraps only the intrinsic preview; the tray flyout edits in place with an owned floating toolbar. Native style/palette supplies drawing while Windows-reference cell slots, column arithmetic, group packing and body padding determine layout. The KWin helper positions toolbar windows independently, preserves body focus and re-anchors only explicit content-size changes. Full source paths and per-renderer drag identities protect hidden data during moves, including empty collection targets.
 
-Linux web hosts now own a tab collection with a lifecycle per remote view. Permission/transfer callbacks bind to their originating tab, and quit/removal checks aggregate all tabs. `browser/web_actions.cjs` owns trusted quick menus and keyboard actions; known visibility/pin choices round-trip through the native full-document controller. Shared launcher settings use collapsible section destinations. `ApplicationList` supplies the embedded installed-application source tab and standalone picker. See [the UI parity review](linux-ui-parity.md) for source references and explicitly unfinished surfaces.
+Linux web hosts now own a tab collection with a lifecycle per remote view. Permission/transfer callbacks bind to their originating tab, and quit/removal checks aggregate all tabs. `browser/web_actions.cjs` owns trusted quick menus and keyboard actions; known visibility/pin choices round-trip through the native full-document controller. Shared launcher settings use collapsible section destinations. `ApplicationList` supplies the embedded installed-application source tab and standalone picker. See [the UI parity review](docs/linux-ui-parity.md) for source references and explicitly unfinished surfaces.
 
 Linux `launcher_card.py` owns passive native card framing, the preferred450-pixel column and Windows-reference two-line action rows with trailing chevrons. `settings.py` assembles the header actions, Settings/Items order and independent item bulk menu, and owns guarded per-launcher JSON import/export and launcher ordering. The whole Launchers page scrolls as one surface.
 
@@ -610,7 +610,7 @@ Device-local disabled launcher IDs are outside the synced launcher objects on bo
 
 `CloudSyncPage`/`Destination` now mirror the Windows sync page's provider/account and shared-action structure. Account labels/status remain nonsecret local metadata; tokens stay in Secret Service. `web_preferences.py` validates native/browser quick mutations and atomic remembered dimensions. `browser_identity.cjs` exposes the actual Chrome/Chromium identity; `web_menu.cjs` supplies the Windows section/control ordering. Profile maintenance is explicit, scoped and serialized around other browser commands; replies bypass that queue. Navigation remains active until loading finishes before hidden lifecycle controls apply.
 
-Qt/Electron explicitly use Wayland. Temporary previews have distinct native/browser app IDs and dynamically scoped launcher IDs, including downloads. A web host preloaded without an anchor remaps its first visible native surface while retaining its WebContents. Fixed anchors are compositor-owned; ordinary position/stacking restrictions remain with KDE. Imported Windows path display and shrinkable form labels keep the settings body within its native viewport. [The audit](notes/linux-parity-audit.md) separates implemented behavior, controlled evidence, real-service acceptance and remaining parity work.
+Qt/Electron explicitly use Wayland. Temporary previews have distinct native/browser app IDs and dynamically scoped launcher IDs, including downloads. A web host preloaded without an anchor remaps its first visible native surface while retaining its WebContents. Fixed anchors are compositor-owned; ordinary position/stacking restrictions remain with KDE. Imported Windows path display and shrinkable form labels keep the settings body within its native viewport. [The audit](docs/notes/linux-parity-audit.md) separates implemented behavior, controlled evidence, real-service acceptance and remaining parity work.
 
 
 `browser/bookmark_icons.cjs` owns bounded, credential-free same-site favicon retrieval and an in-memory profile-scoped presentation cache. Only raster data URLs reach trusted chrome; synced bookmark paths/metadata are never used as file access. `WebBookmarkIconsOnly || bookmark.IconsOnly` controls captions while keeping accessible names and tooltips. Regular web windows use KDE decorations; a one-shot `LittleLauncherWindow` caption lets the app-owned helper apply the saved opening anchor before activation without assigning flyout taskbar/dismissal/stacking behavior. Electron restores the regular title on native focus; flyouts retain their existing ownership protocol.
@@ -625,20 +625,20 @@ Linux `browser/tab_menu.cjs` builds Windows-reference tab commands. `web_actions
 
 `browser_bookmarks.py` owns bounded read-only source discovery/projection. `bookmark_picker.py` owns the native browser/profile/search/confirm surface; `BookmarkActions` retains full-source stale/read-only guards around importing a selected entry. `LauncherDialog` immediately commits completed controls through its original full-launcher preimage, updating that preimage only after a successful save.
 
-`browser/strip_drag.cjs` translates displayed bookmark indexes to full saved paths. Trusted chrome retains an internal drag identity and defers state rebuilds during a drag; foreign payloads cannot manufacture one. Native `BookmarkTree.reorder` resolves both collections before mutation. Tab moves retain live view/active identity and update device-local session order. See [the current audit](notes/linux-parity-audit.md#second-audit-historical-snapshot) for open implementation and qualification work.
+`browser/strip_drag.cjs` translates displayed bookmark indexes to full saved paths. Trusted chrome retains an internal drag identity and defers state rebuilds during a drag; foreign payloads cannot manufacture one. Native `BookmarkTree.reorder` resolves both collections before mutation. Tab moves retain live view/active identity and update device-local session order. See [the current audit](docs/notes/linux-parity-audit.md#second-audit-historical-snapshot) for open implementation and qualification work.
 
-The second audit also adds standard native external file/URL drops (Copy/Link, Linux-only file references), desktop file-type icons, and a pending native preset/emoji/text/color/custom-image chooser. Legacy numeric icon modes render without rewriting portable metadata; unsupported private-use glyphs remain saved. Independent per-WebContents zoom keeps shared sign-ins without shared page scale, and navigation reapplies the selected percentage. Current verification is 103 native/data tests, 26 Node cases, all 12 actual-engine lifecycle checks, expanded renderer/session/context checks, native picker screenshots, six native group-drag modes/hosts and a real native external file drop. Physical Ctrl+wheel remains unqualified and is omitted from the help sheet. Complete catalog, overlay, fullscreen, positioning and release gaps remain explicitly listed in [the parity audit](notes/linux-parity-audit.md).
+The second audit also adds standard native external file/URL drops (Copy/Link, Linux-only file references), desktop file-type icons, and a pending native preset/emoji/text/color/custom-image chooser. Legacy numeric icon modes render without rewriting portable metadata; unsupported private-use glyphs remain saved. Independent per-WebContents zoom keeps shared sign-ins without shared page scale, and navigation reapplies the selected percentage. Current verification is 103 native/data tests, 26 Node cases, all 12 actual-engine lifecycle checks, expanded renderer/session/context checks, native picker screenshots, six native group-drag modes/hosts and a real native external file drop. Physical Ctrl+wheel remains unqualified and is omitted from the help sheet. Complete catalog, overlay, fullscreen, positioning and release gaps remain explicitly listed in [the parity audit](docs/notes/linux-parity-audit.md).
 
-The third parity pass implements nested draggable bookmark folder/overflow overlays above the isolated page, KDE device-local last-dragged positions through a scoped QtDBus bridge, a native opening-position grid, and contained/display page fullscreen with trusted exit/maximize controls and intrinsic video fitting. Actual private compositor pointer drag and titlebar move/reopen checks pass; fullscreen uses synthetic local media. Current source verification is107 native/data tests and29 Node cases plus real-engine regression drivers. QtDBus is now a runtime module requirement; Debian packaging declares `python3-pyside6.qtdbus`. Existing installed KWin helpers require explicit update; the real preview reloads only its own temporary helper. Cross-window drags and broader catalogs, services and release gates remain open in [the audit](notes/linux-parity-audit.md).
+The third parity pass implements nested draggable bookmark folder/overflow overlays above the isolated page, KDE device-local last-dragged positions through a scoped QtDBus bridge, a native opening-position grid, and contained/display page fullscreen with trusted exit/maximize controls and intrinsic video fitting. Actual private compositor pointer drag and titlebar move/reopen checks pass; fullscreen uses synthetic local media. Current source verification is107 native/data tests and29 Node cases plus real-engine regression drivers. QtDBus is now a runtime module requirement; Debian packaging declares `python3-pyside6.qtdbus`. Existing installed KWin helpers require explicit update; the real preview reloads only its own temporary helper. Cross-window drags and broader catalogs, services and release gates remain open in [the audit](docs/notes/linux-parity-audit.md).
 
 ## Linux AppImage and fourth parity pass
 
 Linux offers only x64 AppImage, with a private Debian12-compatible Python/Qt runtime and sandboxed Electron. `updates.py` validates stable matching GitHub assets and stages verified bytes; UpdateController owns native worker/UI state and normal-shutdown restart intent. The app releases instance ownership before atomic replacement/restart, retains a previous image and preserves the data directory. User menu/startup entries point at the stable image; startup and automatic check choices remain local. Windows delivery channels above are unchanged.
 
-Native item icons now support staged glyph/color/image selection and explicit public favicon preview; browser bookmarks can be bulk-selected/imported through full-source guards, and the app picker offers source filters and row context commands. Custom item image byte sync and broader catalog/service parity remain open. See [the current audit](notes/linux-parity-audit.md) and [Linux delivery](../linux/README.md#linux-appimage-delivery).
+Native item icons now support staged glyph/color/image selection and explicit public favicon preview; browser bookmarks can be bulk-selected/imported through full-source guards, and the app picker offers source filters and row context commands. Custom item image byte sync and broader catalog/service parity remain open. See [the current audit](docs/notes/linux-parity-audit.md) and [Linux delivery](linux/README.md#linux-appimage-delivery).
 
 ### Linux extensions and durable notifications
 
-System → Browser Extensions manages Bitwarden and unpacked extensions. Extension popups are also available in each web launcher’s More → Extensions menu. Code is app-wide; vault/settings data stays private to each local sign-in profile, or shared only when launchers use the shared profile. The app verifies the official Bitwarden package and shows requested permissions before enabling it. Notification choices now survive app updates; one new approval may be needed because earlier versions kept them only in memory. See [the Linux architecture](linux.md#linux-site-permissions-and-extensions) and [the current audit](notes/linux-parity-audit.md). Real vault/passkey and Google sign-in acceptance remain separate from the account-free extension fixture.
+System → Browser Extensions manages Bitwarden and unpacked extensions. Extension popups are also available in each web launcher’s More → Extensions menu. Code is app-wide; vault/settings data stays private to each local sign-in profile, or shared only when launchers use the shared profile. The app verifies the official Bitwarden package and shows requested permissions before enabling it. Notification choices now survive app updates; one new approval may be needed because earlier versions kept them only in memory. See [the Linux architecture](docs/linux.md#linux-site-permissions-and-extensions) and [the current audit](docs/notes/linux-parity-audit.md). Real vault/passkey and Google sign-in acceptance remain separate from the account-free extension fixture.
 
-Linux notification presentation and native activation are separate from the Windows bridge. `linux/browser/page_notifications.cjs` restores default/prompt semantics through standard Web APIs and a bounded native-context-authenticated CDP transport. `WebLauncher` restores the correct tab without reload; worker focus/open operations require a live native notification-click task. Existing profile/origin decisions survive updates. See [the Linux correction](linux.md#linux-notification-permission-and-activation-correction) for boundaries and qualification.
+Linux notification presentation and native activation are separate from the Windows bridge. `linux/browser/page_notifications.cjs` restores default/prompt semantics through standard Web APIs and a bounded native-context-authenticated CDP transport. `WebLauncher` restores the correct tab without reload; worker focus/open operations require a live native notification-click task. Existing profile/origin decisions survive updates. See [the Linux correction](docs/linux.md#linux-notification-permission-and-activation-correction) for boundaries and qualification.

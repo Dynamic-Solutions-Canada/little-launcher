@@ -55,7 +55,7 @@ Or open `LittleLauncher.slnx` in Visual Studio / Rider and press F5.
 | `SettingsManager` | Fully static. Serialises `UserSettings` to `%AppData%\LittleLauncher\settings.json` via `System.Text.Json`. Migrates from legacy `settings.xml` on first load. |
 | `ThemeManager` | Sets `RequestedTheme` on root `FrameworkElement` of each window. Detects system dark/light mode via cached `UISettings`. |
 
-See [docs/architecture.md](architecture.md) for detailed flows: launch modes, settings persistence, the launcher-item icon pipeline, SFTP sync, theming, the companion exe, and MSIX packaging.
+See [ARCHITECTURE.md](../ARCHITECTURE.md) for detailed flows: launch modes, settings persistence, the launcher-item icon pipeline, SFTP sync, theming, the companion exe, and MSIX packaging.
 
 ## Windows tech stack
 

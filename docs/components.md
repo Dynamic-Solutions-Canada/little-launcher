@@ -37,7 +37,7 @@ Web launcher cards use a single **Settings** row with the address or **No web ad
 
 ## Behavior and flow
 
-Read [architecture.md](architecture.md) for application routing, windows, persistence, icons, sync, taskbar integration and packaging. This map identifies the owning modules; the topic guides describe their contracts and conventions.
+Read [ARCHITECTURE.md](../ARCHITECTURE.md) for application routing, windows, persistence, icons, sync, taskbar integration and packaging. This map identifies the owning modules; the topic guides describe their contracts and conventions.
 
 ## Key namespaces
 
