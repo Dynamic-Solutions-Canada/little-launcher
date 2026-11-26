@@ -173,7 +173,7 @@
               "Name": "News",
               "Path": "https://news.example.com",
               "IsWebsite": true,
-              "IconGlyph": "\ue900"
+              "IconGlyph": "\ue736"
             },
             {
               "Name": "Weather",
