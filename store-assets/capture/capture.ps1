@@ -156,10 +156,24 @@ function Save-FlyoutCapture([string]$EnglishLauncher, [string]$Name, [int]$MinWi
 }
 
 <#
+Turn app notifications on or off for this user, and restart the user's notification service so it
+reads the change (it ignores a changed value until then). screenshot-desktop.ps1 -Mode Prepare turns
+them off so no toast lands in a capture, but Windows' pin prompt is itself a notification: with them
+off, TaskbarManager reports pinning as not allowed and the app shows its manual fallback instead
+(Microsoft's "Pin your app to the taskbar" lists system notifications among the requirements).
+#>
+function Set-AppNotifications([bool]$On) {
+    Set-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications' ToastEnabled ([int]$On) -Type DWord
+    $service = Get-Service 'WpnUserService_*' -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($service) { Restart-Service $service.Name -Force }
+    Start-Sleep -Seconds 3
+}
+
+<#
 Pin Everyday through its own Pin to taskbar button, accept Windows' prompt, then open the launcher
-from its taskbar button and capture it. Windows' prompt is a notification that UI Automation cannot
-see, so it is answered by position: the bottom one's first button (Yes), then any left are dismissed
-with their second.
+from its taskbar button and capture it. Notifications are on only while the prompt is up. Windows'
+prompt is a notification that UI Automation cannot see, so it is answered by position: the bottom
+one's first button (Yes), then any left are dismissed with their second.
 #>
 function Save-TaskbarCapture([string]$Name) {
     $launcher = Get-LocalName 'Everyday'
@@ -171,10 +185,16 @@ function Save-TaskbarCapture([string]$Name) {
     Start-Sleep -Seconds 5
     $pin = Find-ById $UiRoot 'PinToTaskbarButton'
     if (-not $pin) { throw "${Name}: no Pin to taskbar button" }
-    Invoke-Click $pin
-    Start-Sleep -Seconds 6
-    Invoke-ClickAt (Px 1636) (Px 987)
-    foreach ($i in 1..4) { Invoke-ClickAt (Px 1806) (Px 987) }
+    Set-AppNotifications $true
+    try {
+        Invoke-Click $pin
+        Start-Sleep -Seconds 6
+        Invoke-ClickAt (Px 1636) (Px 987)
+        foreach ($i in 1..4) { Invoke-ClickAt (Px 1806) (Px 987) }
+    }
+    finally {
+        Set-AppNotifications $false
+    }
     $done = Find-ById $UiRoot 'DoneButton'
     if ($done) { Invoke-Click $done; Start-Sleep -Seconds 2 }
     Close-SettingsWindow
