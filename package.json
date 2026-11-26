@@ -11,6 +11,7 @@
     "test:linux": "PYTHONPATH=linux python3 -m unittest discover -s linux/tests -v && node --test linux/tests/*.test.cjs",
     "check:l10n": "PYTHONPATH=linux python3 -m unittest -v linux.tests.test_localization",
     "check:gitignore": "external/winui-app-kit/scripts/check-gitignore .",
+    "check:kit-ref": "external/winui-app-kit/scripts/check-kit-ref .",
     "check:listing": "python3 external/winui-app-kit/scripts/check-listing.py",
     "generate:notices": "python3 external/winui-app-kit/scripts/generate-notices.py",
     "check:notices": "python3 external/winui-app-kit/scripts/generate-notices.py --check",
@@ -22,7 +23,7 @@
     "check:hero": "external/winui-app-kit/scripts/devkit hero --check",
     "format": "external/winui-app-kit/scripts/format",
     "format:check": "external/winui-app-kit/scripts/format --check",
-    "validate": "npm run format:check && npm run check:notices && npm run check:gitignore && npm run check:icons && npm run check:l10n && npm run check:listing && npm run check:screenshots && npm run check:hero && npm test",
+    "validate": "npm run format:check && npm run check:notices && npm run check:gitignore && npm run check:kit-ref && npm run check:icons && npm run check:l10n && npm run check:listing && npm run check:screenshots && npm run check:hero && npm test",
     "start:linux": "linux/bin/little-launcher",
     "package:linux": "python3 linux/packaging/build.py"
   }
