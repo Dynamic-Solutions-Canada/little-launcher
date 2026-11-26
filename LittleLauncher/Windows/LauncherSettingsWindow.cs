@@ -132,6 +132,9 @@ public sealed partial class LauncherSettingsWindow : Window
             Margin = new Thickness(0, 16, 0, 0),
         };
         doneButton.Click += (_, _) => CloseWithBounds();
+        // Automation IDs here and on the pin button let UI automation (the Store screenshot capture)
+        // find them in every interface language.
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(doneButton, "DoneButton");
 
         _isNewLauncher = isNewLauncher;
         _doneButton = doneButton;
@@ -695,6 +698,7 @@ public sealed partial class LauncherSettingsWindow : Window
             Content = UiText.Get("taskbarPin.pin"),
             Tag = launcher,
         };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(pinBtn, "PinToTaskbarButton");
         _pinButton = pinBtn;
         pinBtn.Click += PinToTaskbar_Click;
 

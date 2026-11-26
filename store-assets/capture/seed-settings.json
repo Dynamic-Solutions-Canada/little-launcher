@@ -1,0 +1,238 @@
+{
+  "_comment": "The synthetic settings the Store screenshots show (LIST-8), in English. capture.ps1 replaces every Name through the locale's entry in sample-data.json, sets LanguageOverride to the locale and LastRunVersion to the installed version, and writes the result as the app's settings.json. Recovered from the 2026-11 capture session (tray glyph colours, items and the YouTube web launcher showing Big Buck Bunny, CC BY, on Blender's official channel).",
+  "SchemaVersion": 1,
+  "AppTheme": 2,
+  "Startup": false,
+  "LastRunVersion": "",
+  "LanguageOverride": "",
+  "DisableWebLauncherShortcuts": true,
+  "Launchers": [
+    {
+      "Id": "shot-everyday",
+      "Name": "Everyday",
+      "ViewMode": 0,
+      "IconModeIconsPerRow": 3,
+      "TrayIconMode": "Glyph:#3B82F6:\ue71d",
+      "Items": [
+        {
+          "Name": "Notepad",
+          "Path": "shell:AppsFolder\\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"
+        },
+        {
+          "Name": "Paint",
+          "Path": "shell:AppsFolder\\Microsoft.Paint_8wekyb3d8bbwe!App"
+        },
+        {
+          "Name": "Calculator",
+          "Path": "shell:AppsFolder\\Microsoft.WindowsCalculator_8wekyb3d8bbwe!App"
+        },
+        {
+          "Name": "File Explorer",
+          "Path": "explorer.exe"
+        },
+        {
+          "Name": "Snipping Tool",
+          "Path": "shell:AppsFolder\\Microsoft.ScreenSketch_8wekyb3d8bbwe!App"
+        },
+        {
+          "Name": "Photos",
+          "Path": "shell:AppsFolder\\Microsoft.Windows.Photos_8wekyb3d8bbwe!App"
+        },
+        {
+          "Name": "Clock",
+          "Path": "shell:AppsFolder\\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App"
+        },
+        {
+          "Name": "Terminal",
+          "Path": "shell:AppsFolder\\Microsoft.WindowsTerminal_8wekyb3d8bbwe!App"
+        },
+        {
+          "Name": "Settings",
+          "Path": "shell:AppsFolder\\windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel"
+        }
+      ]
+    },
+    {
+      "Id": "shot-admin",
+      "Name": "Admin tools",
+      "ViewMode": 1,
+      "TrayIconMode": "Glyph:#F59E0B:\ue90f",
+      "Items": [
+        {
+          "Name": "Task Manager",
+          "Path": "taskmgr.exe"
+        },
+        {
+          "Name": "Command Prompt",
+          "Path": "cmd.exe"
+        },
+        {
+          "Name": "Registry Editor",
+          "Path": "regedit.exe"
+        },
+        {
+          "Name": "Event Viewer",
+          "Path": "C:\\Windows\\System32\\eventvwr.msc"
+        },
+        {
+          "Name": "Services",
+          "Path": "C:\\Windows\\System32\\services.msc"
+        },
+        {
+          "Name": "Device Manager",
+          "Path": "C:\\Windows\\System32\\devmgmt.msc"
+        },
+        {
+          "Name": "Control Panel",
+          "Path": "control.exe"
+        }
+      ]
+    },
+    {
+      "Id": "shot-creative",
+      "Name": "Creative",
+      "ViewMode": 0,
+      "IconModeIconsPerRow": 2,
+      "TrayIconMode": "Glyph:#A855F7:\ue790",
+      "Items": [
+        {
+          "Name": "Make",
+          "IsGroup": true,
+          "Children": [
+            {
+              "Name": "Paint",
+              "Path": "shell:AppsFolder\\Microsoft.Paint_8wekyb3d8bbwe!App"
+            },
+            {
+              "Name": "Photos",
+              "Path": "shell:AppsFolder\\Microsoft.Windows.Photos_8wekyb3d8bbwe!App"
+            },
+            {
+              "Name": "Snipping Tool",
+              "Path": "shell:AppsFolder\\Microsoft.ScreenSketch_8wekyb3d8bbwe!App"
+            },
+            {
+              "Name": "Clipchamp",
+              "Path": "shell:AppsFolder\\Clipchamp.Clipchamp_yxz26nhyzhsrt!App"
+            }
+          ]
+        },
+        {
+          "IsColumnBreak": true,
+          "Name": ""
+        },
+        {
+          "Name": "Share",
+          "IsGroup": true,
+          "Children": [
+            {
+              "Name": "Mail",
+              "Path": "https://mail.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue715"
+            },
+            {
+              "Name": "Cloud drive",
+              "Path": "https://drive.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue753"
+            },
+            {
+              "Name": "Gallery",
+              "Path": "https://gallery.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue91b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "shot-web",
+      "Name": "Web",
+      "ViewMode": 1,
+      "TrayIconMode": "Glyph:#22C55E:\ue774",
+      "Items": [
+        {
+          "Name": "Daily",
+          "IsGroup": true,
+          "Children": [
+            {
+              "Name": "Mail",
+              "Path": "https://mail.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue715"
+            },
+            {
+              "Name": "Calendar",
+              "Path": "https://calendar.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue787"
+            },
+            {
+              "Name": "News",
+              "Path": "https://news.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue900"
+            },
+            {
+              "Name": "Weather",
+              "Path": "https://weather.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue9ca"
+            }
+          ]
+        },
+        {
+          "IsColumnBreak": true,
+          "Name": ""
+        },
+        {
+          "Name": "Reference",
+          "IsGroup": true,
+          "Children": [
+            {
+              "Name": "Maps",
+              "Path": "https://maps.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue826"
+            },
+            {
+              "Name": "Translate",
+              "Path": "https://translate.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\uf2b7"
+            },
+            {
+              "Name": "Docs",
+              "Path": "https://docs.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue8a5"
+            },
+            {
+              "Name": "Wiki",
+              "Path": "https://wiki.example.com",
+              "IsWebsite": true,
+              "IconGlyph": "\ue8f1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "shot-youtube",
+      "Name": "YouTube",
+      "Kind": 1,
+      "WebUrl": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      "WebBookmarks": [
+        {
+          "Name": "YouTube",
+          "Url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ"
+        }
+      ],
+      "WebFlyoutWidth": 960,
+      "WebFlyoutHeight": 560,
+      "Items": []
+    }
+  ]
+}

@@ -3,6 +3,7 @@ using WinUIAppKit.Localization;
 using LittleLauncher.Pages;
 using LittleLauncher.Services;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Windowing;
 using WinRT.Interop;
@@ -55,9 +56,9 @@ public sealed partial class SettingsWindow : Window
 
         Shell.Caption = "Little Launcher";
         Shell.IconPngPath = App.IconPngPath;
-        AddMenuItem("home.title", HomeTag, new SymbolIcon(Symbol.Home));
-        AddMenuItem("launchers.title", LaunchersTag, new FontIcon { Glyph = "\uF0E2" });
-        AddMenuItem("sync.title", SyncTag, new SymbolIcon(Symbol.Sync));
+        AddMenuItem("home.title", HomeTag, "NavHome", new SymbolIcon(Symbol.Home));
+        AddMenuItem("launchers.title", LaunchersTag, "NavLaunchers", new FontIcon { Glyph = "\uF0E2" });
+        AddMenuItem("sync.title", SyncTag, "NavSync", new SymbolIcon(Symbol.Sync));
 
         // Its own AppUserModelID, so the taskbar groups and draws this window apart from the
         // invisible host window; without it the taskbar uses the exe's embedded icon
@@ -91,10 +92,16 @@ public sealed partial class SettingsWindow : Window
         Closed += SettingsWindow_Closed;
     }
 
-    /// <summary>Adds one of the app's own pages to the navigation, labelled in the current language.</summary>
-    private void AddMenuItem(string labelKey, string tag, IconElement icon)
+    /// <summary>
+    /// Adds one of the app's own pages to the navigation, labelled in the current language. The
+    /// automation ID lets UI automation (the Store screenshot capture) find the item in every
+    /// interface language, since a code-built item has no <c>x:Name</c> to supply one.
+    /// </summary>
+    private void AddMenuItem(string labelKey, string tag, string automationId, IconElement icon)
     {
-        Shell.MenuItems.Add(new NavigationViewItem { Content = UiText.Get(labelKey), Tag = tag, Icon = icon });
+        var item = new NavigationViewItem { Content = UiText.Get(labelKey), Tag = tag, Icon = icon };
+        AutomationProperties.SetAutomationId(item, automationId);
+        Shell.MenuItems.Add(item);
     }
 
     /// <summary>

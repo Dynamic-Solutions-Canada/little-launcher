@@ -227,6 +227,9 @@ public sealed partial class LaunchersPage : Page
             ? settingsSubtitle
             : UiText.Get("launchers.card.hiddenOnOperatingSystem");
         var settingsRow = CreateLauncherActionButton(UiText.Get("common.settings"), settingsRowSubtitle);
+        // The launcher's id, not its name or the translated label, so UI automation (the Store
+        // screenshot capture) finds this launcher's row in every language.
+        AutomationProperties.SetAutomationId(settingsRow, "LauncherSettings_" + launcher.Id);
         settingsRow.IsEnabled = launcher.IsSupportedOnThisOperatingSystem;
         settingsRow.Click += async (s, e) =>
         {
