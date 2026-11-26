@@ -42,7 +42,7 @@ public sealed partial class LauncherItemsView : UserControl, IDisposable
     private bool _disposed;
     private int _sessionVersion;
     private int _lastItemsHash;
-    private int _listColumnWidth = MaxListColumnWidth;
+    private int _listColumnWidth = DefaultListColumnWidth;
     private LauncherItem? _dragItem;
     private ObservableCollection<LauncherItem>? _dragSourceCollection;
     private ResizeGrip _leftResizeGrip = null!;

@@ -32,15 +32,24 @@ namespace LittleLauncher.Controls;
 public sealed partial class LauncherItemsView
 {
     /// <summary>
-    /// The widest a list-mode column may be, and the fixed width every one of them used to have.
+    /// The width a list-mode column has when there is nothing to measure yet: an empty launcher, whose
+    /// placeholder is sized against it, or a tree not yet live enough to lay text out.
+    /// </summary>
+    private const int DefaultListColumnWidth = 175;
+
+    /// <summary>
+    /// The widest a list-mode column may grow to fit its longest label.
     /// </summary>
     /// <remarks>
-    /// Columns are now sized to the longest label they actually hold
+    /// Columns are sized to the longest label they actually hold
     /// (<see cref="ComputeListColumnWidth"/>), because a column of one-word shortcuts spent most
-    /// of its width on nothing. This is the ceiling on that, so nothing is ever wider than the
-    /// flyout has always been and long names go on trimming exactly as they did.
+    /// of its width on nothing. This ceiling used to equal <see cref="DefaultListColumnWidth"/>,
+    /// which trimmed the names Windows itself gives its tools in French, Spanish and Portuguese
+    /// ("Gestionnaire des tâ…"). It now leaves room for about 30 characters, enough for
+    /// "Gestionnaire de périphériques" or "Administrador de dispositivos", while a pasted URL or a
+    /// sentence-long name still trims instead of widening the flyout across the screen.
     /// </remarks>
-    private const int MaxListColumnWidth = 175;
+    private const int MaxListColumnWidth = 240;
 
     /// <summary>
     /// The narrowest one may be: the width of the column header edit mode draws over it, which is
@@ -397,9 +406,8 @@ public sealed partial class LauncherItemsView
     /// of them.</para>
     /// <para>Group headers count too, and against their own chrome: they carry no icon, so a
     /// header needs 32px less than an item with the same text.</para>
-    /// <para>The cap is what keeps this from being a behaviour change for anyone: a launcher with
-    /// one long name is exactly as wide as it was, and only the launchers that were wasting the
-    /// space get narrower.</para>
+    /// <para>The cap keeps one very long name from stretching the flyout: past it, the name trims
+    /// and its tooltip shows it whole.</para>
     /// </remarks>
     private int ComputeListColumnWidth()
     {
@@ -438,11 +446,11 @@ public sealed partial class LauncherItemsView
         }
 
         // Nothing measurable: an empty launcher, or a tree not yet live enough to lay text out.
-        // Either way the honest answer is the width the flyout has always had: an empty launcher
-        // still has its placeholder to show, and a premature call is retaken on Loaded.
+        // Either way the honest answer is the default width: an empty launcher still has its
+        // placeholder to show, and a premature call is retaken on Loaded.
         if (!measuredAnything)
         {
-            return MaxListColumnWidth;
+            return DefaultListColumnWidth;
         }
 
         // The launcher's title spans every column, so it is a floor on their shared width rather

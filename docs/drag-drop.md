@@ -92,8 +92,9 @@ header height × 1.
 
 List columns used to be a flat 175px each, which a column of one-word shortcuts spent mostly on
 nothing. `ComputeListColumnWidth()` now sizes them to the longest label the launcher holds, capped
-at `MaxListColumnWidth` (that same 175, so nothing is ever wider than it used to be) and floored at
-`MinListColumnWidth`.
+at `MaxListColumnWidth` (240, room for the longest names Windows gives its own tools in French,
+Spanish and Portuguese) and floored at `MinListColumnWidth`. With nothing to measure (an empty
+launcher, or before the tree is live) a column keeps `DefaultListColumnWidth`, the old flat 175.
 
 - **One width for all of them.** Columns of differing widths read as a broken table, and the flyout
   has no column rules to make ragged edges look deliberate.
