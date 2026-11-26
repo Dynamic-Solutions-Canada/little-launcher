@@ -37,8 +37,8 @@
   "sync.sftp.privateKeyPath": "Ruta de la clave privada",
   "sync.sftp.privateKeyDescription": "Se detecta automáticamente en ~/.ssh/ si está vacía",
   "sync.sftp.remotePath": "Ruta remota",
-  "sync.sftp.remotePathDescription": "Directorio del servidor donde guardar los ajustes",
-  "sync.sftp.exportImportDescription": "Exportar o importar solo los ajustes de conexión SSH para usarlos en otros equipos.",
+  "sync.sftp.remotePathDescription": "Directorio del servidor donde guardar la configuración",
+  "sync.sftp.exportImportDescription": "Exportar o importar solo la configuración de conexión SSH para usarla en otros equipos.",
   "sync.sftp.exportConnection": "Exportar conexión…",
   "sync.sftp.importConnection": "Importar conexión…",
   "sync.auto.section": "Sincronización automática",
@@ -54,7 +54,7 @@
   "sync.message.waitingForSignIn": "Esperando el inicio de sesión de {{provider}} en el navegador…",
   "sync.message.signInFailed": "Error al iniciar sesión: {{error}}",
   "sync.message.webDavForgotten": "Se ha olvidado la contraseña de WebDAV en este PC. Se conservan la URL y el nombre de usuario.",
-  "sync.message.signedOut": "Se ha cerrado la sesión de {{provider}} en este PC. Revoca el acceso de la aplicación en los ajustes de tu cuenta de {{provider}} para quitarlo en todas partes.",
+  "sync.message.signedOut": "Se ha cerrado la sesión de {{provider}} en este PC. Revoca el acceso de la aplicación en la configuración de tu cuenta de {{provider}} para quitarlo en todas partes.",
   "sync.message.webDavEnterPassword": "Introduce primero la contraseña de WebDAV.",
   "sync.message.webDavChecking": "Comprobando el servidor WebDAV…",
   "sync.message.jsonFiles": "Archivos JSON",
@@ -85,6 +85,6 @@
   "sync.oneDrive.linuxSignInHint": "Inicia sesión con una cuenta Microsoft personal. El destino de carpeta para cuentas profesionales y educativas aún no está disponible en Linux.",
   "sync.cancelSignIn": "Cancelar inicio de sesión",
   "sync.auto.tooltip": "Sincronizar al iniciar, cuando cambian los lanzadores y con el intervalo seleccionado.",
-  "sync.actions.uploadTooltip": "Subir los ajustes de los lanzadores a OneDrive",
+  "sync.actions.uploadTooltip": "Subir la configuración de los lanzadores a OneDrive",
   "sync.importExport.title": "Importar y exportar"
 }

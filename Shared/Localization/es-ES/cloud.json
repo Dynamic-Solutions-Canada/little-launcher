@@ -87,7 +87,7 @@
   "cloud.oneDrive.uploadConflict": "OneDrive informó de un conflicto de subida. Haz clic de nuevo en Subir para revisar la copia más reciente.",
   "cloud.oneDrive.changedAfterReview": "La copia en la nube cambió después de revisarla. Haz clic de nuevo en Subir para revisarla.",
   "cloud.oneDrive.unexpectedRedirect": "OneDrive devolvió una redirección inesperada.",
-  "cloud.oneDrive.responseTooLarge": "La respuesta de la nube es demasiado grande; no se ha cambiado ningún ajuste.",
+  "cloud.oneDrive.responseTooLarge": "La respuesta de la nube es demasiado grande; no se ha cambiado ninguna configuración.",
   "cloud.oneDrive.unreachable": "No se pudo conectar con OneDrive. Comprueba tu conexión e inténtalo de nuevo.",
   "cloud.oneDrive.savedSignInUnreadable": "No se puede leer el inicio de sesión guardado de OneDrive. Vuelve a iniciar sesión.",
   "cloud.oneDrive.invalidSignInResponse": "OneDrive devolvió una respuesta de inicio de sesión no válida.",

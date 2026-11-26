@@ -1,5 +1,5 @@
 {
-  "launcherSettings.title": "Ajustes del lanzador",
+  "launcherSettings.title": "Configuración del lanzador",
   "launcherSettings.section.general": "General",
   "launcherSettings.section.appearance": "Apariencia",
   "launcherSettings.section.sizeAndPosition": "Tamaño y posición",
@@ -123,5 +123,5 @@
   "launcherSettings.browsingData.confirmShared": "¿Borrar las cookies y los datos de sitios de todos los lanzadores con inicios de sesión compartidos? Se cerrará tu sesión en los sitios web de este equipo.",
   "launcherSettings.browsingData.confirmPrivate": "¿Borrar las cookies y los datos de sitios de este lanzador? Se cerrará tu sesión en los sitios web de este equipo.",
   "launcherSettings.profileChangePending": "Termina de cambiar los inicios de sesión con Hecho antes de cambiar los datos de este perfil.",
-  "launcherSettings.profileChanged": "El perfil de inicio de sesión de este lanzador ha cambiado. Vuelve a abrir los ajustes antes de cambiar sus datos."
+  "launcherSettings.profileChanged": "El perfil de inicio de sesión de este lanzador ha cambiado. Vuelve a abrir la configuración antes de cambiar sus datos."
 }

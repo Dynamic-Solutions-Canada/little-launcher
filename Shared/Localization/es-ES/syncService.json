@@ -12,7 +12,7 @@
   "syncService.downloadFailed": "Error al descargar: {{error}}",
   "syncService.downloadedNewest": "{{message}} (la copia más reciente estaba en {{destination}}).",
   "syncService.skipped.localLaunchersNewer": "Los cambios locales de los lanzadores son más recientes que los del servidor; se omitió la descarga.",
-  "syncService.skipped.localSettingsNewer": "Los ajustes locales son más recientes que los de la ubicación de sincronización; se omitió la descarga.",
+  "syncService.skipped.localSettingsNewer": "La configuración local es más reciente que la de la ubicación de sincronización; se omitió la descarga.",
   "syncService.iconTooLarge": "Elige un icono de lanzador personalizado de menos de 1 MiB antes de subirlo.",
   "syncService.syncedIcon.tooLarge": "Un icono de lanzador sincronizado supera 1 MiB.",
   "syncService.syncedIcon.emptyOrTooLarge": "Un icono de lanzador sincronizado está vacío o es demasiado grande.",
