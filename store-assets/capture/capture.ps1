@@ -218,11 +218,20 @@ function Save-TaskbarCapture([string]$Name) {
     Close-SettingsWindow
     if (-not $button) { $button = Find-PinnedButton }
     if (-not $button) { throw "${Name}: no taskbar button for $launcher" }
-    Invoke-Click $button
-    [UiNative]::SetCursorPos((Px 400), (Px 300)) | Out-Null
-    Start-Sleep -Seconds 4
-    $flyout = Get-FlyoutWindow 100
-    if (-not $flyout) { throw "${Name}: no flyout from the taskbar button" }
+    # The first launch through a new pin starts the companion helper, which can take a while; give
+    # it time, and click once more if nothing opened.
+    $flyout = $null
+    foreach ($click in 1..2) {
+        Invoke-Click $button
+        [UiNative]::SetCursorPos((Px 400), (Px 300)) | Out-Null
+        for ($i = 0; $i -lt 12 -and -not $flyout; $i++) {
+            Start-Sleep -Seconds 1
+            $flyout = Get-FlyoutWindow 100
+        }
+        if ($flyout) { break }
+    }
+    if (-not $flyout) { throw "${Name}: no flyout from the taskbar button '$($button.Current.Name)'" }
+    Start-Sleep -Seconds 2
     Save-DesktopCapture $Name $flyout
     [System.Windows.Forms.SendKeys]::SendWait('{ESC}')
     Start-Sleep -Seconds 1
