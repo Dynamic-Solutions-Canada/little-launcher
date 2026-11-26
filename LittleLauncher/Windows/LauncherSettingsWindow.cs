@@ -515,35 +515,15 @@ public sealed partial class LauncherSettingsWindow : Window
             CommitName();
         };
 
-        var nameRow = new Grid();
-        nameRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        nameRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var nameLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        nameLabel.Children.Add(new TextBlock { Text = UiText.Get("common.name"), FontSize = 14 });
-        nameLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.name.description"), FontSize = 12, Opacity = 0.5 });
-        Grid.SetColumn(nameLabel, 0);
-        Grid.SetColumn(nameBox, 1);
-        nameRow.Children.Add(nameLabel);
-        nameRow.Children.Add(nameBox);
+        var nameRow = BuildRow(UiText.Get("common.name"), UiText.Get("launcherSettings.name.description"), nameBox);
 
         // ── Icon chooser ─────────────────────────────────────────
         var (iconButton, customIconRow, refreshIconPreview) = BuildIconChooser(launcher);
         _refreshIconPreview = refreshIconPreview;
 
-        var iconRow = new Grid();
-        iconRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        iconRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var iconLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        iconLabel.Children.Add(new TextBlock { Text = UiText.Get("common.icon"), FontSize = 14 });
-        // Text set by UpdateKindVisibility — a web launcher's icon arrives on its own.
+        // Text set by UpdateKindVisibility: a web launcher's icon arrives on its own.
         var iconSubtitle = new TextBlock { FontSize = 12, Opacity = 0.5, TextWrapping = TextWrapping.Wrap };
-        iconLabel.Children.Add(iconSubtitle);
-        Grid.SetColumn(iconLabel, 0);
-        Grid.SetColumn(iconButton, 1);
-        iconRow.Children.Add(iconLabel);
-        iconRow.Children.Add(iconButton);
+        var iconRow = BuildRow(UiText.Get("common.icon"), iconSubtitle, iconButton);
 
         // ── View mode combo ──────────────────────────────────────
         var viewModeCombo = new ComboBox { MinWidth = 160 };
@@ -570,17 +550,7 @@ public sealed partial class LauncherSettingsWindow : Window
             viewModeCombo.SelectedIndex = 0;
         }
 
-        var viewModeRow = new Grid();
-        viewModeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        viewModeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var viewModeLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        viewModeLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.viewMode.title"), FontSize = 14 });
-        viewModeLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.viewMode.description"), FontSize = 12, Opacity = 0.5 });
-        Grid.SetColumn(viewModeLabel, 0);
-        Grid.SetColumn(viewModeCombo, 1);
-        viewModeRow.Children.Add(viewModeLabel);
-        viewModeRow.Children.Add(viewModeCombo);
+        var viewModeRow = BuildRow(UiText.Get("launcherSettings.viewMode.title"), UiText.Get("launcherSettings.viewMode.description"), viewModeCombo);
 
         // ── Icon mode density ───────────────────────────────────
         var iconsPerRowCombo = new ComboBox { MinWidth = 100 };
@@ -601,17 +571,7 @@ public sealed partial class LauncherSettingsWindow : Window
             }
         };
 
-        var iconsPerRowRow = new Grid();
-        iconsPerRowRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        iconsPerRowRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var iconsPerRowLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        iconsPerRowLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.iconsPerRow.title"), FontSize = 14 });
-        iconsPerRowLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.iconsPerRow.description"), FontSize = 12, Opacity = 0.5 });
-        Grid.SetColumn(iconsPerRowLabel, 0);
-        Grid.SetColumn(iconsPerRowCombo, 1);
-        iconsPerRowRow.Children.Add(iconsPerRowLabel);
-        iconsPerRowRow.Children.Add(iconsPerRowCombo);
+        var iconsPerRowRow = BuildRow(UiText.Get("launcherSettings.iconsPerRow.title"), UiText.Get("launcherSettings.iconsPerRow.description"), iconsPerRowCombo);
 
         void UpdateIconModeControls()
         {
@@ -653,17 +613,7 @@ public sealed partial class LauncherSettingsWindow : Window
             FlyoutWindow.InvalidateItems(launcher.Id);
         };
 
-        var showTitleRow = new Grid();
-        showTitleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        showTitleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var showTitleLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        showTitleLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showTitle.title"), FontSize = 14 });
-        showTitleLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showTitle.description"), FontSize = 12, Opacity = 0.5 });
-        Grid.SetColumn(showTitleLabel, 0);
-        Grid.SetColumn(showTitleToggle, 1);
-        showTitleRow.Children.Add(showTitleLabel);
-        showTitleRow.Children.Add(showTitleToggle);
+        var showTitleRow = BuildRow(UiText.Get("launcherSettings.showTitle.title"), UiText.Get("launcherSettings.showTitle.description"), showTitleToggle);
 
         // ── Show in tray toggle ──────────────────────────────────
         var showToggle = new ToggleSwitch
@@ -680,17 +630,7 @@ public sealed partial class LauncherSettingsWindow : Window
             Services.AutoSyncService.NotifyLaunchersChanged();
         };
 
-        var hideRow = new Grid();
-        hideRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        hideRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-        var hideLabel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        hideLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showInTray.title"), FontSize = 14 });
-        hideLabel.Children.Add(new TextBlock { Text = UiText.Get("launcherSettings.showInTray.description"), FontSize = 12, Opacity = 0.5 });
-        Grid.SetColumn(hideLabel, 0);
-        Grid.SetColumn(showToggle, 1);
-        hideRow.Children.Add(hideLabel);
-        hideRow.Children.Add(showToggle);
+        var hideRow = BuildRow(UiText.Get("launcherSettings.showInTray.title"), UiText.Get("launcherSettings.showInTray.description"), showToggle);
 
         // ── Pin to taskbar row ──────────────────────────────────
         var pinBtn = new Button
@@ -810,16 +750,6 @@ public sealed partial class LauncherSettingsWindow : Window
     }
 
     /// <summary>
-    /// Builds a settings row with the control on its own line, full width, under the label.
-    /// </summary>
-    /// <remarks>
-    /// For controls whose content is long and open-ended — a URL, a path. The side-by-side
-    /// <see cref="BuildRow"/> sizes its control column to <c>Auto</c>, so a wide control starves
-    /// the label column: a long address squeezed "Web Address" into a three-character ribbon of
-    /// wrapped text and stretched the box down the full height of it. Giving the control the whole
-    /// width sidesteps the competition rather than trying to balance it.
-    /// </remarks>
-    /// <summary>
     /// Gives a row's control its title as the accessible name, unless the caller named it already or
     /// it shows its own text. A switch or box beside a TextBlock is otherwise announced with no label
     /// (UI-14); a button that reads "Pin to taskbar" is already named by that text, which is what a
@@ -834,6 +764,16 @@ public sealed partial class LauncherSettingsWindow : Window
         }
     }
 
+    /// <summary>
+    /// Builds a settings row with the control on its own line, full width, under the label.
+    /// </summary>
+    /// <remarks>
+    /// For controls whose content is long and open-ended — a URL, a path. The side-by-side
+    /// <see cref="BuildRow"/> sizes its control column to <c>Auto</c>, so a wide control starves
+    /// the label column: a long address squeezed "Web Address" into a three-character ribbon of
+    /// wrapped text and stretched the box down the full height of it. Giving the control the whole
+    /// width sidesteps the competition rather than trying to balance it.
+    /// </remarks>
     private static FrameworkElement BuildStackedRow(string title, string subtitle, FrameworkElement control)
     {
         NameFromTitle(control, title);
