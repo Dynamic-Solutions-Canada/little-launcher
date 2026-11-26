@@ -30,7 +30,7 @@
   "webExtensions.updating": "Erweiterungsstatus wird aktualisiert…",
   "webExtensions.manageHint": "Öffne einen Launcher und verwende dann seine Schaltfläche „Erweiterungen“ oder hier „Erweiterung öffnen“. Installierte Erweiterungen sind in der ganzen App verfügbar; ihre Einstellungen und Anmeldungen bleiben im ausgewählten Browserprofil.",
   "webExtensions.remove.title": "Erweiterung entfernen",
-  "webExtensions.remove.message": "Diese Erweiterung aus Little Launcher entfernen? Ihre gespeicherten Profildaten bleiben erhalten.",
+  "webExtensions.remove.message": "Diese Erweiterung aus Little Launcher entfernen? Die gespeicherten Profildaten der Erweiterung bleiben erhalten.",
   "webExtensions.preparing": "Erweiterungspaket wird vorbereitet…",
   "webExtensions.chooseZip": "Erweiterungs-ZIP auswählen",
   "webExtensions.zipFiles": "Erweiterungs-ZIP",
