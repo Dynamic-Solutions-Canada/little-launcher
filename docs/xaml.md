@@ -48,6 +48,8 @@ Omit `LabelName` for an icon-only template, where the name is always available o
 
 For group headers and column captions, attach `ConditionalNameToolTip.Text` directly to the `TextBlock` (or call `SetText` for a code-built label). A TextBlock root is its own label and tooltip target, so no namescope lookup is needed and its tooltip cannot appear over group children. It uses actual `IsTextTrimmed` and the same rename/load/unload cleanup; omitting `LabelName` here does not make the tooltip unconditional.
 
+`Controls/IconLabelFit.cs` fits an icon tile's two-line name without breaking a word: set `controls:IconLabelFit.IsEnabled="True"` on the label (or call `IconLabelFit.Attach` for a code-built one) after its `MaxWidth` and `FontSize`, which become its budget. Names wrap between words, a single word wider than the tile is drawn smaller (down to 9 px) rather than split, and an unspaced Chinese or Japanese name is split into two even lines instead of leaving one character alone. It only narrows the label and shrinks its font, so tile geometry never changes.
+
 The behavior attaches the native tooltip to the nearest `SelectorItem`, covering both list
 and grid item icons, labels and padding. Its bound text follows renamed/recycled items;
 load/unload wiring resolves the current container and releases label subscriptions and any

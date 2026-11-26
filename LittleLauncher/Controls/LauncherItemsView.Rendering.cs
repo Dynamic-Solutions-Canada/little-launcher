@@ -678,12 +678,15 @@ public sealed partial class LauncherItemsView
             Text = item.Name,
             FontSize = 11,
             TextAlignment = TextAlignment.Center,
-            TextWrapping = TextWrapping.Wrap,
+            TextWrapping = TextWrapping.WrapWholeWords,
             TextTrimming = TextTrimming.CharacterEllipsis,
             MaxLines = 2,
             MaxWidth = GetActiveIconCellWidth() - 8,
             HorizontalAlignment = HorizontalAlignment.Center,
         };
+
+        // Wraps between words and keeps the name whole, as the icon template's label does.
+        IconLabelFit.Attach(nameText);
 
         var content = new Grid();
         content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });

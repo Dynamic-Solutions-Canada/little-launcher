@@ -401,17 +401,19 @@
                         </Grid>
                     </Grid>
 
+                    <!-- IconLabelFit wraps between words and keeps the name whole; see IconLabelFit.cs. -->
                     <TextBlock x:Name="ItemNameLabel" Grid.Row="1"
                                Text="{Binding Name}"
                                FontSize="11"
                                TextAlignment="Center"
-                               TextWrapping="Wrap"
+                               TextWrapping="WrapWholeWords"
                                TextTrimming="CharacterEllipsis"
                                MaxLines="2"
                                VerticalAlignment="Top"
                                HorizontalAlignment="Center"
                                MaxWidth="72"
-                               Margin="0,2,0,0" />
+                               Margin="0,2,0,0"
+                               controls:IconLabelFit.IsEnabled="True" />
                 </Grid>
             </DataTemplate>
 
