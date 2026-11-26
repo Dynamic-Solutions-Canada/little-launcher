@@ -183,28 +183,40 @@ function Save-TaskbarCapture([string]$Name) {
     Start-Sleep -Seconds 3
     Invoke-Click (Find-ById $settings 'LauncherSettings_shot-everyday')
     Start-Sleep -Seconds 5
-    $pin = Find-ById $UiRoot 'PinToTaskbarButton'
-    if (-not $pin) { throw "${Name}: no Pin to taskbar button" }
-    Set-AppNotifications $true
-    try {
-        Invoke-Click $pin
-        Start-Sleep -Seconds 6
-        Invoke-ClickAt (Px 1636) (Px 987)
-        foreach ($i in 1..4) { Invoke-ClickAt (Px 1806) (Px 987) }
+    # The pinned launcher's taskbar button carries the launcher's name; tray icons are left out.
+    $buttons = New-Object System.Windows.Automation.PropertyCondition($UiA::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+    $taskbar = $UiRoot.FindFirst('Children', (New-Object System.Windows.Automation.PropertyCondition($UiA::ClassNameProperty, 'Shell_TrayWnd')))
+    function Find-PinnedButton {
+        $taskbar.FindAll('Descendants', $buttons) |
+            Where-Object { $_.Current.Name -like "*$launcher*" -and $_.Current.AutomationId -ne 'NotifyItemIcon' } |
+            Select-Object -First 1
     }
-    finally {
-        Set-AppNotifications $false
+
+    # Windows' prompt sometimes comes late, after the clicks meant for it (three of seven locales in
+    # one run), so check for the taskbar button and ask again, waiting longer each time.
+    $button = $null
+    foreach ($attempt in 1..3) {
+        $pin = Find-ById $UiRoot 'PinToTaskbarButton'
+        if (-not $pin) { throw "${Name}: no Pin to taskbar button" }
+        Set-AppNotifications $true
+        try {
+            Invoke-Click $pin
+            Start-Sleep -Seconds (4 + 4 * $attempt)
+            Invoke-ClickAt (Px 1636) (Px 987)
+            foreach ($i in 1..4) { Invoke-ClickAt (Px 1806) (Px 987) }
+        }
+        finally {
+            Set-AppNotifications $false
+        }
+        Start-Sleep -Seconds 2
+        $button = Find-PinnedButton
+        if ($button) { break }
+        Write-Output "${Name}: not pinned after attempt $attempt"
     }
     $done = Find-ById $UiRoot 'DoneButton'
     if ($done) { Invoke-Click $done; Start-Sleep -Seconds 2 }
     Close-SettingsWindow
-
-    # The pinned launcher's taskbar button carries the launcher's name; tray icons are left out.
-    $buttons = New-Object System.Windows.Automation.PropertyCondition($UiA::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
-    $taskbar = $UiRoot.FindFirst('Children', (New-Object System.Windows.Automation.PropertyCondition($UiA::ClassNameProperty, 'Shell_TrayWnd')))
-    $button = $taskbar.FindAll('Descendants', $buttons) |
-        Where-Object { $_.Current.Name -like "*$launcher*" -and $_.Current.AutomationId -ne 'NotifyItemIcon' } |
-        Select-Object -First 1
+    if (-not $button) { $button = Find-PinnedButton }
     if (-not $button) { throw "${Name}: no taskbar button for $launcher" }
     Invoke-Click $button
     [UiNative]::SetCursorPos((Px 400), (Px 300)) | Out-Null
