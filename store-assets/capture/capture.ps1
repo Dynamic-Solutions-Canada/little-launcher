@@ -208,6 +208,12 @@ function Save-TaskbarCapture([string]$Name) {
         finally {
             Set-AppNotifications $false
         }
+        # While Windows' prompt is unanswered, the pinning helper's own card window carries the
+        # launcher's identity, so its taskbar button looks just like the pinned one and clicking it
+        # opens no flyout. Wait for the helper to exit before looking for the pin.
+        for ($i = 0; $i -lt 15 -and (Get-Process LittleLauncherFlyout -ErrorAction SilentlyContinue); $i++) {
+            Start-Sleep -Seconds 1
+        }
         Start-Sleep -Seconds 2
         $button = Find-PinnedButton
         if ($button) { break }
