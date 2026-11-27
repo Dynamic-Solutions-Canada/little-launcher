@@ -183,12 +183,13 @@ function Save-TaskbarCapture([string]$Name) {
     Start-Sleep -Seconds 3
     Invoke-Click (Find-ById $settings 'LauncherSettings_shot-everyday')
     Start-Sleep -Seconds 5
-    # The pinned launcher's taskbar button carries the launcher's name; tray icons are left out.
+    # The pinned launcher's taskbar button carries the launcher's name; tray icons, and the app's own
+    # windows ("Little Launcher - <launcher> ...", which also carry it), are left out.
     $buttons = New-Object System.Windows.Automation.PropertyCondition($UiA::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
     $taskbar = $UiRoot.FindFirst('Children', (New-Object System.Windows.Automation.PropertyCondition($UiA::ClassNameProperty, 'Shell_TrayWnd')))
     function Find-PinnedButton {
         $taskbar.FindAll('Descendants', $buttons) |
-            Where-Object { $_.Current.Name -like "*$launcher*" -and $_.Current.AutomationId -ne 'NotifyItemIcon' } |
+            Where-Object { $_.Current.Name -like "*$launcher*" -and $_.Current.AutomationId -ne 'NotifyItemIcon' -and $_.Current.Name -notlike 'Little Launcher*' } |
             Select-Object -First 1
     }
 
