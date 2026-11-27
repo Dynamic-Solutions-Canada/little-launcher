@@ -96,7 +96,7 @@ A task is not done until its docs are updated. Read a guide before deciding it n
 | A XAML pattern | `docs/xaml.md` |
 | Drag and drop | `docs/drag-drop.md` |
 | A dependency added, removed or updated | The tech stack in `docs/development.md` (Windows) or `linux/README.md` (Linux) |
-| An npm command | The Commands table above, `docs/windows-development.md`, the `desktop` skill, `paseo.json` |
+| An npm command | The Commands table above, `docs/windows-development.md`, the `desktop` skill |
 | A guide or skill added, moved or removed | The guidance map above, `docs/README.md`, the nested `AGENTS.md` that should link it, and every skill that names it |
 | A feature, requirement, language or privacy behaviour users can see | `README.md`, `store-assets/microsoft/listings.json` and the claims in `listings.md` |
 | Any structural change | `ARCHITECTURE.md`, and `README.md` if users would notice |
